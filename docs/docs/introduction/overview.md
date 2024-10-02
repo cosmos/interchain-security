@@ -6,7 +6,8 @@ sidebar_position: 1
 
 Interchain Security (ICS) is an open source IBC application that allows Cosmos chains to lease their proof-of-stake security to one another.
 
-ICS allows anyone to launch a _consumer_ chain using a subset, or even the entire, validator set from the _provider_ chain by creating a governance proposal. If the proposal is accepted, provider chain validators start validating the consumer chain as well. Consumer chains will therefore inherit security and decentralization from the provider.
+ICS allows anyone to launch a _consumer_ chain using a subset, or even the entire, validator set from the _provider_ chain.
+This way, provider chain validators start validating the consumer chain as well and so consumer chains inherit security and decentralization from the provider.
 
 ## Why Interchain Security?
 
@@ -16,6 +17,10 @@ ICS allows anyone to launch a _consumer_ chain using a subset, or even the entir
   Additionally, consumer chains have the power to shape the validator set to their specific requirements by setting allow & deny lists, capping its size, etc. 
   This allows for a wide range of security tradeoffs. 
   For example, it enables emerging projects to deploy on consumer chains that don’t need high level of security.
+- **Permissionless deployment.** 
+  Opt-in consumer chains -- consumers that do not compel any validator to participate -- can be launched permissionlessly. 
+  User can create and update opt-in consumer chains by submitting transactions to the provider chain. 
+  Provider validators that are eligible can opt in on any consumer they wish to validate.  
 - **Separation of governance from block production.**
   Consumer chains can separate their governance mechanism from block production.
   Block production is handled by provider validators, which means it is an extension of the proof-of-state (PoS) mechanism on the provider chain.
@@ -45,7 +50,7 @@ If the opted-in validators misbehave on the consumer chains, then they will be p
 ICS currently differentiates between two types of infractions -- double signing and downtime. 
 Double signing on consumer chains results in the misbehaving validators having their provider stake slashed and being permanently jailed on the provider, 
 while downtime on consumer chains results in the misbehaving validators being temporarily jailed. 
-Note that jailing entails removing the validator from the provider active validator set and, consequently, from any of the consumer validato sets. 
+Note that jailing entails removing the validator from the provider active validator set and, consequently, from any of the consumer validator sets. 
 This entails the validator will miss out on both staking and ICS rewards. 
 
 **Tokenomics and rewards.** 

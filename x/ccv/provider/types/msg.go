@@ -3,7 +3,6 @@ package types
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
@@ -75,7 +74,7 @@ func (msg MsgAssignConsumerKey) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidMsgAssignConsumerKey, "ChainId: %s", err.Error())
 	}
 
-	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+	if err := ccvtypes.ValidateConsumerId(msg.ConsumerId); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgAssignConsumerKey, "ConsumerId: %s", err.Error())
 	}
 
@@ -139,7 +138,7 @@ func NewMsgSubmitConsumerMisbehaviour(
 
 // ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgSubmitConsumerMisbehaviour) ValidateBasic() error {
-	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+	if err := ccvtypes.ValidateConsumerId(msg.ConsumerId); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgSubmitConsumerMisbehaviour, "ConsumerId: %s", err.Error())
 	}
 
@@ -177,7 +176,7 @@ func (msg MsgSubmitConsumerDoubleVoting) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidMsgSubmitConsumerDoubleVoting, "ValidateTendermintHeader: %s", err.Error())
 	}
 
-	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+	if err := ccvtypes.ValidateConsumerId(msg.ConsumerId); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgSubmitConsumerDoubleVoting, "ConsumerId: %s", err.Error())
 	}
 
@@ -200,7 +199,7 @@ func (msg MsgOptIn) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidMsgOptIn, "ChainId: %s", err.Error())
 	}
 
-	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+	if err := ccvtypes.ValidateConsumerId(msg.ConsumerId); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgOptIn, "ConsumerId: %s", err.Error())
 	}
 
@@ -231,7 +230,7 @@ func (msg MsgOptOut) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidMsgOptOut, "ChainId: %s", err.Error())
 	}
 
-	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+	if err := ccvtypes.ValidateConsumerId(msg.ConsumerId); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgOptOut, "ConsumerId: %s", err.Error())
 	}
 
@@ -263,7 +262,7 @@ func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidMsgSetConsumerCommissionRate, "ChainId: %s", err.Error())
 	}
 
-	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+	if err := ccvtypes.ValidateConsumerId(msg.ConsumerId); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgSetConsumerCommissionRate, "ConsumerId: %s", err.Error())
 	}
 
@@ -346,7 +345,7 @@ func NewMsgUpdateConsumer(owner, consumerId, ownerAddress string, metadata *Cons
 
 // ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgUpdateConsumer) ValidateBasic() error {
-	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+	if err := ccvtypes.ValidateConsumerId(msg.ConsumerId); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "ConsumerId: %s", err.Error())
 	}
 
@@ -383,7 +382,7 @@ func NewMsgRemoveConsumer(owner, consumerId string) (*MsgRemoveConsumer, error) 
 
 // ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg MsgRemoveConsumer) ValidateBasic() error {
-	if err := ValidateConsumerId(msg.ConsumerId); err != nil {
+	if err := ccvtypes.ValidateConsumerId(msg.ConsumerId); err != nil {
 		return err
 	}
 	return nil
@@ -427,21 +426,6 @@ func ValidateHeaderForConsumerDoubleVoting(header *ibctmtypes.Header) error {
 
 	if header.ValidatorSet == nil {
 		return fmt.Errorf("invalid infraction block header, validator set is nil")
-	}
-
-	return nil
-}
-
-// ValidateConsumerId validates the provided consumer id and returns an error if it is not valid
-func ValidateConsumerId(consumerId string) error {
-	if strings.TrimSpace(consumerId) == "" {
-		return errorsmod.Wrapf(ErrInvalidConsumerId, "consumer id cannot be blank")
-	}
-
-	// check that `consumerId` corresponds to a `uint64`
-	_, err := strconv.ParseUint(consumerId, 10, 64)
-	if err != nil {
-		return errorsmod.Wrapf(ErrInvalidConsumerId, "consumer id (%s) cannot be parsed: %s", consumerId, err.Error())
 	}
 
 	return nil

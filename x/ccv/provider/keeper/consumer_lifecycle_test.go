@@ -649,7 +649,8 @@ func TestMakeConsumerGenesis(t *testing.T) {
 			"soft_opt_out_threshold": "0",
 			"reward_denoms": [],
 			"provider_reward_denoms": [],
-			"retry_delay_period": %d
+			"retry_delay_period": %d,
+			"consumer_id": "%s"
 		},
 		"new_chain": true,
 		"provider" : {
@@ -720,6 +721,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		initializationParameters.HistoricalEntries,
 		consumerUnbondingPeriod.Nanoseconds(),
 		ccvtypes.DefaultRetryDelayPeriod.Nanoseconds(),
+		CONSUMER_ID,
 		providerChainId,
 		trustingPeriod.Nanoseconds(),
 		providerUnbondingPeriod.Nanoseconds(),

@@ -2,7 +2,7 @@
 
 The following table indicates the major ICS features available in the [currently active releases](./RELEASES.md#version-matrix):
 
-| Feature | `v4.0.0` | `v4.3.1` | `v4.3.1-lsm` | `v4.4.0` | `v5.0.0` | `v5.2.0` |  `v6.0.0` | 
+| Feature | `v4.0.0` | `v4.3.1` | `v4.3.1-lsm` | `v4.4.0` | `v5.0.0` | `v5.2.0` |  `v6.1.0` | 
 |---------|---------:|---------:|-------------:|---------:|---------:|---------:|----------:|
 | [Channel initialization: new chains](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/overview_and_basic_concepts.md#channel-initialization-new-chains) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | [Validator set update](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/overview_and_basic_concepts.md#validator-set-update) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |

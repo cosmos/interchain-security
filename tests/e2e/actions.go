@@ -495,7 +495,7 @@ func (tr Chain) UpdateConsumer(providerChain ChainID, validator ValidatorID, upd
 	bz, err = cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println("command failed: ", cmd)
-		log.Fatal("update consumer failed error: %w, output: %s", err, string(bz))
+		log.Fatalf("update consumer failed error: %s, output: %s", err, string(bz))
 	}
 
 	// Check transaction
@@ -2536,14 +2536,14 @@ func (tr Chain) registerRepresentative(
 
 type SubmitChangeRewardDenomsProposalAction struct {
 	Chain   ChainID
-	Denom   string
+	Denoms  []string
 	Deposit uint
 	From    ValidatorID
 }
 
 func (tr Chain) submitChangeRewardDenomsProposal(action SubmitChangeRewardDenomsProposalAction, verbose bool) {
 	changeRewMsg := types.MsgChangeRewardDenoms{
-		DenomsToAdd:    []string{action.Denom},
+		DenomsToAdd:    action.Denoms,
 		DenomsToRemove: []string{"stake"},
 		Authority:      "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
 	}
@@ -2604,7 +2604,7 @@ func (tr Chain) submitChangeRewardDenomsLegacyProposal(action SubmitChangeReward
 		ChangeRewardDenomsProposal: types.ChangeRewardDenomsProposal{
 			Title:          "Change reward denoms",
 			Description:    "Change reward denoms",
-			DenomsToAdd:    []string{action.Denom},
+			DenomsToAdd:    action.Denoms,
 			DenomsToRemove: []string{"stake"},
 		},
 		Deposit: fmt.Sprint(action.Deposit) + `stake`,
@@ -3308,4 +3308,96 @@ func (tr Commands) AssignConsumerPubKey(action e2e.AssignConsumerPubKeyAction, g
 	}
 
 	return cmd.CombinedOutput()
+}
+
+type CreateIbcClientAction struct {
+	ChainA ChainID
+	ChainB ChainID
+}
+
+func (tr Chain) createIbcClientHermes(
+	action CreateIbcClientAction,
+	verbose bool,
+) {
+	cmd := tr.target.ExecCommand("hermes",
+		"create", "client",
+		"--host-chain", string(tr.testConfig.chainConfigs[action.ChainA].ChainId),
+		"--reference-chain", string(tr.testConfig.chainConfigs[action.ChainB].ChainId),
+		"--trusting-period", "1200000s",
+	)
+
+	cmdReader, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+	cmd.Stderr = cmd.Stdout
+
+	if err := cmd.Start(); err != nil {
+		log.Fatal(err)
+	}
+
+	scanner := bufio.NewScanner(cmdReader)
+
+	for scanner.Scan() {
+		out := scanner.Text()
+		if verbose {
+			fmt.Println("createIbcClientHermes: " + out)
+		}
+		if out == done {
+			break
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+type TransferIbcTokenAction struct {
+	Chain   ChainID
+	DstAddr string
+	From    ValidatorID
+	Amount  uint
+	Channel uint
+	Memo    string
+}
+
+func (tr Chain) transferIbcToken(
+	action TransferIbcTokenAction,
+	verbose bool,
+) {
+	// Note: to get error response reported back from this command '--gas auto' needs to be set.
+	gas := "auto"
+
+	transferCmd := fmt.Sprintf(
+		`%s tx ibc-transfer transfer transfer \
+%s %s %s --memo %q --from validator%s --chain-id %s \
+--home %s --node %s --gas %s --keyring-backend test -y -o json`,
+		tr.testConfig.chainConfigs[action.Chain].BinaryName,
+		"channel-"+fmt.Sprint(action.Channel),
+		action.DstAddr,
+		fmt.Sprint(action.Amount)+`stake`,
+		action.Memo,
+		action.From,
+		string(tr.testConfig.chainConfigs[action.Chain].ChainId),
+		tr.getValidatorHome(action.Chain, action.From),
+		tr.getValidatorNode(action.Chain, action.From),
+		gas,
+	)
+
+	cmd := tr.target.ExecCommand(
+		"/bin/bash", "-c",
+		transferCmd,
+	)
+
+	if verbose {
+		fmt.Println("transferIbcToken cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatalf("unexpected error during IBC token transfer: %s: %s", string(bz), err)
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.Chain, 2, 30*time.Second)
 }

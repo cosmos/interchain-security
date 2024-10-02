@@ -63,7 +63,7 @@ All missing minor release versions have been discontinued.
 | `v4.4.x` | January 24, 2025 |
 | `v5.0.x` | May 9, 2025      |
 | `v5.2.x` | May 9, 2025      |
-| `v6.0.x` | Sep 13, 2025     |
+| `v6.1.x` | Sep 13, 2025     |
 
 **Note**: Gaia versions on SDK 0.47 (i.e., `v15.0.x` -- `v18.1.x`) use a fork of Cosmos SDK (i.e., `v0.47.x-ics-lsm`) that contains the Liquid Staking Module (LSM).
 This means that these versions of Gaia require a fork of ICS.
@@ -82,7 +82,7 @@ Versions of Golang, IBC, Cosmos SDK and CometBFT used by ICS in the currently ac
 | [v4.4.0](https://github.com/cosmos/interchain-security/releases/tag/v4.4.0)         | 1.21   | v7.6.0 | v0.47.12         | v0.37.6  |                                     |
 | [v5.0.0](https://github.com/cosmos/interchain-security/releases/tag/v5.0.0)         | 1.21   | v8.1.0 | v0.50.4          | v0.38.5  |                                     |
 | [v5.2.0](https://github.com/cosmos/interchain-security/releases/tag/v5.2.0)         | 1.22   | v8.3.2 | v0.50.8          | v0.38.9  |                                     |
-| [v6.0.0](https://github.com/cosmos/interchain-security/releases/tag/v6.0.0)         | 1.22   | v8.5.0 | v0.50.9          | v0.38.11 |                                     |
+| [v6.1.0](https://github.com/cosmos/interchain-security/releases/tag/v6.1.0)         | 1.22   | v8.5.0 | v0.50.9          | v0.38.11 |                                     |
 
 **Note:** For a list of major ICS features available in the currently active releases, see [FEATURES.md](./FEATURES.md).
 
@@ -92,7 +92,7 @@ A MAJOR version of ICS will always be backwards compatible with the previous MAJ
 
 The following table indicates the compatibility of currently active releases:
 
-| Consumer | Provider | `v4.3.1-lsm` | `v5.2.0` | `v6.0.0` |
+| Consumer | Provider | `v4.3.1-lsm` | `v5.2.0` | `v6.1.0` |
 | -------- | -------- | ------------ | -------- | -------- |
 | `v4.0.0` |          | ✅           | ✅       | ✅       |
 | `v4.3.1` |          | ✅           | ✅       | ✅       |

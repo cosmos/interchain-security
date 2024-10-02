@@ -14,8 +14,8 @@ The relevant protocol specifications are available below:
 
 Standalone to consumer changeover procedure can roughly be separated into 4 parts:
 
-### 1. ConsumerAddition proposal submitted to the `provider` chain
-The proposal is equivalent to the "normal" ConsumerAddition proposal submitted by new consumer chains.
+### 1. `MsgCreateConsumer` submitted to the `provider` chain
+The `MsgCreateConsumer` is equivalent to the "normal" `MsgCreateConsumer` message submitted by new consumer chains.
 
 However, here are the most important notes and differences between a new consumer chain and a standalone chain performing a changeover:
 
@@ -77,7 +77,7 @@ If the parameter is not set, a new channel will be created.
 The standalone chain creates an upgrade proposal to include the `interchain-security/x/ccv/consumer` module.
 
 :::caution
-The upgrade height in the proposal should correspond to a height that is after the `spawn_time` in the consumer addition proposal submitted to the `provider` chain.
+The upgrade height in the proposal should correspond to a height that is after the `spawn_time` in the `MsgCreateConsumer` submitted to the `provider` chain.
 :::
 
 Otherwise, the upgrade is indistinguishable from a regular on-chain upgrade proposal.
@@ -137,9 +137,9 @@ This should include (at minimum):
 
 Example of such a repository can be found [here](https://github.com/hyphacoop/ics-testnets/tree/main/game-of-chains-2022/sputnik).
 
-## 3. Submit a ConsumerChainAddition Governance Proposal to the provider
+## 3. Submit a `MsgCreateConsumer` to the provider
 
-Before you submit a `ConsumerChainAddition` proposal, please provide a `spawn_time` that is **before** the `upgrade_height` of the upgrade that will introduce the `ccv module` to your chain.
+Before you submit a `MsgCreateConsumer` message, please provide a `spawn_time` that is **before** the `upgrade_height` of the upgrade that will introduce the `ccv module` to your chain.
 :::danger
 If the `spawn_time` happens after your `upgrade_height` the provider will not be able to communicate the new validator set to be used after the changeover.
 :::
@@ -150,22 +150,11 @@ Additionally, reach out to the community via the [forum](https://forum.cosmos.ne
 - [ ] determine consumer chain parameters to be put in the proposal
 - [ ] take note to include a link to your onboarding repository
 
-Example of a consumer chain addition proposal (compare with the [ConsumerAdditionProposal](./onboarding.md#3-submit-a-governance-proposal) in the ICS Provider Proposals section for chains that *launch* as consumers):
+Example of initialization parameters  (compare with the [those](./onboarding.md#3-submit-msgcreateconsumer-and-msgupdateconsumer-messages) for chains that *launch* as consumers):
 
 ```js
-// ConsumerAdditionProposal is a governance proposal on the provider chain to spawn a new consumer chain or add a standalone chain.
-// If it passes, then a subset (i.e., depends on `top_N` and on the power shaping parameters) of validators on the provider chain are expected
-// to validate the consumer chain at spawn time. It is recommended that spawn time occurs after the proposal end time and that it is 
-// scheduled to happen before the standalone chain upgrade that sill introduce the ccv module.
+// ConsumerInitializationParameters provided in MsgCreateConsumer or MsgUpdateConsumer
 {
-    // Title of the proposal
-    "title": "Changeover Standalone chain",
-    // Description of the proposal
-    // format the text as a .md file and include the file in your onboarding repository
-    "description": ".md description of your chain and all other relevant information",
-    // Proposed chain-id of the new consumer chain.
-    // Must be unique from all other consumer chain ids of the executing provider chain.
-    "chain_id": "standalone-1",
     // Initial height of new consumer chain.
     "initial_height" : {
         // must correspond to current revision number of standalone chain
@@ -175,7 +164,7 @@ Example of a consumer chain addition proposal (compare with the [ConsumerAdditio
         // must correspond to a height that is at least 1 block after the upgrade
         // that will add the `consumer` module to the standalone chain
         // e.g. "upgrade_height": 100 => "revision_height": 101
-        "revision_number": 1,
+        "revision_height": 101,
     },
     // Hash of the consumer chain genesis state without the consumer CCV module genesis params.
     // => not relevant for changeover procedure
@@ -212,30 +201,11 @@ Example of a consumer chain addition proposal (compare with the [ConsumerAdditio
     // it is most relevant for chains performing a standalone to consumer changeover
     // in order to maintain the existing ibc transfer channel
     "distribution_transmission_channel": "channel-123"  // NOTE: use existing transfer channel if available
-    // Corresponds to the percentage of validators that have to validate the chain under the Top N case.
-    // For example, 53 corresponds to a Top 53% chain, meaning that the top 53% provider validators by voting power
-    // have to validate the proposed consumer chain. top_N can either be 0 or any value in [50, 100].
-    // A chain can join with top_N == 0 as an Opt In chain, or with top_N ∈ [50, 100] as a Top N chain.
-    "top_N": 95,
-    // Corresponds to the maximum power (percentage-wise) a validator can have on the consumer chain. For instance, if
-    // `validators_power_cap` is set to 32, it means that no validator can have more than 32% of the voting power on the
-    // consumer chain. Note that this might not be feasible. For example, think of a consumer chain with only
-    // 5 validators and with `validators_power_cap` set to 10%. In such a scenario, at least one validator would need
-    // to have more than 20% of the total voting power. Therefore, `validators_power_cap` operates on a best-effort basis.
-    "validators_power_cap": 0,
-    // Corresponds to the maximum number of validators that can validate a consumer chain.
-    // Only applicable to Opt In chains. Setting `validator_set_cap` on a Top N chain is a no-op.
-    "validator_set_cap": 0,
-    // Corresponds to a list of provider consensus addresses of validators that are the ONLY ones that can validate
-    // the consumer chain.
-    "allowlist": [],
-    // Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
-    "denylist": []
 }
 ```
 
 :::info
-As seen in the `ConsumerAdditionProposal` example above, the changeover procedure can be used together with [Partial Set Security](../adrs/adr-015-partial-set-security.md).
+The changeover procedure can be used together with [Partial Set Security](../adrs/adr-015-partial-set-security.md).
 This means, that a standalone chain can choose to only be validated by some of the validators of the provider chain by setting `top_N` appropriately, or by
 additionally setting a validators-power cap, validator-set cap, etc. by using the [power-shaping parameters](../features/power-shaping.md).
 :::
@@ -244,7 +214,7 @@ additionally setting a validators-power cap, validator-set cap, etc. by using th
 
 This proposal should add the ccv `consumer` module to your chain.
 
-- [ ] proposal `upgrade_height` must happen after `spawn_time` in the `ConsumerAdditionProposal`
+- [ ] proposal `upgrade_height` must happen after `spawn_time` in the `MsgCreateConsumer`
 - [ ] advise validators about the exact procedure for your chain and point them to your onboarding repository
 
 
