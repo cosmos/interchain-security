@@ -910,14 +910,14 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidators() {
 			}
 
 			// allocate tokens
-			res := providerKeeper.AllocateTokensToConsumerValidators(
+			err = providerKeeper.AllocateTokensToConsumerValidators(
 				ctx,
 				consumerId,
 				tc.tokens,
 			)
 
-			// check that the expected result is returned
-			s.Require().Equal(tc.expAllocated, res)
+			// check that no error is returned
+			s.Require().NoError(err)
 
 			if !tc.expAllocated.Empty() {
 				// rewards are expected to be allocated evenly between validators
@@ -1026,14 +1026,14 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidatorsWithDifferentValida
 	}
 
 	// allocate tokens
-	res := providerKeeper.AllocateTokensToConsumerValidators(
+	err = providerKeeper.AllocateTokensToConsumerValidators(
 		ctx,
 		consumerId,
 		tokens,
 	)
 
 	// check that the expected result is returned
-	s.Require().Equal(expAllocated, res)
+	s.Require().NoError(err)
 
 	// rewards are expected to be allocated evenly between validators 3 and 4
 	rewardsPerVal := expAllocated.QuoDec(math.LegacyNewDec(int64(2)))
