@@ -16,6 +16,11 @@ Basically, any protocol or technology that can allow one blockchain to lend/shar
 
 Interchain Security is the Cosmos-specific category of Shared Security that uses IBC (Inter-Blockchain Communication).
 
+## Consumer Chain
+
+Chain that is secured by the validator set of the provider, instead of its own.
+Interchain Security allows a subset of the provider chain's validator set to validate blocks on the consumer chain.
+
 ## Replicated Security
 
 A particular protocol/implementation of Interchain Security that fully replicates the security and decentralization of a validator set across multiple blockchains. 
@@ -48,3 +53,7 @@ Chain that is secured by its own validator set. This chain does not participate 
 Chains that were not initially launched as consumers of Interchain Security can still participate in the protocol and leverage the economic security of the provider chain. 
 The process where a standalone chain transitions to being a replicated consumer chain is called the **changeover procedure** and is part of the ICS protocol. 
 After the changeover, the new consumer chain will retain all existing state, including the IBC clients, connections and channels already established by the chain.
+
+## Mesh Security
+
+A protocol built on IBC that allows delegators on a Cosmos chain to re-delegate their stake to validators in another chain's own validator set, using the original chain's token (which remains bonded on the original chain). For a deeper exploration of Mesh Security, see [Replicated vs. Mesh Security on the Informal Blog](https://informal.systems/blog/replicated-vs-mesh-security).

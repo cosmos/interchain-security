@@ -5,7 +5,7 @@ release/
 docs/tla/states/
 *.out
 vendor/
-build/
+/build/
 .vscode
 .idea
 __debug_*

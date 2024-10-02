@@ -8,8 +8,8 @@ sidebar_position: 2
 Sending and distributing rewards from consumer chains to the provider chain is handled by the [Reward Distribution sub-protocol](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/overview_and_basic_concepts.md#reward-distribution).
 
 Consumer chains have the option of sharing _a portion of_ their block rewards (inflation tokens and fees) with the provider chain as ICS rewards.
-These rewards are periodically sent from the consumer to the provider according to [consumer chain parameters](../introduction/params.md#reward-distribution-parameters) using an IBC transfer channel.
-This channel is created during consumer chain initialization, unless it is provided when creating a new consumer chain (see the [DistributionTransmissionChannel param](../introduction/params.md#distributiontransmissionchannel)). 
+These rewards are periodically sent from the consumer to the provider according to [consumer chain parameters](../build/modules/03-consumer.md#parameters) using an IBC transfer channel.
+This channel is created during consumer chain initialization, unless it is provided when creating a new consumer chain (see the [DistributionTransmissionChannel param](../build/modules/03-consumer.md#distributiontransmissionchannel)). 
 
 Providing an IBC transfer channel enables a consumer chain to re-use one of the existing channels to the provider for consumer chain rewards distribution. 
 This will preserve the `ibc denom` that may already be in use. 
