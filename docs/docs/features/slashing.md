@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 3
 ---
 
 # Consumer Initiated Slashing
@@ -23,7 +23,7 @@ For preventing malicious consumer chains from harming the provider, [slash throt
 ## Equivocation Infractions
 
 Equivocation infractions are reported by external agents (e.g., relayers) that can submit to the provider evidence of light client or double signing attacks observed on a consumer chain. 
-The evidence is submitted by sending `MsgSubmitConsumerMisbehaviour` or `MsgSubmitConsumerDoubleVoting` transactions to the provider. 
+The evidence is submitted by sending `MsgSubmitConsumerMisbehaviour` or `MsgSubmitConsumerDoubleVoting` messages to the provider. 
 When valid evidence is received, the malicious validators are slashed, jailed, and tombstoned on the provider.
 This is enabled through the _cryptographic verification of equivocation_ feature. 
 For more details, see [ADR-005](../adrs/adr-005-cryptographic-equivocation-verification.md) and [ADR-013](../adrs/adr-013-equivocation-slashing.md).
@@ -35,7 +35,7 @@ Below are two examples illustrating the process on Cosmos Hub.
 
 Use the following command to submit evidence of double signing attacks:
 ```bash
-gaiad tx provider submit-consumer-double-voting [path/to/evidence.json] [path/to/infraction_header.json] --from node0 --home ../node0 --chain-id $CID 
+gaiad tx provider submit-consumer-double-voting [consumer-id] [path/to/evidence.json] [path/to/infraction_header.json] --from node0 --home ../node0 --chain-id $CID 
 ```
 
 <details>
@@ -253,7 +253,7 @@ gaiad tx provider submit-consumer-double-voting [path/to/evidence.json] [path/to
 
 Use the following command to submit evidence of light client attacks:
 ```bash
-gaiad tx provider submit-consumer-misbehaviour [path/to/misbehaviour.json] --from node0 --home ../node0 --chain-id $CID
+gaiad tx provider submit-consumer-misbehaviour [consumer-id] [path/to/misbehaviour.json] --from node0 --home ../node0 --chain-id $CID
 ```
 
 <details>
