@@ -515,3 +515,6 @@ enum ConsumerPhase {
   // DELETED defines the phase in which the state of a stopped chain has been deleted.
   CONSUMER_PHASE_DELETED = 5;
 }
+
+// AllowlistedRewardDenoms corresponds to the denoms allowlisted by a specific consumer id
+message AllowlistedRewardDenoms { repeated string denoms = 1; }

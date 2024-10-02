@@ -192,29 +192,47 @@ func (im IBCMiddleware) OnRecvPacket(
 			sdk.NewAttribute(types.AttributeRewardAmount, data.Amount),
 		}...)
 
-		// verify that the coin's denom is a whitelisted consumer denom,
-		// and if so, adds it to the consumer chain rewards allocation,
-		// otherwise the prohibited coin just stays in the pool forever.
-		if im.keeper.ConsumerRewardDenomExists(ctx, coinDenom) {
-			alloc := im.keeper.GetConsumerRewardsAllocation(ctx, consumerId)
-			alloc.Rewards = alloc.Rewards.Add(
-				sdk.NewDecCoinsFromCoins(sdk.Coin{
-					Denom:  coinDenom,
-					Amount: coinAmt,
-				})...)
-			im.keeper.SetConsumerRewardsAllocation(ctx, consumerId, alloc)
-
-			logger.Info(
-				"scheduled ICS rewards to be distributed",
+		alloc, err := im.keeper.GetConsumerRewardsAllocationByDenom(ctx, consumerId, coinDenom)
+		if err != nil {
+			logger.Error(
+				"cannot get consumer rewards by denom",
 				"consumerId", consumerId,
-				"chainId", chainId,
+				"packet", packet.String(),
+				"fungibleTokenPacketData", data.String(),
 				"denom", coinDenom,
-				"amount", data.Amount,
+				"error", err.Error(),
 			)
-
-			// add RewardDistribution event attribute
-			eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeRewardDistribution, "scheduled"))
+			return ack
 		}
+
+		alloc.Rewards = alloc.Rewards.Add(
+			sdk.NewDecCoinFromCoin(sdk.Coin{
+				Denom:  coinDenom,
+				Amount: coinAmt,
+			}))
+		err = im.keeper.SetConsumerRewardsAllocationByDenom(ctx, consumerId, coinDenom, alloc)
+		if err != nil {
+			logger.Error(
+				"cannot set consumer rewards by denom",
+				"consumerId", consumerId,
+				"packet", packet.String(),
+				"fungibleTokenPacketData", data.String(),
+				"denom", coinDenom,
+				"error", err.Error(),
+			)
+			return ack
+		}
+
+		logger.Info(
+			"scheduled ICS rewards to be distributed",
+			"consumerId", consumerId,
+			"chainId", chainId,
+			"denom", coinDenom,
+			"amount", data.Amount,
+		)
+
+		// add RewardDistribution event attribute
+		eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeRewardDistribution, "scheduled"))
 
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
