@@ -331,6 +331,7 @@ func (k Keeper) DeletePreCCV(ctx sdk.Context) {
 
 func (k Keeper) SetInitialValSet(ctx sdk.Context, initialValSet []tmtypes.ValidatorUpdate) {
 	store := ctx.KVStore(k.storeKey)
+	// TODO it's not necessary to store the entire genesis state
 	initialValSetState := types.GenesisState{
 		Provider: ccv.ProviderInfo{InitialValSet: initialValSet},
 	}

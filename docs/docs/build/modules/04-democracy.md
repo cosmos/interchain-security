@@ -2,11 +2,9 @@
 sidebar_position: 5
 ---
 
-# Democracy modules
+# x/ccv/democracy
 
-This section is relevant for chains transitioning from a standalone chain and new consumer chains that require some functionality from the `x/staking` module.
-
-The democracy modules comprise `x/staking`, `x/distribution` and `x/governance` with overrides and extensions required for normal operation when participating in ICS.
+The democracy modules comprise `x/ccv/democracy/staking`, `x/ccv/democracy/distribution` and `x/ccv/democracy/governance` with overrides and extensions required for normal operation when participating in ICS.
 
 The modules are plug-and-play and only require small wiring changes to be enabled.
 
@@ -14,7 +12,7 @@ For a full integration check the `consumer-democracy` [example app](https://gith
 
 ## Staking
 
-The democracy staking module allows the cosmos-sdk `x/staking` module to be used alongside the interchain security `consumer` module.
+The `x/ccv/democracy/staking` module allows the cosmos-sdk `x/staking` module to be used alongside the interchain security `consumer` module.
 
 The module uses overrides that allow the full `x/staking` functionality with one notable difference - the staking module will no longer be used to provide the validator set to the consensus engine.
 
@@ -25,14 +23,14 @@ The validator set coming from the provider chain does not need to participate in
 
 #### Governators (aka. Governors)
 
-Validators registered with the `x/staking` module become __Governators__.
+Validators registered with the `x/ccv/democracy/staking` module become __Governators__.
 Unlike validators, governators are not required to run any chain infrastructure since they are not signing any blocks.
 However, governators retain a subset of the validator properties:
 
 - new governators can be created (via `MsgCreateValidator`)
 - governators can accept delegations
 - governators can vote on governance proposals (with their self stake and delegations)
-- governators earn block rewards -- the block rewards kept on the consumer (see the [ConsumerRedistributionFraction param](../introduction/params.md#consumerredistributionfraction)) are distributed to all governators and their delegators.
+- governators earn block rewards -- the block rewards kept on the consumer (see the [ConsumerRedistributionFraction param](../build/modules/03-consumer.md#consumerredistributionfraction)) are distributed to all governators and their delegators.
 
 With these changes, governators can become community advocates that can specialize in chain governance and they get rewarded for their participation the same way the validators do.
 Additionally, governators can choose to provide additional infrastructure such as RPC/API access points, archive nodes, indexers and similar software.
@@ -51,20 +49,20 @@ The `x/ccv/democracy/staking` module provides these `x/staking` overrides:
 // however, it returns no validator updates as validators are tracked via the
 // consumer chain's x/cvv/consumer module and so this module is not responsible for returning the initial validator set.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
-	var genesisState types.GenesisState
+    var genesisState types.GenesisState
 
-	cdc.MustUnmarshalJSON(data, &genesisState)
-	_ = am.keeper.InitGenesis(ctx, &genesisState)  // run staking InitGenesis
+    cdc.MustUnmarshalJSON(data, &genesisState)
+    _ = am.keeper.InitGenesis(ctx, &genesisState)  // run staking InitGenesis
 
-	return []abci.ValidatorUpdate{}  // do not return validator updates
+    return []abci.ValidatorUpdate{}  // do not return validator updates
 }
 
 // EndBlock delegates the EndBlock call to the underlying x/staking module.
 // However, no validator updates are returned as validators are tracked via the
 // consumer chain's x/cvv/consumer module.
 func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	_ = am.keeper.BlockValidatorUpdates(ctx)  // perform staking BlockValidatorUpdates
-	return []abci.ValidatorUpdate{}  // do not return validator updates
+    _ = am.keeper.BlockValidatorUpdates(ctx)  // perform staking BlockValidatorUpdates
+    return []abci.ValidatorUpdate{}  // do not return validator updates
 }
 ```
 
@@ -80,9 +78,9 @@ If some of your modules are returning validator updates please disable them whil
 
 ```diff
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
-	var genesisState types.GenesisState
+    var genesisState types.GenesisState
 
-	cdc.MustUnmarshalJSON(data, &genesisState)
+    cdc.MustUnmarshalJSON(data, &genesisState)
 -	return am.keeper.InitGenesis(ctx, &genesisState)
 + 	_ = am.keeper.InitGenesis(ctx, &genesisState)  // run InitGenesis but drop the result
 +	return []abci.ValidatorUpdate{}  // return empty validator updates
@@ -108,11 +106,11 @@ import (
 
 var (
     // replace the staking.AppModuleBasic
-	ModuleBasics = module.NewBasicManager(
-		auth.AppModuleBasic{},
-		genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
-		bank.AppModuleBasic{},
-		capability.AppModuleBasic{},
+    ModuleBasics = module.NewBasicManager(
+        auth.AppModuleBasic{},
+        genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
+        bank.AppModuleBasic{},
+        capability.AppModuleBasic{},
 -		sdkstaking.AppModuleBasic{},
 +		ccvstaking.AppModuleBasic{},  // replace sdkstaking
         ...
@@ -123,35 +121,35 @@ var (
 func NewApp(...) {
     ...
 
-	// use sdk StakingKeepeer
-	app.StakingKeeper = stakingkeeper.NewKeeper(
-		appCodec,
-		keys[stakingtypes.StoreKey],
-		app.AccountKeeper,
-		app.BankKeeper,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
+    // use sdk StakingKeepeer
+    app.StakingKeeper = stakingkeeper.NewKeeper(
+        appCodec,
+        keys[stakingtypes.StoreKey],
+        app.AccountKeeper,
+        app.BankKeeper,
+        authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+    )
 
-	app.MintKeeper = mintkeeper.NewKeeper(
-		appCodec,
-		keys[minttypes.StoreKey],
-		app.StakingKeeper,
-		app.AccountKeeper,
-		app.BankKeeper,
-		authtypes.FeeCollectorName,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
+    app.MintKeeper = mintkeeper.NewKeeper(
+        appCodec,
+        keys[minttypes.StoreKey],
+        app.StakingKeeper,
+        app.AccountKeeper,
+        app.BankKeeper,
+        authtypes.FeeCollectorName,
+        authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+    )
 
-	// no changes required for the distribution keeper
+    // no changes required for the distribution keeper
     app.DistrKeeper = distrkeeper.NewKeeper(
-		appCodec,
-		keys[distrtypes.StoreKey],
-		app.AccountKeeper,
-		app.BankKeeper,
-		app.StakingKeeper,  // keep StakingKeeper!
-		authtypes.FeeCollectorName,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
+        appCodec,
+        keys[distrtypes.StoreKey],
+        app.AccountKeeper,
+        app.BankKeeper,
+        app.StakingKeeper,  // keep StakingKeeper!
+        authtypes.FeeCollectorName,
+        authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+    )
 
 +   // pre-initialize ConsumerKeeper to satsfy ibckeeper.NewKeeper
 +	app.ConsumerKeeper = consumerkeeper.NewNonZeroKeeper(
@@ -193,28 +191,28 @@ func NewApp(...) {
 
 
 
-	// change the slashing keeper dependency
-	app.SlashingKeeper = slashingkeeper.NewKeeper(
-		appCodec,
-		legacyAmino,
-		keys[slashingtypes.StoreKey],
+    // change the slashing keeper dependency
+    app.SlashingKeeper = slashingkeeper.NewKeeper(
+        appCodec,
+        legacyAmino,
+        keys[slashingtypes.StoreKey],
 -		app.StakingKeeper,
 +		&app.ConsumerKeeper,  // ConsumerKeeper implements StakingKeeper interface
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
+        authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+    )
 
-	// register slashing module StakingHooks to the consumer keeper
+    // register slashing module StakingHooks to the consumer keeper
 +	app.ConsumerKeeper = *app.ConsumerKeeper.SetHooks(app.SlashingKeeper.Hooks())
 +	consumerModule := consumer.NewAppModule(app.ConsumerKeeper, app.GetSubspace(consumertypes.ModuleName))
 
-	    // register the module with module manager
+        // register the module with module manager
     // replace the x/staking module
-	app.MM = module.NewManager(
-		...
+    app.MM = module.NewManager(
+        ...
 -		sdkstaking.NewAppModule(appCodec, &app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 +		ccvstaking.NewAppModule(appCodec, *app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
-		...
-	)
+        ...
+    )
 }
 ```
 
@@ -234,107 +232,107 @@ Add new `AnteHandler` to your `app`.
 package ante
 
 import (
-	"fmt"
+    "fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+    sdk "github.com/cosmos/cosmos-sdk/types"
+    govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+    govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+    ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 
-	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+    "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+    "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 )
 
 type ForbiddenProposalsDecorator struct {
-	isLegacyProposalWhitelisted func(govv1beta1.Content) bool
-	isModuleWhiteList           func(string) bool
+    isLegacyProposalWhitelisted func(govv1beta1.Content) bool
+    isModuleWhiteList           func(string) bool
 }
 
 func NewForbiddenProposalsDecorator(
-	whiteListFn func(govv1beta1.Content) bool,
-	isModuleWhiteList func(string) bool,
+    whiteListFn func(govv1beta1.Content) bool,
+    isModuleWhiteList func(string) bool,
 ) ForbiddenProposalsDecorator {
-	return ForbiddenProposalsDecorator{
-		isLegacyProposalWhitelisted: whiteListFn,
-		isModuleWhiteList:           isModuleWhiteList,
-	}
+    return ForbiddenProposalsDecorator{
+        isLegacyProposalWhitelisted: whiteListFn,
+        isModuleWhiteList:           isModuleWhiteList,
+    }
 }
 
 func (decorator ForbiddenProposalsDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
-	currHeight := ctx.BlockHeight()
+    currHeight := ctx.BlockHeight()
 
-	for _, msg := range tx.GetMsgs() {
-		// if the message is MsgSubmitProposal, check if proposal is whitelisted
-		submitProposalMgs, ok := msg.(*govv1.MsgSubmitProposal)
-		if !ok {
-			continue
-		}
+    for _, msg := range tx.GetMsgs() {
+        // if the message is MsgSubmitProposal, check if proposal is whitelisted
+        submitProposalMgs, ok := msg.(*govv1.MsgSubmitProposal)
+        if !ok {
+            continue
+        }
 
-		messages := submitProposalMgs.GetMessages()
-		for _, message := range messages {
-			if sdkMsg, isLegacyProposal := message.GetCachedValue().(*govv1.MsgExecLegacyContent); isLegacyProposal {
-				// legacy gov proposal content
-				content, err := govv1.LegacyContentFromMessage(sdkMsg)
-				if err != nil {
-					return ctx, fmt.Errorf("tx contains invalid LegacyContent")
-				}
-				if !decorator.isLegacyProposalWhitelisted(content) {
-					return ctx, fmt.Errorf("tx contains unsupported proposal message types at height %d", currHeight)
-				}
-				continue
-			}
-			// not legacy gov proposal content and not whitelisted
-			if !decorator.isModuleWhiteList(message.TypeUrl) {
-				return ctx, fmt.Errorf("tx contains unsupported proposal message types at height %d", currHeight)
-			}
-		}
-	}
+        messages := submitProposalMgs.GetMessages()
+        for _, message := range messages {
+            if sdkMsg, isLegacyProposal := message.GetCachedValue().(*govv1.MsgExecLegacyContent); isLegacyProposal {
+                // legacy gov proposal content
+                content, err := govv1.LegacyContentFromMessage(sdkMsg)
+                if err != nil {
+                    return ctx, fmt.Errorf("tx contains invalid LegacyContent")
+                }
+                if !decorator.isLegacyProposalWhitelisted(content) {
+                    return ctx, fmt.Errorf("tx contains unsupported proposal message types at height %d", currHeight)
+                }
+                continue
+            }
+            // not legacy gov proposal content and not whitelisted
+            if !decorator.isModuleWhiteList(message.TypeUrl) {
+                return ctx, fmt.Errorf("tx contains unsupported proposal message types at height %d", currHeight)
+            }
+        }
+    }
 
-	return next(ctx, tx, simulate)
+    return next(ctx, tx, simulate)
 }
 
 func IsProposalWhitelisted(content v1beta1.Content) bool {
-	switch c := content.(type) {
-	case *proposal.ParameterChangeProposal:
-		return isLegacyParamChangeWhitelisted(c.Changes)
+    switch c := content.(type) {
+    case *proposal.ParameterChangeProposal:
+        return isLegacyParamChangeWhitelisted(c.Changes)
 
-	default:
-		return false
-	}
+    default:
+        return false
+    }
 }
 
 func isLegacyParamChangeWhitelisted(paramChanges []proposal.ParamChange) bool {
-	for _, paramChange := range paramChanges {
-		_, found := LegacyWhitelistedParams[legacyParamChangeKey{Subspace: paramChange.Subspace, Key: paramChange.Key}]
-		if !found {
-			return false
-		}
-	}
-	return true
+    for _, paramChange := range paramChanges {
+        _, found := LegacyWhitelistedParams[legacyParamChangeKey{Subspace: paramChange.Subspace, Key: paramChange.Key}]
+        if !found {
+            return false
+        }
+    }
+    return true
 }
 
 type legacyParamChangeKey struct {
-	Subspace, Key string
+    Subspace, Key string
 }
 
 // Legacy params can be whitelisted
 var LegacyWhitelistedParams = map[legacyParamChangeKey]struct{}{
-	{Subspace: ibctransfertypes.ModuleName, Key: "SendEnabled"}:    {},
-	{Subspace: ibctransfertypes.ModuleName, Key: "ReceiveEnabled"}: {},
+    {Subspace: ibctransfertypes.ModuleName, Key: "SendEnabled"}:    {},
+    {Subspace: ibctransfertypes.ModuleName, Key: "ReceiveEnabled"}: {},
 }
 
 // New proposal types can be whitelisted
 var WhiteListModule = map[string]struct{}{
-	"/cosmos.gov.v1.MsgUpdateParams":               {},
-	"/cosmos.bank.v1beta1.MsgUpdateParams":         {},
-	"/cosmos.staking.v1beta1.MsgUpdateParams":      {},
-	"/cosmos.distribution.v1beta1.MsgUpdateParams": {},
-	"/cosmos.mint.v1beta1.MsgUpdateParams":         {},
+    "/cosmos.gov.v1.MsgUpdateParams":               {},
+    "/cosmos.bank.v1beta1.MsgUpdateParams":         {},
+    "/cosmos.staking.v1beta1.MsgUpdateParams":      {},
+    "/cosmos.distribution.v1beta1.MsgUpdateParams": {},
+    "/cosmos.mint.v1beta1.MsgUpdateParams":         {},
 }
 
 func IsModuleWhiteList(typeUrl string) bool {
-	_, found := WhiteListModule[typeUrl]
-	return found
+    _, found := WhiteListModule[typeUrl]
+    return found
 }
 ```
 
@@ -345,7 +343,7 @@ Add the `AnteHandler` to the list of supported antehandlers:
 package app
 
 import (
-	...
+    ...
 
 +	democracyante "github.com/cosmos/interchain-security/v4/app/consumer-democracy/ante"
 +	consumerante "github.com/cosmos/interchain-security/v4/app/consumer/ante"
@@ -353,24 +351,24 @@ import (
 )
 
 type HandlerOptions struct {
-	ante.HandlerOptions
+    ante.HandlerOptions
 
-	IBCKeeper      *ibckeeper.Keeper
+    IBCKeeper      *ibckeeper.Keeper
 +	ConsumerKeeper ibcconsumerkeeper.Keeper
 }
 
 func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
-	....
+    ....
 
-	anteDecorators := []sdk.AnteDecorator{
+    anteDecorators := []sdk.AnteDecorator{
         ...
 +		consumerante.NewMsgFilterDecorator(options.ConsumerKeeper),
 +		consumerante.NewDisabledModulesDecorator("/cosmos.evidence", "/cosmos.slashing"),
 +		democracyante.NewForbiddenProposalsDecorator(IsProposalWhitelisted, IsModuleWhiteList),
-		...
-	}
+        ...
+    }
 
-	return sdk.ChainAnteDecorators(anteDecorators...), nil
+    return sdk.ChainAnteDecorators(anteDecorators...), nil
 }
 ```
 
@@ -382,9 +380,9 @@ package app
 import (
     ...
     sdkgov "github.com/cosmos/cosmos-sdk/x/gov"
-	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+    govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
+    govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+    govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
 +	ccvgov "github.com/cosmos/interchain-security/v4/x/ccv/democracy/governance"
 )
@@ -392,54 +390,54 @@ import (
 var (
 
     // use sdk governance module
-	ModuleBasics = module.NewBasicManager(
-		...
-		sdkgov.NewAppModuleBasic(
-			[]govclient.ProposalHandler{
-				paramsclient.ProposalHandler,
-				upgradeclient.LegacyProposalHandler,
-				upgradeclient.LegacyCancelProposalHandler,
-			},
-		),
+    ModuleBasics = module.NewBasicManager(
+        ...
+        sdkgov.NewAppModuleBasic(
+            []govclient.ProposalHandler{
+                paramsclient.ProposalHandler,
+                upgradeclient.LegacyProposalHandler,
+                upgradeclient.LegacyCancelProposalHandler,
+            },
+        ),
     )
 )
 
 func NewApp(...) {
     // retain sdk gov router and keeper registrations
-	sdkgovRouter := govv1beta1.NewRouter()
-	sdkgovRouter.
-		AddRoute(govtypes.RouterKey, govv1beta1.ProposalHandler).
-		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
-		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(&app.UpgradeKeeper))
-	govConfig := govtypes.DefaultConfig()
+    sdkgovRouter := govv1beta1.NewRouter()
+    sdkgovRouter.
+        AddRoute(govtypes.RouterKey, govv1beta1.ProposalHandler).
+        AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
+        AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(&app.UpgradeKeeper))
+    govConfig := govtypes.DefaultConfig()
 
-	app.GovKeeper = *govkeeper.NewKeeper(
-		appCodec,
-		keys[govtypes.StoreKey],
-		app.AccountKeeper,
-		app.BankKeeper,
-		app.StakingKeeper,
-		app.MsgServiceRouter(),
-		govConfig,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
+    app.GovKeeper = *govkeeper.NewKeeper(
+        appCodec,
+        keys[govtypes.StoreKey],
+        app.AccountKeeper,
+        app.BankKeeper,
+        app.StakingKeeper,
+        app.MsgServiceRouter(),
+        govConfig,
+        authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+    )
 
-	app.GovKeeper.SetLegacyRouter(sdkgovRouter)
+    app.GovKeeper.SetLegacyRouter(sdkgovRouter)
 
 
     // register the module with module manager
     // replace the x/gov module
-	app.MM = module.NewManager(
+    app.MM = module.NewManager(
 -		sdkgov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, IsProposalWhitelisted, app.GetSubspace(govtypes.ModuleName), IsModuleWhiteList),
 +		ccvgov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, IsProposalWhitelisted, app.GetSubspace(govtypes.ModuleName), IsModuleWhiteList),
-		...
+        ...
     )
 }
 ```
 
 ## Distribution
 
-The `democracy/distribution` module allows the consumer chain to send rewards to the provider chain while retaining the logic of the `x/distribution` module for internal reward distribution to governators and their delegators.
+The `x/ccv/democracy/distribution` module allows the consumer chain to send rewards to the provider chain while retaining the logic of the `x/distribution` module for internal reward distribution to governators and their delegators.
 
 ### How it works
 
@@ -456,7 +454,7 @@ Change the wiring in `app.go`
 import (
     ...
     distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+    distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
     sdkdistr "github.com/cosmos/cosmos-sdk/x/distribution"
 
 +   ccvdistr "github.com/cosmos/interchain-security/v4/x/ccv/democracy/distribution"
@@ -464,13 +462,13 @@ import (
 
 var (
     // replace sdk distribution AppModuleBasic
-	ModuleBasics = module.NewBasicManager(
-		auth.AppModuleBasic{},
-		genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
-		bank.AppModuleBasic{},
-		capability.AppModuleBasic{},
-		ccvstaking.AppModuleBasic{}, // make sure you first swap the staking keeper
-		mint.AppModuleBasic{},
+    ModuleBasics = module.NewBasicManager(
+        auth.AppModuleBasic{},
+        genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
+        bank.AppModuleBasic{},
+        capability.AppModuleBasic{},
+        ccvstaking.AppModuleBasic{}, // make sure you first swap the staking keeper
+        mint.AppModuleBasic{},
 -		sdkdistr.AppModuleBasic{},
 +		ccvdistr.AppModuleBasic{},
     )
@@ -479,24 +477,24 @@ var (
 func NewApp(...) {
     ....
 
-	app.DistrKeeper = distrkeeper.NewKeeper(
-		appCodec,
-		keys[distrtypes.StoreKey],
-		app.AccountKeeper,
-		app.BankKeeper,
-		app.StakingKeeper,  // connect to sdk StakingKeeper
-		consumertypes.ConsumerRedistributeName,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
+    app.DistrKeeper = distrkeeper.NewKeeper(
+        appCodec,
+        keys[distrtypes.StoreKey],
+        app.AccountKeeper,
+        app.BankKeeper,
+        app.StakingKeeper,  // connect to sdk StakingKeeper
+        consumertypes.ConsumerRedistributeName,
+        authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+    )
 
     // register with the module manager
-	app.MM = module.NewManager(
-		...
+    app.MM = module.NewManager(
+        ...
 -		sdkdistr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, *app.StakingKeeper, authtypes.FeeCollectorName,     app.GetSubspace(distrtypes.ModuleName)),
 
 +		ccvdistr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, *app.StakingKeeper, authtypes.FeeCollectorName, app.GetSubspace(distrtypes.ModuleName)),
-		ccvstaking.NewAppModule(appCodec, *app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
-		...
+        ccvstaking.NewAppModule(appCodec, *app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
+        ...
     )
 }
 ```
