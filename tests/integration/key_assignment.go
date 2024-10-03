@@ -31,6 +31,7 @@ import (
 // For each scenario where the key assignment does not produce an error,
 // the test also checks that VSCPackets are relayed to the consumer chain and that the clients on
 // the provider and consumer chain can be updated.
+// TODO: Remove panics when unexpected error occurs.
 func (s *CCVTestSuite) TestKeyAssignment() {
 	testCases := []struct {
 		name           string
@@ -106,7 +107,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				validator, consumerKey := generateNewConsumerKey(s, 0)
 				err := pk.AssignConsumerKey(s.providerCtx(), s.getFirstBundle().ConsumerId, validator, consumerKey)
 				if err != nil {
-					return err
+					panic(err)
 				}
 
 				// same key assignment, but different validator
@@ -129,7 +130,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				validator, consumerKey := generateNewConsumerKey(s, 0)
 				err := pk.AssignConsumerKey(s.providerCtx(), s.getFirstBundle().ConsumerId, validator, consumerKey)
 				if err != nil {
-					return err
+					panic(err)
 				}
 
 				// same key assignment, but different validator
@@ -175,7 +176,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 				validator, consumerKey := generateNewConsumerKey(s, 0)
 				err := pk.AssignConsumerKey(s.providerCtx(), s.getFirstBundle().ConsumerId, validator, consumerKey)
 				if err != nil {
-					return err
+					panic(err)
 				}
 
 				s.nextEpoch()
