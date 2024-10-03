@@ -459,6 +459,12 @@ func TestGetConsumerChain(t *testing.T) {
 
 	metadataLists := []types.ConsumerMetadata{}
 
+	allowlistedRewardDenoms := []*types.AllowlistedRewardDenoms{
+		{}, // no denoms
+		{Denoms: []string{"ibc/1", "ibc/2"}},
+		{Denoms: []string{"ibc/3", "ibc/4", "ibc/5"}},
+		{Denoms: []string{"ibc/6"}}}
+
 	expectedGetAllOrder := []types.Chain{}
 	for i, consumerID := range consumerIDs {
 		pk.SetConsumerChainId(ctx, consumerID, chainIDs[i])
@@ -493,24 +499,27 @@ func TestGetConsumerChain(t *testing.T) {
 		metadataLists = append(metadataLists, types.ConsumerMetadata{Name: chainIDs[i]})
 		pk.SetConsumerMetadata(ctx, consumerID, metadataLists[i])
 
+		pk.SetAllowlistedRewardDenoms(ctx, consumerID, allowlistedRewardDenoms[i].Denoms)
+
 		phase := types.ConsumerPhase(int32(i + 1))
 		pk.SetConsumerPhase(ctx, consumerID, phase)
 
 		expectedGetAllOrder = append(expectedGetAllOrder,
 			types.Chain{
-				ChainId:            chainIDs[i],
-				ClientId:           clientID,
-				Top_N:              topN,
-				MinPowerInTop_N:    expectedMinPowerInTopNs[i],
-				ValidatorSetCap:    validatorSetCaps[i],
-				ValidatorsPowerCap: validatorPowerCaps[i],
-				Allowlist:          strAllowlist,
-				Denylist:           strDenylist,
-				Phase:              phase.String(),
-				Metadata:           metadataLists[i],
-				AllowInactiveVals:  allowInactiveVals[i],
-				MinStake:           minStakes[i].Uint64(),
-				ConsumerId:         consumerIDs[i],
+				ChainId:                 chainIDs[i],
+				ClientId:                clientID,
+				Top_N:                   topN,
+				MinPowerInTop_N:         expectedMinPowerInTopNs[i],
+				ValidatorSetCap:         validatorSetCaps[i],
+				ValidatorsPowerCap:      validatorPowerCaps[i],
+				Allowlist:               strAllowlist,
+				Denylist:                strDenylist,
+				Phase:                   phase.String(),
+				Metadata:                metadataLists[i],
+				AllowInactiveVals:       allowInactiveVals[i],
+				MinStake:                minStakes[i].Uint64(),
+				ConsumerId:              consumerIDs[i],
+				AllowlistedRewardDenoms: allowlistedRewardDenoms[i],
 			})
 	}
 
@@ -647,15 +656,16 @@ func TestQueryConsumerChains(t *testing.T) {
 
 		pk.SetConsumerPhase(ctx, consumerId, phases[i])
 		c := types.Chain{
-			ChainId:            chainID,
-			MinPowerInTop_N:    -1,
-			ValidatorsPowerCap: 0,
-			ValidatorSetCap:    0,
-			Allowlist:          []string{},
-			Denylist:           []string{},
-			Phase:              phases[i].String(),
-			Metadata:           metadata,
-			ConsumerId:         consumerId,
+			ChainId:                 chainID,
+			MinPowerInTop_N:         -1,
+			ValidatorsPowerCap:      0,
+			ValidatorSetCap:         0,
+			Allowlist:               []string{},
+			Denylist:                []string{},
+			Phase:                   phases[i].String(),
+			Metadata:                metadata,
+			ConsumerId:              consumerId,
+			AllowlistedRewardDenoms: &types.AllowlistedRewardDenoms{Denoms: []string{}},
 		}
 		consumerIds[i] = consumerId
 		consumers[i] = &c

@@ -114,22 +114,31 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		strDenylist[i] = addr.String()
 	}
 
-	metadata, _ := k.GetConsumerMetadata(ctx, consumerId)
+	metadata, err := k.GetConsumerMetadata(ctx, consumerId)
+	if err != nil {
+		return types.Chain{}, fmt.Errorf("cannot find metadata (%s): %s", consumerId, err.Error())
+	}
+
+	allowlistedRewardDenoms, err := k.GetAllowlistedRewardDenoms(ctx, consumerId)
+	if err != nil {
+		return types.Chain{}, fmt.Errorf("cannot find allowlisted reward denoms (%s): %s", consumerId, err.Error())
+	}
 
 	return types.Chain{
-		ChainId:            chainID,
-		ClientId:           clientID,
-		Top_N:              powerShapingParameters.Top_N,
-		MinPowerInTop_N:    minPowerInTopN,
-		ValidatorSetCap:    powerShapingParameters.ValidatorSetCap,
-		ValidatorsPowerCap: powerShapingParameters.ValidatorsPowerCap,
-		Allowlist:          strAllowlist,
-		Denylist:           strDenylist,
-		Phase:              k.GetConsumerPhase(ctx, consumerId).String(),
-		Metadata:           metadata,
-		AllowInactiveVals:  powerShapingParameters.AllowInactiveVals,
-		MinStake:           powerShapingParameters.MinStake,
-		ConsumerId:         consumerId,
+		ChainId:                 chainID,
+		ClientId:                clientID,
+		Top_N:                   powerShapingParameters.Top_N,
+		MinPowerInTop_N:         minPowerInTopN,
+		ValidatorSetCap:         powerShapingParameters.ValidatorSetCap,
+		ValidatorsPowerCap:      powerShapingParameters.ValidatorsPowerCap,
+		Allowlist:               strAllowlist,
+		Denylist:                strDenylist,
+		Phase:                   k.GetConsumerPhase(ctx, consumerId).String(),
+		Metadata:                metadata,
+		AllowInactiveVals:       powerShapingParameters.AllowInactiveVals,
+		MinStake:                powerShapingParameters.MinStake,
+		ConsumerId:              consumerId,
+		AllowlistedRewardDenoms: &types.AllowlistedRewardDenoms{Denoms: allowlistedRewardDenoms},
 	}, nil
 }
 

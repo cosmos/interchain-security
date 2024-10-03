@@ -280,6 +280,7 @@ func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
 // NewMsgCreateConsumer creates a new MsgCreateConsumer instance
 func NewMsgCreateConsumer(submitter, chainId string, metadata ConsumerMetadata,
 	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters,
+	allowlistedRewardDenoms *AllowlistedRewardDenoms,
 ) (*MsgCreateConsumer, error) {
 	return &MsgCreateConsumer{
 		Submitter:                submitter,
@@ -287,6 +288,7 @@ func NewMsgCreateConsumer(submitter, chainId string, metadata ConsumerMetadata,
 		Metadata:                 metadata,
 		InitializationParameters: initializationParameters,
 		PowerShapingParameters:   powerShapingParameters,
+		AllowlistedRewardDenoms:  allowlistedRewardDenoms,
 	}, nil
 }
 
@@ -332,6 +334,7 @@ func (msg MsgCreateConsumer) ValidateBasic() error {
 // NewMsgUpdateConsumer creates a new MsgUpdateConsumer instance
 func NewMsgUpdateConsumer(owner, consumerId, ownerAddress string, metadata *ConsumerMetadata,
 	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters,
+	allowlistedRewardDenoms *AllowlistedRewardDenoms,
 ) (*MsgUpdateConsumer, error) {
 	return &MsgUpdateConsumer{
 		Owner:                    owner,
@@ -340,6 +343,7 @@ func NewMsgUpdateConsumer(owner, consumerId, ownerAddress string, metadata *Cons
 		Metadata:                 metadata,
 		InitializationParameters: initializationParameters,
 		PowerShapingParameters:   powerShapingParameters,
+		AllowlistedRewardDenoms:  allowlistedRewardDenoms,
 	}, nil
 }
 
