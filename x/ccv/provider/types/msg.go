@@ -3,6 +3,7 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	"strings"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
@@ -328,6 +329,12 @@ func (msg MsgCreateConsumer) ValidateBasic() error {
 		}
 	}
 
+	if msg.AllowlistedRewardDenoms != nil {
+		if err := ValidateAllowlistedRewardDenoms(*msg.AllowlistedRewardDenoms); err != nil {
+			return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "AllowlistedRewardDenoms: %s", err.Error())
+		}
+	}
+
 	return nil
 }
 
@@ -370,6 +377,12 @@ func (msg MsgUpdateConsumer) ValidateBasic() error {
 	if msg.PowerShapingParameters != nil {
 		if err := ValidatePowerShapingParameters(*msg.PowerShapingParameters); err != nil {
 			return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "PowerShapingParameters: %s", err.Error())
+		}
+	}
+
+	if msg.AllowlistedRewardDenoms != nil {
+		if err := ValidateAllowlistedRewardDenoms(*msg.AllowlistedRewardDenoms); err != nil {
+			return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "AllowlistedRewardDenoms: %s", err.Error())
 		}
 	}
 
@@ -515,6 +528,20 @@ func ValidatePowerShapingParameters(powerShapingParameters PowerShapingParameter
 		return errorsmod.Wrapf(ErrInvalidPowerShapingParameters, "Denylist: %s", err.Error())
 	}
 
+	return nil
+}
+
+// ValidateAllowlistedRewardDenoms validates the provided allowlisted reward denoms
+func ValidateAllowlistedRewardDenoms(allowlistedRewardDenoms AllowlistedRewardDenoms) error {
+	if len(allowlistedRewardDenoms.Denoms) > MaxAllowlistedRewardDenomsPerChain {
+		return errorsmod.Wrapf(ErrInvalidAllowlistedRewardDenoms, "More than %d denoms", MaxAllowlistedRewardDenomsPerChain)
+	}
+
+	for _, denom := range allowlistedRewardDenoms.Denoms {
+		if err := types.ValidateIBCDenom(denom); err != nil {
+			return errorsmod.Wrapf(ErrInvalidAllowlistedRewardDenoms, "Invalid denom (%s): %s", denom, err.Error())
+		}
+	}
 	return nil
 }
 
