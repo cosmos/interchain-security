@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
 	errorsmod "cosmossdk.io/errors"
@@ -138,9 +139,6 @@ func (k Keeper) DeleteConsumerRewardsAllocationByDenom(ctx sdk.Context, consumer
 
 // AllocateConsumerRewards allocates the given rewards to provider consumer chain with the given consumer id
 func (k Keeper) AllocateConsumerRewards(ctx sdk.Context, consumerId string, alloc types.ConsumerRewardsAllocation) (types.ConsumerRewardsAllocation, error) {
-	if alloc.Rewards.IsZero() {
-		return types.ConsumerRewardsAllocation{}, nil
-	}
 
 	chainId, err := k.GetConsumerChainId(ctx, consumerId)
 	if err != nil {
