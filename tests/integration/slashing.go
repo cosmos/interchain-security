@@ -279,6 +279,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
 // * After the correct channelID is added to the packet, a panic shouldn't occur anymore.
 // * Create an instance of SlashPacketData and then verify correct processing and error handling
 // for slashing packets received by the provider chain.
+// TODO: Move to unit tests.
 func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 	firstBundle := suite.getFirstBundle()
@@ -507,6 +508,7 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 // * Send the slash packets and check that the outstanding downtime flags are correctly set for validators that were slashed
 // for downtime infractions.
 // * Ensure that the pending data packets queue is empty.
+// TODO: Move to unit tests.
 func (suite *CCVTestSuite) TestQueueAndSendSlashPacket() {
 	suite.SetupCCVChannel(suite.path)
 
