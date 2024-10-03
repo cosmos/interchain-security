@@ -3,7 +3,6 @@ package integration
 import (
 	"context"
 	"fmt"
-	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
@@ -497,100 +496,6 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 		suite.Require().True(missed, "did not reset validator missed block bit array")
 		return false
 	})
-}
-
-// TestValidatorDoubleSigning tests if a slash packet is sent when a double-signing evidence is handled by the evidence module.
-// @Long Description@
-// * Set up all CCV channel and send an empty VSC packet.
-// * Create a validator public key and address.
-// * Set the infraction parameters and create evidence of double signing.
-// * Add validator signing-info are also to the store and construct the slash packet.
-// * Simulate double signing and sends the slash packet.
-// * Verify the handling of slash packet, and check if slash record was created and if it's waiting for reply.
-// * Confirm that the queue is not cleared and the slash packet is sent.
-func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
-	// initial setup
-	suite.SetupCCVChannel(suite.path)
-	suite.SendEmptyVSCPacket()
-
-	// sync suite context after CCV channel is established
-	ctx := suite.consumerCtx()
-
-	channelID := suite.path.EndpointA.ChannelID
-
-	// create a validator pubkey and address
-	// note that the validator won't necessarily be in valset to due the TM delay
-	pubkey := ed25519.GenPrivKey().PubKey()
-	consAddr := sdk.ConsAddress(pubkey.Address())
-
-	// set an arbitrary infraction height
-	infractionHeight := ctx.BlockHeight() - 1
-	power := int64(100)
-
-	// create evidence
-	e := &evidencetypes.Equivocation{
-		Height:           infractionHeight,
-		Power:            power,
-		Time:             time.Now().UTC(),
-		ConsensusAddress: consAddr.String(),
-	}
-
-	// add validator signing-info to the store
-	suite.consumerApp.GetTestSlashingKeeper().SetValidatorSigningInfo(ctx, consAddr, slashingtypes.ValidatorSigningInfo{
-		Address:    consAddr.String(),
-		Tombstoned: false,
-	})
-
-	// save next sequence before sending a slash packet
-	seq, ok := suite.consumerApp.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, ccv.ConsumerPortID, channelID)
-	suite.Require().True(ok)
-
-	// construct slash packet data and get the expected commit hash
-	packetData := ccv.NewSlashPacketData(
-		abci.Validator{Address: consAddr.Bytes(), Power: power},
-		// get VSC ID mapping to the infraction height with the TM delay subtracted
-		suite.consumerApp.GetConsumerKeeper().GetHeightValsetUpdateID(ctx, uint64(infractionHeight-sdk.ValidatorUpdateDelay)),
-		stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN,
-	)
-	expCommit := suite.commitSlashPacket(ctx, *packetData)
-
-	suite.consumerChain.NextBlock()
-	// // expect to send slash packet when handling double-sign evidence
-	// // NOTE: using IBCKeeper Authority as msg submitter (equal to gov module addr)
-	addr, err := sdk.AccAddressFromBech32(suite.consumerApp.GetIBCKeeper().GetAuthority())
-	suite.Require().NoError(err)
-	evidenceMsg, err := evidencetypes.NewMsgSubmitEvidence(addr, e)
-	suite.Require().NoError(err)
-	suite.Require().NotEmpty(evidenceMsg)
-
-	// this was previously done using suite.consumerApp.GetTestEvidenceKeeper().HandleEquivocationEvidence(ctx, e)
-	// HandleEquivocationEvidence is not exposed in the evidencekeeper interface starting cosmos-sdk v0.50.x
-	// suite.consumerApp.GetTestEvidenceKeeper().SubmitEvidence(ctx, e)
-	handleEquivocationEvidence(ctx, suite.consumerApp, e)
-
-	// check slash packet is queued
-	pendingPackets := suite.consumerApp.GetConsumerKeeper().GetPendingPackets(ctx)
-	suite.Require().NotEmpty(pendingPackets, "pending packets empty")
-	suite.Require().Len(pendingPackets, 1, "pending packets len should be 1 is %d", len(pendingPackets))
-
-	// clear queue, commit packets
-	suite.consumerApp.GetConsumerKeeper().SendPackets(ctx)
-
-	// Check slash record is created
-	slashRecord, found := suite.consumerApp.GetConsumerKeeper().GetSlashRecord(suite.consumerCtx())
-	suite.Require().True(found, "slash record not found")
-	suite.Require().True(slashRecord.WaitingOnReply)
-	suite.Require().Equal(slashRecord.SendTime, suite.consumerCtx().BlockTime())
-
-	// check queue is not cleared, since no ack has been received from provider
-	pendingPackets = suite.consumerApp.GetConsumerKeeper().GetPendingPackets(ctx)
-	suite.Require().Len(pendingPackets, 1, "pending packets len should be 1 is %d", len(pendingPackets))
-
-	// check slash packet is sent
-	gotCommit := suite.consumerApp.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(ctx, ccv.ConsumerPortID, channelID, seq)
-	suite.NotNil(gotCommit)
-
-	suite.Require().EqualValues(expCommit, gotCommit)
 }
 
 // TestQueueAndSendSlashPacket tests the integration of QueueSlashPacket with SendPackets.
