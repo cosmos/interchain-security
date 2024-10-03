@@ -362,7 +362,7 @@ message MsgCreateConsumer {
   PowerShapingParameters power_shaping_parameters = 5;
 
   // allowlisted reward denoms of the consumer
-  AllowlistedRewardDenoms allowlisted_reward_denoms = 7;
+  AllowlistedRewardDenoms allowlisted_reward_denoms = 6;
 }
 
 // MsgCreateConsumerResponse defines response type for MsgCreateConsumer

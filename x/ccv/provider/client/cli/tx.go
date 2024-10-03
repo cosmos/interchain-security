@@ -256,7 +256,9 @@ where create_consumer.json has the following structure:
     "min_stake": "0",
     "allow_inactive_vals": false
   },
-  "allowlisted_reward_denoms": ["ibc/..", "ibc/..."]
+  "allowlisted_reward_denoms": {
+    "denoms": ["ibc/...", "ibc/..."]
+  }
 }
 
 Note that both 'chain_id' and 'metadata' are mandatory;
@@ -352,7 +354,9 @@ where update_consumer.json has the following structure:
     "min_stake": "0",
     "allow_inactive_vals": false
    },
-  "allowlisted_reward_denoms": ["ibc/..", "ibc/..."]
+  "allowlisted_reward_denoms": {
+    "denoms": ["ibc/...", "ibc/..."]
+  }
 }
 
 Note that only 'consumer_id' is mandatory. The others are optional.

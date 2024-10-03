@@ -259,7 +259,7 @@ type Chain struct {
 	// Corresponds to whether inactive validators are allowed to validate the consumer chain.
 	AllowInactiveVals bool   `protobuf:"varint,12,opt,name=allow_inactive_vals,json=allowInactiveVals,proto3" json:"allow_inactive_vals,omitempty"`
 	ConsumerId        string `protobuf:"bytes,13,opt,name=consumer_id,json=consumerId,proto3" json:"consumer_id,omitempty"`
-	// the reward denoms allowlisted by this query
+	// the reward denoms allowlisted by this consumer chain
 	AllowlistedRewardDenoms *AllowlistedRewardDenoms `protobuf:"bytes,14,opt,name=allowlisted_reward_denoms,json=allowlistedRewardDenoms,proto3" json:"allowlisted_reward_denoms,omitempty"`
 }
 

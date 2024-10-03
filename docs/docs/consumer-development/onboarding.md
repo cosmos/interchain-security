@@ -130,6 +130,14 @@ Example of power-shaping parameters:
 }
 ```
 
+Example of allowlisted reward denoms:
+```js
+// AllowlistedRewardDenoms provided in MsgCreateConsumer or MsgUpdateConsumer
+{
+    "denoms": ["ibc/0025F8A87464A471E66B234C4F93AEC5B4DA3D42D7986451A059273426290DD5", "ibc/054892D6BB43AF8B93AAC28AA5FD7019D2C59A15DAFD6F45C1FA2BF9BDA22454"]
+}
+```
+
 ## 4. Launch
 
 The consumer chain starts after at least 66.67% of its voting power comes online.
