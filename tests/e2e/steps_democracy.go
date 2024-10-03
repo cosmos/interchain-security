@@ -265,15 +265,17 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 							ValidatorID("bob"):   false,
 							ValidatorID("carol"): false,
 						},
-						IsIncrementalReward: true,
-						Denom:               "stake",
+						IsIncrementalReward: false,
+						Denom:               consumerRewardDenoms[1],
 					},
 				},
 			},
 		},
 		// Transfer tokens from the consumer to the consumer reward pool
 		// of the provider via the transfer channel-2 using the correct memo
-		// to identify the consumer
+		// to identify the consumer.
+		// Note that in this case, the consumer reward denoms aren't filtered by the `provider_reward_denoms`
+		// consumer parameter since the rewards are sent without going through the consumer distribution logic.
 		{
 			Action: TransferIbcTokenAction{
 				Chain:   ChainID(consumerName),
@@ -298,9 +300,11 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 				ChainID("provi"): ChainState{
 					Rewards: &Rewards{
 						IsRewarded: map[ValidatorID]bool{
-							ValidatorID("alice"): expectRegisteredRewardDistribution,
-							ValidatorID("bob"):   expectRegisteredRewardDistribution,
-							ValidatorID("carol"): expectRegisteredRewardDistribution,
+							// rewards should be distributed regardless
+							// of the `provider_reward_denoms` consumer parameter
+							ValidatorID("alice"): true,
+							ValidatorID("bob"):   true,
+							ValidatorID("carol"): true,
 						},
 						IsIncrementalReward: false,
 						Denom:               consumerRewardDenoms[1],

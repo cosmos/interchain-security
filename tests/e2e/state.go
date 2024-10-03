@@ -289,9 +289,6 @@ func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 	denomCondition := fmt.Sprintf(`total.#(%%"*%s*")`, denom)
 	amount := strings.Split(gjson.Get(string(bz), denomCondition).String(), denom)[0]
 
-	fmt.Println("denomCondition:", denomCondition)
-	fmt.Println("json:", gjson.Parse(string(bz)))
-
 	res := float64(0)
 	if amount != "" {
 		res, err = strconv.ParseFloat(amount, 64)
@@ -299,8 +296,6 @@ func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 			log.Fatal("failed parsing consumer reward:", err)
 		}
 	}
-
-	fmt.Println("res", res)
 
 	return res
 }
