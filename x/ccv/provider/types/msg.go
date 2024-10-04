@@ -3,6 +3,7 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	"strings"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
@@ -280,6 +281,7 @@ func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
 // NewMsgCreateConsumer creates a new MsgCreateConsumer instance
 func NewMsgCreateConsumer(submitter, chainId string, metadata ConsumerMetadata,
 	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters,
+	allowlistedRewardDenoms *AllowlistedRewardDenoms,
 ) (*MsgCreateConsumer, error) {
 	return &MsgCreateConsumer{
 		Submitter:                submitter,
@@ -287,6 +289,7 @@ func NewMsgCreateConsumer(submitter, chainId string, metadata ConsumerMetadata,
 		Metadata:                 metadata,
 		InitializationParameters: initializationParameters,
 		PowerShapingParameters:   powerShapingParameters,
+		AllowlistedRewardDenoms:  allowlistedRewardDenoms,
 	}, nil
 }
 
@@ -326,12 +329,19 @@ func (msg MsgCreateConsumer) ValidateBasic() error {
 		}
 	}
 
+	if msg.AllowlistedRewardDenoms != nil {
+		if err := ValidateAllowlistedRewardDenoms(*msg.AllowlistedRewardDenoms); err != nil {
+			return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "AllowlistedRewardDenoms: %s", err.Error())
+		}
+	}
+
 	return nil
 }
 
 // NewMsgUpdateConsumer creates a new MsgUpdateConsumer instance
 func NewMsgUpdateConsumer(owner, consumerId, ownerAddress string, metadata *ConsumerMetadata,
 	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters,
+	allowlistedRewardDenoms *AllowlistedRewardDenoms,
 ) (*MsgUpdateConsumer, error) {
 	return &MsgUpdateConsumer{
 		Owner:                    owner,
@@ -340,6 +350,7 @@ func NewMsgUpdateConsumer(owner, consumerId, ownerAddress string, metadata *Cons
 		Metadata:                 metadata,
 		InitializationParameters: initializationParameters,
 		PowerShapingParameters:   powerShapingParameters,
+		AllowlistedRewardDenoms:  allowlistedRewardDenoms,
 	}, nil
 }
 
@@ -366,6 +377,12 @@ func (msg MsgUpdateConsumer) ValidateBasic() error {
 	if msg.PowerShapingParameters != nil {
 		if err := ValidatePowerShapingParameters(*msg.PowerShapingParameters); err != nil {
 			return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "PowerShapingParameters: %s", err.Error())
+		}
+	}
+
+	if msg.AllowlistedRewardDenoms != nil {
+		if err := ValidateAllowlistedRewardDenoms(*msg.AllowlistedRewardDenoms); err != nil {
+			return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "AllowlistedRewardDenoms: %s", err.Error())
 		}
 	}
 
@@ -511,6 +528,20 @@ func ValidatePowerShapingParameters(powerShapingParameters PowerShapingParameter
 		return errorsmod.Wrapf(ErrInvalidPowerShapingParameters, "Denylist: %s", err.Error())
 	}
 
+	return nil
+}
+
+// ValidateAllowlistedRewardDenoms validates the provided allowlisted reward denoms
+func ValidateAllowlistedRewardDenoms(allowlistedRewardDenoms AllowlistedRewardDenoms) error {
+	if len(allowlistedRewardDenoms.Denoms) > MaxAllowlistedRewardDenomsPerChain {
+		return errorsmod.Wrapf(ErrInvalidAllowlistedRewardDenoms, "More than %d denoms", MaxAllowlistedRewardDenomsPerChain)
+	}
+
+	for _, denom := range allowlistedRewardDenoms.Denoms {
+		if err := types.ValidateIBCDenom(denom); err != nil {
+			return errorsmod.Wrapf(ErrInvalidAllowlistedRewardDenoms, "Invalid denom (%s): %s", denom, err.Error())
+		}
+	}
 	return nil
 }
 

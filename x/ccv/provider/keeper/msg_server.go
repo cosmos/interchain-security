@@ -415,11 +415,6 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 	}
 
 	if msg.AllowlistedRewardDenoms != nil {
-		if len(msg.AllowlistedRewardDenoms.Denoms) > types.MaxAllowlistedRewardDenomsPerChain {
-			return &resp, errorsmod.Wrapf(types.ErrInvalidAllowlistedRewardDenoms,
-				fmt.Sprintf("a consumer chain cannot allowlist more than %d reward denoms", types.MaxAllowlistedRewardDenomsPerChain))
-		}
-
 		err := k.UpdateAllowlistedRewardDenoms(ctx, consumerId, msg.AllowlistedRewardDenoms.Denoms)
 		if err != nil {
 			return &resp, errorsmod.Wrapf(types.ErrInvalidAllowlistedRewardDenoms,
@@ -603,11 +598,6 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	}
 
 	if msg.AllowlistedRewardDenoms != nil {
-		if len(msg.AllowlistedRewardDenoms.Denoms) > types.MaxAllowlistedRewardDenomsPerChain {
-			return &resp, errorsmod.Wrapf(types.ErrInvalidAllowlistedRewardDenoms,
-				fmt.Sprintf("a consumer chain cannot allowlist more than %d reward denoms", types.MaxAllowlistedRewardDenomsPerChain))
-		}
-
 		if err := k.UpdateAllowlistedRewardDenoms(ctx, consumerId, msg.AllowlistedRewardDenoms.Denoms); err != nil {
 			return &resp, errorsmod.Wrapf(types.ErrInvalidAllowlistedRewardDenoms,
 				"cannot update allowlisted reward denoms: %s", err.Error())

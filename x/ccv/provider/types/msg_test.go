@@ -471,7 +471,7 @@ func TestMsgCreateConsumerValidateBasic(t *testing.T) {
 
 	for _, tc := range testCases {
 		validConsumerMetadata := types.ConsumerMetadata{Name: "name", Description: "description", Metadata: "metadata"}
-		msg, err := types.NewMsgCreateConsumer("submitter", tc.chainId, validConsumerMetadata, nil, tc.powerShapingParameters)
+		msg, err := types.NewMsgCreateConsumer("submitter", tc.chainId, validConsumerMetadata, nil, tc.powerShapingParameters, nil)
 		require.NoError(t, err)
 		err = msg.ValidateBasic()
 		if tc.expPass {
@@ -546,7 +546,7 @@ func TestMsgUpdateConsumerValidateBasic(t *testing.T) {
 
 	for _, tc := range testCases {
 		// TODO (PERMISSIONLESS) add more tests
-		msg, _ := types.NewMsgUpdateConsumer("", "0", "cosmos1p3ucd3ptpw902fluyjzhq3ffgq4ntddac9sa3s", nil, nil, &tc.powerShapingParameters)
+		msg, _ := types.NewMsgUpdateConsumer("", "0", "cosmos1p3ucd3ptpw902fluyjzhq3ffgq4ntddac9sa3s", nil, nil, &tc.powerShapingParameters, nil)
 		err := msg.ValidateBasic()
 		if tc.expPass {
 			require.NoError(t, err, "valid case: %s should not return error. got %w", tc.name, err)

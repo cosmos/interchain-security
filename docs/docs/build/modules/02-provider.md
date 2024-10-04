@@ -476,7 +476,7 @@ message MsgChangeRewardDenoms {
 `MsgCreateConsumer` enables a user to create a consumer chain. 
 
 Both the `chain_id` and `metadata` fields are mandatory. 
-Both the `initialization_parameters` and `power_shaping_parameters` fields are optional. 
+The `initialization_parameters`, `power_shaping_parameters`, and `allowlisted_reward_denoms` fields are optional. 
 The parameters not provided are set to their zero value.
 
 The owner of the created consumer chain is the submitter of the message.
@@ -507,6 +507,9 @@ message MsgCreateConsumer {
   ConsumerInitializationParameters initialization_parameters = 4;
 
   PowerShapingParameters power_shaping_parameters = 5;
+
+  // allowlisted reward denoms by the consumer chain
+  AllowlistedRewardDenoms allowlisted_reward_denoms = 6;
 }
 ```
 
@@ -516,7 +519,7 @@ message MsgCreateConsumer {
 
 Note that only the `owner` (i.e., signer) and `consumer_id` fields are mandatory. 
 The others field are optional. Not providing one of them will leave the existing values unchanged. 
-Providing one of `metadata`, `initialization_parameters` or `power_shaping_parameters`, 
+Providing one of `metadata`, `initialization_parameters`, `power_shaping_parameters`, or `allowlisted_reward_denoms`
 will update all the containing fields. 
 If one of the containing fields is missing, it will be set to its zero value.
 For example, updating the `initialization_parameters` without specifying the `spawn_time`, will set the `spawn_time` to zero.
@@ -525,7 +528,7 @@ If the `initialization_parameters` field is set and `initialization_parameters.s
 Updating the `spawn_time` from a positive value to zero will remove the consumer chain from the list of scheduled to launch chains. 
 If the consumer chain is already launched, updating the `initialization_parameters` is no longer possible.
 
-If the `power_shaping_parameters` field is set and `power_shaping_parameters.top_N` is possitive, then the owner needs to be the gov module account address.
+If the `power_shaping_parameters` field is set and `power_shaping_parameters.top_N` is positive, then the owner needs to be the gov module account address.
 
 If the `new_owner_address` field is set to a value different than the gov module account address, then `top_N` needs to be zero.
 
@@ -550,6 +553,9 @@ message MsgUpdateConsumer {
 
   // the power-shaping parameters of the consumer when updated
   PowerShapingParameters power_shaping_parameters = 6;
+
+  // allowlisted reward denoms by the consumer chain
+  AllowlistedRewardDenoms allowlisted_reward_denoms = 7;
 }
 ```
 
@@ -1675,6 +1681,9 @@ where `update-consumer-msg.json` contains:
       "denylist":[],
       "min_stake": "1000",
       "allow_inactive_vals":true
+  },
+  "allowlisted_reward_denoms": {
+    "denoms": ["ibc/0025F8A87464A471E66B234C4F93AEC5B4DA3D42D7986451A059273426290DD5"]
   }
 }
 ```

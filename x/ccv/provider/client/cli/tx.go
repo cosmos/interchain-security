@@ -255,11 +255,14 @@ where create_consumer.json has the following structure:
     "denylist": [],
     "min_stake": "0",
     "allow_inactive_vals": false
+  },
+  "allowlisted_reward_denoms": {
+    "denoms": ["ibc/...", "ibc/..."]
   }
 }
 
 Note that both 'chain_id' and 'metadata' are mandatory;
-and both 'initialization_parameters' and 'power_shaping_parameters' are optional. 
+and 'initialization_parameters', 'power_shaping_parameters' and 'allowlisted_reward_denoms' are optional. 
 The parameters not provided are set to their zero value. 
 `, version.AppName)),
 		Args: cobra.ExactArgs(1),
@@ -286,7 +289,8 @@ The parameters not provided are set to their zero value.
 				return fmt.Errorf("consumer data unmarshalling failed: %w", err)
 			}
 
-			msg, err := types.NewMsgCreateConsumer(submitter, consCreate.ChainId, consCreate.Metadata, consCreate.InitializationParameters, consCreate.PowerShapingParameters)
+			msg, err := types.NewMsgCreateConsumer(submitter, consCreate.ChainId, consCreate.Metadata, consCreate.InitializationParameters,
+				consCreate.PowerShapingParameters, consCreate.AllowlistedRewardDenoms)
 			if err != nil {
 				return err
 			}
@@ -349,12 +353,15 @@ where update_consumer.json has the following structure:
     "denylist": [],
     "min_stake": "0",
     "allow_inactive_vals": false
-   }
+   },
+  "allowlisted_reward_denoms": {
+    "denoms": ["ibc/...", "ibc/..."]
+  }
 }
 
 Note that only 'consumer_id' is mandatory. The others are optional.
 Not providing one of them will leave the existing values unchanged. 
-Providing one of 'metadata', 'initialization_parameters' or 'power_shaping_parameters', 
+Providing one of 'metadata', 'initialization_parameters', 'power_shaping_parameters', or 'allowlisted_reward_denoms' 
 will update all the containing fields. 
 If one of the fields is missing, it will be set to its zero value.
 `, version.AppName)),
@@ -387,7 +394,8 @@ If one of the fields is missing, it will be set to its zero value.
 				return fmt.Errorf("consumer_id can't be empty")
 			}
 
-			msg, err := types.NewMsgUpdateConsumer(owner, consUpdate.ConsumerId, consUpdate.NewOwnerAddress, consUpdate.Metadata, consUpdate.InitializationParameters, consUpdate.PowerShapingParameters)
+			msg, err := types.NewMsgUpdateConsumer(owner, consUpdate.ConsumerId, consUpdate.NewOwnerAddress, consUpdate.Metadata,
+				consUpdate.InitializationParameters, consUpdate.PowerShapingParameters, consUpdate.AllowlistedRewardDenoms)
 			if err != nil {
 				return err
 			}

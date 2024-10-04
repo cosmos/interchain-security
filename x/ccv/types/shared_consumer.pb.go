@@ -75,7 +75,8 @@ type ConsumerParams struct {
 	ProviderRewardDenoms []string `protobuf:"bytes,12,rep,name=provider_reward_denoms,json=providerRewardDenoms,proto3" json:"provider_reward_denoms,omitempty"`
 	// The period after which a consumer can retry sending a throttled packet.
 	RetryDelayPeriod time.Duration `protobuf:"bytes,13,opt,name=retry_delay_period,json=retryDelayPeriod,proto3,stdduration" json:"retry_delay_period"`
-	// The consumer ID of this consumer chain
+	// The consumer ID of this consumer chain. Used by the consumer module to send
+	// ICS rewards.
 	ConsumerId string `protobuf:"bytes,14,opt,name=consumer_id,json=consumerId,proto3" json:"consumer_id,omitempty"`
 }
 
