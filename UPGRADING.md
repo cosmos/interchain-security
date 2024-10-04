@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [v6.2.x](https://github.com/cosmos/interchain-security/releases/tag/v6.0.0)
+
 ### Consumer
 
 Upgrading a consumer from v4.4.x to v4.5.x and from v5.x or v6.1.x to v6.2.x requires state migrations. The following migrators should be added to the upgrade handler of the consumer chain:
@@ -21,6 +23,13 @@ func InitializeConsumerId(ctx sdk.Context, consumerKeeper consumerkeeper.Keeper)
 	return consumerKeeper.SetParams(ctx, params)
 }
 ```
+
+## [v6.1.x](https://github.com/cosmos/interchain-security/releases/tag/v6.1.0)
+
+Upgrading from `v6.0.0` will not require state migration.
+
+
+## [v6.0.x](https://github.com/cosmos/interchain-security/releases/tag/v6.0.0)
 
 ### Provider
 
