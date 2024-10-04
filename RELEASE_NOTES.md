@@ -1,37 +1,20 @@
-<!--
-  A release notes template that should be adapted for every release
-    - release: <v*.*.*>
-    - release branch: <v*.x>
-    - the last release: <v-last> 
-    - the last release branch: <v-last.x>
--->
-
-# Interchain Security <v*.*.*>  Release Notes
-
-<!--
-  Please indicate whether this release is relevant to consumers or providers.
--->
-❗ ***Note this release is ONLY relevant to <consumers/providers>***
+# Interchain Security v6.2.0  Release Notes
 
 ## 📝 Changelog
-** REMOVE THE LINE BELOW TO ENABLE THE MARKDOWN LINK CHECKER FOR RELEASE **
-<!-- markdown-link-check-disable -->
 
-Check out the [changelog](https://github.com/cosmos/interchain-security/blob/<v*.*.*>/CHANGELOG.md) for a list of relevant changes or [compare all changes](https://github.com/cosmos/interchain-security/compare/<v-last>...<v*.*.*>) from last release.
+Check out the [changelog](https://github.com/cosmos/interchain-security/blob/v6.2.0/CHANGELOG.md) for a list of relevant changes or [compare all changes](https://github.com/cosmos/interchain-security/compare/v6.1.0...v6.2.0) from last release.
 
-<!-- Add the following line for major or minor releases -->
-Refer to the [upgrading guide](https://github.com/cosmos/interchain-security/blob/release/<v*.x>/UPGRADING.md) when migrating from `<v-last.x>` to `<v*.x>`.
+Refer to the [upgrading guide](https://github.com/cosmos/interchain-security/blob/release/v6.2.x/UPGRADING.md) when migrating from `v6.1.x` to `v6.2.x`.
 
-** REMOVE THE LINE BELOW TO ENABLE THE MARKDOWN LINK CHECKER FOR RELEASE **
-<!-- markdown-link-check-enable -->
 ## 🚀 Highlights
 
 <!-- Add any highlights of this release -->
 
-## ❤️ Contributors
-<!-- markdown-link-check-disable -->
-* Informal Systems ([@informalinc](https://twitter.com/informalinc))
-<!-- markdown-link-check-enable -->
+This release introduces the following features:
 
-This list is non-exhaustive and ordered alphabetically.  
-Thank you to everyone who contributed to this release!
+- Populate the memo on the IBC transfer packets used to send ICS rewards.
+with the required consumer chain Id to identify the consumer to the provider, see [#2290](https://github.com/cosmos/interchain-security/pull/2290).
+
+- Enable permissionless allowlisting of reward denoms (at most 3) per consumer chain, see [#2309](https://github.com/cosmos/interchain-security/pull/2309) for more details.
+
+In addition, it bumps IBC-Go to [v8.5.1](https://github.com/cosmos/ibc-go/releases/tag/v8.5.0).
