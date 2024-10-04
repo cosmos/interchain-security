@@ -212,11 +212,19 @@ func (k Keeper) AllocateConsumerRewards(ctx sdk.Context, consumerId string, allo
 	}
 
 	// allocate tokens to consumer validators
-	k.AllocateTokensToConsumerValidators(
+	if err := k.AllocateTokensToConsumerValidators(
 		ctx,
 		consumerId,
 		sdk.NewDecCoinsFromCoins(validatorsRewardsTrunc...),
-	)
+	); err != nil {
+		k.Logger(ctx).Error(
+			"fail to allocate ICS rewards to validators",
+			"consumerId", consumerId,
+			"chainId", chainId,
+			"error", err.Error(),
+		)
+		return types.ConsumerRewardsAllocation{}, err
+	}
 
 	// allocate remaining rewards to the community pool
 	remainingRewards, remainingChanges := remaining.TruncateDecimal()
@@ -333,16 +341,16 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 	ctx sdk.Context,
 	consumerId string,
 	tokens sdk.DecCoins,
-) (allocated sdk.DecCoins) {
+) (err error) {
 	// return early if the tokens are empty
 	if tokens.Empty() {
-		return allocated
+		return nil
 	}
 
 	// get the total voting power of the consumer valset
 	totalPower := math.LegacyNewDec(k.ComputeConsumerTotalVotingPower(ctx, consumerId))
 	if totalPower.IsZero() {
-		return allocated
+		return nil
 	}
 
 	// Allocate tokens by iterating over the consumer validators
@@ -354,7 +362,7 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 			"error",
 			err,
 		)
-		return allocated
+		return err
 	}
 	for _, consumerVal := range consumerVals {
 		// if a validator is not eligible, this means that the other eligible validators would get more rewards
@@ -379,7 +387,7 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 				"error",
 				err,
 			)
-			continue
+			return err
 		}
 
 		// check if the validator set a custom commission rate for the consumer chain
@@ -397,14 +405,11 @@ func (k Keeper) AllocateTokensToConsumerValidators(
 		if err != nil {
 			k.Logger(ctx).Error("fail to allocate tokens to validator :%s while allocating rewards from consumer chain: %s",
 				consAddr, consumerId)
-			continue
+			return err
 		}
-
-		// sum the tokens allocated
-		allocated = allocated.Add(tokensFraction...)
 	}
 
-	return allocated
+	return nil
 }
 
 // consumer reward pools getter and setter

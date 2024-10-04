@@ -277,6 +277,14 @@ func TestAllocateTokens(t *testing.T) {
 	runCCVTestByName(t, "TestAllocateTokens")
 }
 
+func TestAllocateTokensToConsumerValidatorsWithDifferentValidatorHeights(t *testing.T) {
+	runCCVTestByName(t, "TestAllocateTokensToConsumerValidatorsWithDifferentValidatorHeights")
+}
+
+func TestAllocateTokensToConsumerValidators(t *testing.T) {
+	runCCVTestByName(t, "TestAllocateTokensToConsumerValidators")
+}
+
 func TestMultiConsumerRewardsDistribution(t *testing.T) {
 	runCCVTestByName(t, "TestMultiConsumerRewardsDistribution")
 }
