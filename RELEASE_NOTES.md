@@ -17,6 +17,4 @@ with the required consumer chain Id to identify the consumer to the provider, se
 
 - Enable permissionless allowlisting of reward denoms (at most 3) per consumer chain, see [#2309](https://github.com/cosmos/interchain-security/pull/2309) for more details.
 
-In addition, it bumps the following dependencies:
-
-- IBC-Go to [v8.5.1](https://github.com/cosmos/ibc-go/releases/tag/v8.5.0)
+In addition, it bumps IBC-Go to [v8.5.1](https://github.com/cosmos/ibc-go/releases/tag/v8.5.0).
