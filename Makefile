@@ -4,8 +4,7 @@ BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 COMMIT := $(shell git log -1 --format='%H')
 # Fetch tags and get the latest ICS version by filtering tags by vX.Y.Z and vX.Y.Z-lsm
 # using lazy set to only execute commands when variable is used
-# Note: v.5.0.0 is currently excluded from the list as it's a pre-release and will be added back once it's out of pre-release status
-LATEST_RELEASE ?= $(shell git fetch; git tag -l --sort -v:refname 'v*.?' 'v*.?'-lsm 'v*.??' 'v*.??'-lsm --no-contains v5.0.0 | head -n 1)
+LATEST_RELEASE ?= $(shell git fetch; git tag -l --sort -v:refname 'v*.?' 'v*.?'-lsm 'v*.??' 'v*.??'-lsm  | head -n 1)
 
 # don't override user values
 ifeq (,$(VERSION))
@@ -33,8 +32,8 @@ install: go.sum
 		go install -ldflags "$(democracyFlags)" ./cmd/interchain-security-cdd
 		go install -ldflags "$(standaloneFlags)" ./cmd/interchain-security-sd
 
-# run all tests: unit, integration, diff, and E2E
-test: test-unit test-integration test-mbt test-e2e
+# run all tests: unit, integration, and E2E
+test: test-unit test-integration test-e2e
 
 # shortcut for local development
 test-dev: test-unit test-integration test-mbt
@@ -98,9 +97,9 @@ test-e2e-multi-consumer:
 test-e2e-parallel:
 	go run ./tests/e2e/... --include-multi-consumer --parallel
 
-# run E2E compatibility tests against latest release
+# run E2E compatibility tests against consumer running latest release
 test-e2e-compatibility-tests-latest:
-	go run ./tests/e2e/... --tc compatibility -pv $(LATEST_RELEASE)
+	go run ./tests/e2e/... --tc compatibility -cv $(LATEST_RELEASE)
 
 # run full E2E tests in sequence (including multiconsumer) using latest tagged gaia
 test-gaia-e2e:
@@ -145,12 +144,25 @@ verify-models:
 	../run_invariants.sh
 
 
+###############################################################################
+###                         Simulation tests                                ###
+
+# Run a full simulation test
+sim-full:
+	cd app/provider;\
+	go test -mod=readonly . -run=^TestFullAppSimulation$  -Enabled=true -NumBlocks=500 -BlockSize=200 -Commit=true -timeout 24h -v
+
+# Run full simulation without any inactive validators
+sim-full-no-inactive-vals:
+	cd app/provider;\
+	go test -mod=readonly . -run=^TestFullAppSimulation$  -Enabled=true -NumBlocks=500 -BlockSize=200 -Commit=true -timeout 24h -Params=no_inactive_vals_params.json -v
+
 
 ###############################################################################
 ###                                Linting                                  ###
 ###############################################################################
 golangci_lint_cmd=golangci-lint
-golangci_version=v1.54.1
+golangci_version=v1.60.1
 
 lint:
 	@echo "--> Running linter"

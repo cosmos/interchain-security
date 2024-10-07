@@ -6,11 +6,11 @@ import (
 	"reflect"
 	"testing"
 
-	appConsumer "github.com/cosmos/interchain-security/v5/app/consumer"
-	appConsumerDemocracy "github.com/cosmos/interchain-security/v5/app/consumer-democracy"
-	appProvider "github.com/cosmos/interchain-security/v5/app/provider"
-	integr "github.com/cosmos/interchain-security/v5/tests/integration"
-	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/ibc_testing"
+	appConsumer "github.com/cosmos/interchain-security/v6/app/consumer"
+	appConsumerDemocracy "github.com/cosmos/interchain-security/v6/app/consumer-democracy"
+	appProvider "github.com/cosmos/interchain-security/v6/app/provider"
+	integr "github.com/cosmos/interchain-security/v6/tests/integration"
+	icstestingutils "github.com/cosmos/interchain-security/v6/testutil/ibc_testing"
 )
 
 // runCCVTestByName runs a single CCV integration test by name, using a CCVTestSuite
@@ -47,14 +47,6 @@ func findAndCallMethod(t *testing.T, suite any, methodName string) {
 	}
 
 	method.Func.Call([]reflect.Value{reflect.ValueOf(suite)})
-}
-
-//
-// Channel init tests
-//
-
-func TestInitTimeout(t *testing.T) {
-	runCCVTestByName(t, "TestInitTimeout")
 }
 
 //
@@ -201,28 +193,8 @@ func TestSlashAllValidators(t *testing.T) {
 // Unbonding tests
 //
 
-func TestUndelegationNormalOperation(t *testing.T) {
-	runCCVTestByName(t, "TestUndelegationNormalOperation")
-}
-
-func TestUndelegationVscTimeout(t *testing.T) {
-	runCCVTestByName(t, "TestUndelegationVscTimeout")
-}
-
-func TestUndelegationDuringInit(t *testing.T) {
-	runCCVTestByName(t, "TestUndelegationDuringInit")
-}
-
-func TestUnbondingNoConsumer(t *testing.T) {
-	runCCVTestByName(t, "TestUnbondingNoConsumer")
-}
-
-func TestRedelegationNoConsumer(t *testing.T) {
-	runCCVTestByName(t, "TestRedelegationNoConsumer")
-}
-
-func TestRedelegationProviderFirst(t *testing.T) {
-	runCCVTestByName(t, "TestRedelegationProviderFirst")
+func TestUndelegationCompletion(t *testing.T) {
+	runCCVTestByName(t, "TestUndelegationCompletion")
 }
 
 //
@@ -293,8 +265,8 @@ func TestAfterPropSubmissionAndVotingPeriodEnded(t *testing.T) {
 	runCCVTestByName(t, "TestAfterPropSubmissionAndVotingPeriodEnded")
 }
 
-func TestGetConsumerAdditionLegacyPropFromProp(t *testing.T) {
-	runCCVTestByName(t, "TestGetConsumerAdditionLegacyPropFromProp")
+func TestGetConsumerAdditionFromProp(t *testing.T) {
+	runCCVTestByName(t, "TestGetConsumerAdditionFromProp")
 }
 
 func TestIBCTransferMiddleware(t *testing.T) {
@@ -305,12 +277,12 @@ func TestAllocateTokens(t *testing.T) {
 	runCCVTestByName(t, "TestAllocateTokens")
 }
 
-func TestTransferConsumerRewardsToDistributionModule(t *testing.T) {
-	runCCVTestByName(t, "TransferConsumerRewardsToDistributionModule")
+func TestAllocateTokensToConsumerValidatorsWithDifferentValidatorHeights(t *testing.T) {
+	runCCVTestByName(t, "TestAllocateTokensToConsumerValidatorsWithDifferentValidatorHeights")
 }
 
-func TestAllocateTokensToValidator(t *testing.T) {
-	runCCVTestByName(t, "TestAllocateTokensToValidator")
+func TestAllocateTokensToConsumerValidators(t *testing.T) {
+	runCCVTestByName(t, "TestAllocateTokensToConsumerValidators")
 }
 
 func TestMultiConsumerRewardsDistribution(t *testing.T) {

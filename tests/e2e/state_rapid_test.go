@@ -104,8 +104,8 @@ func GetRewardsGen() *rapid.Generator[Rewards] {
 	return rapid.Custom(func(t *rapid.T) Rewards {
 		return Rewards{
 			IsIncrementalReward: rapid.Bool().Draw(t, "IsIncrementalReward"),
-			IsNativeDenom:       rapid.Bool().Draw(t, "IsNativeDenom"),
-			IsRewarded:          rapid.MapOf(GetValidatorIDGen(), rapid.Bool()).Draw(t, "IsRewarded"),
+			// Denom:       rapid.Str,
+			IsRewarded: rapid.MapOf(GetValidatorIDGen(), rapid.Bool()).Draw(t, "IsRewarded"),
 		}
 	})
 }
@@ -117,7 +117,6 @@ func GetIBCTransferParamsGen() *rapid.Generator[IBCTransferParams] {
 			ReceiveEnabled: rapid.Bool().Draw(t, "ReceiveEnabled"),
 		}
 	})
-
 }
 
 func GetIBCTransferParamsProposalGen() *rapid.Generator[IBCTransferParamsProposal] {
@@ -203,10 +202,9 @@ func GetConsumerAdditionProposalGen() *rapid.Generator[ConsumerAdditionProposal]
 func GetConsumerRemovalProposalGen() *rapid.Generator[ConsumerRemovalProposal] {
 	return rapid.Custom(func(t *rapid.T) ConsumerRemovalProposal {
 		return ConsumerRemovalProposal{
-			Deposit:  rapid.Uint().Draw(t, "Deposit"),
-			Chain:    GetChainIDGen().Draw(t, "Chain"),
-			StopTime: rapid.Int().Draw(t, "StopTime"),
-			Status:   rapid.String().Draw(t, "Status"),
+			Deposit: rapid.Uint().Draw(t, "Deposit"),
+			Chain:   GetChainIDGen().Draw(t, "Chain"),
+			Status:  rapid.String().Draw(t, "Status"),
 		}
 	})
 }

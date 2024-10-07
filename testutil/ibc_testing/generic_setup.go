@@ -7,7 +7,6 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
-	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
@@ -17,9 +16,10 @@ import (
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	testutil "github.com/cosmos/interchain-security/v5/testutil/integration"
-	consumerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/consumer/keeper"
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	testutil "github.com/cosmos/interchain-security/v6/testutil/integration"
+	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
+	consumerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 
 type (
@@ -37,7 +37,8 @@ const (
 )
 
 var (
-	FirstConsumerChainID string
+	firstConsumerChainID string
+	FirstConsumerID      string
 	provChainID          string
 	democConsumerChainID string
 	consumerTopNParams   [NumConsumers]uint32
@@ -46,7 +47,8 @@ var (
 func init() {
 	// Disable revision format
 	ibctesting.ChainIDSuffix = ""
-	FirstConsumerChainID = ibctesting.GetChainID(2)
+	firstConsumerChainID = ibctesting.GetChainID(2)
+	FirstConsumerID = ""
 	provChainID = ibctesting.GetChainID(1)
 	democConsumerChainID = ibctesting.GetChainID(5000)
 	// TopN parameter values per consumer chain initiated
@@ -57,6 +59,7 @@ func init() {
 // ConsumerBundle serves as a way to store useful in-mem consumer app chain state
 // and relevant IBC paths in the context of CCV integration testing.
 type ConsumerBundle struct {
+	ConsumerId   string
 	Chain        *ibctesting.TestChain
 	App          testutil.ConsumerApp
 	Path         *ibctesting.Path
@@ -138,20 +141,33 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	providerApp := providerChain.App.(Tp)
 	providerKeeper := providerApp.GetProviderKeeper()
 
-	prop := testkeeper.GetTestConsumerAdditionProp()
-	prop.ChainId = chainID
-	prop.Top_N = consumerTopNParams[index] // isn't used in CreateConsumerClient
+	consumerMetadata := testkeeper.GetTestConsumerMetadata()
 
+	initializationParameters := testkeeper.GetTestInitializationParameters()
 	// NOTE: we cannot use the time.Now() because the coordinator chooses a hardcoded start time
 	// using time.Now() could set the spawn time to be too far in the past or too far in the future
-	prop.SpawnTime = coordinator.CurrentTime
+	initializationParameters.SpawnTime = coordinator.CurrentTime
 	// NOTE: the initial height passed to CreateConsumerClient
 	// must be the height on the consumer when InitGenesis is called
-	prop.InitialHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 2}
+	initializationParameters.InitialHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 2}
 
-	providerKeeper.SetPendingConsumerAdditionProp(providerChain.GetContext(), prop)
-	props := providerKeeper.GetAllPendingConsumerAdditionProps(providerChain.GetContext())
-	s.Require().Len(props, 1, "unexpected len consumer addition proposals in AddConsumer")
+	powerShapingParameters := testkeeper.GetTestPowerShapingParameters()
+	powerShapingParameters.Top_N = consumerTopNParams[index] // isn't used in CreateConsumerClient
+
+	consumerId := providerKeeper.FetchAndIncrementConsumerId(providerChain.GetContext())
+	if chainID == firstConsumerChainID {
+		FirstConsumerID = consumerId
+	}
+	providerKeeper.SetConsumerChainId(providerChain.GetContext(), consumerId, chainID)
+	err := providerKeeper.SetConsumerMetadata(providerChain.GetContext(), consumerId, consumerMetadata)
+	s.Require().NoError(err)
+	err = providerKeeper.SetConsumerInitializationParameters(providerChain.GetContext(), consumerId, initializationParameters)
+	s.Require().NoError(err)
+	err = providerKeeper.SetConsumerPowerShapingParameters(providerChain.GetContext(), consumerId, powerShapingParameters)
+	s.Require().NoError(err)
+	providerKeeper.SetConsumerPhase(providerChain.GetContext(), consumerId, providertypes.CONSUMER_PHASE_INITIALIZED)
+	err = providerKeeper.AppendConsumerToBeLaunched(providerChain.GetContext(), consumerId, coordinator.CurrentTime)
+	s.Require().NoError(err)
 
 	// opt-in all validators
 	lastVals, err := providerApp.GetProviderKeeper().GetLastBondedValidators(providerChain.GetContext())
@@ -159,7 +175,7 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 
 	for _, v := range lastVals {
 		consAddr, _ := v.GetConsAddr()
-		providerKeeper.SetOptedIn(providerChain.GetContext(), chainID, providertypes.NewProviderConsAddress(consAddr))
+		providerKeeper.SetOptedIn(providerChain.GetContext(), consumerId, providertypes.NewProviderConsAddress(consAddr))
 	}
 
 	// commit the state on the provider chain
@@ -169,10 +185,15 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	// get genesis state created by the provider
 	consumerGenesisState, found := providerKeeper.GetConsumerGenesis(
 		providerChain.GetContext(),
-		chainID,
+		consumerId,
 	)
-
 	s.Require().True(found, "consumer genesis not found in AddConsumer")
+
+	_, found = providerKeeper.GetConsumerClientId(
+		providerChain.GetContext(),
+		consumerId,
+	)
+	s.Require().True(found, "clientID not found in AddConsumer")
 
 	// use InitialValSet as the valset on the consumer
 	var valz []*tmtypes.Validator
@@ -201,8 +222,9 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	}
 
 	return &ConsumerBundle{
-		Chain: testChain,
-		App:   consumerToReturn,
-		TopN:  prop.Top_N,
+		ConsumerId: consumerId,
+		Chain:      testChain,
+		App:        consumerToReturn,
+		TopN:       powerShapingParameters.Top_N,
 	}
 }

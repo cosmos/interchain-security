@@ -2,16 +2,15 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 
 	"cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkgov "github.com/cosmos/cosmos-sdk/x/gov/types"
-	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // Wrapper struct
@@ -33,105 +32,7 @@ func (k *Keeper) Hooks() Hooks {
 // staking hooks
 //
 
-// This stores a record of each unbonding op from staking, allowing us to track which consumer chains have unbonded
 func (h Hooks) AfterUnbondingInitiated(goCtx context.Context, id uint64) error {
-	var consumerChainIDS []string
-
-	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	// get validator address from unbonding operation
-	unbondingType, err := h.k.stakingKeeper.GetUnbondingType(ctx, id)
-	vadAddrBech32 := ""
-	if err != nil {
-		ctx.Logger().Error("undefined type for unbonding operation: id: %d: %s", id, err)
-		return nil
-	}
-
-	switch unbondingType {
-	case stakingtypes.UnbondingType_UnbondingDelegation:
-		ubd, err := h.k.stakingKeeper.GetUnbondingDelegationByUnbondingID(ctx, id)
-		if err != nil {
-			ctx.Logger().Error("unfound ubonding delegation for unbonding id: %d: %s", id, err)
-			return nil
-		}
-		vadAddrBech32 = ubd.ValidatorAddress
-	case stakingtypes.UnbondingType_Redelegation:
-		red, err := h.k.stakingKeeper.GetRedelegationByUnbondingID(ctx, id)
-		if err != nil {
-			ctx.Logger().Error("unfound relegation for unbonding operation id: %d: %s", id, err)
-			return nil
-		}
-		vadAddrBech32 = red.ValidatorSrcAddress
-	case stakingtypes.UnbondingType_ValidatorUnbonding:
-		val, err := h.k.stakingKeeper.GetValidatorByUnbondingID(ctx, id)
-		if err != nil {
-			ctx.Logger().Error("unfound validator for unbonding operation id: %d: %s", id, err)
-			return nil
-		}
-		vadAddrBech32 = val.OperatorAddress
-	default:
-		ctx.Logger().Error("invalid unbonding operation type: %s", unbondingType)
-		return nil
-	}
-
-	valAddr, err := sdk.ValAddressFromBech32(vadAddrBech32)
-	if err != nil {
-		ctx.Logger().Error(err.Error())
-		return nil
-	}
-
-	validator, err := h.k.stakingKeeper.GetValidator(ctx, valAddr)
-	if err != nil {
-		ctx.Logger().Error("unfound validator for validator address: %s: %s", vadAddrBech32, err)
-		return nil
-	}
-
-	consAddr, err := validator.GetConsAddr()
-	if err != nil {
-		ctx.Logger().Error(err.Error())
-		return nil
-	}
-
-	// get all consumers where the validator is in the validator set
-	for _, chainID := range h.k.GetAllRegisteredConsumerChainIDs(ctx) {
-		if h.k.IsConsumerValidator(ctx, chainID, providertypes.NewProviderConsAddress(consAddr)) {
-			consumerChainIDS = append(consumerChainIDS, chainID)
-		}
-	}
-
-	if len(consumerChainIDS) == 0 {
-		// Do not put the unbonding op on hold if there are no consumer chains
-		return nil
-	}
-
-	valsetUpdateID := h.k.GetValidatorSetUpdateId(ctx)
-	unbondingOp := providertypes.UnbondingOp{
-		Id:                      id,
-		UnbondingConsumerChains: consumerChainIDS,
-	}
-
-	// Add to indexes
-	for _, consumerChainID := range consumerChainIDS {
-		index, _ := h.k.GetUnbondingOpIndex(ctx, consumerChainID, valsetUpdateID)
-		index = append(index, id)
-		h.k.SetUnbondingOpIndex(ctx, consumerChainID, valsetUpdateID, index)
-	}
-
-	h.k.SetUnbondingOp(ctx, unbondingOp)
-
-	// Call back into staking to tell it to stop this op from unbonding when the unbonding period is complete
-	if err := h.k.stakingKeeper.PutUnbondingOnHold(ctx, id); err != nil {
-		// If there was an error putting the unbonding on hold, panic to end execution for
-		// the current tx and prevent committal of this invalid state.
-		//
-		// Note: that in the case of a validator unbonding, AfterUnbondingInitiated is called
-		// from staking.EndBlock, thus the following panic would halt the chain.
-
-		// In this case PutUnbondingOnHold fails if either the unbonding operation was
-		// not found or the UnbondingOnHoldRefCount is negative. In either cases,
-		// the state of the x/staking module of cosmos-sdk is invalid.
-		panic(fmt.Errorf("unbonding could not be put on hold: %w", err))
-	}
 	return nil
 }
 
@@ -205,28 +106,11 @@ func (h Hooks) BeforeTokenizeShareRecordRemoved(_ context.Context, _ uint64) err
 // gov hooks
 //
 
-// AfterProposalSubmission - call hook if registered
-// After a consumerAddition proposal submission, a record is created
-// that maps the proposal ID to the consumer chain ID.
-func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalID uint64) error {
-	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	if p, ok := h.GetConsumerAdditionLegacyPropFromProp(ctx, proposalID); ok {
-		h.k.SetProposedConsumerChain(ctx, p.ChainId, proposalID)
-	}
+func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalId uint64) error {
 	return nil
 }
 
-// AfterProposalVotingPeriodEnded - call hook if registered
-// After proposal voting ends, the consumer chainID in store is deleted.
-// When a consumerAddition proposal passes, the consumer chainID is available in providerKeeper.GetAllPendingConsumerAdditionProps
-// or providerKeeper.GetAllConsumerChains(ctx).
-func (h Hooks) AfterProposalVotingPeriodEnded(goCtx context.Context, proposalID uint64) error {
-	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	if _, ok := h.GetConsumerAdditionLegacyPropFromProp(ctx, proposalID); ok {
-		h.k.DeleteProposedConsumerChainInStore(ctx, proposalID)
-	}
+func (h Hooks) AfterProposalVotingPeriodEnded(goCtx context.Context, proposalId uint64) error {
 	return nil
 }
 
@@ -240,37 +124,4 @@ func (h Hooks) AfterProposalVote(ctx context.Context, proposalID uint64, voterAd
 
 func (h Hooks) AfterProposalFailedMinDeposit(ctx context.Context, proposalID uint64) error {
 	return nil
-}
-
-// GetConsumerAdditionLegacyPropFromProp extracts a consumer addition legacy proposal from
-// the proposal with the given ID
-func (h Hooks) GetConsumerAdditionLegacyPropFromProp(
-	ctx sdk.Context,
-	proposalID uint64,
-) (providertypes.ConsumerAdditionProposal, bool) {
-	p, err := h.k.govKeeper.Proposals.Get(ctx, proposalID)
-	if err != nil {
-		return providertypes.ConsumerAdditionProposal{}, false
-	}
-
-	// Iterate over the messages in the proposal
-	// Note that it's assumed that at most ONE message can contain a consumer addition proposal
-	for _, msg := range p.GetMessages() {
-		sdkMsg, isLegacyProposal := msg.GetCachedValue().(*v1.MsgExecLegacyContent)
-		if !isLegacyProposal {
-			continue
-		}
-
-		content, err := v1.LegacyContentFromMessage(sdkMsg)
-		if err != nil {
-			panic(fmt.Errorf("failed to get legacy proposal %d from prop message", proposalID))
-		}
-
-		// returns if legacy prop is of ConsumerAddition proposal type
-		prop, ok := content.(*providertypes.ConsumerAdditionProposal)
-		if ok {
-			return *prop, true
-		}
-	}
-	return providertypes.ConsumerAdditionProposal{}, false
 }

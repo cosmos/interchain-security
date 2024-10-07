@@ -9,11 +9,13 @@ import (
 	fmt "fmt"
 	crypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	_ "github.com/cosmos/cosmos-proto"
+	query "github.com/cosmos/cosmos-sdk/types/query"
+	types1 "github.com/cosmos/cosmos-sdk/x/staking/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 	proto "github.com/cosmos/gogoproto/proto"
 	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
-	types "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	types "github.com/cosmos/interchain-security/v6/x/ccv/types"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -38,7 +40,7 @@ var _ = time.Kitchen
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type QueryConsumerGenesisRequest struct {
-	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	ConsumerId string `protobuf:"bytes,1,opt,name=consumer_id,json=consumerId,proto3" json:"consumer_id,omitempty"`
 }
 
 func (m *QueryConsumerGenesisRequest) Reset()         { *m = QueryConsumerGenesisRequest{} }
@@ -74,9 +76,9 @@ func (m *QueryConsumerGenesisRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryConsumerGenesisRequest proto.InternalMessageInfo
 
-func (m *QueryConsumerGenesisRequest) GetChainId() string {
+func (m *QueryConsumerGenesisRequest) GetConsumerId() string {
 	if m != nil {
-		return m.ChainId
+		return m.ConsumerId
 	}
 	return ""
 }
@@ -126,6 +128,10 @@ func (m *QueryConsumerGenesisResponse) GetGenesisState() types.ConsumerGenesisSt
 }
 
 type QueryConsumerChainsRequest struct {
+	// The phase of the consumer chains returned (optional)
+	// Registered=1|Initialized=2|Launched=3|Stopped=4|Deleted=5
+	Phase      ConsumerPhase      `protobuf:"varint,1,opt,name=phase,proto3,enum=interchain_security.ccv.provider.v1.ConsumerPhase" json:"phase,omitempty"`
+	Pagination *query.PageRequest `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
 func (m *QueryConsumerChainsRequest) Reset()         { *m = QueryConsumerChainsRequest{} }
@@ -161,8 +167,23 @@ func (m *QueryConsumerChainsRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryConsumerChainsRequest proto.InternalMessageInfo
 
+func (m *QueryConsumerChainsRequest) GetPhase() ConsumerPhase {
+	if m != nil {
+		return m.Phase
+	}
+	return CONSUMER_PHASE_UNSPECIFIED
+}
+
+func (m *QueryConsumerChainsRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
 type QueryConsumerChainsResponse struct {
-	Chains []*Chain `protobuf:"bytes,1,rep,name=chains,proto3" json:"chains,omitempty"`
+	Chains     []*Chain            `protobuf:"bytes,1,rep,name=chains,proto3" json:"chains,omitempty"`
+	Pagination *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
 func (m *QueryConsumerChainsResponse) Reset()         { *m = QueryConsumerChainsResponse{} }
@@ -205,170 +226,9 @@ func (m *QueryConsumerChainsResponse) GetChains() []*Chain {
 	return nil
 }
 
-type QueryConsumerChainStartProposalsRequest struct {
-}
-
-func (m *QueryConsumerChainStartProposalsRequest) Reset() {
-	*m = QueryConsumerChainStartProposalsRequest{}
-}
-func (m *QueryConsumerChainStartProposalsRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryConsumerChainStartProposalsRequest) ProtoMessage()    {}
-func (*QueryConsumerChainStartProposalsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{4}
-}
-func (m *QueryConsumerChainStartProposalsRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryConsumerChainStartProposalsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryConsumerChainStartProposalsRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryConsumerChainStartProposalsRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryConsumerChainStartProposalsRequest.Merge(m, src)
-}
-func (m *QueryConsumerChainStartProposalsRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryConsumerChainStartProposalsRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryConsumerChainStartProposalsRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryConsumerChainStartProposalsRequest proto.InternalMessageInfo
-
-type QueryConsumerChainStartProposalsResponse struct {
-	Proposals *ConsumerAdditionProposals `protobuf:"bytes,1,opt,name=proposals,proto3" json:"proposals,omitempty"`
-}
-
-func (m *QueryConsumerChainStartProposalsResponse) Reset() {
-	*m = QueryConsumerChainStartProposalsResponse{}
-}
-func (m *QueryConsumerChainStartProposalsResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryConsumerChainStartProposalsResponse) ProtoMessage()    {}
-func (*QueryConsumerChainStartProposalsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{5}
-}
-func (m *QueryConsumerChainStartProposalsResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryConsumerChainStartProposalsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryConsumerChainStartProposalsResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryConsumerChainStartProposalsResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryConsumerChainStartProposalsResponse.Merge(m, src)
-}
-func (m *QueryConsumerChainStartProposalsResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryConsumerChainStartProposalsResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryConsumerChainStartProposalsResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryConsumerChainStartProposalsResponse proto.InternalMessageInfo
-
-func (m *QueryConsumerChainStartProposalsResponse) GetProposals() *ConsumerAdditionProposals {
+func (m *QueryConsumerChainsResponse) GetPagination() *query.PageResponse {
 	if m != nil {
-		return m.Proposals
-	}
-	return nil
-}
-
-type QueryConsumerChainStopProposalsRequest struct {
-}
-
-func (m *QueryConsumerChainStopProposalsRequest) Reset() {
-	*m = QueryConsumerChainStopProposalsRequest{}
-}
-func (m *QueryConsumerChainStopProposalsRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryConsumerChainStopProposalsRequest) ProtoMessage()    {}
-func (*QueryConsumerChainStopProposalsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{6}
-}
-func (m *QueryConsumerChainStopProposalsRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryConsumerChainStopProposalsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryConsumerChainStopProposalsRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryConsumerChainStopProposalsRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryConsumerChainStopProposalsRequest.Merge(m, src)
-}
-func (m *QueryConsumerChainStopProposalsRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryConsumerChainStopProposalsRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryConsumerChainStopProposalsRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryConsumerChainStopProposalsRequest proto.InternalMessageInfo
-
-type QueryConsumerChainStopProposalsResponse struct {
-	Proposals *ConsumerRemovalProposals `protobuf:"bytes,1,opt,name=proposals,proto3" json:"proposals,omitempty"`
-}
-
-func (m *QueryConsumerChainStopProposalsResponse) Reset() {
-	*m = QueryConsumerChainStopProposalsResponse{}
-}
-func (m *QueryConsumerChainStopProposalsResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryConsumerChainStopProposalsResponse) ProtoMessage()    {}
-func (*QueryConsumerChainStopProposalsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{7}
-}
-func (m *QueryConsumerChainStopProposalsResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryConsumerChainStopProposalsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryConsumerChainStopProposalsResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryConsumerChainStopProposalsResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryConsumerChainStopProposalsResponse.Merge(m, src)
-}
-func (m *QueryConsumerChainStopProposalsResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryConsumerChainStopProposalsResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryConsumerChainStopProposalsResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryConsumerChainStopProposalsResponse proto.InternalMessageInfo
-
-func (m *QueryConsumerChainStopProposalsResponse) GetProposals() *ConsumerRemovalProposals {
-	if m != nil {
-		return m.Proposals
+		return m.Pagination
 	}
 	return nil
 }
@@ -376,8 +236,7 @@ func (m *QueryConsumerChainStopProposalsResponse) GetProposals() *ConsumerRemova
 type Chain struct {
 	ChainId  string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	ClientId string `protobuf:"bytes,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	// If chain with `chainID` is a Top-N chain, i.e., enforces at least one validator to validate chain `chainID`
-	Top_N uint32 `protobuf:"varint,3,opt,name=top_N,json=topN,proto3" json:"top_N,omitempty"`
+	Top_N    uint32 `protobuf:"varint,3,opt,name=top_N,json=topN,proto3" json:"top_N,omitempty"`
 	// If the chain is a Top-N chain, this is the minimum power required to be in the top N.
 	// Otherwise, this is -1.
 	MinPowerInTop_N int64 `protobuf:"varint,4,opt,name=min_power_in_top_N,json=minPowerInTopN,proto3" json:"min_power_in_top_N,omitempty"`
@@ -391,18 +250,29 @@ type Chain struct {
 	Allowlist []string `protobuf:"bytes,7,rep,name=allowlist,proto3" json:"allowlist,omitempty"`
 	// Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
 	Denylist []string `protobuf:"bytes,8,rep,name=denylist,proto3" json:"denylist,omitempty"`
+	// The phase the consumer chain
+	Phase string `protobuf:"bytes,9,opt,name=phase,proto3" json:"phase,omitempty"`
+	// The metadata of the consumer chain
+	Metadata ConsumerMetadata `protobuf:"bytes,10,opt,name=metadata,proto3" json:"metadata"`
+	// Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
+	MinStake uint64 `protobuf:"varint,11,opt,name=min_stake,json=minStake,proto3" json:"min_stake,omitempty"`
+	// Corresponds to whether inactive validators are allowed to validate the consumer chain.
+	AllowInactiveVals bool   `protobuf:"varint,12,opt,name=allow_inactive_vals,json=allowInactiveVals,proto3" json:"allow_inactive_vals,omitempty"`
+	ConsumerId        string `protobuf:"bytes,13,opt,name=consumer_id,json=consumerId,proto3" json:"consumer_id,omitempty"`
+	// the reward denoms allowlisted by this consumer chain
+	AllowlistedRewardDenoms *AllowlistedRewardDenoms `protobuf:"bytes,14,opt,name=allowlisted_reward_denoms,json=allowlistedRewardDenoms,proto3" json:"allowlisted_reward_denoms,omitempty"`
 	// Corresponds to a list of provider consensus addresses of validators that should have PRIORITY to validate on the consumer chain,
 	// meaning as long as they are eligible/opted in to validate on the consumer chain, the validator set will be
 	// filled with these validators first, and other validators will be added to the validator set only if there are
 	// not enough eligible priority validators.
-	Prioritylist []string `protobuf:"bytes,9,rep,name=prioritylist,proto3" json:"prioritylist,omitempty"`
+	Prioritylist []string `protobuf:"bytes,15,rep,name=prioritylist,proto3" json:"prioritylist,omitempty"`
 }
 
 func (m *Chain) Reset()         { *m = Chain{} }
 func (m *Chain) String() string { return proto.CompactTextString(m) }
 func (*Chain) ProtoMessage()    {}
 func (*Chain) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{8}
+	return fileDescriptor_422512d7b7586cd7, []int{4}
 }
 func (m *Chain) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -487,6 +357,48 @@ func (m *Chain) GetDenylist() []string {
 	return nil
 }
 
+func (m *Chain) GetPhase() string {
+	if m != nil {
+		return m.Phase
+	}
+	return ""
+}
+
+func (m *Chain) GetMetadata() ConsumerMetadata {
+	if m != nil {
+		return m.Metadata
+	}
+	return ConsumerMetadata{}
+}
+
+func (m *Chain) GetMinStake() uint64 {
+	if m != nil {
+		return m.MinStake
+	}
+	return 0
+}
+
+func (m *Chain) GetAllowInactiveVals() bool {
+	if m != nil {
+		return m.AllowInactiveVals
+	}
+	return false
+}
+
+func (m *Chain) GetConsumerId() string {
+	if m != nil {
+		return m.ConsumerId
+	}
+	return ""
+}
+
+func (m *Chain) GetAllowlistedRewardDenoms() *AllowlistedRewardDenoms {
+	if m != nil {
+		return m.AllowlistedRewardDenoms
+	}
+	return nil
+}
+
 func (m *Chain) GetPrioritylist() []string {
 	if m != nil {
 		return m.Prioritylist
@@ -495,17 +407,17 @@ func (m *Chain) GetPrioritylist() []string {
 }
 
 type QueryValidatorConsumerAddrRequest struct {
-	// The id of the consumer chain
-	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	// The consensus address of the validator on the provider chain
-	ProviderAddress string `protobuf:"bytes,2,opt,name=provider_address,json=providerAddress,proto3" json:"provider_address,omitempty" yaml:"address"`
+	ProviderAddress string `protobuf:"bytes,1,opt,name=provider_address,json=providerAddress,proto3" json:"provider_address,omitempty" yaml:"address"`
+	// The id of the consumer chain
+	ConsumerId string `protobuf:"bytes,2,opt,name=consumer_id,json=consumerId,proto3" json:"consumer_id,omitempty"`
 }
 
 func (m *QueryValidatorConsumerAddrRequest) Reset()         { *m = QueryValidatorConsumerAddrRequest{} }
 func (m *QueryValidatorConsumerAddrRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryValidatorConsumerAddrRequest) ProtoMessage()    {}
 func (*QueryValidatorConsumerAddrRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{9}
+	return fileDescriptor_422512d7b7586cd7, []int{5}
 }
 func (m *QueryValidatorConsumerAddrRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -543,7 +455,7 @@ func (m *QueryValidatorConsumerAddrResponse) Reset()         { *m = QueryValidat
 func (m *QueryValidatorConsumerAddrResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryValidatorConsumerAddrResponse) ProtoMessage()    {}
 func (*QueryValidatorConsumerAddrResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{10}
+	return fileDescriptor_422512d7b7586cd7, []int{6}
 }
 func (m *QueryValidatorConsumerAddrResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -580,17 +492,17 @@ func (m *QueryValidatorConsumerAddrResponse) GetConsumerAddress() string {
 }
 
 type QueryValidatorProviderAddrRequest struct {
-	// The id of the provider chain
-	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	// The consensus address of the validator on the consumer chain
-	ConsumerAddress string `protobuf:"bytes,2,opt,name=consumer_address,json=consumerAddress,proto3" json:"consumer_address,omitempty" yaml:"address"`
+	ConsumerAddress string `protobuf:"bytes,1,opt,name=consumer_address,json=consumerAddress,proto3" json:"consumer_address,omitempty" yaml:"address"`
+	// The id of the consumer chain
+	ConsumerId string `protobuf:"bytes,2,opt,name=consumer_id,json=consumerId,proto3" json:"consumer_id,omitempty"`
 }
 
 func (m *QueryValidatorProviderAddrRequest) Reset()         { *m = QueryValidatorProviderAddrRequest{} }
 func (m *QueryValidatorProviderAddrRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryValidatorProviderAddrRequest) ProtoMessage()    {}
 func (*QueryValidatorProviderAddrRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{11}
+	return fileDescriptor_422512d7b7586cd7, []int{7}
 }
 func (m *QueryValidatorProviderAddrRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -628,7 +540,7 @@ func (m *QueryValidatorProviderAddrResponse) Reset()         { *m = QueryValidat
 func (m *QueryValidatorProviderAddrResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryValidatorProviderAddrResponse) ProtoMessage()    {}
 func (*QueryValidatorProviderAddrResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{12}
+	return fileDescriptor_422512d7b7586cd7, []int{8}
 }
 func (m *QueryValidatorProviderAddrResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -671,7 +583,7 @@ func (m *QueryThrottleStateRequest) Reset()         { *m = QueryThrottleStateReq
 func (m *QueryThrottleStateRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryThrottleStateRequest) ProtoMessage()    {}
 func (*QueryThrottleStateRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{13}
+	return fileDescriptor_422512d7b7586cd7, []int{9}
 }
 func (m *QueryThrottleStateRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -715,7 +627,7 @@ func (m *QueryThrottleStateResponse) Reset()         { *m = QueryThrottleStateRe
 func (m *QueryThrottleStateResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryThrottleStateResponse) ProtoMessage()    {}
 func (*QueryThrottleStateResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{14}
+	return fileDescriptor_422512d7b7586cd7, []int{10}
 }
 func (m *QueryThrottleStateResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -776,7 +688,7 @@ func (m *QueryRegisteredConsumerRewardDenomsRequest) String() string {
 }
 func (*QueryRegisteredConsumerRewardDenomsRequest) ProtoMessage() {}
 func (*QueryRegisteredConsumerRewardDenomsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{15}
+	return fileDescriptor_422512d7b7586cd7, []int{11}
 }
 func (m *QueryRegisteredConsumerRewardDenomsRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -817,7 +729,7 @@ func (m *QueryRegisteredConsumerRewardDenomsResponse) String() string {
 }
 func (*QueryRegisteredConsumerRewardDenomsResponse) ProtoMessage() {}
 func (*QueryRegisteredConsumerRewardDenomsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{16}
+	return fileDescriptor_422512d7b7586cd7, []int{12}
 }
 func (m *QueryRegisteredConsumerRewardDenomsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -853,159 +765,27 @@ func (m *QueryRegisteredConsumerRewardDenomsResponse) GetDenoms() []string {
 	return nil
 }
 
-type QueryProposedChainIDsRequest struct {
-}
-
-func (m *QueryProposedChainIDsRequest) Reset()         { *m = QueryProposedChainIDsRequest{} }
-func (m *QueryProposedChainIDsRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryProposedChainIDsRequest) ProtoMessage()    {}
-func (*QueryProposedChainIDsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{17}
-}
-func (m *QueryProposedChainIDsRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryProposedChainIDsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryProposedChainIDsRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryProposedChainIDsRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryProposedChainIDsRequest.Merge(m, src)
-}
-func (m *QueryProposedChainIDsRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryProposedChainIDsRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryProposedChainIDsRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryProposedChainIDsRequest proto.InternalMessageInfo
-
-type QueryProposedChainIDsResponse struct {
-	ProposedChains []ProposedChain `protobuf:"bytes,1,rep,name=proposedChains,proto3" json:"proposedChains"`
-}
-
-func (m *QueryProposedChainIDsResponse) Reset()         { *m = QueryProposedChainIDsResponse{} }
-func (m *QueryProposedChainIDsResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryProposedChainIDsResponse) ProtoMessage()    {}
-func (*QueryProposedChainIDsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{18}
-}
-func (m *QueryProposedChainIDsResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryProposedChainIDsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryProposedChainIDsResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryProposedChainIDsResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryProposedChainIDsResponse.Merge(m, src)
-}
-func (m *QueryProposedChainIDsResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryProposedChainIDsResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryProposedChainIDsResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryProposedChainIDsResponse proto.InternalMessageInfo
-
-func (m *QueryProposedChainIDsResponse) GetProposedChains() []ProposedChain {
-	if m != nil {
-		return m.ProposedChains
-	}
-	return nil
-}
-
-type ProposedChain struct {
-	ChainID    string `protobuf:"bytes,1,opt,name=chainID,proto3" json:"chainID,omitempty"`
-	ProposalID uint64 `protobuf:"varint,2,opt,name=proposalID,proto3" json:"proposalID,omitempty"`
-}
-
-func (m *ProposedChain) Reset()         { *m = ProposedChain{} }
-func (m *ProposedChain) String() string { return proto.CompactTextString(m) }
-func (*ProposedChain) ProtoMessage()    {}
-func (*ProposedChain) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{19}
-}
-func (m *ProposedChain) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ProposedChain) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ProposedChain.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ProposedChain) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ProposedChain.Merge(m, src)
-}
-func (m *ProposedChain) XXX_Size() int {
-	return m.Size()
-}
-func (m *ProposedChain) XXX_DiscardUnknown() {
-	xxx_messageInfo_ProposedChain.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ProposedChain proto.InternalMessageInfo
-
-func (m *ProposedChain) GetChainID() string {
-	if m != nil {
-		return m.ChainID
-	}
-	return ""
-}
-
-func (m *ProposedChain) GetProposalID() uint64 {
-	if m != nil {
-		return m.ProposalID
-	}
-	return 0
-}
-
-type QueryAllPairsValConAddrByConsumerChainIDRequest struct {
+type QueryAllPairsValConsAddrByConsumerRequest struct {
 	// The id of the consumer chain
-	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	ConsumerId string `protobuf:"bytes,1,opt,name=consumer_id,json=consumerId,proto3" json:"consumer_id,omitempty"`
 }
 
-func (m *QueryAllPairsValConAddrByConsumerChainIDRequest) Reset() {
-	*m = QueryAllPairsValConAddrByConsumerChainIDRequest{}
+func (m *QueryAllPairsValConsAddrByConsumerRequest) Reset() {
+	*m = QueryAllPairsValConsAddrByConsumerRequest{}
 }
-func (m *QueryAllPairsValConAddrByConsumerChainIDRequest) String() string {
+func (m *QueryAllPairsValConsAddrByConsumerRequest) String() string {
 	return proto.CompactTextString(m)
 }
-func (*QueryAllPairsValConAddrByConsumerChainIDRequest) ProtoMessage() {}
-func (*QueryAllPairsValConAddrByConsumerChainIDRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{20}
+func (*QueryAllPairsValConsAddrByConsumerRequest) ProtoMessage() {}
+func (*QueryAllPairsValConsAddrByConsumerRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{13}
 }
-func (m *QueryAllPairsValConAddrByConsumerChainIDRequest) XXX_Unmarshal(b []byte) error {
+func (m *QueryAllPairsValConsAddrByConsumerRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryAllPairsValConAddrByConsumerChainIDRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryAllPairsValConsAddrByConsumerRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryAllPairsValConAddrByConsumerChainIDRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryAllPairsValConsAddrByConsumerRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -1015,45 +795,45 @@ func (m *QueryAllPairsValConAddrByConsumerChainIDRequest) XXX_Marshal(b []byte, 
 		return b[:n], nil
 	}
 }
-func (m *QueryAllPairsValConAddrByConsumerChainIDRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryAllPairsValConAddrByConsumerChainIDRequest.Merge(m, src)
+func (m *QueryAllPairsValConsAddrByConsumerRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryAllPairsValConsAddrByConsumerRequest.Merge(m, src)
 }
-func (m *QueryAllPairsValConAddrByConsumerChainIDRequest) XXX_Size() int {
+func (m *QueryAllPairsValConsAddrByConsumerRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryAllPairsValConAddrByConsumerChainIDRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryAllPairsValConAddrByConsumerChainIDRequest.DiscardUnknown(m)
+func (m *QueryAllPairsValConsAddrByConsumerRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryAllPairsValConsAddrByConsumerRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryAllPairsValConAddrByConsumerChainIDRequest proto.InternalMessageInfo
+var xxx_messageInfo_QueryAllPairsValConsAddrByConsumerRequest proto.InternalMessageInfo
 
-func (m *QueryAllPairsValConAddrByConsumerChainIDRequest) GetChainId() string {
+func (m *QueryAllPairsValConsAddrByConsumerRequest) GetConsumerId() string {
 	if m != nil {
-		return m.ChainId
+		return m.ConsumerId
 	}
 	return ""
 }
 
-type QueryAllPairsValConAddrByConsumerChainIDResponse struct {
+type QueryAllPairsValConsAddrByConsumerResponse struct {
 	PairValConAddr []*PairValConAddrProviderAndConsumer `protobuf:"bytes,1,rep,name=pair_val_con_addr,json=pairValConAddr,proto3" json:"pair_val_con_addr,omitempty"`
 }
 
-func (m *QueryAllPairsValConAddrByConsumerChainIDResponse) Reset() {
-	*m = QueryAllPairsValConAddrByConsumerChainIDResponse{}
+func (m *QueryAllPairsValConsAddrByConsumerResponse) Reset() {
+	*m = QueryAllPairsValConsAddrByConsumerResponse{}
 }
-func (m *QueryAllPairsValConAddrByConsumerChainIDResponse) String() string {
+func (m *QueryAllPairsValConsAddrByConsumerResponse) String() string {
 	return proto.CompactTextString(m)
 }
-func (*QueryAllPairsValConAddrByConsumerChainIDResponse) ProtoMessage() {}
-func (*QueryAllPairsValConAddrByConsumerChainIDResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{21}
+func (*QueryAllPairsValConsAddrByConsumerResponse) ProtoMessage() {}
+func (*QueryAllPairsValConsAddrByConsumerResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{14}
 }
-func (m *QueryAllPairsValConAddrByConsumerChainIDResponse) XXX_Unmarshal(b []byte) error {
+func (m *QueryAllPairsValConsAddrByConsumerResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryAllPairsValConAddrByConsumerChainIDResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryAllPairsValConsAddrByConsumerResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryAllPairsValConAddrByConsumerChainIDResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryAllPairsValConsAddrByConsumerResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -1063,19 +843,19 @@ func (m *QueryAllPairsValConAddrByConsumerChainIDResponse) XXX_Marshal(b []byte,
 		return b[:n], nil
 	}
 }
-func (m *QueryAllPairsValConAddrByConsumerChainIDResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryAllPairsValConAddrByConsumerChainIDResponse.Merge(m, src)
+func (m *QueryAllPairsValConsAddrByConsumerResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryAllPairsValConsAddrByConsumerResponse.Merge(m, src)
 }
-func (m *QueryAllPairsValConAddrByConsumerChainIDResponse) XXX_Size() int {
+func (m *QueryAllPairsValConsAddrByConsumerResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryAllPairsValConAddrByConsumerChainIDResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryAllPairsValConAddrByConsumerChainIDResponse.DiscardUnknown(m)
+func (m *QueryAllPairsValConsAddrByConsumerResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryAllPairsValConsAddrByConsumerResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryAllPairsValConAddrByConsumerChainIDResponse proto.InternalMessageInfo
+var xxx_messageInfo_QueryAllPairsValConsAddrByConsumerResponse proto.InternalMessageInfo
 
-func (m *QueryAllPairsValConAddrByConsumerChainIDResponse) GetPairValConAddr() []*PairValConAddrProviderAndConsumer {
+func (m *QueryAllPairsValConsAddrByConsumerResponse) GetPairValConAddr() []*PairValConAddrProviderAndConsumer {
 	if m != nil {
 		return m.PairValConAddr
 	}
@@ -1094,7 +874,7 @@ func (m *PairValConAddrProviderAndConsumer) Reset()         { *m = PairValConAdd
 func (m *PairValConAddrProviderAndConsumer) String() string { return proto.CompactTextString(m) }
 func (*PairValConAddrProviderAndConsumer) ProtoMessage()    {}
 func (*PairValConAddrProviderAndConsumer) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{22}
+	return fileDescriptor_422512d7b7586cd7, []int{15}
 }
 func (m *PairValConAddrProviderAndConsumer) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1151,7 +931,7 @@ func (m *QueryParamsRequest) Reset()         { *m = QueryParamsRequest{} }
 func (m *QueryParamsRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryParamsRequest) ProtoMessage()    {}
 func (*QueryParamsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{23}
+	return fileDescriptor_422512d7b7586cd7, []int{16}
 }
 func (m *QueryParamsRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1188,7 +968,7 @@ func (m *QueryParamsResponse) Reset()         { *m = QueryParamsResponse{} }
 func (m *QueryParamsResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryParamsResponse) ProtoMessage()    {}
 func (*QueryParamsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{24}
+	return fileDescriptor_422512d7b7586cd7, []int{17}
 }
 func (m *QueryParamsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1225,7 +1005,7 @@ func (m *QueryParamsResponse) GetParams() Params {
 }
 
 type QueryConsumerChainOptedInValidatorsRequest struct {
-	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	ConsumerId string `protobuf:"bytes,1,opt,name=consumer_id,json=consumerId,proto3" json:"consumer_id,omitempty"`
 }
 
 func (m *QueryConsumerChainOptedInValidatorsRequest) Reset() {
@@ -1236,7 +1016,7 @@ func (m *QueryConsumerChainOptedInValidatorsRequest) String() string {
 }
 func (*QueryConsumerChainOptedInValidatorsRequest) ProtoMessage() {}
 func (*QueryConsumerChainOptedInValidatorsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{25}
+	return fileDescriptor_422512d7b7586cd7, []int{18}
 }
 func (m *QueryConsumerChainOptedInValidatorsRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1265,9 +1045,9 @@ func (m *QueryConsumerChainOptedInValidatorsRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryConsumerChainOptedInValidatorsRequest proto.InternalMessageInfo
 
-func (m *QueryConsumerChainOptedInValidatorsRequest) GetChainId() string {
+func (m *QueryConsumerChainOptedInValidatorsRequest) GetConsumerId() string {
 	if m != nil {
-		return m.ChainId
+		return m.ConsumerId
 	}
 	return ""
 }
@@ -1285,7 +1065,7 @@ func (m *QueryConsumerChainOptedInValidatorsResponse) String() string {
 }
 func (*QueryConsumerChainOptedInValidatorsResponse) ProtoMessage() {}
 func (*QueryConsumerChainOptedInValidatorsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{26}
+	return fileDescriptor_422512d7b7586cd7, []int{19}
 }
 func (m *QueryConsumerChainOptedInValidatorsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1322,14 +1102,14 @@ func (m *QueryConsumerChainOptedInValidatorsResponse) GetValidatorsProviderAddre
 }
 
 type QueryConsumerValidatorsRequest struct {
-	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	ConsumerId string `protobuf:"bytes,1,opt,name=consumer_id,json=consumerId,proto3" json:"consumer_id,omitempty"`
 }
 
 func (m *QueryConsumerValidatorsRequest) Reset()         { *m = QueryConsumerValidatorsRequest{} }
 func (m *QueryConsumerValidatorsRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryConsumerValidatorsRequest) ProtoMessage()    {}
 func (*QueryConsumerValidatorsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{27}
+	return fileDescriptor_422512d7b7586cd7, []int{20}
 }
 func (m *QueryConsumerValidatorsRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1358,9 +1138,9 @@ func (m *QueryConsumerValidatorsRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryConsumerValidatorsRequest proto.InternalMessageInfo
 
-func (m *QueryConsumerValidatorsRequest) GetChainId() string {
+func (m *QueryConsumerValidatorsRequest) GetConsumerId() string {
 	if m != nil {
-		return m.ChainId
+		return m.ConsumerId
 	}
 	return ""
 }
@@ -1370,15 +1150,37 @@ type QueryConsumerValidatorsValidator struct {
 	ProviderAddress string `protobuf:"bytes,1,opt,name=provider_address,json=providerAddress,proto3" json:"provider_address,omitempty" yaml:"address"`
 	// The consumer public key of the validator used on the consumer chain
 	ConsumerKey *crypto.PublicKey `protobuf:"bytes,2,opt,name=consumer_key,json=consumerKey,proto3" json:"consumer_key,omitempty"`
+	// [DEPRECATED] use `consumer_power` instead
+	Power int64 `protobuf:"varint,3,opt,name=power,proto3" json:"power,omitempty"` // Deprecated: Do not use.
+	// [DEPRECATED] use `consumer_commission_rate` instead
+	Rate cosmossdk_io_math.LegacyDec `protobuf:"bytes,4,opt,name=rate,proto3,customtype=cosmossdk.io/math.LegacyDec" json:"rate"` // Deprecated: Do not use.
 	// The power of the validator used on the consumer chain
-	Power int64 `protobuf:"varint,3,opt,name=power,proto3" json:"power,omitempty"`
+	ConsumerPower int64 `protobuf:"varint,5,opt,name=consumer_power,json=consumerPower,proto3" json:"consumer_power,omitempty"`
+	// The rate to charge delegators on the consumer chain, as a fraction
+	ConsumerCommissionRate cosmossdk_io_math.LegacyDec `protobuf:"bytes,6,opt,name=consumer_commission_rate,json=consumerCommissionRate,proto3,customtype=cosmossdk.io/math.LegacyDec" json:"consumer_commission_rate"`
+	// The rate to charge delegators on the provider chain, as a fraction
+	ProviderCommissionRate cosmossdk_io_math.LegacyDec `protobuf:"bytes,7,opt,name=provider_commission_rate,json=providerCommissionRate,proto3,customtype=cosmossdk.io/math.LegacyDec" json:"provider_commission_rate"`
+	// description defines the description terms for the validator
+	Description types1.Description `protobuf:"bytes,8,opt,name=description,proto3" json:"description"`
+	// provider_operator_address defines the address of the validator's operator
+	ProviderOperatorAddress string `protobuf:"bytes,9,opt,name=provider_operator_address,json=providerOperatorAddress,proto3" json:"provider_operator_address,omitempty"`
+	// jailed defined whether the validator has been jailed from bonded status or not.
+	Jailed bool `protobuf:"varint,10,opt,name=jailed,proto3" json:"jailed,omitempty"`
+	// status is the validator status (bonded/unbonding/unbonded).
+	Status types1.BondStatus `protobuf:"varint,11,opt,name=status,proto3,enum=cosmos.staking.v1beta1.BondStatus" json:"status,omitempty"`
+	// provider_tokens defines the delegated tokens (incl. self-delegation).
+	ProviderTokens cosmossdk_io_math.Int `protobuf:"bytes,12,opt,name=provider_tokens,json=providerTokens,proto3,customtype=cosmossdk.io/math.Int" json:"provider_tokens"`
+	// The power of the validator used on the provider chain
+	ProviderPower int64 `protobuf:"varint,13,opt,name=provider_power,json=providerPower,proto3" json:"provider_power,omitempty"`
+	// validates_current_epoch defines whether the validator has to validate for the current epoch or not
+	ValidatesCurrentEpoch bool `protobuf:"varint,14,opt,name=validates_current_epoch,json=validatesCurrentEpoch,proto3" json:"validates_current_epoch,omitempty"`
 }
 
 func (m *QueryConsumerValidatorsValidator) Reset()         { *m = QueryConsumerValidatorsValidator{} }
 func (m *QueryConsumerValidatorsValidator) String() string { return proto.CompactTextString(m) }
 func (*QueryConsumerValidatorsValidator) ProtoMessage()    {}
 func (*QueryConsumerValidatorsValidator) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{28}
+	return fileDescriptor_422512d7b7586cd7, []int{21}
 }
 func (m *QueryConsumerValidatorsValidator) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1421,11 +1223,61 @@ func (m *QueryConsumerValidatorsValidator) GetConsumerKey() *crypto.PublicKey {
 	return nil
 }
 
+// Deprecated: Do not use.
 func (m *QueryConsumerValidatorsValidator) GetPower() int64 {
 	if m != nil {
 		return m.Power
 	}
 	return 0
+}
+
+func (m *QueryConsumerValidatorsValidator) GetConsumerPower() int64 {
+	if m != nil {
+		return m.ConsumerPower
+	}
+	return 0
+}
+
+func (m *QueryConsumerValidatorsValidator) GetDescription() types1.Description {
+	if m != nil {
+		return m.Description
+	}
+	return types1.Description{}
+}
+
+func (m *QueryConsumerValidatorsValidator) GetProviderOperatorAddress() string {
+	if m != nil {
+		return m.ProviderOperatorAddress
+	}
+	return ""
+}
+
+func (m *QueryConsumerValidatorsValidator) GetJailed() bool {
+	if m != nil {
+		return m.Jailed
+	}
+	return false
+}
+
+func (m *QueryConsumerValidatorsValidator) GetStatus() types1.BondStatus {
+	if m != nil {
+		return m.Status
+	}
+	return types1.Unspecified
+}
+
+func (m *QueryConsumerValidatorsValidator) GetProviderPower() int64 {
+	if m != nil {
+		return m.ProviderPower
+	}
+	return 0
+}
+
+func (m *QueryConsumerValidatorsValidator) GetValidatesCurrentEpoch() bool {
+	if m != nil {
+		return m.ValidatesCurrentEpoch
+	}
+	return false
 }
 
 type QueryConsumerValidatorsResponse struct {
@@ -1436,7 +1288,7 @@ func (m *QueryConsumerValidatorsResponse) Reset()         { *m = QueryConsumerVa
 func (m *QueryConsumerValidatorsResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryConsumerValidatorsResponse) ProtoMessage()    {}
 func (*QueryConsumerValidatorsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{29}
+	return fileDescriptor_422512d7b7586cd7, []int{22}
 }
 func (m *QueryConsumerValidatorsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1485,7 +1337,7 @@ func (m *QueryConsumerChainsValidatorHasToValidateRequest) String() string {
 }
 func (*QueryConsumerChainsValidatorHasToValidateRequest) ProtoMessage() {}
 func (*QueryConsumerChainsValidatorHasToValidateRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{30}
+	return fileDescriptor_422512d7b7586cd7, []int{23}
 }
 func (m *QueryConsumerChainsValidatorHasToValidateRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1522,7 +1374,7 @@ func (m *QueryConsumerChainsValidatorHasToValidateRequest) GetProviderAddress() 
 }
 
 type QueryConsumerChainsValidatorHasToValidateResponse struct {
-	ConsumerChainIds []string `protobuf:"bytes,1,rep,name=consumer_chain_ids,json=consumerChainIds,proto3" json:"consumer_chain_ids,omitempty"`
+	ConsumerIds []string `protobuf:"bytes,1,rep,name=consumer_ids,json=consumerIds,proto3" json:"consumer_ids,omitempty"`
 }
 
 func (m *QueryConsumerChainsValidatorHasToValidateResponse) Reset() {
@@ -1533,7 +1385,7 @@ func (m *QueryConsumerChainsValidatorHasToValidateResponse) String() string {
 }
 func (*QueryConsumerChainsValidatorHasToValidateResponse) ProtoMessage() {}
 func (*QueryConsumerChainsValidatorHasToValidateResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{31}
+	return fileDescriptor_422512d7b7586cd7, []int{24}
 }
 func (m *QueryConsumerChainsValidatorHasToValidateResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1562,15 +1414,15 @@ func (m *QueryConsumerChainsValidatorHasToValidateResponse) XXX_DiscardUnknown()
 
 var xxx_messageInfo_QueryConsumerChainsValidatorHasToValidateResponse proto.InternalMessageInfo
 
-func (m *QueryConsumerChainsValidatorHasToValidateResponse) GetConsumerChainIds() []string {
+func (m *QueryConsumerChainsValidatorHasToValidateResponse) GetConsumerIds() []string {
 	if m != nil {
-		return m.ConsumerChainIds
+		return m.ConsumerIds
 	}
 	return nil
 }
 
 type QueryValidatorConsumerCommissionRateRequest struct {
-	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	ConsumerId string `protobuf:"bytes,1,opt,name=consumer_id,json=consumerId,proto3" json:"consumer_id,omitempty"`
 	// The consensus address of the validator on the provider chain
 	ProviderAddress string `protobuf:"bytes,2,opt,name=provider_address,json=providerAddress,proto3" json:"provider_address,omitempty" yaml:"address"`
 }
@@ -1583,7 +1435,7 @@ func (m *QueryValidatorConsumerCommissionRateRequest) String() string {
 }
 func (*QueryValidatorConsumerCommissionRateRequest) ProtoMessage() {}
 func (*QueryValidatorConsumerCommissionRateRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{32}
+	return fileDescriptor_422512d7b7586cd7, []int{25}
 }
 func (m *QueryValidatorConsumerCommissionRateRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1612,9 +1464,9 @@ func (m *QueryValidatorConsumerCommissionRateRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryValidatorConsumerCommissionRateRequest proto.InternalMessageInfo
 
-func (m *QueryValidatorConsumerCommissionRateRequest) GetChainId() string {
+func (m *QueryValidatorConsumerCommissionRateRequest) GetConsumerId() string {
 	if m != nil {
-		return m.ChainId
+		return m.ConsumerId
 	}
 	return ""
 }
@@ -1639,7 +1491,7 @@ func (m *QueryValidatorConsumerCommissionRateResponse) String() string {
 }
 func (*QueryValidatorConsumerCommissionRateResponse) ProtoMessage() {}
 func (*QueryValidatorConsumerCommissionRateResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{33}
+	return fileDescriptor_422512d7b7586cd7, []int{26}
 }
 func (m *QueryValidatorConsumerCommissionRateResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1668,22 +1520,21 @@ func (m *QueryValidatorConsumerCommissionRateResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryValidatorConsumerCommissionRateResponse proto.InternalMessageInfo
 
-type QueryOldestUnconfirmedVscRequest struct {
-	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+type QueryBlocksUntilNextEpochRequest struct {
 }
 
-func (m *QueryOldestUnconfirmedVscRequest) Reset()         { *m = QueryOldestUnconfirmedVscRequest{} }
-func (m *QueryOldestUnconfirmedVscRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryOldestUnconfirmedVscRequest) ProtoMessage()    {}
-func (*QueryOldestUnconfirmedVscRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{34}
+func (m *QueryBlocksUntilNextEpochRequest) Reset()         { *m = QueryBlocksUntilNextEpochRequest{} }
+func (m *QueryBlocksUntilNextEpochRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryBlocksUntilNextEpochRequest) ProtoMessage()    {}
+func (*QueryBlocksUntilNextEpochRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{27}
 }
-func (m *QueryOldestUnconfirmedVscRequest) XXX_Unmarshal(b []byte) error {
+func (m *QueryBlocksUntilNextEpochRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryOldestUnconfirmedVscRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryBlocksUntilNextEpochRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryOldestUnconfirmedVscRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryBlocksUntilNextEpochRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -1693,67 +1544,288 @@ func (m *QueryOldestUnconfirmedVscRequest) XXX_Marshal(b []byte, deterministic b
 		return b[:n], nil
 	}
 }
-func (m *QueryOldestUnconfirmedVscRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryOldestUnconfirmedVscRequest.Merge(m, src)
+func (m *QueryBlocksUntilNextEpochRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryBlocksUntilNextEpochRequest.Merge(m, src)
 }
-func (m *QueryOldestUnconfirmedVscRequest) XXX_Size() int {
+func (m *QueryBlocksUntilNextEpochRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryOldestUnconfirmedVscRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryOldestUnconfirmedVscRequest.DiscardUnknown(m)
+func (m *QueryBlocksUntilNextEpochRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryBlocksUntilNextEpochRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryOldestUnconfirmedVscRequest proto.InternalMessageInfo
+var xxx_messageInfo_QueryBlocksUntilNextEpochRequest proto.InternalMessageInfo
 
-func (m *QueryOldestUnconfirmedVscRequest) GetChainId() string {
+type QueryBlocksUntilNextEpochResponse struct {
+	// The number of blocks until the next epoch starts
+	BlocksUntilNextEpoch uint64 `protobuf:"varint,1,opt,name=blocks_until_next_epoch,json=blocksUntilNextEpoch,proto3" json:"blocks_until_next_epoch,omitempty"`
+}
+
+func (m *QueryBlocksUntilNextEpochResponse) Reset()         { *m = QueryBlocksUntilNextEpochResponse{} }
+func (m *QueryBlocksUntilNextEpochResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryBlocksUntilNextEpochResponse) ProtoMessage()    {}
+func (*QueryBlocksUntilNextEpochResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{28}
+}
+func (m *QueryBlocksUntilNextEpochResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryBlocksUntilNextEpochResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryBlocksUntilNextEpochResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryBlocksUntilNextEpochResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryBlocksUntilNextEpochResponse.Merge(m, src)
+}
+func (m *QueryBlocksUntilNextEpochResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryBlocksUntilNextEpochResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryBlocksUntilNextEpochResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryBlocksUntilNextEpochResponse proto.InternalMessageInfo
+
+func (m *QueryBlocksUntilNextEpochResponse) GetBlocksUntilNextEpoch() uint64 {
+	if m != nil {
+		return m.BlocksUntilNextEpoch
+	}
+	return 0
+}
+
+type QueryConsumerIdFromClientIdRequest struct {
+	// the client id (on the provider) that is tracking the consumer chain
+	// the client id can be found from the consumer chain by querying (i.e., `query ccvconsumer provider-info`)
+	ClientId string `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+}
+
+func (m *QueryConsumerIdFromClientIdRequest) Reset()         { *m = QueryConsumerIdFromClientIdRequest{} }
+func (m *QueryConsumerIdFromClientIdRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryConsumerIdFromClientIdRequest) ProtoMessage()    {}
+func (*QueryConsumerIdFromClientIdRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{29}
+}
+func (m *QueryConsumerIdFromClientIdRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryConsumerIdFromClientIdRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryConsumerIdFromClientIdRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryConsumerIdFromClientIdRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryConsumerIdFromClientIdRequest.Merge(m, src)
+}
+func (m *QueryConsumerIdFromClientIdRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryConsumerIdFromClientIdRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryConsumerIdFromClientIdRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryConsumerIdFromClientIdRequest proto.InternalMessageInfo
+
+func (m *QueryConsumerIdFromClientIdRequest) GetClientId() string {
+	if m != nil {
+		return m.ClientId
+	}
+	return ""
+}
+
+type QueryConsumerIdFromClientIdResponse struct {
+	// the consumer id of the chain associated with this client id
+	ConsumerId string `protobuf:"bytes,1,opt,name=consumer_id,json=consumerId,proto3" json:"consumer_id,omitempty"`
+}
+
+func (m *QueryConsumerIdFromClientIdResponse) Reset()         { *m = QueryConsumerIdFromClientIdResponse{} }
+func (m *QueryConsumerIdFromClientIdResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryConsumerIdFromClientIdResponse) ProtoMessage()    {}
+func (*QueryConsumerIdFromClientIdResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{30}
+}
+func (m *QueryConsumerIdFromClientIdResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryConsumerIdFromClientIdResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryConsumerIdFromClientIdResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryConsumerIdFromClientIdResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryConsumerIdFromClientIdResponse.Merge(m, src)
+}
+func (m *QueryConsumerIdFromClientIdResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryConsumerIdFromClientIdResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryConsumerIdFromClientIdResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryConsumerIdFromClientIdResponse proto.InternalMessageInfo
+
+func (m *QueryConsumerIdFromClientIdResponse) GetConsumerId() string {
+	if m != nil {
+		return m.ConsumerId
+	}
+	return ""
+}
+
+type QueryConsumerChainRequest struct {
+	ConsumerId string `protobuf:"bytes,1,opt,name=consumer_id,json=consumerId,proto3" json:"consumer_id,omitempty"`
+}
+
+func (m *QueryConsumerChainRequest) Reset()         { *m = QueryConsumerChainRequest{} }
+func (m *QueryConsumerChainRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryConsumerChainRequest) ProtoMessage()    {}
+func (*QueryConsumerChainRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{31}
+}
+func (m *QueryConsumerChainRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryConsumerChainRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryConsumerChainRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryConsumerChainRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryConsumerChainRequest.Merge(m, src)
+}
+func (m *QueryConsumerChainRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryConsumerChainRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryConsumerChainRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryConsumerChainRequest proto.InternalMessageInfo
+
+func (m *QueryConsumerChainRequest) GetConsumerId() string {
+	if m != nil {
+		return m.ConsumerId
+	}
+	return ""
+}
+
+type QueryConsumerChainResponse struct {
+	ConsumerId         string                            `protobuf:"bytes,1,opt,name=consumer_id,json=consumerId,proto3" json:"consumer_id,omitempty"`
+	ChainId            string                            `protobuf:"bytes,2,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	OwnerAddress       string                            `protobuf:"bytes,3,opt,name=owner_address,json=ownerAddress,proto3" json:"owner_address,omitempty"`
+	Phase              string                            `protobuf:"bytes,4,opt,name=phase,proto3" json:"phase,omitempty"`
+	Metadata           ConsumerMetadata                  `protobuf:"bytes,5,opt,name=metadata,proto3" json:"metadata"`
+	InitParams         *ConsumerInitializationParameters `protobuf:"bytes,6,opt,name=init_params,json=initParams,proto3" json:"init_params,omitempty"`
+	PowerShapingParams *PowerShapingParameters           `protobuf:"bytes,7,opt,name=power_shaping_params,json=powerShapingParams,proto3" json:"power_shaping_params,omitempty"`
+}
+
+func (m *QueryConsumerChainResponse) Reset()         { *m = QueryConsumerChainResponse{} }
+func (m *QueryConsumerChainResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryConsumerChainResponse) ProtoMessage()    {}
+func (*QueryConsumerChainResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{32}
+}
+func (m *QueryConsumerChainResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryConsumerChainResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryConsumerChainResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryConsumerChainResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryConsumerChainResponse.Merge(m, src)
+}
+func (m *QueryConsumerChainResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryConsumerChainResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryConsumerChainResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryConsumerChainResponse proto.InternalMessageInfo
+
+func (m *QueryConsumerChainResponse) GetConsumerId() string {
+	if m != nil {
+		return m.ConsumerId
+	}
+	return ""
+}
+
+func (m *QueryConsumerChainResponse) GetChainId() string {
 	if m != nil {
 		return m.ChainId
 	}
 	return ""
 }
 
-type QueryOldestUnconfirmedVscResponse struct {
-	VscSendTimestamp VscSendTimestamp `protobuf:"bytes,1,opt,name=vsc_send_timestamp,json=vscSendTimestamp,proto3" json:"vsc_send_timestamp"`
-}
-
-func (m *QueryOldestUnconfirmedVscResponse) Reset()         { *m = QueryOldestUnconfirmedVscResponse{} }
-func (m *QueryOldestUnconfirmedVscResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryOldestUnconfirmedVscResponse) ProtoMessage()    {}
-func (*QueryOldestUnconfirmedVscResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_422512d7b7586cd7, []int{35}
-}
-func (m *QueryOldestUnconfirmedVscResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryOldestUnconfirmedVscResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryOldestUnconfirmedVscResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryOldestUnconfirmedVscResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryOldestUnconfirmedVscResponse.Merge(m, src)
-}
-func (m *QueryOldestUnconfirmedVscResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryOldestUnconfirmedVscResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryOldestUnconfirmedVscResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryOldestUnconfirmedVscResponse proto.InternalMessageInfo
-
-func (m *QueryOldestUnconfirmedVscResponse) GetVscSendTimestamp() VscSendTimestamp {
+func (m *QueryConsumerChainResponse) GetOwnerAddress() string {
 	if m != nil {
-		return m.VscSendTimestamp
+		return m.OwnerAddress
 	}
-	return VscSendTimestamp{}
+	return ""
+}
+
+func (m *QueryConsumerChainResponse) GetPhase() string {
+	if m != nil {
+		return m.Phase
+	}
+	return ""
+}
+
+func (m *QueryConsumerChainResponse) GetMetadata() ConsumerMetadata {
+	if m != nil {
+		return m.Metadata
+	}
+	return ConsumerMetadata{}
+}
+
+func (m *QueryConsumerChainResponse) GetInitParams() *ConsumerInitializationParameters {
+	if m != nil {
+		return m.InitParams
+	}
+	return nil
+}
+
+func (m *QueryConsumerChainResponse) GetPowerShapingParams() *PowerShapingParameters {
+	if m != nil {
+		return m.PowerShapingParams
+	}
+	return nil
 }
 
 func init() {
@@ -1761,10 +1833,6 @@ func init() {
 	proto.RegisterType((*QueryConsumerGenesisResponse)(nil), "interchain_security.ccv.provider.v1.QueryConsumerGenesisResponse")
 	proto.RegisterType((*QueryConsumerChainsRequest)(nil), "interchain_security.ccv.provider.v1.QueryConsumerChainsRequest")
 	proto.RegisterType((*QueryConsumerChainsResponse)(nil), "interchain_security.ccv.provider.v1.QueryConsumerChainsResponse")
-	proto.RegisterType((*QueryConsumerChainStartProposalsRequest)(nil), "interchain_security.ccv.provider.v1.QueryConsumerChainStartProposalsRequest")
-	proto.RegisterType((*QueryConsumerChainStartProposalsResponse)(nil), "interchain_security.ccv.provider.v1.QueryConsumerChainStartProposalsResponse")
-	proto.RegisterType((*QueryConsumerChainStopProposalsRequest)(nil), "interchain_security.ccv.provider.v1.QueryConsumerChainStopProposalsRequest")
-	proto.RegisterType((*QueryConsumerChainStopProposalsResponse)(nil), "interchain_security.ccv.provider.v1.QueryConsumerChainStopProposalsResponse")
 	proto.RegisterType((*Chain)(nil), "interchain_security.ccv.provider.v1.Chain")
 	proto.RegisterType((*QueryValidatorConsumerAddrRequest)(nil), "interchain_security.ccv.provider.v1.QueryValidatorConsumerAddrRequest")
 	proto.RegisterType((*QueryValidatorConsumerAddrResponse)(nil), "interchain_security.ccv.provider.v1.QueryValidatorConsumerAddrResponse")
@@ -1774,11 +1842,8 @@ func init() {
 	proto.RegisterType((*QueryThrottleStateResponse)(nil), "interchain_security.ccv.provider.v1.QueryThrottleStateResponse")
 	proto.RegisterType((*QueryRegisteredConsumerRewardDenomsRequest)(nil), "interchain_security.ccv.provider.v1.QueryRegisteredConsumerRewardDenomsRequest")
 	proto.RegisterType((*QueryRegisteredConsumerRewardDenomsResponse)(nil), "interchain_security.ccv.provider.v1.QueryRegisteredConsumerRewardDenomsResponse")
-	proto.RegisterType((*QueryProposedChainIDsRequest)(nil), "interchain_security.ccv.provider.v1.QueryProposedChainIDsRequest")
-	proto.RegisterType((*QueryProposedChainIDsResponse)(nil), "interchain_security.ccv.provider.v1.QueryProposedChainIDsResponse")
-	proto.RegisterType((*ProposedChain)(nil), "interchain_security.ccv.provider.v1.ProposedChain")
-	proto.RegisterType((*QueryAllPairsValConAddrByConsumerChainIDRequest)(nil), "interchain_security.ccv.provider.v1.QueryAllPairsValConAddrByConsumerChainIDRequest")
-	proto.RegisterType((*QueryAllPairsValConAddrByConsumerChainIDResponse)(nil), "interchain_security.ccv.provider.v1.QueryAllPairsValConAddrByConsumerChainIDResponse")
+	proto.RegisterType((*QueryAllPairsValConsAddrByConsumerRequest)(nil), "interchain_security.ccv.provider.v1.QueryAllPairsValConsAddrByConsumerRequest")
+	proto.RegisterType((*QueryAllPairsValConsAddrByConsumerResponse)(nil), "interchain_security.ccv.provider.v1.QueryAllPairsValConsAddrByConsumerResponse")
 	proto.RegisterType((*PairValConAddrProviderAndConsumer)(nil), "interchain_security.ccv.provider.v1.PairValConAddrProviderAndConsumer")
 	proto.RegisterType((*QueryParamsRequest)(nil), "interchain_security.ccv.provider.v1.QueryParamsRequest")
 	proto.RegisterType((*QueryParamsResponse)(nil), "interchain_security.ccv.provider.v1.QueryParamsResponse")
@@ -1791,8 +1856,12 @@ func init() {
 	proto.RegisterType((*QueryConsumerChainsValidatorHasToValidateResponse)(nil), "interchain_security.ccv.provider.v1.QueryConsumerChainsValidatorHasToValidateResponse")
 	proto.RegisterType((*QueryValidatorConsumerCommissionRateRequest)(nil), "interchain_security.ccv.provider.v1.QueryValidatorConsumerCommissionRateRequest")
 	proto.RegisterType((*QueryValidatorConsumerCommissionRateResponse)(nil), "interchain_security.ccv.provider.v1.QueryValidatorConsumerCommissionRateResponse")
-	proto.RegisterType((*QueryOldestUnconfirmedVscRequest)(nil), "interchain_security.ccv.provider.v1.QueryOldestUnconfirmedVscRequest")
-	proto.RegisterType((*QueryOldestUnconfirmedVscResponse)(nil), "interchain_security.ccv.provider.v1.QueryOldestUnconfirmedVscResponse")
+	proto.RegisterType((*QueryBlocksUntilNextEpochRequest)(nil), "interchain_security.ccv.provider.v1.QueryBlocksUntilNextEpochRequest")
+	proto.RegisterType((*QueryBlocksUntilNextEpochResponse)(nil), "interchain_security.ccv.provider.v1.QueryBlocksUntilNextEpochResponse")
+	proto.RegisterType((*QueryConsumerIdFromClientIdRequest)(nil), "interchain_security.ccv.provider.v1.QueryConsumerIdFromClientIdRequest")
+	proto.RegisterType((*QueryConsumerIdFromClientIdResponse)(nil), "interchain_security.ccv.provider.v1.QueryConsumerIdFromClientIdResponse")
+	proto.RegisterType((*QueryConsumerChainRequest)(nil), "interchain_security.ccv.provider.v1.QueryConsumerChainRequest")
+	proto.RegisterType((*QueryConsumerChainResponse)(nil), "interchain_security.ccv.provider.v1.QueryConsumerChainResponse")
 }
 
 func init() {
@@ -1800,134 +1869,162 @@ func init() {
 }
 
 var fileDescriptor_422512d7b7586cd7 = []byte{
-	// 2030 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x59, 0xcd, 0x6f, 0xdc, 0xc6,
-	0x15, 0x17, 0x57, 0x1f, 0x91, 0x46, 0xfe, 0xca, 0x58, 0x4d, 0x64, 0x4a, 0xd9, 0x55, 0xe8, 0x7e,
-	0xc8, 0xb2, 0x4b, 0x4a, 0x32, 0x8c, 0x38, 0x76, 0x15, 0x59, 0x2b, 0xd9, 0xce, 0xc2, 0x4e, 0xac,
-	0xd0, 0xb2, 0x5a, 0xb8, 0x45, 0x69, 0x9a, 0x9c, 0xac, 0x06, 0xe6, 0x72, 0x28, 0x0e, 0x77, 0x9d,
-	0x85, 0x91, 0x43, 0x7a, 0x68, 0x73, 0x2a, 0x82, 0x7e, 0xdc, 0x73, 0xe9, 0xb1, 0x97, 0x1e, 0x8a,
-	0x1c, 0xfa, 0x07, 0xe4, 0xd6, 0x14, 0xb9, 0x14, 0x3d, 0xb8, 0x85, 0xdc, 0x43, 0xd1, 0x43, 0x51,
-	0x04, 0x05, 0x7a, 0x2a, 0x50, 0x70, 0x38, 0xfc, 0xda, 0xe5, 0xee, 0x92, 0xbb, 0xca, 0x6d, 0x39,
-	0x33, 0xef, 0x37, 0xef, 0xbd, 0x79, 0xef, 0xcd, 0xfb, 0xcd, 0x02, 0x05, 0xdb, 0x1e, 0x72, 0x8d,
-	0x03, 0x1d, 0xdb, 0x1a, 0x45, 0x46, 0xd3, 0xc5, 0x5e, 0x5b, 0x31, 0x8c, 0x96, 0xe2, 0xb8, 0xa4,
-	0x85, 0x4d, 0xe4, 0x2a, 0xad, 0x35, 0xe5, 0xb0, 0x89, 0xdc, 0xb6, 0xec, 0xb8, 0xc4, 0x23, 0xf0,
-	0x7c, 0x86, 0x80, 0x6c, 0x18, 0x2d, 0x39, 0x14, 0x90, 0x5b, 0x6b, 0xe2, 0x62, 0x9d, 0x90, 0xba,
-	0x85, 0x14, 0xdd, 0xc1, 0x8a, 0x6e, 0xdb, 0xc4, 0xd3, 0x3d, 0x4c, 0x6c, 0x1a, 0x40, 0x88, 0x73,
-	0x75, 0x52, 0x27, 0xec, 0xa7, 0xe2, 0xff, 0xe2, 0xa3, 0x15, 0x2e, 0xc3, 0xbe, 0x1e, 0x37, 0xdf,
-	0x57, 0x3c, 0xdc, 0x40, 0xd4, 0xd3, 0x1b, 0x0e, 0x5f, 0xb0, 0x9e, 0x47, 0xd5, 0x48, 0x8b, 0x40,
-	0x66, 0xb5, 0x97, 0x4c, 0x6b, 0x4d, 0xa1, 0x07, 0xba, 0x8b, 0x4c, 0xcd, 0x20, 0x36, 0x6d, 0x36,
-	0x22, 0x89, 0x6f, 0xf5, 0x91, 0x78, 0x8a, 0x5d, 0xc4, 0x97, 0x2d, 0x7a, 0xc8, 0x36, 0x91, 0xdb,
-	0xc0, 0xb6, 0xa7, 0x18, 0x6e, 0xdb, 0xf1, 0x88, 0xf2, 0x04, 0xb5, 0x43, 0x0b, 0xcf, 0x19, 0x84,
-	0x36, 0x08, 0xd5, 0x02, 0x23, 0x83, 0x8f, 0x60, 0x4a, 0xba, 0x0a, 0x16, 0xde, 0xf3, 0xdd, 0xb9,
-	0xcd, 0xb7, 0xbd, 0x8d, 0x6c, 0x44, 0x31, 0x55, 0xd1, 0x61, 0x13, 0x51, 0x0f, 0x9e, 0x03, 0xd3,
-	0xc1, 0xde, 0xd8, 0x9c, 0x17, 0x96, 0x84, 0xe5, 0x19, 0xf5, 0x25, 0xf6, 0x5d, 0x33, 0xa5, 0x67,
-	0x60, 0x31, 0x5b, 0x92, 0x3a, 0xc4, 0xa6, 0x08, 0xfe, 0x10, 0x9c, 0xac, 0x07, 0x43, 0x1a, 0xf5,
-	0x74, 0x0f, 0x31, 0xf9, 0xd9, 0xf5, 0x55, 0xb9, 0xd7, 0x89, 0xb5, 0xd6, 0xe4, 0x0e, 0xac, 0xfb,
-	0xbe, 0x5c, 0x75, 0xe2, 0xf3, 0xe7, 0x95, 0x31, 0xf5, 0x44, 0x3d, 0x31, 0x26, 0x2d, 0x02, 0x31,
-	0xb5, 0xf9, 0xb6, 0x0f, 0x17, 0x6a, 0x2d, 0xe9, 0x1d, 0x46, 0x85, 0xb3, 0x5c, 0xb3, 0x2a, 0x98,
-	0x62, 0xdb, 0xd3, 0x79, 0x61, 0x69, 0x7c, 0x79, 0x76, 0x7d, 0x45, 0xce, 0x11, 0x44, 0x32, 0x03,
-	0x51, 0xb9, 0xa4, 0x74, 0x01, 0x7c, 0xa7, 0x7b, 0x8b, 0xfb, 0x9e, 0xee, 0x7a, 0xbb, 0x2e, 0x71,
-	0x08, 0xd5, 0xad, 0x48, 0x9b, 0x8f, 0x05, 0xb0, 0x3c, 0x78, 0x2d, 0xd7, 0xed, 0x47, 0x60, 0xc6,
-	0x09, 0x07, 0xb9, 0xc7, 0xde, 0xca, 0xa7, 0x1e, 0x07, 0xdf, 0x32, 0x4d, 0xec, 0x47, 0x77, 0x0c,
-	0x1d, 0x03, 0x4a, 0xcb, 0xe0, 0xdb, 0x59, 0x9a, 0x10, 0xa7, 0x4b, 0xe9, 0x9f, 0x0a, 0xd9, 0x06,
-	0xa6, 0x96, 0x46, 0x27, 0xdd, 0xa5, 0xf3, 0x46, 0x21, 0x9d, 0x55, 0xd4, 0x20, 0x2d, 0xdd, 0xca,
-	0x54, 0xf9, 0x0f, 0x25, 0x30, 0xc9, 0xf6, 0xee, 0x13, 0x8b, 0x70, 0x01, 0xcc, 0x18, 0x16, 0x46,
-	0xb6, 0xe7, 0xcf, 0x95, 0xd8, 0xdc, 0x74, 0x30, 0x50, 0x33, 0xe1, 0x59, 0x30, 0xe9, 0x11, 0x47,
-	0x7b, 0x77, 0x7e, 0x7c, 0x49, 0x58, 0x3e, 0xa9, 0x4e, 0x78, 0xc4, 0x79, 0x17, 0xae, 0x00, 0xd8,
-	0xc0, 0xb6, 0xe6, 0x90, 0xa7, 0xc8, 0xd5, 0xb0, 0xad, 0x05, 0x2b, 0x26, 0x96, 0x84, 0xe5, 0x71,
-	0xf5, 0x54, 0x03, 0xdb, 0xbb, 0xfe, 0x44, 0xcd, 0xde, 0xf3, 0xd7, 0xae, 0x82, 0xb9, 0x96, 0x6e,
-	0x61, 0x53, 0xf7, 0x88, 0x4b, 0xb9, 0x88, 0xa1, 0x3b, 0xf3, 0x93, 0x0c, 0x0f, 0xc6, 0x73, 0x4c,
-	0x68, 0x5b, 0x77, 0xe0, 0x0a, 0x78, 0x39, 0x1a, 0xd5, 0x28, 0xf2, 0xd8, 0xf2, 0x29, 0xb6, 0xfc,
-	0x74, 0x34, 0x71, 0x1f, 0x79, 0xfe, 0xda, 0x45, 0x30, 0xa3, 0x5b, 0x16, 0x79, 0x6a, 0x61, 0xea,
-	0xcd, 0xbf, 0xb4, 0x34, 0xbe, 0x3c, 0xa3, 0xc6, 0x03, 0x50, 0x04, 0xd3, 0x26, 0xb2, 0xdb, 0x6c,
-	0x72, 0x9a, 0x4d, 0x46, 0xdf, 0x50, 0x02, 0x27, 0x1c, 0x17, 0x13, 0xdf, 0xb5, 0x6c, 0x7e, 0x86,
-	0xcd, 0xa7, 0xc6, 0xa4, 0x9f, 0x09, 0xe0, 0x75, 0x76, 0x8e, 0xfb, 0xe1, 0xb6, 0x89, 0x40, 0x71,
-	0x07, 0xa7, 0x39, 0xdc, 0x00, 0x67, 0xc2, 0x23, 0xd3, 0x74, 0xd3, 0x74, 0x11, 0xa5, 0x81, 0x87,
-	0xab, 0xf0, 0xab, 0xe7, 0x95, 0x53, 0x6d, 0xbd, 0x61, 0x5d, 0x93, 0xf8, 0x84, 0xa4, 0x9e, 0x0e,
-	0xd7, 0x6e, 0x05, 0x23, 0xd7, 0xa6, 0x3f, 0xfe, 0xb4, 0x32, 0xf6, 0x8f, 0x4f, 0x2b, 0x63, 0xd2,
-	0x3d, 0x20, 0xf5, 0x53, 0x84, 0xc7, 0xd2, 0x05, 0x70, 0x26, 0xac, 0x80, 0xd1, 0x76, 0x81, 0x46,
-	0xa7, 0x8d, 0xc4, 0x7a, 0x7f, 0xb3, 0x6e, 0xd3, 0x76, 0x13, 0x9b, 0xe7, 0x33, 0xad, 0x6b, 0xaf,
-	0x3e, 0xa6, 0x75, 0xec, 0xdf, 0xcf, 0xb4, 0xb4, 0x22, 0xb1, 0x69, 0x5d, 0x9e, 0xe4, 0xa6, 0x75,
-	0x78, 0x4d, 0x5a, 0x00, 0xe7, 0x18, 0xe0, 0xde, 0x81, 0x4b, 0x3c, 0xcf, 0x42, 0xac, 0xe8, 0x85,
-	0xa9, 0xf9, 0x27, 0x81, 0x17, 0xbf, 0x8e, 0x59, 0xbe, 0x4d, 0x05, 0xcc, 0x52, 0x4b, 0xa7, 0x07,
-	0x5a, 0x03, 0x79, 0xc8, 0x65, 0x3b, 0x8c, 0xab, 0x80, 0x0d, 0xbd, 0xe3, 0x8f, 0xc0, 0x75, 0xf0,
-	0x8d, 0xc4, 0x02, 0x8d, 0xc5, 0x9a, 0x6e, 0x1b, 0x88, 0xd9, 0x3e, 0xae, 0x9e, 0x8d, 0x97, 0x6e,
-	0x85, 0x53, 0xf0, 0xc7, 0x60, 0xde, 0x46, 0x1f, 0x78, 0x9a, 0x8b, 0x1c, 0x0b, 0xd9, 0x98, 0x1e,
-	0x68, 0x86, 0x6e, 0x9b, 0xbe, 0xb1, 0x88, 0xa5, 0xd5, 0xec, 0xba, 0x28, 0x07, 0x17, 0xa6, 0x1c,
-	0x5e, 0x98, 0xf2, 0x5e, 0x78, 0x61, 0x56, 0xa7, 0xfd, 0x0a, 0xfe, 0xc9, 0x5f, 0x2b, 0x82, 0xfa,
-	0x8a, 0x8f, 0xa2, 0x86, 0x20, 0xdb, 0x21, 0x86, 0x74, 0x09, 0xac, 0x30, 0x93, 0x54, 0x54, 0xc7,
-	0xd4, 0x43, 0x2e, 0x32, 0xe3, 0xda, 0xf0, 0x54, 0x77, 0xcd, 0x1d, 0x64, 0x93, 0x46, 0x54, 0x9c,
-	0x6e, 0x82, 0x8b, 0xb9, 0x56, 0x73, 0x8f, 0xbc, 0x02, 0xa6, 0x4c, 0x36, 0xc2, 0xea, 0xfd, 0x8c,
-	0xca, 0xbf, 0xa4, 0x32, 0xbf, 0xc1, 0x82, 0xba, 0x83, 0x4c, 0x56, 0x66, 0x6a, 0x3b, 0xd1, 0x36,
-	0x1f, 0x09, 0xe0, 0xb5, 0x1e, 0x0b, 0x38, 0xf2, 0x23, 0x70, 0xca, 0x49, 0xce, 0x85, 0x37, 0xca,
-	0x7a, 0xae, 0xf2, 0x97, 0x82, 0xe5, 0xd7, 0x5c, 0x07, 0x9e, 0x54, 0x03, 0x27, 0x53, 0xcb, 0xe0,
-	0x3c, 0xe0, 0xf1, 0xbb, 0x93, 0x0e, 0xe7, 0x1d, 0x58, 0x06, 0x20, 0x2c, 0x9b, 0xb5, 0x1d, 0x76,
-	0x98, 0x13, 0x6a, 0x62, 0x44, 0xba, 0x0b, 0x14, 0x66, 0xcd, 0x96, 0x65, 0xed, 0xea, 0xd8, 0xa5,
-	0xfb, 0xba, 0xb5, 0x4d, 0x6c, 0x3f, 0xe4, 0xaa, 0xe9, 0x2a, 0x5f, 0xdb, 0xc9, 0x71, 0xfd, 0xff,
-	0x46, 0x00, 0xab, 0xf9, 0xe1, 0xb8, 0xbf, 0x0e, 0xc1, 0xcb, 0x8e, 0x8e, 0x5d, 0xad, 0xa5, 0x5b,
-	0x7e, 0xa3, 0xc3, 0xd2, 0x80, 0xbb, 0xec, 0x56, 0x3e, 0x97, 0xe9, 0xd8, 0x8d, 0x37, 0x8a, 0xd2,
-	0xcc, 0x8e, 0x03, 0xe0, 0x94, 0x93, 0x5a, 0x22, 0xfd, 0x47, 0x00, 0xaf, 0x0f, 0x94, 0x82, 0xb7,
-	0x7a, 0xe5, 0x66, 0x75, 0xe1, 0xab, 0xe7, 0x95, 0x57, 0x83, 0x52, 0xd0, 0xb9, 0xa2, 0xbb, 0xdc,
-	0xf9, 0x38, 0x3d, 0x4a, 0x4a, 0x02, 0xa7, 0x73, 0x45, 0x77, 0x6d, 0x81, 0x9b, 0xe0, 0x44, 0xb4,
-	0xea, 0x09, 0x6a, 0xf3, 0x1c, 0x5b, 0x94, 0xe3, 0x36, 0x4f, 0x0e, 0xda, 0x3c, 0x79, 0xb7, 0xf9,
-	0xd8, 0xc2, 0xc6, 0x1d, 0xd4, 0x56, 0x67, 0x43, 0x89, 0x3b, 0xa8, 0x2d, 0xcd, 0x01, 0x18, 0x84,
-	0xae, 0xee, 0xea, 0x71, 0xe2, 0x3c, 0x02, 0x67, 0x53, 0xa3, 0xfc, 0x58, 0x6a, 0x60, 0xca, 0x61,
-	0x23, 0xfc, 0xf6, 0xbe, 0x98, 0xf3, 0x2c, 0x7c, 0x11, 0x1e, 0xb7, 0x1c, 0x40, 0xba, 0xcd, 0x13,
-	0x39, 0x15, 0x01, 0xf7, 0x1c, 0x0f, 0x99, 0x35, 0x3b, 0x2a, 0x8f, 0x79, 0xda, 0xcb, 0x43, 0x9e,
-	0xe3, 0x83, 0x80, 0xa2, 0x9e, 0xee, 0xb5, 0xe4, 0x1d, 0xdd, 0x71, 0x52, 0x28, 0x4c, 0xfd, 0x85,
-	0xc4, 0x65, 0x9d, 0x3e, 0x3a, 0x44, 0xa5, 0xeb, 0xa0, 0x9c, 0xda, 0xb2, 0x90, 0xbe, 0x9f, 0x09,
-	0x60, 0xa9, 0x87, 0x74, 0xf4, 0x2b, 0xf3, 0x32, 0x15, 0x72, 0x5f, 0xa6, 0x5d, 0x51, 0x51, 0x2a,
-	0x18, 0x15, 0x70, 0x0e, 0x4c, 0xb2, 0xf6, 0x85, 0xc5, 0xd3, 0xb8, 0x1a, 0x7c, 0xf8, 0x0d, 0x6a,
-	0xa5, 0xa7, 0xe1, 0xdc, 0xbf, 0x08, 0x80, 0xd8, 0x75, 0x3c, 0x65, 0x6f, 0xe6, 0x0a, 0x93, 0x41,
-	0x4e, 0x51, 0x13, 0xc0, 0xd2, 0x21, 0x2f, 0x2a, 0xe9, 0xce, 0x3d, 0x5a, 0xfb, 0xb6, 0x4e, 0xf7,
-	0x08, 0xff, 0x0a, 0xef, 0xc3, 0x11, 0x9d, 0x2a, 0xe9, 0x60, 0xad, 0xc0, 0x96, 0xdc, 0x1d, 0x97,
-	0x00, 0x8c, 0x4e, 0x22, 0x8c, 0x88, 0x30, 0xc6, 0xa2, 0x0a, 0x10, 0x54, 0x3f, 0x93, 0x75, 0x2a,
-	0x17, 0xb3, 0x7b, 0x9f, 0x6d, 0xd2, 0x68, 0x60, 0x4a, 0x31, 0xb1, 0xd5, 0x84, 0x45, 0x5f, 0x5b,
-	0x3b, 0x26, 0xd5, 0xc1, 0xa5, 0x7c, 0x8a, 0x70, 0x3b, 0xdf, 0x00, 0x13, 0x6e, 0xc8, 0xdd, 0x66,
-	0xaa, 0xe7, 0xfd, 0x54, 0xff, 0xcb, 0xf3, 0xca, 0x42, 0x40, 0x21, 0xa9, 0xf9, 0x44, 0xc6, 0x44,
-	0x69, 0xe8, 0xde, 0x81, 0x7c, 0x17, 0xd5, 0x75, 0xa3, 0xbd, 0x83, 0x0c, 0x95, 0x09, 0x48, 0x1b,
-	0x3c, 0x1b, 0xee, 0x59, 0x26, 0xa2, 0xde, 0x03, 0xdb, 0x20, 0xf6, 0xfb, 0xd8, 0x6d, 0x20, 0x73,
-	0x9f, 0x1a, 0x39, 0xb2, 0xe9, 0xe7, 0x61, 0x6f, 0x97, 0x2d, 0xcf, 0xb5, 0xc3, 0x00, 0xb6, 0xa8,
-	0xa1, 0x51, 0x64, 0x9b, 0x5a, 0x44, 0xcf, 0x79, 0x0d, 0xbb, 0x92, 0x2b, 0x38, 0xf7, 0xa9, 0x71,
-	0x1f, 0xd9, 0x66, 0xdc, 0xaa, 0x04, 0xd5, 0xec, 0x4c, 0xab, 0x63, 0x7c, 0xfd, 0xb3, 0x0a, 0x98,
-	0x64, 0x0a, 0xc1, 0x23, 0x01, 0xcc, 0x65, 0x11, 0x5f, 0x78, 0xa3, 0x78, 0x3a, 0xa4, 0xd9, 0xb6,
-	0xb8, 0x35, 0x02, 0x42, 0xe0, 0x12, 0xe9, 0xe6, 0x4f, 0xbe, 0xfc, 0xfb, 0x2f, 0x4b, 0x9b, 0x70,
-	0x63, 0xf0, 0x4b, 0x4a, 0x14, 0xc0, 0x9c, 0x59, 0x2b, 0xcf, 0xc2, 0xd3, 0xf8, 0x10, 0x7e, 0x29,
-	0xf0, 0x9b, 0x22, 0x9d, 0x15, 0x70, 0xb3, 0xb8, 0x86, 0x29, 0x6a, 0x2e, 0xde, 0x18, 0x1e, 0x80,
-	0x5b, 0xf8, 0x26, 0xb3, 0xf0, 0x32, 0x5c, 0x2b, 0x60, 0x61, 0x40, 0xda, 0xe1, 0x47, 0x25, 0x30,
-	0xdf, 0x83, 0x89, 0x53, 0x78, 0x77, 0x48, 0xcd, 0x32, 0x49, 0xbf, 0xf8, 0xce, 0x31, 0xa1, 0x71,
-	0xa3, 0xdf, 0x66, 0x46, 0x57, 0xe1, 0x8d, 0xa2, 0x46, 0x6b, 0xd4, 0x07, 0xd4, 0x22, 0x3e, 0x0d,
-	0xff, 0x27, 0x80, 0x57, 0xb3, 0x89, 0x3d, 0x85, 0x77, 0x86, 0x56, 0xba, 0xfb, 0x05, 0x41, 0xbc,
-	0x7b, 0x3c, 0x60, 0xdc, 0x01, 0xb7, 0x99, 0x03, 0xb6, 0xe0, 0xe6, 0x10, 0x0e, 0x20, 0x4e, 0xc2,
-	0xfe, 0x7f, 0x87, 0xec, 0x29, 0x93, 0x87, 0xc2, 0x5b, 0xf9, 0xb5, 0xee, 0xc7, 0xa8, 0xc5, 0xdb,
-	0x23, 0xe3, 0x70, 0xc3, 0xb7, 0x98, 0xe1, 0xd7, 0xe1, 0x9b, 0x39, 0x9e, 0x46, 0xa3, 0x27, 0x87,
-	0x54, 0x87, 0x99, 0x61, 0x72, 0xb2, 0xf7, 0x19, 0xca, 0xe4, 0x0c, 0xa6, 0x3d, 0x94, 0xc9, 0x59,
-	0x44, 0x79, 0x38, 0x93, 0x53, 0xb7, 0x22, 0xfc, 0xa3, 0xc0, 0xfb, 0xdf, 0x14, 0x47, 0x86, 0x6f,
-	0xe5, 0x57, 0x31, 0x8b, 0x7a, 0x8b, 0x9b, 0x43, 0xcb, 0x73, 0xd3, 0xae, 0x32, 0xd3, 0xd6, 0xe1,
-	0xea, 0x60, 0xd3, 0x3c, 0x0e, 0x10, 0xbc, 0x9e, 0xc2, 0x5f, 0x97, 0xc0, 0xf9, 0x1c, 0xa4, 0x17,
-	0xde, 0xcb, 0xaf, 0x62, 0x2e, 0xb2, 0x2d, 0xee, 0x1e, 0x1f, 0x20, 0x77, 0xc2, 0x1d, 0xe6, 0x84,
-	0x9b, 0x70, 0x7b, 0xb0, 0x13, 0xdc, 0x08, 0x31, 0x8e, 0x69, 0x97, 0x61, 0x6a, 0x01, 0x89, 0x87,
-	0xff, 0xec, 0x22, 0xe9, 0x69, 0xee, 0x49, 0x61, 0x81, 0x5b, 0xb5, 0xc7, 0x4b, 0x80, 0x58, 0x1d,
-	0x05, 0x82, 0x5b, 0x5d, 0x65, 0x56, 0x7f, 0x0f, 0x5e, 0x1b, 0x6c, 0x75, 0xf8, 0x06, 0xa0, 0x75,
-	0x5e, 0x60, 0xbf, 0x2a, 0xf1, 0xa7, 0xe4, 0x1c, 0xa4, 0x1b, 0xee, 0xe5, 0x57, 0x3a, 0xff, 0x93,
-	0x80, 0xf8, 0xe0, 0x98, 0x51, 0xb9, 0x77, 0xae, 0x33, 0xef, 0x5c, 0x81, 0x97, 0x0b, 0xd7, 0x77,
-	0x6c, 0xc2, 0xdf, 0x09, 0x60, 0x36, 0xc1, 0x6b, 0xe1, 0x1b, 0x05, 0x8e, 0x2b, 0xc9, 0x8f, 0xc5,
-	0xab, 0xc5, 0x05, 0xb9, 0xfe, 0xab, 0x4c, 0xff, 0x15, 0xb8, 0x9c, 0xe3, 0x74, 0x03, 0x25, 0x7f,
-	0x11, 0x26, 0x74, 0x7f, 0x86, 0x5b, 0x24, 0xa1, 0x73, 0x91, 0xee, 0x22, 0x09, 0x9d, 0x8f, 0x7c,
-	0x17, 0xe9, 0x4e, 0x88, 0x0f, 0xa2, 0x61, 0x5b, 0x8b, 0x49, 0x5f, 0xb2, 0xef, 0xfc, 0x7d, 0x09,
-	0x5c, 0xc8, 0xcd, 0xc6, 0xe0, 0x83, 0x61, 0x9b, 0xc9, 0xbe, 0x84, 0x52, 0xdc, 0x3f, 0x6e, 0x58,
-	0xee, 0xa6, 0x87, 0xcc, 0x4d, 0x7b, 0x50, 0x2d, 0xdc, 0xb9, 0x6a, 0x0e, 0x72, 0x63, 0x8f, 0x29,
-	0xcf, 0x3a, 0x29, 0xe0, 0x87, 0xf0, 0xb7, 0x25, 0xf0, 0xcd, 0x3c, 0xcc, 0x0e, 0xee, 0x8e, 0xd0,
-	0x98, 0x64, 0xb2, 0x55, 0xf1, 0xbd, 0x63, 0x44, 0xe4, 0x9e, 0x7a, 0xc4, 0x3c, 0xf5, 0x10, 0xfe,
-	0xa0, 0x88, 0xa7, 0x22, 0x28, 0xcd, 0x67, 0xa0, 0x89, 0xa8, 0xca, 0xf2, 0xd7, 0x7f, 0x05, 0xfe,
-	0xc4, 0x9e, 0x45, 0x30, 0x61, 0x81, 0x97, 0x8d, 0x3e, 0x04, 0x57, 0xbc, 0x35, 0x2a, 0x4c, 0xf1,
-	0x0b, 0x93, 0x30, 0x1c, 0xad, 0x19, 0x03, 0x69, 0x2d, 0x6a, 0x24, 0x53, 0xec, 0x5f, 0x9d, 0x04,
-	0x20, 0x51, 0x6b, 0xb6, 0x47, 0x79, 0xd1, 0x09, 0xad, 0xde, 0x19, 0x0d, 0x64, 0x04, 0xc6, 0x93,
-	0x59, 0x53, 0xaa, 0xdf, 0xff, 0xfc, 0xa8, 0x2c, 0x7c, 0x71, 0x54, 0x16, 0xfe, 0x76, 0x54, 0x16,
-	0x3e, 0x79, 0x51, 0x1e, 0xfb, 0xe2, 0x45, 0x79, 0xec, 0xcf, 0x2f, 0xca, 0x63, 0x0f, 0x37, 0xea,
-	0xd8, 0x3b, 0x68, 0x3e, 0x96, 0x0d, 0xd2, 0xe0, 0xff, 0x8a, 0x27, 0x36, 0xfb, 0x6e, 0xb4, 0x59,
-	0xeb, 0x8a, 0xf2, 0x41, 0x47, 0x6f, 0xd6, 0x76, 0x10, 0x7d, 0x3c, 0xc5, 0xfe, 0xea, 0xb8, 0xfc,
-	0xff, 0x00, 0x00, 0x00, 0xff, 0xff, 0x67, 0xc1, 0xf1, 0x76, 0xb5, 0x20, 0x00, 0x00,
+	// 2465 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x5a, 0xcd, 0x6f, 0xdc, 0xc6,
+	0x15, 0x17, 0x57, 0x1f, 0x5e, 0x8d, 0x2c, 0x39, 0x1e, 0xcb, 0xd6, 0x7a, 0x65, 0x6b, 0x65, 0x3a,
+	0x6e, 0x15, 0x39, 0x5e, 0x4a, 0x2a, 0xf2, 0xe5, 0xc4, 0x1f, 0x5a, 0x59, 0xb2, 0x05, 0xc7, 0xb6,
+	0x42, 0x29, 0x0e, 0xe0, 0xd4, 0x65, 0x47, 0xe4, 0x64, 0x35, 0x15, 0x97, 0xa4, 0x39, 0xa3, 0xb5,
+	0xb7, 0x86, 0x2f, 0x3d, 0xe5, 0xd0, 0x02, 0x09, 0x82, 0x9e, 0x9b, 0x73, 0x0f, 0x45, 0x51, 0x04,
+	0xfd, 0x07, 0x7a, 0xc9, 0xad, 0x69, 0x7a, 0x29, 0x5a, 0xd4, 0x6d, 0xed, 0x16, 0xe8, 0xa5, 0x87,
+	0xa6, 0xfd, 0x03, 0x82, 0x19, 0x0e, 0xb9, 0x4b, 0x9a, 0xd2, 0x92, 0x5a, 0xdd, 0xc4, 0x99, 0xf7,
+	0x7e, 0xf3, 0xde, 0x9b, 0xf7, 0xde, 0xbc, 0xf7, 0x56, 0x40, 0x23, 0x0e, 0xc3, 0xbe, 0xb9, 0x85,
+	0x88, 0x63, 0x50, 0x6c, 0xee, 0xf8, 0x84, 0xb5, 0x34, 0xd3, 0x6c, 0x6a, 0x9e, 0xef, 0x36, 0x89,
+	0x85, 0x7d, 0xad, 0x39, 0xaf, 0x3d, 0xd8, 0xc1, 0x7e, 0xab, 0xea, 0xf9, 0x2e, 0x73, 0xe1, 0xd9,
+	0x14, 0x86, 0xaa, 0x69, 0x36, 0xab, 0x21, 0x43, 0xb5, 0x39, 0x5f, 0x3e, 0x55, 0x77, 0xdd, 0xba,
+	0x8d, 0x35, 0xe4, 0x11, 0x0d, 0x39, 0x8e, 0xcb, 0x10, 0x23, 0xae, 0x43, 0x03, 0x88, 0xf2, 0x78,
+	0xdd, 0xad, 0xbb, 0xe2, 0x4f, 0x8d, 0xff, 0x25, 0x57, 0x2b, 0x92, 0x47, 0x7c, 0x6d, 0xee, 0x7c,
+	0xa4, 0x31, 0xd2, 0xc0, 0x94, 0xa1, 0x86, 0x27, 0x09, 0x16, 0xb2, 0x88, 0x1a, 0x49, 0x11, 0xf0,
+	0xcc, 0xed, 0xc6, 0xd3, 0x9c, 0xd7, 0xe8, 0x16, 0xf2, 0xb1, 0x65, 0x98, 0xae, 0x43, 0x77, 0x1a,
+	0x11, 0xc7, 0xb9, 0x3d, 0x38, 0x1e, 0x12, 0x1f, 0x4b, 0xb2, 0x53, 0x0c, 0x3b, 0x16, 0xf6, 0x1b,
+	0xc4, 0x61, 0x9a, 0xe9, 0xb7, 0x3c, 0xe6, 0x6a, 0xdb, 0xb8, 0x15, 0x6a, 0x78, 0xd2, 0x74, 0x69,
+	0xc3, 0xa5, 0x46, 0xa0, 0x64, 0xf0, 0x21, 0xb7, 0x5e, 0x0e, 0xbe, 0x34, 0xca, 0xd0, 0x36, 0x71,
+	0xea, 0x5a, 0x73, 0x7e, 0x13, 0x33, 0x34, 0x1f, 0x7e, 0x4b, 0xaa, 0x59, 0x49, 0xb5, 0x89, 0x28,
+	0x0e, 0xcc, 0x1f, 0x11, 0x7a, 0xa8, 0x4e, 0x1c, 0x61, 0xcf, 0x80, 0x56, 0xbd, 0x0c, 0x26, 0xdf,
+	0xe3, 0x14, 0x4b, 0x52, 0x91, 0xeb, 0xd8, 0xc1, 0x94, 0x50, 0x1d, 0x3f, 0xd8, 0xc1, 0x94, 0xc1,
+	0x0a, 0x18, 0x09, 0x55, 0x34, 0x88, 0x55, 0x52, 0xa6, 0x95, 0x99, 0x61, 0x1d, 0x84, 0x4b, 0xab,
+	0x96, 0xfa, 0x18, 0x9c, 0x4a, 0xe7, 0xa7, 0x9e, 0xeb, 0x50, 0x0c, 0x3f, 0x04, 0xa3, 0xf5, 0x60,
+	0xc9, 0xa0, 0x0c, 0x31, 0x2c, 0x20, 0x46, 0x16, 0xe6, 0xaa, 0xbb, 0x79, 0x42, 0x73, 0xbe, 0x9a,
+	0xc0, 0x5a, 0xe7, 0x7c, 0xb5, 0x81, 0x2f, 0x9f, 0x56, 0xfa, 0xf4, 0xc3, 0xf5, 0x8e, 0x35, 0xf5,
+	0x57, 0x0a, 0x28, 0xc7, 0x4e, 0x5f, 0xe2, 0x78, 0x91, 0xf0, 0x37, 0xc0, 0xa0, 0xb7, 0x85, 0x68,
+	0x70, 0xe6, 0xd8, 0xc2, 0x42, 0x35, 0x83, 0xf7, 0x45, 0x87, 0xaf, 0x71, 0x4e, 0x3d, 0x00, 0x80,
+	0x2b, 0x00, 0xb4, 0x2d, 0x57, 0x2a, 0x08, 0x15, 0xbe, 0x53, 0x95, 0x57, 0xc3, 0xcd, 0x5c, 0x0d,
+	0xbc, 0x5c, 0x9a, 0xb9, 0xba, 0x86, 0xea, 0x58, 0x4a, 0xa1, 0x77, 0x70, 0xaa, 0xbf, 0x54, 0x12,
+	0xe6, 0x0e, 0x05, 0x96, 0xd6, 0xaa, 0x81, 0x21, 0x21, 0x1e, 0x2d, 0x29, 0xd3, 0xfd, 0x33, 0x23,
+	0x0b, 0xb3, 0xd9, 0x44, 0xe6, 0xdb, 0xba, 0xe4, 0x84, 0xd7, 0x53, 0x64, 0xfd, 0x6e, 0x57, 0x59,
+	0x03, 0x01, 0x62, 0xc2, 0x7e, 0x36, 0x08, 0x06, 0x05, 0x34, 0x3c, 0x09, 0x8a, 0x81, 0x08, 0x91,
+	0x0b, 0x1c, 0x12, 0xdf, 0xab, 0x16, 0x9c, 0x04, 0xc3, 0xa6, 0x4d, 0xb0, 0xc3, 0xf8, 0x5e, 0x41,
+	0xec, 0x15, 0x83, 0x85, 0x55, 0x0b, 0x1e, 0x03, 0x83, 0xcc, 0xf5, 0x8c, 0xdb, 0xa5, 0xfe, 0x69,
+	0x65, 0x66, 0x54, 0x1f, 0x60, 0xae, 0x77, 0x1b, 0xce, 0x02, 0xd8, 0x20, 0x8e, 0xe1, 0xb9, 0x0f,
+	0xb9, 0x4f, 0x39, 0x46, 0x40, 0x31, 0x30, 0xad, 0xcc, 0xf4, 0xeb, 0x63, 0x0d, 0xe2, 0xac, 0xf1,
+	0x8d, 0x55, 0x67, 0x83, 0xd3, 0xce, 0x81, 0xf1, 0x26, 0xb2, 0x89, 0x85, 0x98, 0xeb, 0x53, 0xc9,
+	0x62, 0x22, 0xaf, 0x34, 0x28, 0xf0, 0x60, 0x7b, 0x4f, 0x30, 0x2d, 0x21, 0x0f, 0xce, 0x82, 0xa3,
+	0xd1, 0xaa, 0x41, 0x31, 0x13, 0xe4, 0x43, 0x82, 0xfc, 0x48, 0xb4, 0xb1, 0x8e, 0x19, 0xa7, 0x3d,
+	0x05, 0x86, 0x91, 0x6d, 0xbb, 0x0f, 0x6d, 0x42, 0x59, 0xe9, 0xd0, 0x74, 0xff, 0xcc, 0xb0, 0xde,
+	0x5e, 0x80, 0x65, 0x50, 0xb4, 0xb0, 0xd3, 0x12, 0x9b, 0x45, 0xb1, 0x19, 0x7d, 0xc3, 0xf1, 0xd0,
+	0xb3, 0x86, 0x85, 0xc6, 0xd2, 0x4b, 0x3e, 0x00, 0xc5, 0x06, 0x66, 0xc8, 0x42, 0x0c, 0x95, 0x80,
+	0xb0, 0xfb, 0x6b, 0xb9, 0x5c, 0xee, 0x96, 0x64, 0x96, 0xbe, 0x1e, 0x81, 0x71, 0x23, 0x73, 0x93,
+	0xf1, 0x28, 0xc7, 0xa5, 0x91, 0x69, 0x65, 0x66, 0x40, 0x2f, 0x36, 0x88, 0xb3, 0xce, 0xbf, 0x61,
+	0x15, 0x1c, 0x13, 0x42, 0x1b, 0xc4, 0x41, 0x26, 0x23, 0x4d, 0x6c, 0x34, 0x91, 0x4d, 0x4b, 0x87,
+	0xa7, 0x95, 0x99, 0xa2, 0x7e, 0x54, 0x6c, 0xad, 0xca, 0x9d, 0xbb, 0xc8, 0xa6, 0xc9, 0x90, 0x1e,
+	0x4d, 0x86, 0x34, 0x7c, 0x04, 0x4e, 0x46, 0x56, 0xc0, 0x96, 0xe1, 0xe3, 0x87, 0xc8, 0xb7, 0x0c,
+	0x0b, 0x3b, 0x6e, 0x83, 0x96, 0xc6, 0x84, 0x5e, 0xef, 0x64, 0xd2, 0x6b, 0xb1, 0x8d, 0xa2, 0x0b,
+	0x90, 0x6b, 0x02, 0x43, 0x9f, 0x40, 0xe9, 0x1b, 0x50, 0x05, 0x87, 0x3d, 0x9f, 0xb8, 0x1c, 0x4c,
+	0x98, 0xfd, 0x88, 0x30, 0x7b, 0x6c, 0x4d, 0xfd, 0x99, 0x02, 0xce, 0x88, 0x10, 0xba, 0x1b, 0xde,
+	0x66, 0x68, 0xbe, 0x45, 0xcb, 0xf2, 0xc3, 0xd0, 0xbf, 0x04, 0x5e, 0x0a, 0x25, 0x31, 0x90, 0x65,
+	0xf9, 0x98, 0xd2, 0xc0, 0x73, 0x6b, 0xf0, 0x9b, 0xa7, 0x95, 0xb1, 0x16, 0x6a, 0xd8, 0x17, 0x55,
+	0xb9, 0xa1, 0xea, 0x47, 0x42, 0xda, 0xc5, 0x60, 0x25, 0x69, 0xa3, 0x42, 0xd2, 0x46, 0x17, 0x8b,
+	0x1f, 0x7f, 0x5e, 0xe9, 0xfb, 0xf7, 0xe7, 0x95, 0x3e, 0xf5, 0x0e, 0x50, 0xf7, 0x12, 0x47, 0x06,
+	0xf6, 0x2b, 0xe0, 0xa5, 0x08, 0x30, 0x26, 0x8f, 0x7e, 0xc4, 0xec, 0xa0, 0xe7, 0xd2, 0xbc, 0xa8,
+	0xe0, 0x5a, 0x87, 0x74, 0x1d, 0x0a, 0xa6, 0x03, 0xa6, 0x2b, 0x98, 0x38, 0xa4, 0x27, 0x05, 0xe3,
+	0xe2, 0xb4, 0x15, 0x4c, 0x37, 0xf8, 0x0b, 0xc6, 0x55, 0x27, 0xc1, 0x49, 0x01, 0xb8, 0xb1, 0xe5,
+	0xbb, 0x8c, 0xd9, 0x58, 0xe4, 0x72, 0xa9, 0x97, 0xfa, 0x87, 0x30, 0xa5, 0x27, 0x76, 0xe5, 0x31,
+	0x15, 0x30, 0x42, 0x6d, 0x44, 0xb7, 0x8c, 0x06, 0x66, 0xd8, 0x17, 0x27, 0xf4, 0xeb, 0x40, 0x2c,
+	0xdd, 0xe2, 0x2b, 0x70, 0x01, 0x1c, 0xef, 0x20, 0x30, 0x84, 0xa7, 0x21, 0xc7, 0xc4, 0x42, 0xc5,
+	0x7e, 0xfd, 0x58, 0x9b, 0x74, 0x31, 0xdc, 0x82, 0x3f, 0x00, 0x25, 0x07, 0x3f, 0x62, 0x86, 0x8f,
+	0x3d, 0x1b, 0x3b, 0x84, 0x6e, 0x19, 0x26, 0x72, 0x2c, 0xae, 0x2c, 0x16, 0x99, 0x6b, 0x64, 0xa1,
+	0x5c, 0x0d, 0xea, 0x8b, 0x6a, 0x58, 0x5f, 0x54, 0x37, 0xc2, 0xfa, 0xa2, 0x56, 0xe4, 0xc1, 0xfa,
+	0xc9, 0xdf, 0x2a, 0x8a, 0x7e, 0x82, 0xa3, 0xe8, 0x21, 0xc8, 0x52, 0x88, 0xa1, 0xbe, 0x0a, 0x66,
+	0x85, 0x4a, 0x3a, 0xae, 0x73, 0x9f, 0xf7, 0xb1, 0x15, 0xfa, 0x48, 0x2c, 0x2c, 0xa4, 0x05, 0x96,
+	0xc1, 0xf9, 0x4c, 0xd4, 0xd2, 0x22, 0x27, 0xc0, 0x90, 0x0c, 0x4d, 0x45, 0x44, 0x8b, 0xfc, 0x52,
+	0xdf, 0x05, 0xaf, 0x08, 0x98, 0x45, 0xdb, 0x5e, 0x43, 0xc4, 0xa7, 0x77, 0x91, 0xcd, 0x71, 0xf8,
+	0x25, 0xd4, 0x5a, 0x6d, 0xc4, 0x8c, 0xcf, 0xfc, 0x2f, 0x14, 0xa9, 0x43, 0x17, 0x38, 0x29, 0xd4,
+	0x03, 0x70, 0xd4, 0x43, 0xc4, 0xe7, 0x99, 0x88, 0x97, 0x48, 0xc2, 0x23, 0xe4, 0x93, 0xb6, 0x92,
+	0x29, 0x75, 0xf0, 0x33, 0x82, 0x23, 0xf8, 0x09, 0x91, 0xc7, 0x39, 0x6d, 0x5b, 0x8c, 0x79, 0x31,
+	0x12, 0xf5, 0xff, 0x0a, 0x38, 0xd3, 0x95, 0x0b, 0xae, 0xec, 0x9a, 0x17, 0x26, 0xbf, 0x79, 0x5a,
+	0x99, 0x08, 0xc2, 0x26, 0x49, 0x91, 0x92, 0x20, 0x56, 0x52, 0xc2, 0xaf, 0x90, 0xc4, 0x49, 0x52,
+	0xa4, 0xc4, 0xe1, 0x15, 0x70, 0x38, 0xa2, 0xda, 0xc6, 0x2d, 0xe9, 0x6e, 0xa7, 0xaa, 0xed, 0x02,
+	0xb1, 0x1a, 0x14, 0x88, 0xd5, 0xb5, 0x9d, 0x4d, 0x9b, 0x98, 0x37, 0x71, 0x4b, 0x8f, 0xae, 0xea,
+	0x26, 0x6e, 0xa9, 0xe3, 0x00, 0x8a, 0x7b, 0x59, 0x43, 0x3e, 0x6a, 0xfb, 0xd0, 0x0f, 0xc1, 0xb1,
+	0xd8, 0xaa, 0xbc, 0x96, 0x55, 0x30, 0xe4, 0x89, 0x15, 0x59, 0x85, 0x9d, 0xcf, 0x78, 0x17, 0x9c,
+	0x45, 0x3e, 0x4a, 0x12, 0x40, 0xbd, 0x25, 0xfd, 0x21, 0x56, 0xc8, 0xdc, 0xf1, 0x18, 0xb6, 0x56,
+	0x9d, 0x28, 0x53, 0x64, 0x2f, 0x23, 0x1f, 0x48, 0xa7, 0xef, 0x06, 0x17, 0xd5, 0x49, 0xa7, 0x3b,
+	0xeb, 0x82, 0xc4, 0x7d, 0xe1, 0x30, 0x16, 0x26, 0x3b, 0x0a, 0x84, 0xf8, 0x05, 0x62, 0xaa, 0x2e,
+	0x82, 0xa9, 0xd8, 0x91, 0xfb, 0x90, 0xfa, 0xd3, 0x43, 0x60, 0x7a, 0x17, 0x8c, 0xe8, 0xaf, 0x5e,
+	0x9f, 0xa2, 0xa4, 0x87, 0x14, 0x72, 0x7a, 0x08, 0x2c, 0x81, 0x41, 0x51, 0x38, 0x09, 0xdf, 0xea,
+	0xaf, 0x15, 0x4a, 0x8a, 0x1e, 0x2c, 0xc0, 0xb7, 0xc0, 0x80, 0xcf, 0x73, 0xdc, 0x80, 0x90, 0xe6,
+	0x1c, 0xbf, 0xdf, 0x3f, 0x3f, 0xad, 0x4c, 0x06, 0xa5, 0x22, 0xb5, 0xb6, 0xab, 0xc4, 0xd5, 0x1a,
+	0x88, 0x6d, 0x55, 0xdf, 0xc5, 0x75, 0x64, 0xb6, 0xae, 0x61, 0xb3, 0xa4, 0xe8, 0x82, 0x05, 0x9e,
+	0x03, 0x63, 0x91, 0x54, 0x01, 0xfa, 0xa0, 0xc8, 0xaf, 0xa3, 0xe1, 0xaa, 0x28, 0xc8, 0xe0, 0x7d,
+	0x50, 0x8a, 0xc8, 0x4c, 0xb7, 0xd1, 0x20, 0x94, 0x12, 0xd7, 0x31, 0xc4, 0xa9, 0x43, 0xe2, 0xd4,
+	0xb3, 0x19, 0x4e, 0xd5, 0x4f, 0x84, 0x20, 0x4b, 0x11, 0x86, 0xce, 0xa5, 0xb8, 0x0f, 0x4a, 0x91,
+	0x69, 0x93, 0xf0, 0x87, 0x72, 0xc0, 0x87, 0x20, 0x09, 0xf8, 0x9b, 0x60, 0xc4, 0xc2, 0xd4, 0xf4,
+	0x89, 0x27, 0x4a, 0xe9, 0xa2, 0xb0, 0xfc, 0xd9, 0xb0, 0x94, 0x0e, 0x7b, 0xae, 0xb0, 0x8e, 0xbe,
+	0xd6, 0x26, 0x95, 0xb1, 0xd2, 0xc9, 0x0d, 0xef, 0x83, 0x93, 0x91, 0xac, 0xae, 0x87, 0x7d, 0x51,
+	0xa0, 0x86, 0xfe, 0x20, 0xca, 0xc8, 0xda, 0x99, 0xaf, 0xbf, 0xb8, 0x70, 0x5a, 0xa2, 0x47, 0xfe,
+	0x23, 0xfd, 0x60, 0x9d, 0xf9, 0xc4, 0xa9, 0xeb, 0x13, 0x21, 0xc6, 0x1d, 0x09, 0x11, 0xba, 0xc9,
+	0x09, 0x30, 0xf4, 0x23, 0x44, 0x6c, 0x6c, 0x89, 0xca, 0xb3, 0xa8, 0xcb, 0x2f, 0x78, 0x11, 0x0c,
+	0xf1, 0xbe, 0x6b, 0x87, 0x8a, 0xba, 0x71, 0x6c, 0x41, 0xdd, 0x4d, 0xfc, 0x9a, 0xeb, 0x58, 0xeb,
+	0x82, 0x52, 0x97, 0x1c, 0x70, 0x03, 0x44, 0xde, 0x68, 0x30, 0x77, 0x1b, 0x3b, 0x41, 0x55, 0x39,
+	0x5c, 0x3b, 0x2f, 0xad, 0x7a, 0xfc, 0x45, 0xab, 0xae, 0x3a, 0xec, 0xeb, 0x2f, 0x2e, 0x00, 0x79,
+	0xc8, 0xaa, 0xc3, 0xf4, 0xb1, 0x10, 0x63, 0x43, 0x40, 0x70, 0xd7, 0x89, 0x50, 0x03, 0xd7, 0x19,
+	0x0d, 0x5c, 0x27, 0x5c, 0x0d, 0x5c, 0xe7, 0x75, 0x30, 0x21, 0xa3, 0x17, 0x53, 0xc3, 0xdc, 0xf1,
+	0x7d, 0xde, 0x63, 0x60, 0xcf, 0x35, 0xb7, 0x44, 0x0d, 0x5a, 0xd4, 0x8f, 0x47, 0xdb, 0x4b, 0xc1,
+	0xee, 0x32, 0xdf, 0x54, 0x3f, 0x56, 0x40, 0x65, 0xd7, 0xb8, 0x96, 0xe9, 0x03, 0x03, 0xd0, 0xce,
+	0x0c, 0xf2, 0x5d, 0x5a, 0xce, 0x94, 0x0b, 0xbb, 0x45, 0xbb, 0xde, 0x01, 0xac, 0x3e, 0x00, 0x73,
+	0x29, 0xcd, 0x5e, 0x44, 0x7b, 0x03, 0xd1, 0x0d, 0x57, 0x7e, 0xe1, 0x83, 0x29, 0x5c, 0xd5, 0xbb,
+	0x60, 0x3e, 0xc7, 0x91, 0xd2, 0x1c, 0x67, 0x3a, 0x52, 0x0c, 0xb1, 0xc2, 0xe4, 0x39, 0xd2, 0x4e,
+	0x74, 0xa2, 0x28, 0x3d, 0x9f, 0x5e, 0xe6, 0xc6, 0x63, 0x26, 0x6b, 0xea, 0x4c, 0xd5, 0xb3, 0x90,
+	0x5d, 0xcf, 0x3a, 0x78, 0x35, 0x9b, 0x38, 0x52, 0xc5, 0x37, 0x64, 0xaa, 0x53, 0xb2, 0x67, 0x05,
+	0xc1, 0xa0, 0xaa, 0x32, 0xc3, 0xd7, 0x6c, 0xd7, 0xdc, 0xa6, 0xef, 0x3b, 0x8c, 0xd8, 0xb7, 0xf1,
+	0xa3, 0xc0, 0xd7, 0xc2, 0xd7, 0xf6, 0x9e, 0x2c, 0xd8, 0xd3, 0x69, 0xa4, 0x04, 0xaf, 0x81, 0x89,
+	0x4d, 0xb1, 0x6f, 0xec, 0x70, 0x02, 0x43, 0x54, 0x9c, 0x81, 0x3f, 0x2b, 0xa2, 0xa3, 0x1b, 0xdf,
+	0x4c, 0x61, 0x57, 0x17, 0x65, 0xf5, 0xbd, 0x14, 0x99, 0x6e, 0xc5, 0x77, 0x1b, 0x4b, 0xb2, 0xc3,
+	0x0e, 0xcd, 0x1d, 0xeb, 0xc2, 0x95, 0x78, 0x17, 0xae, 0xae, 0x80, 0xb3, 0x7b, 0x42, 0xb4, 0x4b,
+	0xeb, 0xbd, 0x5f, 0xbb, 0x77, 0x64, 0xdd, 0x1e, 0xf3, 0xad, 0xcc, 0x6f, 0xe5, 0xef, 0xfa, 0xd3,
+	0x66, 0x35, 0x99, 0x4f, 0x8f, 0xcd, 0x20, 0x0a, 0xf1, 0x19, 0xc4, 0x59, 0x30, 0xea, 0x3e, 0x74,
+	0x3a, 0x1c, 0xa9, 0x5f, 0xec, 0x1f, 0x16, 0x8b, 0x61, 0x82, 0x8c, 0x5a, 0xf6, 0x81, 0xdd, 0x5a,
+	0xf6, 0xc1, 0x83, 0x6c, 0xd9, 0x3f, 0x02, 0x23, 0xc4, 0x21, 0xcc, 0x90, 0xf5, 0xd6, 0x90, 0xc0,
+	0x5e, 0xce, 0x85, 0xbd, 0xea, 0x10, 0x46, 0x90, 0x4d, 0x7e, 0x2c, 0xc6, 0x31, 0xa2, 0x0a, 0xe3,
+	0x7d, 0x0b, 0xd5, 0x01, 0x47, 0x0e, 0xaa, 0x32, 0xd8, 0x00, 0xe3, 0xc1, 0x58, 0x84, 0x6e, 0x21,
+	0x8f, 0x38, 0xf5, 0xf0, 0xc0, 0x43, 0xe2, 0xc0, 0xb7, 0xb3, 0x15, 0x78, 0x1c, 0x60, 0x3d, 0xe0,
+	0xef, 0x38, 0x06, 0x7a, 0xc9, 0x75, 0xba, 0xf0, 0x8f, 0xd3, 0x60, 0x50, 0xdc, 0x22, 0xfc, 0x97,
+	0x02, 0xc6, 0xd3, 0x26, 0x7f, 0xf0, 0x6a, 0xfe, 0x44, 0x1a, 0x1f, 0x3a, 0x96, 0x17, 0x7b, 0x40,
+	0x08, 0xdc, 0x49, 0xbd, 0xf1, 0x93, 0x3f, 0xfe, 0xf3, 0xb3, 0x42, 0x0d, 0x5e, 0xed, 0x3e, 0xa2,
+	0x8e, 0xdc, 0x4e, 0x8e, 0x16, 0xb5, 0xc7, 0x1d, 0x8e, 0xf8, 0x04, 0xfe, 0x45, 0x91, 0xb5, 0x74,
+	0x3c, 0xa5, 0xc2, 0x2b, 0xf9, 0x85, 0x8c, 0x4d, 0x27, 0xcb, 0x57, 0xf7, 0x0f, 0x20, 0x95, 0x5c,
+	0x14, 0x4a, 0xbe, 0x0d, 0xdf, 0xca, 0xa1, 0x64, 0x30, 0x24, 0xd4, 0x1e, 0x0b, 0xf7, 0x7f, 0x02,
+	0x3f, 0x2d, 0xc8, 0xa8, 0x4c, 0x1d, 0x5f, 0xc0, 0x95, 0xec, 0x32, 0xee, 0x35, 0x8e, 0x29, 0x5f,
+	0xef, 0x19, 0x47, 0xaa, 0xbc, 0x29, 0x54, 0xfe, 0x3e, 0xbc, 0x97, 0xe1, 0xa7, 0x87, 0x68, 0x0c,
+	0x18, 0xeb, 0xc3, 0xe2, 0xd7, 0xab, 0x3d, 0x4e, 0xbe, 0x42, 0x69, 0x36, 0xe9, 0x6c, 0x1e, 0xf6,
+	0x65, 0x93, 0x94, 0x09, 0xce, 0xbe, 0x6c, 0x92, 0x36, 0x7a, 0xd9, 0x9f, 0x4d, 0x62, 0x6a, 0x27,
+	0x6d, 0x92, 0x6c, 0x5c, 0x9f, 0xc0, 0xdf, 0x2b, 0xb2, 0xcf, 0x8c, 0x8d, 0x65, 0xe0, 0xe5, 0xec,
+	0x3a, 0xa4, 0x4d, 0x7b, 0xca, 0x57, 0xf6, 0xcd, 0x2f, 0x75, 0x7f, 0x53, 0xe8, 0xbe, 0x00, 0xe7,
+	0xba, 0xeb, 0xce, 0x24, 0x40, 0xf0, 0x3b, 0x04, 0xfc, 0x79, 0x41, 0x3e, 0x8b, 0x7b, 0xcf, 0x59,
+	0xe0, 0x9d, 0xec, 0x22, 0x66, 0x9a, 0xef, 0x94, 0xd7, 0x0e, 0x0e, 0x50, 0x1a, 0xe1, 0xa6, 0x30,
+	0xc2, 0x32, 0x5c, 0xea, 0x6e, 0x04, 0x3f, 0x42, 0x6c, 0x47, 0x45, 0x6c, 0xc0, 0x0b, 0x7f, 0x5a,
+	0x90, 0x15, 0xc7, 0x9e, 0x93, 0x1e, 0x78, 0x3b, 0xbb, 0x16, 0x59, 0x26, 0x50, 0xe5, 0x3b, 0x07,
+	0x86, 0x27, 0x8d, 0xb2, 0x2c, 0x8c, 0x72, 0x05, 0x5e, 0xea, 0x6e, 0x14, 0xe9, 0xe5, 0x86, 0xc7,
+	0x51, 0x13, 0xe9, 0xff, 0x37, 0x0a, 0x18, 0xe9, 0x18, 0xa5, 0xc0, 0x37, 0xb2, 0xcb, 0x19, 0x1b,
+	0xc9, 0x94, 0xdf, 0xcc, 0xcf, 0x28, 0x35, 0x99, 0x13, 0x9a, 0xcc, 0xc2, 0x99, 0xee, 0x9a, 0x04,
+	0x8f, 0x7f, 0xdb, 0xb7, 0xf7, 0x1e, 0xa7, 0xe4, 0xf1, 0xed, 0x4c, 0x73, 0x9e, 0x3c, 0xbe, 0x9d,
+	0x6d, 0xd2, 0x93, 0xc7, 0xb7, 0x5d, 0x0e, 0x62, 0x10, 0xc7, 0x68, 0xb7, 0x60, 0x89, 0xcb, 0xfc,
+	0x6d, 0x41, 0x0e, 0x45, 0xb3, 0xb4, 0x47, 0xf0, 0xfd, 0xfd, 0x3e, 0xd0, 0x7b, 0x76, 0x78, 0xe5,
+	0xbb, 0x07, 0x0d, 0x2b, 0x2d, 0x75, 0x4f, 0x58, 0x6a, 0x03, 0xea, 0xb9, 0xab, 0x01, 0xc3, 0xc3,
+	0x7e, 0xdb, 0x68, 0x69, 0x4f, 0xe2, 0xaf, 0x0b, 0xe0, 0xe5, 0x2c, 0xfd, 0x16, 0x5c, 0xeb, 0xe1,
+	0xa1, 0x4f, 0xed, 0x24, 0xcb, 0xef, 0x1d, 0x20, 0xa2, 0xb4, 0x94, 0x29, 0x2c, 0x75, 0x1f, 0x7e,
+	0x98, 0xc7, 0x52, 0xf1, 0xf1, 0x52, 0xf7, 0x2a, 0xe2, 0xbf, 0x0a, 0x98, 0xd8, 0x65, 0x5a, 0x00,
+	0x97, 0x7a, 0x99, 0x35, 0x84, 0x86, 0xb9, 0xd6, 0x1b, 0x48, 0xfe, 0xf8, 0x8a, 0x34, 0xde, 0x35,
+	0xbe, 0xfe, 0xa3, 0xc8, 0x16, 0x31, 0xad, 0x13, 0x86, 0x39, 0x26, 0x2c, 0x7b, 0x74, 0xdb, 0xe5,
+	0x95, 0x5e, 0x61, 0xf2, 0x57, 0xcf, 0xbb, 0x34, 0xee, 0xf0, 0x7f, 0xc9, 0x9f, 0xf3, 0xe3, 0xad,
+	0x35, 0xbc, 0x9e, 0xff, 0x8a, 0x52, 0xfb, 0xfb, 0xf2, 0x8d, 0xde, 0x81, 0x7a, 0xe8, 0x19, 0x88,
+	0xa5, 0x3d, 0x8e, 0xc6, 0x0b, 0x4f, 0xe0, 0x5f, 0xc3, 0x5a, 0x30, 0x96, 0x9e, 0xf2, 0xd4, 0x82,
+	0x69, 0x13, 0x84, 0xf2, 0x95, 0x7d, 0xf3, 0x4b, 0xd5, 0x56, 0x84, 0x6a, 0x57, 0xe1, 0xe5, 0xbc,
+	0x09, 0x30, 0xee, 0xc5, 0xb5, 0x0f, 0xbe, 0x7c, 0x36, 0xa5, 0x7c, 0xf5, 0x6c, 0x4a, 0xf9, 0xfb,
+	0xb3, 0x29, 0xe5, 0x93, 0xe7, 0x53, 0x7d, 0x5f, 0x3d, 0x9f, 0xea, 0xfb, 0xd3, 0xf3, 0xa9, 0xbe,
+	0x7b, 0x97, 0xea, 0x84, 0x6d, 0xed, 0x6c, 0x56, 0x4d, 0xb7, 0x21, 0xff, 0x2f, 0xa7, 0xe3, 0xa8,
+	0x0b, 0xd1, 0x51, 0xcd, 0xd7, 0xb5, 0x47, 0x89, 0xda, 0xb3, 0xe5, 0x61, 0xba, 0x39, 0x24, 0x7e,
+	0x3d, 0xfc, 0xde, 0xb7, 0x01, 0x00, 0x00, 0xff, 0xff, 0x19, 0x33, 0x42, 0x36, 0x37, 0x25, 0x00,
+	0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1948,10 +2045,6 @@ type QueryClient interface {
 	// ConsumerChains queries active consumer chains supported by the provider
 	// chain
 	QueryConsumerChains(ctx context.Context, in *QueryConsumerChainsRequest, opts ...grpc.CallOption) (*QueryConsumerChainsResponse, error)
-	// QueryConsumerChainStarts queries consumer chain start proposals.
-	QueryConsumerChainStarts(ctx context.Context, in *QueryConsumerChainStartProposalsRequest, opts ...grpc.CallOption) (*QueryConsumerChainStartProposalsResponse, error)
-	// QueryConsumerChainStops queries consumer chain stop proposals.
-	QueryConsumerChainStops(ctx context.Context, in *QueryConsumerChainStopProposalsRequest, opts ...grpc.CallOption) (*QueryConsumerChainStopProposalsResponse, error)
 	// QueryValidatorConsumerAddr queries the address
 	// assigned by a validator for a consumer chain.
 	QueryValidatorConsumerAddr(ctx context.Context, in *QueryValidatorConsumerAddrRequest, opts ...grpc.CallOption) (*QueryValidatorConsumerAddrResponse, error)
@@ -1964,12 +2057,9 @@ type QueryClient interface {
 	// QueryRegisteredConsumerRewardDenoms returns a list of consumer reward
 	// denoms that are registered
 	QueryRegisteredConsumerRewardDenoms(ctx context.Context, in *QueryRegisteredConsumerRewardDenomsRequest, opts ...grpc.CallOption) (*QueryRegisteredConsumerRewardDenomsResponse, error)
-	// QueryProposedConsumerChainIDs returns the chain IDs of the proposed consumer chain addition proposals
-	// that are still in the voting period
-	QueryProposedConsumerChainIDs(ctx context.Context, in *QueryProposedChainIDsRequest, opts ...grpc.CallOption) (*QueryProposedChainIDsResponse, error)
-	// QueryAllPairsValConAddrByConsumerChainID returns a list of pair valconsensus address
+	// QueryAllPairsValConsAddrByConsumer returns a list of pair valconsensus address
 	// between provider and consumer chain
-	QueryAllPairsValConAddrByConsumerChainID(ctx context.Context, in *QueryAllPairsValConAddrByConsumerChainIDRequest, opts ...grpc.CallOption) (*QueryAllPairsValConAddrByConsumerChainIDResponse, error)
+	QueryAllPairsValConsAddrByConsumer(ctx context.Context, in *QueryAllPairsValConsAddrByConsumerRequest, opts ...grpc.CallOption) (*QueryAllPairsValConsAddrByConsumerResponse, error)
 	// QueryParams returns all current values of provider parameters
 	QueryParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
 	// QueryConsumerChainOptedInValidators returns a list of validators consensus addresses
@@ -1981,12 +2071,19 @@ type QueryClient interface {
 	// QueryValidatorConsumerCommissionRate returns the commission rate a given
 	// validator charges on a given consumer chain
 	QueryValidatorConsumerCommissionRate(ctx context.Context, in *QueryValidatorConsumerCommissionRateRequest, opts ...grpc.CallOption) (*QueryValidatorConsumerCommissionRateResponse, error)
-	// QueryOldestUnconfirmedVsc returns the send timestamp of the oldest unconfirmed VSCPacket for a given chainID
-	QueryOldestUnconfirmedVsc(ctx context.Context, in *QueryOldestUnconfirmedVscRequest, opts ...grpc.CallOption) (*QueryOldestUnconfirmedVscResponse, error)
-	// QueryConsumerValidators returns the latest set consumer-validator set for a given chainID
+	// QueryConsumerValidators returns the latest set consumer-validator set for a given consumer ID
 	// Note that this does not necessarily mean that the consumer chain is using this validator set at this exact moment
 	// because a VSCPacket could be delayed to be delivered on the consumer chain.
 	QueryConsumerValidators(ctx context.Context, in *QueryConsumerValidatorsRequest, opts ...grpc.CallOption) (*QueryConsumerValidatorsResponse, error)
+	// QueryBlocksUntilNextEpoch returns the number of blocks until the next epoch
+	// starts and validator updates are sent to the consumer chains
+	QueryBlocksUntilNextEpoch(ctx context.Context, in *QueryBlocksUntilNextEpochRequest, opts ...grpc.CallOption) (*QueryBlocksUntilNextEpochResponse, error)
+	// QueryConsumerIdFromClientId returns the consumer id of the chain
+	// associated with the provided client id
+	QueryConsumerIdFromClientId(ctx context.Context, in *QueryConsumerIdFromClientIdRequest, opts ...grpc.CallOption) (*QueryConsumerIdFromClientIdResponse, error)
+	// QueryConsumerChain returns the consumer chain
+	// associated with the provided consumer id
+	QueryConsumerChain(ctx context.Context, in *QueryConsumerChainRequest, opts ...grpc.CallOption) (*QueryConsumerChainResponse, error)
 }
 
 type queryClient struct {
@@ -2009,24 +2106,6 @@ func (c *queryClient) QueryConsumerGenesis(ctx context.Context, in *QueryConsume
 func (c *queryClient) QueryConsumerChains(ctx context.Context, in *QueryConsumerChainsRequest, opts ...grpc.CallOption) (*QueryConsumerChainsResponse, error) {
 	out := new(QueryConsumerChainsResponse)
 	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryConsumerChains", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *queryClient) QueryConsumerChainStarts(ctx context.Context, in *QueryConsumerChainStartProposalsRequest, opts ...grpc.CallOption) (*QueryConsumerChainStartProposalsResponse, error) {
-	out := new(QueryConsumerChainStartProposalsResponse)
-	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryConsumerChainStarts", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *queryClient) QueryConsumerChainStops(ctx context.Context, in *QueryConsumerChainStopProposalsRequest, opts ...grpc.CallOption) (*QueryConsumerChainStopProposalsResponse, error) {
-	out := new(QueryConsumerChainStopProposalsResponse)
-	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryConsumerChainStops", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2069,18 +2148,9 @@ func (c *queryClient) QueryRegisteredConsumerRewardDenoms(ctx context.Context, i
 	return out, nil
 }
 
-func (c *queryClient) QueryProposedConsumerChainIDs(ctx context.Context, in *QueryProposedChainIDsRequest, opts ...grpc.CallOption) (*QueryProposedChainIDsResponse, error) {
-	out := new(QueryProposedChainIDsResponse)
-	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryProposedConsumerChainIDs", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *queryClient) QueryAllPairsValConAddrByConsumerChainID(ctx context.Context, in *QueryAllPairsValConAddrByConsumerChainIDRequest, opts ...grpc.CallOption) (*QueryAllPairsValConAddrByConsumerChainIDResponse, error) {
-	out := new(QueryAllPairsValConAddrByConsumerChainIDResponse)
-	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryAllPairsValConAddrByConsumerChainID", in, out, opts...)
+func (c *queryClient) QueryAllPairsValConsAddrByConsumer(ctx context.Context, in *QueryAllPairsValConsAddrByConsumerRequest, opts ...grpc.CallOption) (*QueryAllPairsValConsAddrByConsumerResponse, error) {
+	out := new(QueryAllPairsValConsAddrByConsumerResponse)
+	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryAllPairsValConsAddrByConsumer", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2123,18 +2193,36 @@ func (c *queryClient) QueryValidatorConsumerCommissionRate(ctx context.Context, 
 	return out, nil
 }
 
-func (c *queryClient) QueryOldestUnconfirmedVsc(ctx context.Context, in *QueryOldestUnconfirmedVscRequest, opts ...grpc.CallOption) (*QueryOldestUnconfirmedVscResponse, error) {
-	out := new(QueryOldestUnconfirmedVscResponse)
-	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryOldestUnconfirmedVsc", in, out, opts...)
+func (c *queryClient) QueryConsumerValidators(ctx context.Context, in *QueryConsumerValidatorsRequest, opts ...grpc.CallOption) (*QueryConsumerValidatorsResponse, error) {
+	out := new(QueryConsumerValidatorsResponse)
+	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryConsumerValidators", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) QueryConsumerValidators(ctx context.Context, in *QueryConsumerValidatorsRequest, opts ...grpc.CallOption) (*QueryConsumerValidatorsResponse, error) {
-	out := new(QueryConsumerValidatorsResponse)
-	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryConsumerValidators", in, out, opts...)
+func (c *queryClient) QueryBlocksUntilNextEpoch(ctx context.Context, in *QueryBlocksUntilNextEpochRequest, opts ...grpc.CallOption) (*QueryBlocksUntilNextEpochResponse, error) {
+	out := new(QueryBlocksUntilNextEpochResponse)
+	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryBlocksUntilNextEpoch", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) QueryConsumerIdFromClientId(ctx context.Context, in *QueryConsumerIdFromClientIdRequest, opts ...grpc.CallOption) (*QueryConsumerIdFromClientIdResponse, error) {
+	out := new(QueryConsumerIdFromClientIdResponse)
+	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryConsumerIdFromClientId", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) QueryConsumerChain(ctx context.Context, in *QueryConsumerChainRequest, opts ...grpc.CallOption) (*QueryConsumerChainResponse, error) {
+	out := new(QueryConsumerChainResponse)
+	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryConsumerChain", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2149,10 +2237,6 @@ type QueryServer interface {
 	// ConsumerChains queries active consumer chains supported by the provider
 	// chain
 	QueryConsumerChains(context.Context, *QueryConsumerChainsRequest) (*QueryConsumerChainsResponse, error)
-	// QueryConsumerChainStarts queries consumer chain start proposals.
-	QueryConsumerChainStarts(context.Context, *QueryConsumerChainStartProposalsRequest) (*QueryConsumerChainStartProposalsResponse, error)
-	// QueryConsumerChainStops queries consumer chain stop proposals.
-	QueryConsumerChainStops(context.Context, *QueryConsumerChainStopProposalsRequest) (*QueryConsumerChainStopProposalsResponse, error)
 	// QueryValidatorConsumerAddr queries the address
 	// assigned by a validator for a consumer chain.
 	QueryValidatorConsumerAddr(context.Context, *QueryValidatorConsumerAddrRequest) (*QueryValidatorConsumerAddrResponse, error)
@@ -2165,12 +2249,9 @@ type QueryServer interface {
 	// QueryRegisteredConsumerRewardDenoms returns a list of consumer reward
 	// denoms that are registered
 	QueryRegisteredConsumerRewardDenoms(context.Context, *QueryRegisteredConsumerRewardDenomsRequest) (*QueryRegisteredConsumerRewardDenomsResponse, error)
-	// QueryProposedConsumerChainIDs returns the chain IDs of the proposed consumer chain addition proposals
-	// that are still in the voting period
-	QueryProposedConsumerChainIDs(context.Context, *QueryProposedChainIDsRequest) (*QueryProposedChainIDsResponse, error)
-	// QueryAllPairsValConAddrByConsumerChainID returns a list of pair valconsensus address
+	// QueryAllPairsValConsAddrByConsumer returns a list of pair valconsensus address
 	// between provider and consumer chain
-	QueryAllPairsValConAddrByConsumerChainID(context.Context, *QueryAllPairsValConAddrByConsumerChainIDRequest) (*QueryAllPairsValConAddrByConsumerChainIDResponse, error)
+	QueryAllPairsValConsAddrByConsumer(context.Context, *QueryAllPairsValConsAddrByConsumerRequest) (*QueryAllPairsValConsAddrByConsumerResponse, error)
 	// QueryParams returns all current values of provider parameters
 	QueryParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
 	// QueryConsumerChainOptedInValidators returns a list of validators consensus addresses
@@ -2182,12 +2263,19 @@ type QueryServer interface {
 	// QueryValidatorConsumerCommissionRate returns the commission rate a given
 	// validator charges on a given consumer chain
 	QueryValidatorConsumerCommissionRate(context.Context, *QueryValidatorConsumerCommissionRateRequest) (*QueryValidatorConsumerCommissionRateResponse, error)
-	// QueryOldestUnconfirmedVsc returns the send timestamp of the oldest unconfirmed VSCPacket for a given chainID
-	QueryOldestUnconfirmedVsc(context.Context, *QueryOldestUnconfirmedVscRequest) (*QueryOldestUnconfirmedVscResponse, error)
-	// QueryConsumerValidators returns the latest set consumer-validator set for a given chainID
+	// QueryConsumerValidators returns the latest set consumer-validator set for a given consumer ID
 	// Note that this does not necessarily mean that the consumer chain is using this validator set at this exact moment
 	// because a VSCPacket could be delayed to be delivered on the consumer chain.
 	QueryConsumerValidators(context.Context, *QueryConsumerValidatorsRequest) (*QueryConsumerValidatorsResponse, error)
+	// QueryBlocksUntilNextEpoch returns the number of blocks until the next epoch
+	// starts and validator updates are sent to the consumer chains
+	QueryBlocksUntilNextEpoch(context.Context, *QueryBlocksUntilNextEpochRequest) (*QueryBlocksUntilNextEpochResponse, error)
+	// QueryConsumerIdFromClientId returns the consumer id of the chain
+	// associated with the provided client id
+	QueryConsumerIdFromClientId(context.Context, *QueryConsumerIdFromClientIdRequest) (*QueryConsumerIdFromClientIdResponse, error)
+	// QueryConsumerChain returns the consumer chain
+	// associated with the provided consumer id
+	QueryConsumerChain(context.Context, *QueryConsumerChainRequest) (*QueryConsumerChainResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -2199,12 +2287,6 @@ func (*UnimplementedQueryServer) QueryConsumerGenesis(ctx context.Context, req *
 }
 func (*UnimplementedQueryServer) QueryConsumerChains(ctx context.Context, req *QueryConsumerChainsRequest) (*QueryConsumerChainsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryConsumerChains not implemented")
-}
-func (*UnimplementedQueryServer) QueryConsumerChainStarts(ctx context.Context, req *QueryConsumerChainStartProposalsRequest) (*QueryConsumerChainStartProposalsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method QueryConsumerChainStarts not implemented")
-}
-func (*UnimplementedQueryServer) QueryConsumerChainStops(ctx context.Context, req *QueryConsumerChainStopProposalsRequest) (*QueryConsumerChainStopProposalsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method QueryConsumerChainStops not implemented")
 }
 func (*UnimplementedQueryServer) QueryValidatorConsumerAddr(ctx context.Context, req *QueryValidatorConsumerAddrRequest) (*QueryValidatorConsumerAddrResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryValidatorConsumerAddr not implemented")
@@ -2218,11 +2300,8 @@ func (*UnimplementedQueryServer) QueryThrottleState(ctx context.Context, req *Qu
 func (*UnimplementedQueryServer) QueryRegisteredConsumerRewardDenoms(ctx context.Context, req *QueryRegisteredConsumerRewardDenomsRequest) (*QueryRegisteredConsumerRewardDenomsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryRegisteredConsumerRewardDenoms not implemented")
 }
-func (*UnimplementedQueryServer) QueryProposedConsumerChainIDs(ctx context.Context, req *QueryProposedChainIDsRequest) (*QueryProposedChainIDsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method QueryProposedConsumerChainIDs not implemented")
-}
-func (*UnimplementedQueryServer) QueryAllPairsValConAddrByConsumerChainID(ctx context.Context, req *QueryAllPairsValConAddrByConsumerChainIDRequest) (*QueryAllPairsValConAddrByConsumerChainIDResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method QueryAllPairsValConAddrByConsumerChainID not implemented")
+func (*UnimplementedQueryServer) QueryAllPairsValConsAddrByConsumer(ctx context.Context, req *QueryAllPairsValConsAddrByConsumerRequest) (*QueryAllPairsValConsAddrByConsumerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryAllPairsValConsAddrByConsumer not implemented")
 }
 func (*UnimplementedQueryServer) QueryParams(ctx context.Context, req *QueryParamsRequest) (*QueryParamsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryParams not implemented")
@@ -2236,11 +2315,17 @@ func (*UnimplementedQueryServer) QueryConsumerChainsValidatorHasToValidate(ctx c
 func (*UnimplementedQueryServer) QueryValidatorConsumerCommissionRate(ctx context.Context, req *QueryValidatorConsumerCommissionRateRequest) (*QueryValidatorConsumerCommissionRateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryValidatorConsumerCommissionRate not implemented")
 }
-func (*UnimplementedQueryServer) QueryOldestUnconfirmedVsc(ctx context.Context, req *QueryOldestUnconfirmedVscRequest) (*QueryOldestUnconfirmedVscResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method QueryOldestUnconfirmedVsc not implemented")
-}
 func (*UnimplementedQueryServer) QueryConsumerValidators(ctx context.Context, req *QueryConsumerValidatorsRequest) (*QueryConsumerValidatorsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryConsumerValidators not implemented")
+}
+func (*UnimplementedQueryServer) QueryBlocksUntilNextEpoch(ctx context.Context, req *QueryBlocksUntilNextEpochRequest) (*QueryBlocksUntilNextEpochResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryBlocksUntilNextEpoch not implemented")
+}
+func (*UnimplementedQueryServer) QueryConsumerIdFromClientId(ctx context.Context, req *QueryConsumerIdFromClientIdRequest) (*QueryConsumerIdFromClientIdResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryConsumerIdFromClientId not implemented")
+}
+func (*UnimplementedQueryServer) QueryConsumerChain(ctx context.Context, req *QueryConsumerChainRequest) (*QueryConsumerChainResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryConsumerChain not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -2279,42 +2364,6 @@ func _Query_QueryConsumerChains_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServer).QueryConsumerChains(ctx, req.(*QueryConsumerChainsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Query_QueryConsumerChainStarts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryConsumerChainStartProposalsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).QueryConsumerChainStarts(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/interchain_security.ccv.provider.v1.Query/QueryConsumerChainStarts",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).QueryConsumerChainStarts(ctx, req.(*QueryConsumerChainStartProposalsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Query_QueryConsumerChainStops_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryConsumerChainStopProposalsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).QueryConsumerChainStops(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/interchain_security.ccv.provider.v1.Query/QueryConsumerChainStops",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).QueryConsumerChainStops(ctx, req.(*QueryConsumerChainStopProposalsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2391,38 +2440,20 @@ func _Query_QueryRegisteredConsumerRewardDenoms_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_QueryProposedConsumerChainIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryProposedChainIDsRequest)
+func _Query_QueryAllPairsValConsAddrByConsumer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryAllPairsValConsAddrByConsumerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).QueryProposedConsumerChainIDs(ctx, in)
+		return srv.(QueryServer).QueryAllPairsValConsAddrByConsumer(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/interchain_security.ccv.provider.v1.Query/QueryProposedConsumerChainIDs",
+		FullMethod: "/interchain_security.ccv.provider.v1.Query/QueryAllPairsValConsAddrByConsumer",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).QueryProposedConsumerChainIDs(ctx, req.(*QueryProposedChainIDsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Query_QueryAllPairsValConAddrByConsumerChainID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryAllPairsValConAddrByConsumerChainIDRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).QueryAllPairsValConAddrByConsumerChainID(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/interchain_security.ccv.provider.v1.Query/QueryAllPairsValConAddrByConsumerChainID",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).QueryAllPairsValConAddrByConsumerChainID(ctx, req.(*QueryAllPairsValConAddrByConsumerChainIDRequest))
+		return srv.(QueryServer).QueryAllPairsValConsAddrByConsumer(ctx, req.(*QueryAllPairsValConsAddrByConsumerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2499,24 +2530,6 @@ func _Query_QueryValidatorConsumerCommissionRate_Handler(srv interface{}, ctx co
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_QueryOldestUnconfirmedVsc_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryOldestUnconfirmedVscRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).QueryOldestUnconfirmedVsc(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/interchain_security.ccv.provider.v1.Query/QueryOldestUnconfirmedVsc",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).QueryOldestUnconfirmedVsc(ctx, req.(*QueryOldestUnconfirmedVscRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Query_QueryConsumerValidators_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryConsumerValidatorsRequest)
 	if err := dec(in); err != nil {
@@ -2535,6 +2548,60 @@ func _Query_QueryConsumerValidators_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_QueryBlocksUntilNextEpoch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryBlocksUntilNextEpochRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).QueryBlocksUntilNextEpoch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interchain_security.ccv.provider.v1.Query/QueryBlocksUntilNextEpoch",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).QueryBlocksUntilNextEpoch(ctx, req.(*QueryBlocksUntilNextEpochRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_QueryConsumerIdFromClientId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryConsumerIdFromClientIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).QueryConsumerIdFromClientId(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interchain_security.ccv.provider.v1.Query/QueryConsumerIdFromClientId",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).QueryConsumerIdFromClientId(ctx, req.(*QueryConsumerIdFromClientIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_QueryConsumerChain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryConsumerChainRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).QueryConsumerChain(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interchain_security.ccv.provider.v1.Query/QueryConsumerChain",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).QueryConsumerChain(ctx, req.(*QueryConsumerChainRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "interchain_security.ccv.provider.v1.Query",
 	HandlerType: (*QueryServer)(nil),
@@ -2546,14 +2613,6 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "QueryConsumerChains",
 			Handler:    _Query_QueryConsumerChains_Handler,
-		},
-		{
-			MethodName: "QueryConsumerChainStarts",
-			Handler:    _Query_QueryConsumerChainStarts_Handler,
-		},
-		{
-			MethodName: "QueryConsumerChainStops",
-			Handler:    _Query_QueryConsumerChainStops_Handler,
 		},
 		{
 			MethodName: "QueryValidatorConsumerAddr",
@@ -2572,12 +2631,8 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Query_QueryRegisteredConsumerRewardDenoms_Handler,
 		},
 		{
-			MethodName: "QueryProposedConsumerChainIDs",
-			Handler:    _Query_QueryProposedConsumerChainIDs_Handler,
-		},
-		{
-			MethodName: "QueryAllPairsValConAddrByConsumerChainID",
-			Handler:    _Query_QueryAllPairsValConAddrByConsumerChainID_Handler,
+			MethodName: "QueryAllPairsValConsAddrByConsumer",
+			Handler:    _Query_QueryAllPairsValConsAddrByConsumer_Handler,
 		},
 		{
 			MethodName: "QueryParams",
@@ -2596,12 +2651,20 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Query_QueryValidatorConsumerCommissionRate_Handler,
 		},
 		{
-			MethodName: "QueryOldestUnconfirmedVsc",
-			Handler:    _Query_QueryOldestUnconfirmedVsc_Handler,
-		},
-		{
 			MethodName: "QueryConsumerValidators",
 			Handler:    _Query_QueryConsumerValidators_Handler,
+		},
+		{
+			MethodName: "QueryBlocksUntilNextEpoch",
+			Handler:    _Query_QueryBlocksUntilNextEpoch_Handler,
+		},
+		{
+			MethodName: "QueryConsumerIdFromClientId",
+			Handler:    _Query_QueryConsumerIdFromClientId_Handler,
+		},
+		{
+			MethodName: "QueryConsumerChain",
+			Handler:    _Query_QueryConsumerChain_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -2628,10 +2691,10 @@ func (m *QueryConsumerGenesisRequest) MarshalToSizedBuffer(dAtA []byte) (int, er
 	_ = i
 	var l int
 	_ = l
-	if len(m.ChainId) > 0 {
-		i -= len(m.ChainId)
-		copy(dAtA[i:], m.ChainId)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainId)))
+	if len(m.ConsumerId) > 0 {
+		i -= len(m.ConsumerId)
+		copy(dAtA[i:], m.ConsumerId)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ConsumerId)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -2691,6 +2754,23 @@ func (m *QueryConsumerChainsRequest) MarshalToSizedBuffer(dAtA []byte) (int, err
 	_ = i
 	var l int
 	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Phase != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.Phase))
+		i--
+		dAtA[i] = 0x8
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -2714,6 +2794,18 @@ func (m *QueryConsumerChainsResponse) MarshalToSizedBuffer(dAtA []byte) (int, er
 	_ = i
 	var l int
 	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
 	if len(m.Chains) > 0 {
 		for iNdEx := len(m.Chains) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -2727,122 +2819,6 @@ func (m *QueryConsumerChainsResponse) MarshalToSizedBuffer(dAtA []byte) (int, er
 			i--
 			dAtA[i] = 0xa
 		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryConsumerChainStartProposalsRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryConsumerChainStartProposalsRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryConsumerChainStartProposalsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryConsumerChainStartProposalsResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryConsumerChainStartProposalsResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryConsumerChainStartProposalsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Proposals != nil {
-		{
-			size, err := m.Proposals.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintQuery(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryConsumerChainStopProposalsRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryConsumerChainStopProposalsRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryConsumerChainStopProposalsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryConsumerChainStopProposalsResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryConsumerChainStopProposalsResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryConsumerChainStopProposalsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Proposals != nil {
-		{
-			size, err := m.Proposals.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintQuery(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -2873,8 +2849,59 @@ func (m *Chain) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			copy(dAtA[i:], m.Prioritylist[iNdEx])
 			i = encodeVarintQuery(dAtA, i, uint64(len(m.Prioritylist[iNdEx])))
 			i--
-			dAtA[i] = 0x4a
+			dAtA[i] = 0x7a
 		}
+	}
+	if m.AllowlistedRewardDenoms != nil {
+		{
+			size, err := m.AllowlistedRewardDenoms.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x72
+	}
+	if len(m.ConsumerId) > 0 {
+		i -= len(m.ConsumerId)
+		copy(dAtA[i:], m.ConsumerId)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ConsumerId)))
+		i--
+		dAtA[i] = 0x6a
+	}
+	if m.AllowInactiveVals {
+		i--
+		if m.AllowInactiveVals {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x60
+	}
+	if m.MinStake != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.MinStake))
+		i--
+		dAtA[i] = 0x58
+	}
+	{
+		size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x52
+	if len(m.Phase) > 0 {
+		i -= len(m.Phase)
+		copy(dAtA[i:], m.Phase)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Phase)))
+		i--
+		dAtA[i] = 0x4a
 	}
 	if len(m.Denylist) > 0 {
 		for iNdEx := len(m.Denylist) - 1; iNdEx >= 0; iNdEx-- {
@@ -2951,17 +2978,17 @@ func (m *QueryValidatorConsumerAddrRequest) MarshalToSizedBuffer(dAtA []byte) (i
 	_ = i
 	var l int
 	_ = l
+	if len(m.ConsumerId) > 0 {
+		i -= len(m.ConsumerId)
+		copy(dAtA[i:], m.ConsumerId)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ConsumerId)))
+		i--
+		dAtA[i] = 0x12
+	}
 	if len(m.ProviderAddress) > 0 {
 		i -= len(m.ProviderAddress)
 		copy(dAtA[i:], m.ProviderAddress)
 		i = encodeVarintQuery(dAtA, i, uint64(len(m.ProviderAddress)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.ChainId) > 0 {
-		i -= len(m.ChainId)
-		copy(dAtA[i:], m.ChainId)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainId)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -3018,17 +3045,17 @@ func (m *QueryValidatorProviderAddrRequest) MarshalToSizedBuffer(dAtA []byte) (i
 	_ = i
 	var l int
 	_ = l
+	if len(m.ConsumerId) > 0 {
+		i -= len(m.ConsumerId)
+		copy(dAtA[i:], m.ConsumerId)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ConsumerId)))
+		i--
+		dAtA[i] = 0x12
+	}
 	if len(m.ConsumerAddress) > 0 {
 		i -= len(m.ConsumerAddress)
 		copy(dAtA[i:], m.ConsumerAddress)
 		i = encodeVarintQuery(dAtA, i, uint64(len(m.ConsumerAddress)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.ChainId) > 0 {
-		i -= len(m.ChainId)
-		copy(dAtA[i:], m.ChainId)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainId)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -3108,12 +3135,12 @@ func (m *QueryThrottleStateResponse) MarshalToSizedBuffer(dAtA []byte) (int, err
 	_ = i
 	var l int
 	_ = l
-	n4, err4 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.NextReplenishCandidate, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.NextReplenishCandidate):])
-	if err4 != nil {
-		return 0, err4
+	n6, err6 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.NextReplenishCandidate, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.NextReplenishCandidate):])
+	if err6 != nil {
+		return 0, err6
 	}
-	i -= n4
-	i = encodeVarintQuery(dAtA, i, uint64(n4))
+	i -= n6
+	i = encodeVarintQuery(dAtA, i, uint64(n6))
 	i--
 	dAtA[i] = 0x1a
 	if m.SlashMeterAllowance != 0 {
@@ -3184,7 +3211,7 @@ func (m *QueryRegisteredConsumerRewardDenomsResponse) MarshalToSizedBuffer(dAtA 
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryProposedChainIDsRequest) Marshal() (dAtA []byte, err error) {
+func (m *QueryAllPairsValConsAddrByConsumerRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -3194,92 +3221,27 @@ func (m *QueryProposedChainIDsRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryProposedChainIDsRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryAllPairsValConsAddrByConsumerRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryProposedChainIDsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryAllPairsValConsAddrByConsumerRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryProposedChainIDsResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryProposedChainIDsResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryProposedChainIDsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.ProposedChains) > 0 {
-		for iNdEx := len(m.ProposedChains) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.ProposedChains[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintQuery(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ProposedChain) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ProposedChain) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ProposedChain) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.ProposalID != 0 {
-		i = encodeVarintQuery(dAtA, i, uint64(m.ProposalID))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.ChainID) > 0 {
-		i -= len(m.ChainID)
-		copy(dAtA[i:], m.ChainID)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainID)))
+	if len(m.ConsumerId) > 0 {
+		i -= len(m.ConsumerId)
+		copy(dAtA[i:], m.ConsumerId)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ConsumerId)))
 		i--
 		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryAllPairsValConAddrByConsumerChainIDRequest) Marshal() (dAtA []byte, err error) {
+func (m *QueryAllPairsValConsAddrByConsumerResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -3289,42 +3251,12 @@ func (m *QueryAllPairsValConAddrByConsumerChainIDRequest) Marshal() (dAtA []byte
 	return dAtA[:n], nil
 }
 
-func (m *QueryAllPairsValConAddrByConsumerChainIDRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryAllPairsValConsAddrByConsumerResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryAllPairsValConAddrByConsumerChainIDRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.ChainId) > 0 {
-		i -= len(m.ChainId)
-		copy(dAtA[i:], m.ChainId)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainId)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryAllPairsValConAddrByConsumerChainIDResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryAllPairsValConAddrByConsumerChainIDResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryAllPairsValConAddrByConsumerChainIDResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryAllPairsValConsAddrByConsumerResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -3471,10 +3403,10 @@ func (m *QueryConsumerChainOptedInValidatorsRequest) MarshalToSizedBuffer(dAtA [
 	_ = i
 	var l int
 	_ = l
-	if len(m.ChainId) > 0 {
-		i -= len(m.ChainId)
-		copy(dAtA[i:], m.ChainId)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainId)))
+	if len(m.ConsumerId) > 0 {
+		i -= len(m.ConsumerId)
+		copy(dAtA[i:], m.ConsumerId)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ConsumerId)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -3533,10 +3465,10 @@ func (m *QueryConsumerValidatorsRequest) MarshalToSizedBuffer(dAtA []byte) (int,
 	_ = i
 	var l int
 	_ = l
-	if len(m.ChainId) > 0 {
-		i -= len(m.ChainId)
-		copy(dAtA[i:], m.ChainId)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainId)))
+	if len(m.ConsumerId) > 0 {
+		i -= len(m.ConsumerId)
+		copy(dAtA[i:], m.ConsumerId)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ConsumerId)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -3563,6 +3495,98 @@ func (m *QueryConsumerValidatorsValidator) MarshalToSizedBuffer(dAtA []byte) (in
 	_ = i
 	var l int
 	_ = l
+	if m.ValidatesCurrentEpoch {
+		i--
+		if m.ValidatesCurrentEpoch {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x70
+	}
+	if m.ProviderPower != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.ProviderPower))
+		i--
+		dAtA[i] = 0x68
+	}
+	{
+		size := m.ProviderTokens.Size()
+		i -= size
+		if _, err := m.ProviderTokens.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x62
+	if m.Status != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.Status))
+		i--
+		dAtA[i] = 0x58
+	}
+	if m.Jailed {
+		i--
+		if m.Jailed {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x50
+	}
+	if len(m.ProviderOperatorAddress) > 0 {
+		i -= len(m.ProviderOperatorAddress)
+		copy(dAtA[i:], m.ProviderOperatorAddress)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ProviderOperatorAddress)))
+		i--
+		dAtA[i] = 0x4a
+	}
+	{
+		size, err := m.Description.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x42
+	{
+		size := m.ProviderCommissionRate.Size()
+		i -= size
+		if _, err := m.ProviderCommissionRate.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x3a
+	{
+		size := m.ConsumerCommissionRate.Size()
+		i -= size
+		if _, err := m.ConsumerCommissionRate.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x32
+	if m.ConsumerPower != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.ConsumerPower))
+		i--
+		dAtA[i] = 0x28
+	}
+	{
+		size := m.Rate.Size()
+		i -= size
+		if _, err := m.Rate.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x22
 	if m.Power != 0 {
 		i = encodeVarintQuery(dAtA, i, uint64(m.Power))
 		i--
@@ -3677,11 +3701,11 @@ func (m *QueryConsumerChainsValidatorHasToValidateResponse) MarshalToSizedBuffer
 	_ = i
 	var l int
 	_ = l
-	if len(m.ConsumerChainIds) > 0 {
-		for iNdEx := len(m.ConsumerChainIds) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.ConsumerChainIds[iNdEx])
-			copy(dAtA[i:], m.ConsumerChainIds[iNdEx])
-			i = encodeVarintQuery(dAtA, i, uint64(len(m.ConsumerChainIds[iNdEx])))
+	if len(m.ConsumerIds) > 0 {
+		for iNdEx := len(m.ConsumerIds) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ConsumerIds[iNdEx])
+			copy(dAtA[i:], m.ConsumerIds[iNdEx])
+			i = encodeVarintQuery(dAtA, i, uint64(len(m.ConsumerIds[iNdEx])))
 			i--
 			dAtA[i] = 0xa
 		}
@@ -3716,10 +3740,10 @@ func (m *QueryValidatorConsumerCommissionRateRequest) MarshalToSizedBuffer(dAtA 
 		i--
 		dAtA[i] = 0x12
 	}
-	if len(m.ChainId) > 0 {
-		i -= len(m.ChainId)
-		copy(dAtA[i:], m.ChainId)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainId)))
+	if len(m.ConsumerId) > 0 {
+		i -= len(m.ConsumerId)
+		copy(dAtA[i:], m.ConsumerId)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ConsumerId)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -3759,7 +3783,7 @@ func (m *QueryValidatorConsumerCommissionRateResponse) MarshalToSizedBuffer(dAtA
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryOldestUnconfirmedVscRequest) Marshal() (dAtA []byte, err error) {
+func (m *QueryBlocksUntilNextEpochRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -3769,27 +3793,78 @@ func (m *QueryOldestUnconfirmedVscRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryOldestUnconfirmedVscRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryBlocksUntilNextEpochRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryOldestUnconfirmedVscRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryBlocksUntilNextEpochRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.ChainId) > 0 {
-		i -= len(m.ChainId)
-		copy(dAtA[i:], m.ChainId)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainId)))
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryBlocksUntilNextEpochResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryBlocksUntilNextEpochResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryBlocksUntilNextEpochResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.BlocksUntilNextEpoch != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.BlocksUntilNextEpoch))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryConsumerIdFromClientIdRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryConsumerIdFromClientIdRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryConsumerIdFromClientIdRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ClientId) > 0 {
+		i -= len(m.ClientId)
+		copy(dAtA[i:], m.ClientId)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ClientId)))
 		i--
 		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryOldestUnconfirmedVscResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryConsumerIdFromClientIdResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -3799,18 +3874,102 @@ func (m *QueryOldestUnconfirmedVscResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryOldestUnconfirmedVscResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryConsumerIdFromClientIdResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryOldestUnconfirmedVscResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryConsumerIdFromClientIdResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
+	if len(m.ConsumerId) > 0 {
+		i -= len(m.ConsumerId)
+		copy(dAtA[i:], m.ConsumerId)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ConsumerId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryConsumerChainRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryConsumerChainRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryConsumerChainRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ConsumerId) > 0 {
+		i -= len(m.ConsumerId)
+		copy(dAtA[i:], m.ConsumerId)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ConsumerId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryConsumerChainResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryConsumerChainResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryConsumerChainResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.PowerShapingParams != nil {
+		{
+			size, err := m.PowerShapingParams.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x3a
+	}
+	if m.InitParams != nil {
+		{
+			size, err := m.InitParams.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x32
+	}
 	{
-		size, err := m.VscSendTimestamp.MarshalToSizedBuffer(dAtA[:i])
+		size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
 			return 0, err
 		}
@@ -3818,7 +3977,35 @@ func (m *QueryOldestUnconfirmedVscResponse) MarshalToSizedBuffer(dAtA []byte) (i
 		i = encodeVarintQuery(dAtA, i, uint64(size))
 	}
 	i--
-	dAtA[i] = 0xa
+	dAtA[i] = 0x2a
+	if len(m.Phase) > 0 {
+		i -= len(m.Phase)
+		copy(dAtA[i:], m.Phase)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Phase)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.OwnerAddress) > 0 {
+		i -= len(m.OwnerAddress)
+		copy(dAtA[i:], m.OwnerAddress)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.OwnerAddress)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.ChainId) > 0 {
+		i -= len(m.ChainId)
+		copy(dAtA[i:], m.ChainId)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ConsumerId) > 0 {
+		i -= len(m.ConsumerId)
+		copy(dAtA[i:], m.ConsumerId)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ConsumerId)))
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -3839,7 +4026,7 @@ func (m *QueryConsumerGenesisRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.ChainId)
+	l = len(m.ConsumerId)
 	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
 	}
@@ -3863,6 +4050,13 @@ func (m *QueryConsumerChainsRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.Phase != 0 {
+		n += 1 + sovQuery(uint64(m.Phase))
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
 	return n
 }
 
@@ -3878,48 +4072,8 @@ func (m *QueryConsumerChainsResponse) Size() (n int) {
 			n += 1 + l + sovQuery(uint64(l))
 		}
 	}
-	return n
-}
-
-func (m *QueryConsumerChainStartProposalsRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	return n
-}
-
-func (m *QueryConsumerChainStartProposalsResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Proposals != nil {
-		l = m.Proposals.Size()
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	return n
-}
-
-func (m *QueryConsumerChainStopProposalsRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	return n
-}
-
-func (m *QueryConsumerChainStopProposalsResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Proposals != nil {
-		l = m.Proposals.Size()
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
 		n += 1 + l + sovQuery(uint64(l))
 	}
 	return n
@@ -3963,6 +4117,26 @@ func (m *Chain) Size() (n int) {
 			n += 1 + l + sovQuery(uint64(l))
 		}
 	}
+	l = len(m.Phase)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	l = m.Metadata.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	if m.MinStake != 0 {
+		n += 1 + sovQuery(uint64(m.MinStake))
+	}
+	if m.AllowInactiveVals {
+		n += 2
+	}
+	l = len(m.ConsumerId)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	if m.AllowlistedRewardDenoms != nil {
+		l = m.AllowlistedRewardDenoms.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
 	if len(m.Prioritylist) > 0 {
 		for _, s := range m.Prioritylist {
 			l = len(s)
@@ -3978,11 +4152,11 @@ func (m *QueryValidatorConsumerAddrRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.ChainId)
+	l = len(m.ProviderAddress)
 	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
 	}
-	l = len(m.ProviderAddress)
+	l = len(m.ConsumerId)
 	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
 	}
@@ -4008,11 +4182,11 @@ func (m *QueryValidatorProviderAddrRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.ChainId)
+	l = len(m.ConsumerAddress)
 	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
 	}
-	l = len(m.ConsumerAddress)
+	l = len(m.ConsumerId)
 	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
 	}
@@ -4082,60 +4256,20 @@ func (m *QueryRegisteredConsumerRewardDenomsResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryProposedChainIDsRequest) Size() (n int) {
+func (m *QueryAllPairsValConsAddrByConsumerRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	return n
-}
-
-func (m *QueryProposedChainIDsResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.ProposedChains) > 0 {
-		for _, e := range m.ProposedChains {
-			l = e.Size()
-			n += 1 + l + sovQuery(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *ProposedChain) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.ChainID)
-	if l > 0 {
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	if m.ProposalID != 0 {
-		n += 1 + sovQuery(uint64(m.ProposalID))
-	}
-	return n
-}
-
-func (m *QueryAllPairsValConAddrByConsumerChainIDRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.ChainId)
+	l = len(m.ConsumerId)
 	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
 	}
 	return n
 }
 
-func (m *QueryAllPairsValConAddrByConsumerChainIDResponse) Size() (n int) {
+func (m *QueryAllPairsValConsAddrByConsumerResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -4197,7 +4331,7 @@ func (m *QueryConsumerChainOptedInValidatorsRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.ChainId)
+	l = len(m.ConsumerId)
 	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
 	}
@@ -4225,7 +4359,7 @@ func (m *QueryConsumerValidatorsRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.ChainId)
+	l = len(m.ConsumerId)
 	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
 	}
@@ -4248,6 +4382,35 @@ func (m *QueryConsumerValidatorsValidator) Size() (n int) {
 	}
 	if m.Power != 0 {
 		n += 1 + sovQuery(uint64(m.Power))
+	}
+	l = m.Rate.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	if m.ConsumerPower != 0 {
+		n += 1 + sovQuery(uint64(m.ConsumerPower))
+	}
+	l = m.ConsumerCommissionRate.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	l = m.ProviderCommissionRate.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	l = m.Description.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	l = len(m.ProviderOperatorAddress)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	if m.Jailed {
+		n += 2
+	}
+	if m.Status != 0 {
+		n += 1 + sovQuery(uint64(m.Status))
+	}
+	l = m.ProviderTokens.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	if m.ProviderPower != 0 {
+		n += 1 + sovQuery(uint64(m.ProviderPower))
+	}
+	if m.ValidatesCurrentEpoch {
+		n += 2
 	}
 	return n
 }
@@ -4286,8 +4449,8 @@ func (m *QueryConsumerChainsValidatorHasToValidateResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if len(m.ConsumerChainIds) > 0 {
-		for _, s := range m.ConsumerChainIds {
+	if len(m.ConsumerIds) > 0 {
+		for _, s := range m.ConsumerIds {
 			l = len(s)
 			n += 1 + l + sovQuery(uint64(l))
 		}
@@ -4301,7 +4464,7 @@ func (m *QueryValidatorConsumerCommissionRateRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.ChainId)
+	l = len(m.ConsumerId)
 	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
 	}
@@ -4323,27 +4486,98 @@ func (m *QueryValidatorConsumerCommissionRateResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryOldestUnconfirmedVscRequest) Size() (n int) {
+func (m *QueryBlocksUntilNextEpochRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.ChainId)
+	return n
+}
+
+func (m *QueryBlocksUntilNextEpochResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.BlocksUntilNextEpoch != 0 {
+		n += 1 + sovQuery(uint64(m.BlocksUntilNextEpoch))
+	}
+	return n
+}
+
+func (m *QueryConsumerIdFromClientIdRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ClientId)
 	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
 	}
 	return n
 }
 
-func (m *QueryOldestUnconfirmedVscResponse) Size() (n int) {
+func (m *QueryConsumerIdFromClientIdResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = m.VscSendTimestamp.Size()
+	l = len(m.ConsumerId)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryConsumerChainRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ConsumerId)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryConsumerChainResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ConsumerId)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	l = len(m.ChainId)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	l = len(m.OwnerAddress)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	l = len(m.Phase)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	l = m.Metadata.Size()
 	n += 1 + l + sovQuery(uint64(l))
+	if m.InitParams != nil {
+		l = m.InitParams.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	if m.PowerShapingParams != nil {
+		l = m.PowerShapingParams.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
 	return n
 }
 
@@ -4384,7 +4618,7 @@ func (m *QueryConsumerGenesisRequest) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerId", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -4412,7 +4646,7 @@ func (m *QueryConsumerGenesisRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ChainId = string(dAtA[iNdEx:postIndex])
+			m.ConsumerId = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -4547,6 +4781,61 @@ func (m *QueryConsumerChainsRequest) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: QueryConsumerChainsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Phase", wireType)
+			}
+			m.Phase = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Phase |= ConsumerPhase(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
@@ -4631,109 +4920,9 @@ func (m *QueryConsumerChainsResponse) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryConsumerChainStartProposalsRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryConsumerChainStartProposalsRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryConsumerChainStartProposalsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryConsumerChainStartProposalsResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryConsumerChainStartProposalsResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryConsumerChainStartProposalsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
+		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Proposals", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -4760,146 +4949,10 @@ func (m *QueryConsumerChainStartProposalsResponse) Unmarshal(dAtA []byte) error 
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Proposals == nil {
-				m.Proposals = &ConsumerAdditionProposals{}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageResponse{}
 			}
-			if err := m.Proposals.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryConsumerChainStopProposalsRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryConsumerChainStopProposalsRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryConsumerChainStopProposalsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryConsumerChainStopProposalsResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryConsumerChainStopProposalsResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryConsumerChainStopProposalsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Proposals", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Proposals == nil {
-				m.Proposals = &ConsumerRemovalProposals{}
-			}
-			if err := m.Proposals.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -5159,6 +5212,178 @@ func (m *Chain) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 9:
 			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Phase", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Phase = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 11:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MinStake", wireType)
+			}
+			m.MinStake = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.MinStake |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 12:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AllowInactiveVals", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.AllowInactiveVals = bool(v != 0)
+		case 13:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ConsumerId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 14:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AllowlistedRewardDenoms", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.AllowlistedRewardDenoms == nil {
+				m.AllowlistedRewardDenoms = &AllowlistedRewardDenoms{}
+			}
+			if err := m.AllowlistedRewardDenoms.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 15:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Prioritylist", wireType)
 			}
 			var stringLen uint64
@@ -5241,38 +5466,6 @@ func (m *QueryValidatorConsumerAddrRequest) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ChainId = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ProviderAddress", wireType)
 			}
 			var stringLen uint64
@@ -5302,6 +5495,38 @@ func (m *QueryValidatorConsumerAddrRequest) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.ProviderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ConsumerId = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -5437,38 +5662,6 @@ func (m *QueryValidatorProviderAddrRequest) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ChainId = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerAddress", wireType)
 			}
 			var stringLen uint64
@@ -5498,6 +5691,38 @@ func (m *QueryValidatorProviderAddrRequest) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.ConsumerAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ConsumerId = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -5905,7 +6130,7 @@ func (m *QueryRegisteredConsumerRewardDenomsResponse) Unmarshal(dAtA []byte) err
 	}
 	return nil
 }
-func (m *QueryProposedChainIDsRequest) Unmarshal(dAtA []byte) error {
+func (m *QueryAllPairsValConsAddrByConsumerRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -5928,149 +6153,15 @@ func (m *QueryProposedChainIDsRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryProposedChainIDsRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryAllPairsValConsAddrByConsumerRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryProposedChainIDsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryProposedChainIDsResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryProposedChainIDsResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryProposedChainIDsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryAllPairsValConsAddrByConsumerRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProposedChains", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ProposedChains = append(m.ProposedChains, ProposedChain{})
-			if err := m.ProposedChains[len(m.ProposedChains)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ProposedChain) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ProposedChain: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ProposedChain: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ChainID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerId", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -6098,108 +6189,7 @@ func (m *ProposedChain) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ChainID = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProposalID", wireType)
-			}
-			m.ProposalID = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ProposalID |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryAllPairsValConAddrByConsumerChainIDRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryAllPairsValConAddrByConsumerChainIDRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryAllPairsValConAddrByConsumerChainIDRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ChainId = string(dAtA[iNdEx:postIndex])
+			m.ConsumerId = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -6222,7 +6212,7 @@ func (m *QueryAllPairsValConAddrByConsumerChainIDRequest) Unmarshal(dAtA []byte)
 	}
 	return nil
 }
-func (m *QueryAllPairsValConAddrByConsumerChainIDResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryAllPairsValConsAddrByConsumerResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -6245,10 +6235,10 @@ func (m *QueryAllPairsValConAddrByConsumerChainIDResponse) Unmarshal(dAtA []byte
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryAllPairsValConAddrByConsumerChainIDResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryAllPairsValConsAddrByConsumerResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryAllPairsValConAddrByConsumerChainIDResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryAllPairsValConsAddrByConsumerResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -6620,7 +6610,7 @@ func (m *QueryConsumerChainOptedInValidatorsRequest) Unmarshal(dAtA []byte) erro
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerId", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -6648,7 +6638,7 @@ func (m *QueryConsumerChainOptedInValidatorsRequest) Unmarshal(dAtA []byte) erro
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ChainId = string(dAtA[iNdEx:postIndex])
+			m.ConsumerId = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -6784,7 +6774,7 @@ func (m *QueryConsumerValidatorsRequest) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerId", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -6812,7 +6802,7 @@ func (m *QueryConsumerValidatorsRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ChainId = string(dAtA[iNdEx:postIndex])
+			m.ConsumerId = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -6951,6 +6941,304 @@ func (m *QueryConsumerValidatorsValidator) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Rate", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Rate.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerPower", wireType)
+			}
+			m.ConsumerPower = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ConsumerPower |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerCommissionRate", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.ConsumerCommissionRate.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderCommissionRate", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.ProviderCommissionRate.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Description", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Description.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderOperatorAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProviderOperatorAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 10:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Jailed", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Jailed = bool(v != 0)
+		case 11:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			m.Status = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Status |= types1.BondStatus(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderTokens", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.ProviderTokens.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 13:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderPower", wireType)
+			}
+			m.ProviderPower = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ProviderPower |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 14:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValidatesCurrentEpoch", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.ValidatesCurrentEpoch = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
@@ -7169,7 +7457,7 @@ func (m *QueryConsumerChainsValidatorHasToValidateResponse) Unmarshal(dAtA []byt
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerChainIds", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerIds", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -7197,7 +7485,7 @@ func (m *QueryConsumerChainsValidatorHasToValidateResponse) Unmarshal(dAtA []byt
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ConsumerChainIds = append(m.ConsumerChainIds, string(dAtA[iNdEx:postIndex]))
+			m.ConsumerIds = append(m.ConsumerIds, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -7251,7 +7539,7 @@ func (m *QueryValidatorConsumerCommissionRateRequest) Unmarshal(dAtA []byte) err
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerId", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -7279,7 +7567,7 @@ func (m *QueryValidatorConsumerCommissionRateRequest) Unmarshal(dAtA []byte) err
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ChainId = string(dAtA[iNdEx:postIndex])
+			m.ConsumerId = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -7418,7 +7706,7 @@ func (m *QueryValidatorConsumerCommissionRateResponse) Unmarshal(dAtA []byte) er
 	}
 	return nil
 }
-func (m *QueryOldestUnconfirmedVscRequest) Unmarshal(dAtA []byte) error {
+func (m *QueryBlocksUntilNextEpochRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -7441,13 +7729,410 @@ func (m *QueryOldestUnconfirmedVscRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryOldestUnconfirmedVscRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryBlocksUntilNextEpochRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryOldestUnconfirmedVscRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryBlocksUntilNextEpochRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryBlocksUntilNextEpochResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryBlocksUntilNextEpochResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryBlocksUntilNextEpochResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlocksUntilNextEpoch", wireType)
+			}
+			m.BlocksUntilNextEpoch = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.BlocksUntilNextEpoch |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryConsumerIdFromClientIdRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryConsumerIdFromClientIdRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryConsumerIdFromClientIdRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ClientId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ClientId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryConsumerIdFromClientIdResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryConsumerIdFromClientIdResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryConsumerIdFromClientIdResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ConsumerId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryConsumerChainRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryConsumerChainRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryConsumerChainRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ConsumerId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryConsumerChainResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryConsumerChainResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryConsumerChainResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ConsumerId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
 			}
@@ -7479,59 +8164,73 @@ func (m *QueryOldestUnconfirmedVscRequest) Unmarshal(dAtA []byte) error {
 			}
 			m.ChainId = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OwnerAddress", wireType)
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthQuery
 			}
-			if (iNdEx + skippy) > l {
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryOldestUnconfirmedVscResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryOldestUnconfirmedVscResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryOldestUnconfirmedVscResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
+			m.OwnerAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field VscSendTimestamp", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Phase", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Phase = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -7558,7 +8257,79 @@ func (m *QueryOldestUnconfirmedVscResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.VscSendTimestamp.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InitParams", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.InitParams == nil {
+				m.InitParams = &ConsumerInitializationParameters{}
+			}
+			if err := m.InitParams.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PowerShapingParams", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.PowerShapingParams == nil {
+				m.PowerShapingParams = &PowerShapingParameters{}
+			}
+			if err := m.PowerShapingParams.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

@@ -7,8 +7,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	"github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // GetParams returns the params for the consumer ccv module
@@ -126,4 +126,9 @@ func (k Keeper) GetProviderRewardDenoms(ctx sdk.Context) []string {
 func (k Keeper) GetRetryDelayPeriod(ctx sdk.Context) time.Duration {
 	params := k.GetConsumerParams(ctx)
 	return params.RetryDelayPeriod
+}
+
+func (k Keeper) GetConsumerId(ctx sdk.Context) string {
+	params := k.GetConsumerParams(ctx)
+	return params.ConsumerId
 }

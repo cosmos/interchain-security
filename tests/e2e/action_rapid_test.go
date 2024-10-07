@@ -90,7 +90,7 @@ func GetActionGen() *rapid.Generator[any] {
 		CreateLightClientEquivocationAttackActionGen().AsAny(),
 		CreateLightClientAmnesiaAttackActionGen().AsAny(),
 		CreateLightClientLunaticAttackActionGen().AsAny(),
-		GetStartConsumerEvidenceDetectorActionGen().AsAny(),
+		GetDetectConsumerEvidenceActionGen().AsAny(),
 		GetForkConsumerChainActionGen().AsAny(),
 		GetUpdateLightClientActionGen().AsAny(),
 	)
@@ -99,9 +99,10 @@ func GetActionGen() *rapid.Generator[any] {
 func CreateSubmitChangeRewardDenomsProposalActionGen() *rapid.Generator[SubmitChangeRewardDenomsProposalAction] {
 	return rapid.Custom(func(t *rapid.T) SubmitChangeRewardDenomsProposalAction {
 		return SubmitChangeRewardDenomsProposalAction{
+			Chain:   GetChainIDGen().Draw(t, "Chain"),
 			From:    GetValidatorIDGen().Draw(t, "From"),
 			Deposit: rapid.Uint().Draw(t, "Deposit"),
-			Denom:   rapid.String().Draw(t, "Denom"),
+			Denoms:  rapid.SliceOf(rapid.String()).Draw(t, "Denoms"),
 		}
 	})
 }
@@ -163,9 +164,9 @@ func GetStartSovereignChainActionGen() *rapid.Generator[StartSovereignChainActio
 	})
 }
 
-func GetSubmitLegacyUpgradeProposalActionGen() *rapid.Generator[LegacyUpgradeProposalAction] {
-	return rapid.Custom(func(t *rapid.T) LegacyUpgradeProposalAction {
-		return LegacyUpgradeProposalAction{
+func GetSubmitLegacyUpgradeProposalActionGen() *rapid.Generator[UpgradeProposalAction] {
+	return rapid.Custom(func(t *rapid.T) UpgradeProposalAction {
+		return UpgradeProposalAction{
 			ChainID:       GetChainIDGen().Draw(t, "ChainID"),
 			UpgradeTitle:  rapid.String().Draw(t, "UpgradeTitle"),
 			Proposer:      GetValidatorIDGen().Draw(t, "Proposer"),
@@ -260,11 +261,10 @@ func GetSubmitConsumerAdditionProposalActionGen() *rapid.Generator[SubmitConsume
 func GetSubmitConsumerRemovalProposalActionGen() *rapid.Generator[SubmitConsumerRemovalProposalAction] {
 	return rapid.Custom(func(t *rapid.T) SubmitConsumerRemovalProposalAction {
 		return SubmitConsumerRemovalProposalAction{
-			Chain:          GetChainIDGen().Draw(t, "Chain"),
-			From:           GetValidatorIDGen().Draw(t, "From"),
-			Deposit:        rapid.Uint().Draw(t, "Deposit"),
-			ConsumerChain:  GetChainIDGen().Draw(t, "ConsumerChain"),
-			StopTimeOffset: time.Duration(rapid.Int64().Draw(t, "StopTimeOffset")),
+			Chain:         GetChainIDGen().Draw(t, "Chain"),
+			From:          GetValidatorIDGen().Draw(t, "From"),
+			Deposit:       rapid.Uint().Draw(t, "Deposit"),
+			ConsumerChain: GetChainIDGen().Draw(t, "ConsumerChain"),
 		}
 	})
 }
@@ -504,9 +504,9 @@ func GetForkConsumerChainActionGen() *rapid.Generator[ForkConsumerChainAction] {
 	})
 }
 
-func GetStartConsumerEvidenceDetectorActionGen() *rapid.Generator[StartConsumerEvidenceDetectorAction] {
-	return rapid.Custom(func(t *rapid.T) StartConsumerEvidenceDetectorAction {
-		return StartConsumerEvidenceDetectorAction{
+func GetDetectConsumerEvidenceActionGen() *rapid.Generator[DetectConsumerEvidenceAction] {
+	return rapid.Custom(func(t *rapid.T) DetectConsumerEvidenceAction {
+		return DetectConsumerEvidenceAction{
 			Chain: GetChainIDGen().Draw(t, "Chain"),
 		}
 	})

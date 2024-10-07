@@ -5,7 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // Legacy: used for migration only!
@@ -24,6 +24,7 @@ func GetConsumerParamsLegacy(ctx sdk.Context, paramSpace ccvtypes.LegacyParamSub
 		getRewardDenoms(ctx, paramSpace),
 		getProviderRewardDenoms(ctx, paramSpace),
 		getRetryDelayPeriod(ctx, paramSpace),
+		"0",
 	)
 }
 

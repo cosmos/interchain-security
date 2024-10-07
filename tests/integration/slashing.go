@@ -10,8 +10,8 @@ import (
 
 	"cosmossdk.io/core/comet"
 	"cosmossdk.io/math"
-	"cosmossdk.io/x/evidence/types"
 	evidencetypes "cosmossdk.io/x/evidence/types"
+
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkaddress "github.com/cosmos/cosmos-sdk/types/address"
@@ -23,10 +23,10 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v5/testutil/integration"
-	keepertestutil "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	"github.com/cosmos/interchain-security/v6/testutil/integration"
+	keepertestutil "github.com/cosmos/interchain-security/v6/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // TestRelayAndApplyDowntimePacket tests that downtime slash packets can be properly relayed
@@ -51,13 +51,13 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	tmVal := s.consumerChain.Vals.Validators[0]
 	val, err := tmVal.ToProto()
 	s.Require().NoError(err)
-	pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
+	pubkey, err := cryptocodec.FromCmtProtoPublicKey(val.GetPubKey())
 	s.Require().Nil(err)
 	consumerConsAddr := providertypes.NewConsumerConsAddress(sdk.GetConsAddress(pubkey))
 	// map consumer consensus address to provider consensus address
 	providerConsAddr, found := providerKeeper.GetValidatorByConsumerAddr(
 		s.providerCtx(),
-		s.consumerChain.ChainID,
+		s.getFirstBundle().ConsumerId,
 		consumerConsAddr,
 	)
 	s.Require().True(found)
@@ -106,14 +106,6 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	// this call was added starging cosmos-sdk v0.50.x
 	s.nextEpoch()
 
-	// VSC packets should have been sent from provider during block N to each consumer
-	expectedSentValsetUpdateId := valsetUpdateIdN
-	for _, bundle := range s.consumerBundles {
-		_, found := providerKeeper.GetVscSendTimestamp(s.providerCtx(),
-			bundle.Chain.ChainID, expectedSentValsetUpdateId)
-		s.Require().True(found)
-	}
-
 	s.nextEpoch()
 
 	// Confirm the valset update Id was incremented twice on provider,
@@ -124,6 +116,8 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	// check that the validator was removed from the provider validator set by N + 2
 	s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain-1)
 
+	// VSC packets should have been sent from provider during block N to each consumer
+	expectedSentValsetUpdateId := valsetUpdateIdN
 	for _, bundle := range s.consumerBundles {
 		// Relay VSC packets from provider to each consumer
 		relayAllCommittedPackets(s, s.providerChain, bundle.Path,
@@ -194,7 +188,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
 	// map consumer consensus address to provider consensus address
 	providerConsAddr, found := providerKeeper.GetValidatorByConsumerAddr(
 		s.providerCtx(),
-		s.consumerChain.ChainID,
+		s.getFirstBundle().ConsumerId,
 		consumerConsAddr)
 	s.Require().True(found)
 
@@ -313,7 +307,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
 	suite.Require().Equal(stakingtypes.Bonded, validator.GetStatus())
 
 	// set init VSC id for chain0
-	providerKeeper.SetInitChainHeight(suite.providerCtx(), suite.consumerChain.ChainID, uint64(suite.providerCtx().BlockHeight()))
+	providerKeeper.SetInitChainHeight(suite.providerCtx(), suite.getFirstBundle().ConsumerId, uint64(suite.providerCtx().BlockHeight()))
 
 	// set validator signing-info
 	providerSlashingKeeper.SetValidatorSigningInfo(
@@ -322,7 +316,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
 		slashingtypes.ValidatorSigningInfo{Address: consAddr.String()},
 	)
 
-	providerKeeper.HandleSlashPacket(suite.providerCtx(), suite.consumerChain.ChainID,
+	providerKeeper.HandleSlashPacket(suite.providerCtx(), suite.getFirstBundle().ConsumerId,
 		*ccv.NewSlashPacketData(
 			abci.Validator{Address: tmVal.Address, Power: 0},
 			uint64(0),
@@ -403,36 +397,47 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 
 	// Expect no error if validator does not exist
 	_, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
-	suite.Require().NoError(err, "no error expected")
+	suite.Require().NoError(err)
 
 	// Check expected behavior for handling SlashPackets for double signing infractions
 	slashPacketData.Infraction = stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN
 	ackResult, err := providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
-	suite.Require().NoError(err, "no error expected")
+	suite.Require().NoError(err)
 	suite.Require().Equal(ccv.V1Result, ackResult, "expected successful ack")
 
 	// Check expected behavior for handling SlashPackets for downtime infractions
 	slashPacketData.Infraction = stakingtypes.Infraction_INFRACTION_DOWNTIME
 
-	// Expect packet to be handled if the validator didn't opt in
-	ackResult, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
-	suite.Require().NoError(err, "no error expected")
-	suite.Require().Equal(ccv.SlashPacketHandledResult, ackResult, "expected successful ack")
-
-	providerKeeper.SetConsumerValidator(ctx, firstBundle.Chain.ChainID, providertypes.ConsumerValidator{
-		ProviderConsAddr: validAddress,
-	})
-
 	// Expect the packet to bounce if the slash meter is negative
 	providerKeeper.SetSlashMeter(ctx, math.NewInt(-1))
+	// Only reaches the bouncing code if it fails in the check that chain is launched and the validator is not a consumer validator,
+	// so we set the chain as stopped.
+	providerKeeper.SetConsumerPhase(suite.providerCtx(), firstBundle.ConsumerId, providertypes.CONSUMER_PHASE_STOPPED)
 	ackResult, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
-	suite.Require().NoError(err, "no error expected")
-	suite.Require().Equal(ccv.SlashPacketBouncedResult, ackResult, "expected successful ack")
+	suite.Require().NoError(err)
+	suite.Require().Equal(ccv.SlashPacketBouncedResult, ackResult, "expected bounced result")
+
+	// Expect packet not to bounce if the chain is launched
+	providerKeeper.SetSlashMeter(ctx, math.NewInt(-1))
+	providerKeeper.SetConsumerPhase(suite.providerCtx(), firstBundle.ConsumerId, providertypes.CONSUMER_PHASE_LAUNCHED)
+	ackResult, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
+	suite.Require().Equal(ccv.SlashPacketHandledResult, ackResult, "expected successful ack")
+
+	// Also test what happens if the chain is launched but we have a consumer validator. In this case the check that the
+	// chain is launched and the validator is not a consumer validator fails, and hence the packet bounces due to the
+	// negative slash meter.
+	err = providerKeeper.SetConsumerValidator(ctx, firstBundle.ConsumerId, providertypes.ConsensusValidator{
+		ProviderConsAddr: validAddress,
+	})
+	suite.Require().NoError(err)
+	ackResult, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
+	suite.Require().NoError(err)
+	suite.Require().Equal(ccv.SlashPacketBouncedResult, ackResult, "expected bounced result")
 
 	// Expect the packet to be handled if the slash meter is positive
 	providerKeeper.SetSlashMeter(ctx, math.NewInt(0))
 	ackResult, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
-	suite.Require().NoError(err, "no error expected")
+	suite.Require().NoError(err)
 	suite.Require().Equal(ccv.SlashPacketHandledResult, ackResult, "expected successful ack")
 }
 
@@ -765,7 +770,7 @@ func (suite *CCVTestSuite) TestCISBeforeCCVEstablished() {
 // copy of the function from slashing/keeper.go
 // in cosmos-sdk v0.50.x the function HandleEquivocationEvidence is not exposed (it was exposed for versions <= v0.47.x)
 // https://github.com/cosmos/cosmos-sdk/blob/v0.50.4/x/evidence/keeper/infraction.go#L27
-func handleEquivocationEvidence(ctx context.Context, k integration.ConsumerApp, evidence *types.Equivocation) error {
+func handleEquivocationEvidence(ctx context.Context, k integration.ConsumerApp, evidence *evidencetypes.Equivocation) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	slashingKeeper := k.GetTestSlashingKeeper().(slashingkeeper.Keeper)
 	evidenceKeeper := k.GetTestEvidenceKeeper()
@@ -836,7 +841,7 @@ func handleEquivocationEvidence(ctx context.Context, k integration.ConsumerApp, 
 		}
 	}
 
-	err = slashingKeeper.JailUntil(ctx, consAddr, types.DoubleSignJailEndTime)
+	err = slashingKeeper.JailUntil(ctx, consAddr, evidencetypes.DoubleSignJailEndTime)
 	if err != nil {
 		return err
 	}

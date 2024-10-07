@@ -10,18 +10,19 @@ import (
 	db "github.com/cosmos/cosmos-db"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 
+	"cosmossdk.io/log"
+
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"cosmossdk.io/log"
 	"github.com/cometbft/cometbft/abci/types"
 
-	appConsumer "github.com/cosmos/interchain-security/v5/app/consumer"
-	appConsumerDemocracy "github.com/cosmos/interchain-security/v5/app/consumer-democracy"
-	appProvider "github.com/cosmos/interchain-security/v5/app/provider"
-	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	appConsumer "github.com/cosmos/interchain-security/v6/app/consumer"
+	appConsumerDemocracy "github.com/cosmos/interchain-security/v6/app/consumer-democracy"
+	appProvider "github.com/cosmos/interchain-security/v6/app/provider"
+	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 var (

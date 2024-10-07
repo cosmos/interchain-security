@@ -2,8 +2,9 @@ package v7
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	providerkeeper "github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
+
+	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // MigrateParams migrates the provider module's parameters from the x/params to self store.

@@ -204,6 +204,66 @@ var stepChoices = map[string]StepChoice{
 		description: "This is a regression test related to the issue discussed here: https://forum.cosmos.network/t/cosmos-hub-v17-1-chain-halt-post-mortem/13899. The test ensures that the protocol works as expected when MaxValidators is smaller than the number of potential validators.",
 		testConfig:  SmallMaxValidatorsTestCfg,
 	},
+	"inactive-provider-validators-on-consumer": {
+		name:        "inactive-provider-validators-on-consumer",
+		steps:       stepsInactiveProviderValidators(),
+		description: "test inactive validators on consumer",
+		testConfig:  InactiveProviderValsTestCfg,
+	},
+	"inactive-vals-topN": {
+		name:        "inactive-vals-topN",
+		steps:       stepsInactiveValsWithTopN(),
+		description: "test inactive validators on topN chain",
+		testConfig:  InactiveProviderValsTestCfg,
+	},
+	"inactive-provider-validators-governance": {
+		name:        "inactive-provider-validators-governance",
+		steps:       stepsInactiveProviderValidatorsGovernance(),
+		description: "test governance with inactive validators",
+		testConfig:  InactiveValsGovTestCfg,
+	},
+	"inactive-provider-validators-governance-basecase": {
+		name:        "inactive-provider-validators-governance-basecase",
+		steps:       stepsInactiveProviderValidatorsGovernanceBasecase(),
+		description: "comparison for governance when there are *no* inactive validators, to verify the difference to the governance test *with* inactive validators",
+		testConfig:  GovTestCfg,
+	},
+	"min-stake": {
+		name:        "min-stake",
+		steps:       stepsMinStake(),
+		description: "checks that the min stake parameter for consumer chains is respected",
+		testConfig:  GovTestCfg, // see above: we reuse the GovTestCfg for convenience
+	},
+	"inactive-vals-mint": {
+		name:        "inactive-vals-mint",
+		steps:       stepsInactiveValsMint(),
+		description: "test minting with inactive validators",
+		testConfig:  InactiveValsMintTestCfg,
+	},
+	"mint-basecase": {
+		name:        "mint-basecase",
+		steps:       stepsMintBasecase(),
+		description: "test minting without inactive validators as a sanity check",
+		testConfig:  MintTestCfg,
+	},
+	"permissionless-ics": {
+		name:        "permissionless-ics",
+		steps:       stepsPermissionlessICS(),
+		description: "test permissionless ics",
+		testConfig:  PermissionlessTestCfg,
+	},
+	"permissionless-topN": {
+		name:        "permissionless-topN",
+		steps:       stepsPermissionlessTopN(),
+		description: "test permissionless ics topN transformation",
+		testConfig:  PermissionlessTestCfg,
+	},
+	"inactive-vals-outside-max-validators": {
+		name:        "inactive-vals-outside-max-validators",
+		steps:       stepsInactiveValsTopNReproduce(),
+		description: "tests the behaviour of inactive validators with a top N = 100 chain and when max_validators is smaller than the total number of validators",
+		testConfig:  InactiveValsExtraValsTestCfg,
+	},
 }
 
 func getTestCaseUsageString() string {
@@ -286,14 +346,27 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 	// Run default tests if no test cases were selected
 	if len(selectedPredefinedTests) == 0 && len(selectedTestFiles) == 0 {
 		selectedPredefinedTests = TestSet{
-			"changeover", "happy-path",
-			"democracy-reward", "democracy",
-			"slash-throttle", "consumer-double-sign", "consumer-misbehaviour",
-			"consumer-double-downtime", "partial-set-security-opt-in", "partial-set-security-top-n",
-			"partial-set-security-validator-set-cap", "partial-set-security-validators-power-cap",
-			"partial-set-security-validators-allowlisted", "partial-set-security-validators-denylisted",
+			"changeover",
+			"happy-path",
+			"democracy-reward",
+			"democracy",
+			"slash-throttle",
+			"consumer-double-sign",
+			"consumer-misbehaviour",
+			"consumer-double-downtime",
+			"partial-set-security-opt-in",
+			"partial-set-security-top-n",
+			"partial-set-security-validator-set-cap",
+			"partial-set-security-validators-power-cap",
+			"partial-set-security-validators-allowlisted",
+			"partial-set-security-validators-denylisted",
 			"partial-set-security-modification-proposal",
 			"active-set-changes",
+			"inactive-provider-validators-on-consumer",
+			"inactive-vals-topN",
+			"inactive-provider-validators-governance",
+			"min-stake",
+			"inactive-vals-mint",
 		}
 		if includeMultiConsumer != nil && *includeMultiConsumer {
 			selectedPredefinedTests = append(selectedPredefinedTests, "multiconsumer")
@@ -472,6 +545,7 @@ func printReport(runners []TestRunner, duration time.Duration) {
 	}
 	numTotalTests := len(runners)
 	report := `
+
 =================================================
 TEST RESULTS
 -------------------------------------------------
@@ -509,19 +583,6 @@ Summary:
 		len(remainingTests), numTotalTests,
 	)
 
-	report += fmt.Sprintln("\nFAILED TESTS:")
-	for _, t := range failedTests {
-		report += t.Report()
-	}
-	report += fmt.Sprintln("\n\nPASSED TESTS:")
-	for _, t := range passedTests {
-		report += t.Report()
-	}
-
-	report += fmt.Sprintln("\n\nREMAINING TESTS:")
-	for _, t := range remainingTests {
-		report += t.Report()
-	}
 	report += "=================================================="
 	fmt.Print(report)
 }

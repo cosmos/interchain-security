@@ -7,13 +7,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	evidencetypes "cosmossdk.io/x/evidence/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 
-	"github.com/cosmos/interchain-security/v5/app/consumer/ante"
-	appencoding "github.com/cosmos/interchain-security/v5/app/encoding"
+	"github.com/cosmos/interchain-security/v6/app/consumer/ante"
+	appencoding "github.com/cosmos/interchain-security/v6/app/encoding"
 )
 
 func TestDisabledModulesDecorator(t *testing.T) {

@@ -8,10 +8,10 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 
-// GetTemplateClient returns the template client for provider proposals
+// GetTemplateClient returns the template consumer client
 func (k Keeper) GetTemplateClient(ctx sdk.Context) *ibctmtypes.ClientState {
 	params := k.GetParams(ctx)
 	return params.TemplateClient
@@ -28,25 +28,6 @@ func (k Keeper) GetTrustingPeriodFraction(ctx sdk.Context) string {
 func (k Keeper) GetCCVTimeoutPeriod(ctx sdk.Context) time.Duration {
 	params := k.GetParams(ctx)
 	return params.CcvTimeoutPeriod
-}
-
-// GetInitTimeoutPeriod returns the init timeout period
-func (k Keeper) GetInitTimeoutPeriod(ctx sdk.Context) time.Duration {
-	params := k.GetParams(ctx)
-	return params.InitTimeoutPeriod
-}
-
-// GetVscTimeoutPeriod returns the vsc timeout period
-func (k Keeper) GetVscTimeoutPeriod(ctx sdk.Context) time.Duration {
-	params := k.GetParams(ctx)
-	return params.VscTimeoutPeriod
-}
-
-// SetVscTimeoutPeriod sets the vsc timeout period
-func (k Keeper) SetVscTimeoutPeriod(ctx sdk.Context, period time.Duration) {
-	params := k.GetParams(ctx)
-	params.VscTimeoutPeriod = period
-	k.SetParams(ctx, params)
 }
 
 // GetSlashMeterReplenishPeriod returns the period in which:
@@ -83,6 +64,13 @@ func (k Keeper) GetBlocksPerEpoch(ctx sdk.Context) int64 {
 func (k Keeper) GetNumberOfEpochsToStartReceivingRewards(ctx sdk.Context) int64 {
 	params := k.GetParams(ctx)
 	return params.NumberOfEpochsToStartReceivingRewards
+}
+
+// GetMaxProviderConsensusValidators returns the number of validators that will be passed on from the staking module
+// to the consensus engine on the provider
+func (k Keeper) GetMaxProviderConsensusValidators(ctx sdk.Context) int64 {
+	params := k.GetParams(ctx)
+	return params.MaxProviderConsensusValidators
 }
 
 // GetParams returns the paramset for the provider module

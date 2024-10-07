@@ -1,29 +1,31 @@
 package keeper_test
 
 import (
+	"sort"
 	"strings"
 	"testing"
+	"time"
 
-	"cosmossdk.io/math"
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"cosmossdk.io/math"
+
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	cryptotestutil "github.com/cosmos/interchain-security/v5/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v5/testutil/keeper"
-	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	cryptotestutil "github.com/cosmos/interchain-security/v6/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
+	"github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // TestQueueVSCPackets tests queueing validator set updates.
@@ -58,7 +60,7 @@ func TestQueueVSCPackets(t *testing.T) {
 		},
 	}
 
-	chainID := "consumer"
+	chainID := CONSUMER_CHAIN_ID
 
 	for _, tc := range testCases {
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
@@ -67,13 +69,16 @@ func TestQueueVSCPackets(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 		mocks := testkeeper.NewMockedKeepers(ctrl)
-		testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, []int64{}, 1)
+		testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 0, []stakingtypes.Validator{}, 1)
+
+		mocks.MockStakingKeeper.EXPECT().GetBondedValidatorsByPower(gomock.Any()).Return([]stakingtypes.Validator{}, nil).AnyTimes()
 
 		pk := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 		// no-op if tc.packets is empty
 		pk.AppendPendingVSCPackets(ctx, chainID, tc.packets...)
 
-		pk.QueueVSCPackets(ctx)
+		err := pk.QueueVSCPackets(ctx)
+		require.NoError(t, err)
 		pending := pk.GetPendingVSCPackets(ctx, chainID)
 		require.Len(t, pending, tc.expectedQueueSize, "pending vsc queue mismatch (%v != %v) in case: '%s'", tc.expectedQueueSize, len(pending), tc.name)
 
@@ -95,63 +100,49 @@ func TestQueueVSCPacketsDoesNotResetConsumerValidatorsHeights(t *testing.T) {
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 	// mock 2 bonded validators
-	valA := createStakingValidator(ctx, mocks, 1, 1, 1)
+	valA := createStakingValidator(ctx, mocks, 1, 1)
 	valAConsAddr, _ := valA.GetConsAddr()
-	valAPubKey, _ := valA.TmConsPublicKey()
+	valAPubKey, _ := valA.CmtConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valAConsAddr).Return(valA, nil).AnyTimes()
-	valB := createStakingValidator(ctx, mocks, 2, 2, 2)
+	valB := createStakingValidator(ctx, mocks, 2, 2)
 	valBConsAddr, _ := valB.GetConsAddr()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valBConsAddr).Return(valB, nil).AnyTimes()
-	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 2, []stakingtypes.Validator{valA, valB}, []int64{1, 2}, -1)
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 2, []stakingtypes.Validator{valA, valB}, -1)
 
-	// set a consumer client, so we have a consumer chain (i.e., `k.GetAllConsumerChains(ctx)` is non empty)
-	providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
+	// set a consumer client id and its phase, so we have a consumer chain (i.e., `GetAllConsumersWithIBCClients` is non-empty)
+	providerKeeper.SetConsumerClientId(ctx, CONSUMER_ID, "clientID")
+	providerKeeper.SetConsumerPhase(ctx, CONSUMER_ID, providertypes.CONSUMER_PHASE_LAUNCHED)
 
 	// opt in validator A and set as a consumer validator
-	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valAConsAddr))
-	consumerValidatorA := providertypes.ConsumerValidator{
-		ProviderConsAddr:  valAConsAddr,
-		Power:             1,
-		ConsumerPublicKey: &valAPubKey,
-		JoinHeight:        123456789,
+	providerKeeper.SetOptedIn(ctx, CONSUMER_ID, providertypes.NewProviderConsAddress(valAConsAddr))
+	consumerValidatorA := providertypes.ConsensusValidator{
+		ProviderConsAddr: valAConsAddr,
+		Power:            1,
+		PublicKey:        &valAPubKey,
+		JoinHeight:       123456789,
 	}
-	providerKeeper.SetConsumerValidator(ctx, "chainID", consumerValidatorA)
+	err := providerKeeper.SetConsumerValidator(ctx, CONSUMER_ID, consumerValidatorA)
+	require.NoError(t, err)
 
 	// Opt in validator B. Note that validator B is not a consumer validator and hence would become a consumer
 	// validator for the first time after the `QueueVSCPackets` call.
-	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valBConsAddr))
+	providerKeeper.SetOptedIn(ctx, CONSUMER_ID, providertypes.NewProviderConsAddress(valBConsAddr))
 
-	providerKeeper.QueueVSCPackets(ctx)
+	// set power shaping params
+	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, CONSUMER_ID, providertypes.PowerShapingParameters{})
+	require.NoError(t, err)
+
+	err = providerKeeper.QueueVSCPackets(ctx)
+	require.NoError(t, err)
 
 	// the height of consumer validator A should not be modified because A was already a consumer validator
-	cv, _ := providerKeeper.GetConsumerValidator(ctx, "chainID", providertypes.NewProviderConsAddress(valAConsAddr))
+	cv, _ := providerKeeper.GetConsumerValidator(ctx, CONSUMER_ID, providertypes.NewProviderConsAddress(valAConsAddr))
 	require.Equal(t, consumerValidatorA.JoinHeight, cv.JoinHeight, "the consumer validator's height was erroneously modified")
 
 	// the height of consumer validator B is set to be the same as the one of the current chain height because this
 	// consumer validator becomes a consumer validator for the first time (i.e., was not a consumer validator in the previous epoch)
-	cv, _ = providerKeeper.GetConsumerValidator(ctx, "chainID", providertypes.NewProviderConsAddress(valBConsAddr))
+	cv, _ = providerKeeper.GetConsumerValidator(ctx, CONSUMER_ID, providertypes.NewProviderConsAddress(valBConsAddr))
 	require.Equal(t, chainHeight, cv.JoinHeight, "the consumer validator's height was not correctly set")
-}
-
-// TestOnRecvVSCMaturedPacket tests the OnRecvVSCMaturedPacket method of the keeper.
-//
-// Note: Handling logic itself is not tested here.
-func TestOnRecvVSCMaturedPacket(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
-
-	// Set channel to chain (faking multiple established channels)
-	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
-	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
-
-	// Execute on recv for chain-1, confirm v1 result ack is returned
-	err := executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-1", 1)
-	require.NoError(t, err)
-
-	// Now queue a slash packet data instance for chain-2, confirm v1 result ack is returned
-	err = executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-2", 2)
-	require.NoError(t, err)
 }
 
 // TestOnRecvDowntimeSlashPacket tests the OnRecvSlashPacket method specifically for downtime slash packets.
@@ -161,8 +152,8 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 	// Set channel to chain (faking multiple established channels)
-	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
-	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
+	providerKeeper.SetChannelToConsumerId(ctx, "channel-1", "chain-1")
+	providerKeeper.SetChannelToConsumerId(ctx, "channel-2", "chain-2")
 
 	// Generate a new slash packet data instance with double sign infraction type
 	packetData := testkeeper.GetNewSlashPacketData()
@@ -172,9 +163,10 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
 
 	// Set consumer validator
-	providerKeeper.SetConsumerValidator(ctx, "chain-1", providertypes.ConsumerValidator{
+	err := providerKeeper.SetConsumerValidator(ctx, "chain-1", providertypes.ConsensusValidator{
 		ProviderConsAddr: packetData.Validator.Address,
 	})
+	require.NoError(t, err)
 
 	// Set slash meter to negative value and assert a bounce ack is returned
 	providerKeeper.SetSlashMeter(ctx, math.NewInt(-5))
@@ -183,9 +175,10 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	require.NoError(t, err)
 
 	// Set consumer validator
-	providerKeeper.SetConsumerValidator(ctx, "chain-2", providertypes.ConsumerValidator{
+	err = providerKeeper.SetConsumerValidator(ctx, "chain-2", providertypes.ConsensusValidator{
 		ProviderConsAddr: packetData.Validator.Address,
 	})
+	require.NoError(t, err)
 
 	// Also bounced for chain-2
 	ackResult, err = executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-2", 2, packetData)
@@ -196,7 +189,8 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	providerKeeper.SetSlashMeter(ctx, math.NewInt(5))
 
 	// Set the consumer validator
-	providerKeeper.SetConsumerValidator(ctx, "chain-1", providertypes.ConsumerValidator{ProviderConsAddr: packetData.Validator.Address})
+	err = providerKeeper.SetConsumerValidator(ctx, "chain-1", providertypes.ConsensusValidator{ProviderConsAddr: packetData.Validator.Address})
+	require.NoError(t, err)
 
 	// Mock call to GetEffectiveValPower, so that it returns 2.
 	providerAddr := providertypes.NewProviderConsAddress(packetData.Validator.Address)
@@ -234,8 +228,8 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 	// Set channel to chain (faking multiple established channels)
-	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
-	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
+	providerKeeper.SetChannelToConsumerId(ctx, "channel-1", "chain-1")
+	providerKeeper.SetChannelToConsumerId(ctx, "channel-2", "chain-2")
 
 	// Generate a new slash packet data instance with double sign infraction type
 	packetData := testkeeper.GetNewSlashPacketData()
@@ -255,22 +249,6 @@ func TestOnRecvDoubleSignSlashPacket(t *testing.T) {
 	// slash log should be empty for a random validator address in this testcase
 	randomAddress := cryptotestutil.NewCryptoIdentityFromIntSeed(100).ProviderConsAddress()
 	require.False(t, providerKeeper.GetSlashLog(ctx, randomAddress))
-}
-
-func executeOnRecvVSCMaturedPacket(t *testing.T, providerKeeper *keeper.Keeper, ctx sdk.Context,
-	channelID string, ibcSeqNum uint64,
-) error {
-	t.Helper()
-	// Instantiate vsc matured packet data and bytes
-	data := testkeeper.GetNewVSCMaturedPacketData()
-	dataBz, err := data.Marshal()
-	require.NoError(t, err)
-
-	return providerKeeper.OnRecvVSCMaturedPacket(
-		ctx,
-		channeltypes.NewPacket(dataBz, ibcSeqNum, "srcPort", "srcChan", "provider-port", channelID, clienttypes.Height{}, 1),
-		data,
-	)
 }
 
 func executeOnRecvSlashPacket(t *testing.T, providerKeeper *keeper.Keeper, ctx sdk.Context,
@@ -332,7 +310,7 @@ func TestValidateSlashPacket(t *testing.T) {
 		packet := channeltypes.Packet{DestinationChannel: "channel-9"}
 
 		// Pseudo setup ccv channel for channel ID specified in packet.
-		providerKeeper.SetChannelToChain(ctx, "channel-9", "consumer-chain-id")
+		providerKeeper.SetChannelToConsumerId(ctx, "channel-9", "consumer-chain-id")
 
 		// Setup init chain height for consumer (allowing 0 vscID to be valid).
 		providerKeeper.SetInitChainHeight(ctx, "consumer-chain-id", uint64(89))
@@ -490,7 +468,8 @@ func TestHandleSlashPacket(t *testing.T) {
 			// Setup consumer address to provider address mapping.
 			require.NotEmpty(t, tc.packetData.Validator.Address)
 			providerKeeper.SetValidatorByConsumerAddr(ctx, chainId, consumerConsAddr, providerConsAddr)
-			providerKeeper.SetConsumerValidator(ctx, chainId, providertypes.ConsumerValidator{ProviderConsAddr: providerConsAddr.Address.Bytes()})
+			err := providerKeeper.SetConsumerValidator(ctx, chainId, providertypes.ConsensusValidator{ProviderConsAddr: providerConsAddr.Address.Bytes()})
+			require.NoError(t, err)
 
 			// Execute method and assert expected mock calls.
 			providerKeeper.HandleSlashPacket(ctx, chainId, tc.packetData)
@@ -509,184 +488,6 @@ func TestHandleSlashPacket(t *testing.T) {
 	}
 }
 
-// TestHandleVSCMaturedPacket tests the handling of VSCMatured packets.
-// Note that this method also tests the behaviour of AfterUnbondingInitiated.
-func TestHandleVSCMaturedPacket(t *testing.T) {
-	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	// Init vscID
-	pk.SetValidatorSetUpdateId(ctx, 1)
-
-	// Start first unbonding without any consumers registered
-	var unbondingOpId uint64 = 1
-	gomock.InOrder(
-		mocks.MockStakingKeeper.EXPECT().GetUnbondingType(ctx, unbondingOpId).Return(stakingtypes.UnbondingType_Undefined, stakingtypes.ErrNoUnbondingType),
-	)
-
-	err := pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpId)
-	require.NoError(t, err)
-	// Check that no unbonding op was stored
-	_, found := pk.GetUnbondingOp(ctx, unbondingOpId)
-	require.False(t, found)
-
-	// Increment vscID
-	pk.IncrementValidatorSetUpdateId(ctx)
-	require.Equal(t, uint64(2), pk.GetValidatorSetUpdateId(ctx))
-
-	// Register first consumer
-	pk.SetConsumerClientId(ctx, "chain-1", "client-1")
-
-	// Create 2 validators
-	vals := []stakingtypes.Validator{}
-	valsPk := []cryptotypes.PubKey{}
-	for i := 0; i < 2; i++ {
-		pubkey, err := cryptocodec.FromTmPubKeyInterface(cryptotestutil.NewCryptoIdentityFromIntSeed(54321 + i).TMCryptoPubKey())
-		require.NoError(t, err)
-		valsPk = append(valsPk, pubkey)
-		pkAny, err := codectypes.NewAnyWithValue(pubkey)
-		require.NoError(t, err)
-		vals = append(vals, stakingtypes.Validator{ConsensusPubkey: pkAny})
-	}
-
-	// Opt-in one validator to consumer
-	pk.SetConsumerValidator(ctx, "chain-1", providertypes.ConsumerValidator{ProviderConsAddr: valsPk[0].Address()})
-
-	// Start second unbonding
-	unbondingOpId = 2
-	gomock.InOrder(
-		mocks.MockStakingKeeper.EXPECT().GetUnbondingType(ctx, unbondingOpId).Return(stakingtypes.UnbondingType_UnbondingDelegation, nil),
-		mocks.MockStakingKeeper.EXPECT().GetUnbondingDelegationByUnbondingID(ctx, unbondingOpId).Return(
-			stakingtypes.UnbondingDelegation{
-				ValidatorAddress: sdk.ValAddress([]byte{1}).String(),
-			}, nil),
-		mocks.MockStakingKeeper.EXPECT().GetValidator(ctx, sdk.ValAddress([]byte{1})).
-			Return(vals[0], nil),
-		mocks.MockStakingKeeper.EXPECT().PutUnbondingOnHold(ctx, unbondingOpId).Return(nil),
-	)
-	err = pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpId)
-	require.NoError(t, err)
-	// Check that an unbonding op was stored
-	expectedChains := []string{"chain-1"}
-	unbondingOp, found := pk.GetUnbondingOp(ctx, unbondingOpId)
-	require.True(t, found)
-	require.Equal(t, unbondingOpId, unbondingOp.Id)
-	require.Equal(t, expectedChains, unbondingOp.UnbondingConsumerChains)
-	// Check that the unbonding op index was stored
-	expectedUnbondingOpIds := []uint64{unbondingOpId}
-	ids, found := pk.GetUnbondingOpIndex(ctx, "chain-1", pk.GetValidatorSetUpdateId(ctx))
-	require.True(t, found)
-	require.Equal(t, expectedUnbondingOpIds, ids)
-
-	// Increment vscID
-	pk.IncrementValidatorSetUpdateId(ctx)
-	require.Equal(t, uint64(3), pk.GetValidatorSetUpdateId(ctx))
-
-	// Registered second consumer
-	pk.SetConsumerClientId(ctx, "chain-2", "client-2")
-
-	// Opt-in both validators to second consumer
-	pk.SetConsumerValidator(ctx, "chain-2", providertypes.ConsumerValidator{ProviderConsAddr: valsPk[0].Address()})
-	pk.SetConsumerValidator(ctx, "chain-2", providertypes.ConsumerValidator{ProviderConsAddr: valsPk[1].Address()})
-
-	// Start third and fourth unbonding
-	unbondingOpIds := []uint64{3, 4}
-	for _, id := range unbondingOpIds {
-		gomock.InOrder(
-			mocks.MockStakingKeeper.EXPECT().GetUnbondingType(ctx, id).Return(stakingtypes.UnbondingType_Redelegation, nil),
-			mocks.MockStakingKeeper.EXPECT().GetRedelegationByUnbondingID(ctx, id).Return(
-				stakingtypes.Redelegation{
-					ValidatorSrcAddress: sdk.ValAddress([]byte{1}).String(),
-				}, nil),
-			mocks.MockStakingKeeper.EXPECT().GetValidator(ctx, sdk.ValAddress([]byte{1})).
-				Return(vals[0], nil),
-			mocks.MockStakingKeeper.EXPECT().PutUnbondingOnHold(ctx, id).Return(nil),
-		)
-		err = pk.Hooks().AfterUnbondingInitiated(ctx, id)
-		require.NoError(t, err)
-	}
-	// Check that the unbonding ops were stored
-	expectedChains = []string{"chain-1", "chain-2"}
-	for _, id := range unbondingOpIds {
-		unbondingOp, found = pk.GetUnbondingOp(ctx, id)
-		require.True(t, found)
-		require.Equal(t, id, unbondingOp.Id)
-		require.Equal(t, expectedChains, unbondingOp.UnbondingConsumerChains)
-	}
-	// Check that the unbonding op index was stored
-	for _, chainID := range expectedChains {
-		ids, found := pk.GetUnbondingOpIndex(ctx, chainID, pk.GetValidatorSetUpdateId(ctx))
-		require.True(t, found)
-		require.Equal(t, unbondingOpIds, ids)
-	}
-
-	// Increment vscID
-	pk.IncrementValidatorSetUpdateId(ctx)
-	require.Equal(t, uint64(4), pk.GetValidatorSetUpdateId(ctx))
-
-	// Start fith unbonding
-	unbondingOpId = 5
-	gomock.InOrder(
-		mocks.MockStakingKeeper.EXPECT().GetUnbondingType(ctx, unbondingOpId).Return(stakingtypes.UnbondingType_ValidatorUnbonding, nil),
-		mocks.MockStakingKeeper.EXPECT().GetValidatorByUnbondingID(ctx, unbondingOpId).Return(
-			stakingtypes.Validator{
-				OperatorAddress: sdk.ValAddress([]byte{1}).String(),
-			}, nil),
-		mocks.MockStakingKeeper.EXPECT().GetValidator(ctx, sdk.ValAddress([]byte{1})).
-			Return(vals[1], nil),
-		mocks.MockStakingKeeper.EXPECT().PutUnbondingOnHold(ctx, unbondingOpId).Return(nil),
-	)
-	err = pk.Hooks().AfterUnbondingInitiated(ctx, unbondingOpId)
-	require.NoError(t, err)
-
-	// Check that an unbonding op was stored for chain-2 only
-	// since it's the only consumer the unbonding validator has opted-in to
-	expectedChains = []string{"chain-2"}
-	unbondingOp, found = pk.GetUnbondingOp(ctx, unbondingOpId)
-	require.True(t, found)
-	require.Equal(t, unbondingOpId, unbondingOp.Id)
-	require.Equal(t, expectedChains, unbondingOp.UnbondingConsumerChains)
-
-	// Handle VSCMatured packet from chain-1 for vscID 1.
-	// Note that no VSCPacket was sent as the chain was not yet registered,
-	// but the code should still work
-	pk.HandleVSCMaturedPacket(ctx, "chain-1", ccv.VSCMaturedPacketData{ValsetUpdateId: 1})
-	require.Empty(t, pk.ConsumeMaturedUnbondingOps(ctx))
-
-	// Handle VSCMatured packet from chain-1 for vscID 2.
-	pk.HandleVSCMaturedPacket(ctx, "chain-1", ccv.VSCMaturedPacketData{ValsetUpdateId: 2})
-	// Check that the unbonding operation with ID=2 can complete
-	require.Equal(t, []uint64{2}, pk.ConsumeMaturedUnbondingOps(ctx))
-	// Check that the unbonding op index was removed
-	_, found = pk.GetUnbondingOpIndex(ctx, "chain-1", 2)
-	require.False(t, found)
-
-	// Handle VSCMatured packet from chain-2 for vscID 3.
-	pk.HandleVSCMaturedPacket(ctx, "chain-2", ccv.VSCMaturedPacketData{ValsetUpdateId: 3})
-	// Check that the unbonding operations with IDs 3 and 4 no longer wait for chain-2
-	expectedChains = []string{"chain-1"}
-	unbondingOpIds = []uint64{3, 4}
-	for _, id := range unbondingOpIds {
-		unbondingOp, found := pk.GetUnbondingOp(ctx, id)
-		require.True(t, found)
-		require.Equal(t, id, unbondingOp.Id)
-		require.Equal(t, expectedChains, unbondingOp.UnbondingConsumerChains)
-	}
-	// Check that no unbonding operation can complete
-	require.Empty(t, pk.ConsumeMaturedUnbondingOps(ctx))
-	// Check that the unbonding op index was removed
-	_, found = pk.GetUnbondingOpIndex(ctx, "chain-2", 3)
-	require.False(t, found)
-
-	// Handle VSCMatured packet from chain-1 for vscID 3.
-	pk.HandleVSCMaturedPacket(ctx, "chain-1", ccv.VSCMaturedPacketData{ValsetUpdateId: 3})
-	// Check that the unbonding operations with IDs 3 and 4 can complete
-	require.Equal(t, unbondingOpIds, pk.ConsumeMaturedUnbondingOps(ctx))
-	// Check that the unbonding op index was removed
-	_, found = pk.GetUnbondingOpIndex(ctx, "chain-1", 3)
-	require.False(t, found)
-}
-
 // TestSendVSCPacketsToChainFailure tests the SendVSCPacketsToChain method failing
 func TestSendVSCPacketsToChainFailure(t *testing.T) {
 	// Keeper setup
@@ -695,10 +496,10 @@ func TestSendVSCPacketsToChainFailure(t *testing.T) {
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 	// Append mocks for full consumer setup
-	mockCalls := testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, "consumerChainID")
+	mockCalls := testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, CONSUMER_ID)
 
 	// Set 3 pending vsc packets
-	providerKeeper.AppendPendingVSCPackets(ctx, "consumerChainID", []ccv.ValidatorSetChangePacketData{{}, {}, {}}...)
+	providerKeeper.AppendPendingVSCPackets(ctx, CONSUMER_ID, []ccv.ValidatorSetChangePacketData{{}, {}, {}}...)
 
 	// append mocks for the channel keeper to return an error
 	mockCalls = append(mockCalls,
@@ -706,22 +507,37 @@ func TestSendVSCPacketsToChainFailure(t *testing.T) {
 			"CCVChannelID").Return(channeltypes.Channel{}, false).Times(1),
 	)
 
-	// Append mocks for expected call to StopConsumerChain
-	mockCalls = append(mockCalls, testkeeper.GetMocksForStopConsumerChainWithCloseChannel(ctx, &mocks)...)
+	// Append mocks for expected call to DeleteConsumerChain
+	mockCalls = append(mockCalls, testkeeper.GetMocksForDeleteConsumerChain(ctx, &mocks)...)
 
 	// Assert mock calls hit
 	gomock.InOrder(mockCalls...)
 
 	// Execute setup
+	providerKeeper.SetConsumerClientId(ctx, CONSUMER_ID, "clientID")
 	err := providerKeeper.SetConsumerChain(ctx, "channelID")
 	require.NoError(t, err)
-	providerKeeper.SetConsumerClientId(ctx, "consumerChainID", "clientID")
 
-	// No panic should occur, StopConsumerChain should be called
-	providerKeeper.SendVSCPacketsToChain(ctx, "consumerChainID", "CCVChannelID")
+	unbondingTime := 123 * time.Second
+	mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTime, nil).AnyTimes()
 
-	// Pending VSC packets should be deleted in StopConsumerChain
-	require.Empty(t, providerKeeper.GetPendingVSCPackets(ctx, "consumerChainID"))
+	// No error should occur, DeleteConsumerChain should be called
+	err = providerKeeper.SendVSCPacketsToChain(ctx, CONSUMER_ID, "CCVChannelID")
+	require.NoError(t, err)
+
+	// Verify the chain is about to be deleted
+	removalTime, err := providerKeeper.GetConsumerRemovalTime(ctx, CONSUMER_ID)
+	require.NoError(t, err)
+	require.Equal(t, ctx.BlockTime().Add(unbondingTime), removalTime)
+
+	// Increase the block time by `unbondingTime` so the chain actually gets deleted
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(unbondingTime))
+	err = providerKeeper.BeginBlockRemoveConsumers(ctx)
+	require.NoError(t, err)
+
+	// Pending VSC packets should be deleted in DeleteConsumerChain
+	require.Empty(t, providerKeeper.GetPendingVSCPackets(ctx, CONSUMER_ID))
+	require.Equal(t, providertypes.CONSUMER_PHASE_DELETED, providerKeeper.GetConsumerPhase(ctx, CONSUMER_ID))
 }
 
 // TestOnTimeoutPacketWithNoChainFound tests the `OnTimeoutPacket` method fails when no chain is found
@@ -730,7 +546,7 @@ func TestOnTimeoutPacketWithNoChainFound(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	// We do not `SetChannelToChain` for "channelID" and therefore `OnTimeoutPacket` fails
+	// We do not `SetChannelToConsumerId` for "channelID" and therefore `OnTimeoutPacket` fails
 	packet := channeltypes.Packet{
 		SourceChannel: "channelID",
 	}
@@ -746,15 +562,32 @@ func TestOnTimeoutPacketStopsChain(t *testing.T) {
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
-	testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
+	testkeeper.SetupForDeleteConsumerChain(t, ctx, &providerKeeper, mocks, CONSUMER_ID)
+	mocks.MockChannelKeeper.EXPECT().GetChannel(gomock.Any(), ccv.ProviderPortID, "channelID").Return(
+		channeltypes.Channel{
+			State:          channeltypes.OPEN,
+			ConnectionHops: []string{"connectionID"},
+		}, true,
+	).Times(1)
+	dummyCap := &capabilitytypes.Capability{}
+	mocks.MockScopedKeeper.EXPECT().GetCapability(gomock.Any(), gomock.Any()).Return(dummyCap, true).Times(1)
+	mocks.MockChannelKeeper.EXPECT().ChanCloseInit(gomock.Any(), ccv.ProviderPortID, "channelID", dummyCap).Times(1)
+
+	unbondingTime := 123 * time.Second
+	mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTime, nil).AnyTimes()
 
 	packet := channeltypes.Packet{
 		SourceChannel: "channelID",
 	}
 	err := providerKeeper.OnTimeoutPacket(ctx, packet)
-
-	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "chainID", "channelID")
 	require.NoError(t, err)
+
+	// increase the block time by `unbondingTime` so the chain actually gets deleted
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(unbondingTime))
+	err = providerKeeper.BeginBlockRemoveConsumers(ctx)
+	require.NoError(t, err)
+
+	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsDeleted(t, ctx, providerKeeper, CONSUMER_ID, "channelID", false)
 }
 
 // TestOnAcknowledgementPacketWithNoAckError tests `OnAcknowledgementPacket` when the underlying ack contains no error
@@ -782,15 +615,32 @@ func TestOnAcknowledgementPacketWithAckError(t *testing.T) {
 	require.True(t, strings.Contains(err.Error(), providertypes.ErrUnknownConsumerChannelId.Error()))
 
 	// test that we stop the consumer chain when `OnAcknowledgementPacket` returns an error and the chain is found
-	testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
+	testkeeper.SetupForDeleteConsumerChain(t, ctx, &providerKeeper, mocks, CONSUMER_ID)
 	packet := channeltypes.Packet{
 		SourceChannel: "channelID",
 	}
 
-	err = providerKeeper.OnAcknowledgementPacket(ctx, packet, ackError)
+	unbondingTime := 123 * time.Second
+	mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTime, nil).AnyTimes()
+	mocks.MockChannelKeeper.EXPECT().GetChannel(gomock.Any(), ccv.ProviderPortID, "channelID").Return(
+		channeltypes.Channel{
+			State:          channeltypes.OPEN,
+			ConnectionHops: []string{"connectionID"},
+		}, true,
+	).Times(1)
+	dummyCap := &capabilitytypes.Capability{}
+	mocks.MockScopedKeeper.EXPECT().GetCapability(gomock.Any(), gomock.Any()).Return(dummyCap, true).Times(1)
+	mocks.MockChannelKeeper.EXPECT().ChanCloseInit(gomock.Any(), ccv.ProviderPortID, "channelID", dummyCap).Times(1)
 
-	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsStopped(t, ctx, providerKeeper, "chainID", "channelID")
+	err = providerKeeper.OnAcknowledgementPacket(ctx, packet, ackError)
 	require.NoError(t, err)
+
+	// increase the block time by `unbondingTime` so the chain actually gets deleted
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(unbondingTime))
+	err = providerKeeper.BeginBlockRemoveConsumers(ctx)
+	require.NoError(t, err)
+
+	testkeeper.TestProviderStateIsCleanedAfterConsumerChainIsDeleted(t, ctx, providerKeeper, CONSUMER_ID, "channelID", false)
 }
 
 // TestEndBlockVSU tests that during `EndBlockVSU`, we only queue VSC packets at the boundaries of an epoch
@@ -798,9 +648,12 @@ func TestEndBlockVSU(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := "chainID"
+	consumerId := "0"
 
-	providerKeeper.SetTopN(ctx, chainID, 100)
+	err := providerKeeper.SetConsumerPowerShapingParameters(ctx, CONSUMER_ID, providertypes.PowerShapingParameters{
+		Top_N: 100,
+	})
+	require.NoError(t, err)
 
 	// 10 blocks constitute an epoch
 	params := providertypes.DefaultParams()
@@ -809,42 +662,122 @@ func TestEndBlockVSU(t *testing.T) {
 
 	// create 4 sample lastValidators
 	var lastValidators []stakingtypes.Validator
-	var powers []int64
 	for i := 0; i < 4; i++ {
 		validator := cryptotestutil.NewCryptoIdentityFromIntSeed(i).SDKStakingValidator()
 		lastValidators = append(lastValidators, validator)
 		valAdrr, err := sdk.ValAddressFromBech32(validator.GetOperator())
 		require.NoError(t, err)
 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(gomock.Any(), valAdrr).Return(int64(i+1), nil).AnyTimes()
-		powers = append(powers, int64(i+1))
 	}
 
-	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 5, lastValidators, powers, -1)
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 5, lastValidators, -1)
 
-	// set a sample client for a consumer chain so that `GetAllConsumerChains` in `QueueVSCPackets` iterates at least once
-	providerKeeper.SetConsumerClientId(ctx, chainID, "clientID")
+	sort.Slice(lastValidators, func(i, j int) bool {
+		return lastValidators[i].GetConsensusPower(sdk.DefaultPowerReduction) >
+			lastValidators[j].GetConsensusPower(sdk.DefaultPowerReduction)
+	})
+	mocks.MockStakingKeeper.EXPECT().GetBondedValidatorsByPower(gomock.Any()).Return(lastValidators, nil).AnyTimes()
+
+	// set a sample client for a launched consumer chain so that `GetAllConsumersWithIBCClients` in `QueueVSCPackets` iterates at least once
+	providerKeeper.SetConsumerClientId(ctx, consumerId, "clientId")
+	providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, providertypes.PowerShapingParameters{Top_N: 100})
+	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_LAUNCHED)
 
 	// with block height of 1 we do not expect any queueing of VSC packets
 	ctx = ctx.WithBlockHeight(1)
-	providerKeeper.EndBlockVSU(ctx)
-	require.Equal(t, 0, len(providerKeeper.GetPendingVSCPackets(ctx, chainID)))
+	_, err = providerKeeper.EndBlockVSU(ctx)
+	require.NoError(t, err)
+	require.Equal(t, 0, len(providerKeeper.GetPendingVSCPackets(ctx, consumerId)))
 
 	// with block height of 5 we do not expect any queueing of VSC packets
 	ctx = ctx.WithBlockHeight(5)
-	providerKeeper.EndBlockVSU(ctx)
-	require.Equal(t, 0, len(providerKeeper.GetPendingVSCPackets(ctx, chainID)))
+	_, err = providerKeeper.EndBlockVSU(ctx)
+	require.NoError(t, err)
+	require.Equal(t, 0, len(providerKeeper.GetPendingVSCPackets(ctx, consumerId)))
 
 	// with block height of 10 we expect the queueing of one VSC packet
 	ctx = ctx.WithBlockHeight(10)
-	providerKeeper.EndBlockVSU(ctx)
-	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, chainID)))
+	_, err = providerKeeper.EndBlockVSU(ctx)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, consumerId)))
 
 	// With block height of 15 we expect no additional queueing of a VSC packet.
 	// Note that the pending VSC packet is still there because `SendVSCPackets` does not send the packet. We
 	// need to mock channels, etc. for this to work, and it's out of scope for this test.
 	ctx = ctx.WithBlockHeight(15)
-	providerKeeper.EndBlockVSU(ctx)
-	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, chainID)))
+	_, err = providerKeeper.EndBlockVSU(ctx)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(providerKeeper.GetPendingVSCPackets(ctx, consumerId)))
+}
+
+// TestProviderValidatorUpdates tests that the provider validator updates are correctly calculated,
+// taking into account the MaxProviderConsensusValidators parameter
+func TestProviderValidatorUpdates(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// Mocking bonded validators in the staking keeper.
+	// be aware that the powers need to be in descending order
+	validators := []stakingtypes.Validator{
+		createStakingValidator(ctx, mocks, 30, 3),
+		createStakingValidator(ctx, mocks, 20, 2),
+		createStakingValidator(ctx, mocks, 10, 1),
+	}
+	mocks.MockStakingKeeper.EXPECT().GetBondedValidatorsByPower(ctx).Return(validators, nil).Times(1)
+
+	// set up a validator that we will only use for the last provider consensus validator set
+	removedValidator := createStakingValidator(ctx, mocks, 40, 4)
+
+	// Set up the last provider consensus validators
+	consensusVals := make([]providertypes.ConsensusValidator, 0, len(validators))
+	// add the removed validator
+	removedConsensusVal, err := providerKeeper.CreateProviderConsensusValidator(ctx, removedValidator)
+	require.NoError(t, err)
+	consensusVals = append(consensusVals, removedConsensusVal)
+	for _, val := range validators[1:] { // skip the first validator (validator 3)
+		consensusVal, err := providerKeeper.CreateProviderConsensusValidator(ctx, val)
+		require.NoError(t, err)
+		consensusVals = append(consensusVals, consensusVal)
+	}
+	// consensusVals is now [removedValidator, validator 2, validator 1]
+
+	// Set the last provider consensus validator set
+	err = providerKeeper.SetLastProviderConsensusValSet(ctx, consensusVals)
+	require.NoError(t, err)
+
+	// Set the max number of validators
+	maxProviderConsensusValidators := int64(2)
+	params := providerKeeper.GetParams(ctx)
+	params.MaxProviderConsensusValidators = maxProviderConsensusValidators
+	providerKeeper.SetParams(ctx, params)
+
+	// expected validator updates
+
+	// validator 3 is added
+	// removed validator is set to 0 power
+	// validator 1 is set to 0 power (because maxProviderConsensusValidators is 2)
+	// validator 2 is untouched
+	expectedUpdates := []abci.ValidatorUpdate{
+		{
+			PubKey: testkeeper.Must(validators[0].CmtConsPublicKey()),
+			Power:  30,
+		},
+		{
+			PubKey: testkeeper.Must(removedValidator.CmtConsPublicKey()),
+			Power:  0,
+		},
+		{
+			PubKey: testkeeper.Must(validators[2].CmtConsPublicKey()),
+			Power:  0,
+		},
+	}
+
+	// Execute the function
+	updates, err := providerKeeper.ProviderValidatorUpdates(ctx)
+	require.NoError(t, err)
+
+	// Assertions
+	require.ElementsMatch(t, expectedUpdates, updates, "The validator updates should match the expected updates")
 }
 
 // TestQueueVSCPacketsWithPowerCapping tests queueing validator set updates with power capping
@@ -854,48 +787,56 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 
 	providerKeeper.SetValidatorSetUpdateId(ctx, 1)
 
-	valA := createStakingValidator(ctx, mocks, 1, 1, 1) // 3.125% of the total voting power
+	valA := createStakingValidator(ctx, mocks, 1, 1) // 3.125% of the total voting power
 	valAConsAddr, _ := valA.GetConsAddr()
-	valAPubKey, _ := valA.TmConsPublicKey()
+	valAPubKey, _ := valA.CmtConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valAConsAddr).Return(valA, nil).AnyTimes()
-	valB := createStakingValidator(ctx, mocks, 2, 3, 2) // 9.375% of the total voting power
+	valB := createStakingValidator(ctx, mocks, 3, 2) // 9.375% of the total voting power
 	valBConsAddr, _ := valB.GetConsAddr()
-	valBPubKey, _ := valB.TmConsPublicKey()
+	valBPubKey, _ := valB.CmtConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valBConsAddr).Return(valB, nil).AnyTimes()
-	valC := createStakingValidator(ctx, mocks, 3, 4, 3) // 12.5% of the total voting power
+	valC := createStakingValidator(ctx, mocks, 4, 3) // 12.5% of the total voting power
 	valCConsAddr, _ := valC.GetConsAddr()
-	valCPubKey, _ := valC.TmConsPublicKey()
+	valCPubKey, _ := valC.CmtConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valCConsAddr).Return(valC, nil).AnyTimes()
-	valD := createStakingValidator(ctx, mocks, 4, 8, 4) // 25% of the total voting power
+	valD := createStakingValidator(ctx, mocks, 8, 4) // 25% of the total voting power
 	valDConsAddr, _ := valD.GetConsAddr()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valDConsAddr).Return(valD, nil).AnyTimes()
-	valE := createStakingValidator(ctx, mocks, 5, 16, 5) // 50% of the total voting power
+	valE := createStakingValidator(ctx, mocks, 16, 5) // 50% of the total voting power
 	valEConsAddr, _ := valE.GetConsAddr()
-	valEPubKey, _ := valE.TmConsPublicKey()
+	valEPubKey, _ := valE.CmtConsPublicKey()
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valEConsAddr).Return(valE, nil).AnyTimes()
 
-	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 5, []stakingtypes.Validator{valA, valB, valC, valD, valE}, []int64{1, 3, 4, 8, 16}, -1)
+	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 5, []stakingtypes.Validator{valA, valB, valC, valD, valE}, -1)
 
 	// add a consumer chain
-	providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
+	providerKeeper.SetConsumerClientId(ctx, CONSUMER_ID, "clientId")
+	providerKeeper.SetConsumerPhase(ctx, CONSUMER_ID, providertypes.CONSUMER_PHASE_LAUNCHED)
 
-	providerKeeper.SetTopN(ctx, "chainID", 50) // would opt in E
+	err := providerKeeper.SetConsumerPowerShapingParameters(ctx, CONSUMER_ID, providertypes.PowerShapingParameters{
+		Top_N:              50, // would opt in E
+		ValidatorsPowerCap: 40, // set a power-capping of 40%
+	})
+	require.NoError(t, err)
 
 	// opt in all validators
-	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valAConsAddr))
-	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valBConsAddr))
-	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valCConsAddr))
-	providerKeeper.SetOptedIn(ctx, "chainID", providertypes.NewProviderConsAddress(valDConsAddr))
+	providerKeeper.SetOptedIn(ctx, CONSUMER_ID, providertypes.NewProviderConsAddress(valAConsAddr))
+	providerKeeper.SetOptedIn(ctx, CONSUMER_ID, providertypes.NewProviderConsAddress(valBConsAddr))
+	providerKeeper.SetOptedIn(ctx, CONSUMER_ID, providertypes.NewProviderConsAddress(valCConsAddr))
+	providerKeeper.SetOptedIn(ctx, CONSUMER_ID, providertypes.NewProviderConsAddress(valDConsAddr))
 
 	// denylist validator D
-	providerKeeper.SetDenylist(ctx, "chainID", providertypes.NewProviderConsAddress(valDConsAddr))
+	providerKeeper.SetDenylist(ctx, CONSUMER_ID, providertypes.NewProviderConsAddress(valDConsAddr))
 
-	// set a power-capping of 40%
-	providerKeeper.SetValidatorsPowerCap(ctx, "chainID", 40)
+	// set max provider consensus vals to include all validators
+	params := providerKeeper.GetParams(ctx)
+	params.MaxProviderConsensusValidators = 180
+	providerKeeper.SetParams(ctx, params)
 
-	providerKeeper.QueueVSCPackets(ctx)
+	err = providerKeeper.QueueVSCPackets(ctx)
+	require.NoError(t, err)
 
-	actualQueuedVSCPackets := providerKeeper.GetPendingVSCPackets(ctx, "chainID")
+	actualQueuedVSCPackets := providerKeeper.GetPendingVSCPackets(ctx, CONSUMER_ID)
 	expectedQueuedVSCPackets := []ccv.ValidatorSetChangePacketData{
 		ccv.NewValidatorSetChangePacketData(
 			[]abci.ValidatorUpdate{
@@ -923,4 +864,40 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 	}
 
 	require.Equal(t, expectedQueuedVSCPackets, actualQueuedVSCPackets)
+}
+
+// TestBlocksUntilNextEpoch tests the `BlocksUntilNextEpoch` method
+func TestBlocksUntilNextEpoch(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// 10 blocks constitute an epoch
+	params := providertypes.DefaultParams()
+	params.BlocksPerEpoch = 10
+	providerKeeper.SetParams(ctx, params)
+
+	// with block height of 1 we expect 9 blocks until the next epoch
+	ctx = ctx.WithBlockHeight(1)
+	require.Equal(t, int64(9), providerKeeper.BlocksUntilNextEpoch(ctx))
+
+	// with block height of 5 we expect 5 blocks until the next epoch
+	ctx = ctx.WithBlockHeight(5)
+	require.Equal(t, int64(5), providerKeeper.BlocksUntilNextEpoch(ctx))
+
+	// with block height of 10 we expect 0 blocks until the next epoch, since
+	// this epoch is the one where we send the VSC packet
+	ctx = ctx.WithBlockHeight(10)
+	require.Equal(t, int64(0), providerKeeper.BlocksUntilNextEpoch(ctx))
+
+	// with block height of 11 we expect 9 blocks until the next epoch
+	ctx = ctx.WithBlockHeight(11)
+	require.Equal(t, int64(9), providerKeeper.BlocksUntilNextEpoch(ctx))
+
+	// with block height of 15 we expect 5 blocks until the next epoch
+	ctx = ctx.WithBlockHeight(15)
+	require.Equal(t, int64(5), providerKeeper.BlocksUntilNextEpoch(ctx))
+
+	// with block height of 19 we expect 1 block until the next epoch
+	ctx = ctx.WithBlockHeight(19)
+	require.Equal(t, int64(1), providerKeeper.BlocksUntilNextEpoch(ctx))
 }

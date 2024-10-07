@@ -4,10 +4,11 @@ import (
 	"fmt"
 
 	storetypes "cosmossdk.io/store/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	consumertypes "github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // MigrateConsumerPacketData migrates consumer packet data according to
@@ -17,7 +18,7 @@ import (
 func MigrateConsumerPacketData(ctx sdk.Context, store storetypes.KVStore) error {
 	// retrieve old data an deserialize
 	var oldData consumertypes.ConsumerPacketDataList
-	bz := store.Get([]byte{consumertypes.PendingDataPacketsBytePrefix})
+	bz := store.Get(consumertypes.PendingDataPacketsV1KeyPrefix())
 	if bz == nil {
 		ctx.Logger().Info("no pending data packets to migrate")
 		return nil
@@ -31,8 +32,8 @@ func MigrateConsumerPacketData(ctx sdk.Context, store storetypes.KVStore) error 
 	// index incrementation happens in getAndIncrementPendingPacketsIdx
 	// the loop operations are equivalent to consumerkeeper.AppendPendingPacket()
 	for _, data := range oldData.List {
-		idx := getAndIncrementPendingPacketsIdx(ctx, store)
-		key := consumertypes.PendingDataPacketsKey(idx)
+		idx := getAndIncrementPendingPacketsIdx(store)
+		key := consumertypes.PendingDataPacketsV1Key(idx)
 		cpd := ccvtypes.NewConsumerPacketData(data.Type, data.Data)
 		bz, err := cpd.Marshal()
 		if err != nil {
@@ -42,12 +43,12 @@ func MigrateConsumerPacketData(ctx sdk.Context, store storetypes.KVStore) error 
 		store.Set(key, bz)
 	}
 
-	store.Delete([]byte{consumertypes.PendingDataPacketsBytePrefix})
+	store.Delete(consumertypes.PendingDataPacketsV1KeyPrefix())
 	return nil
 }
 
 // getAndIncrementPendingPacketsIdx returns the current pending packets index and increments it.
-func getAndIncrementPendingPacketsIdx(ctx sdk.Context, store storetypes.KVStore) (toReturn uint64) {
+func getAndIncrementPendingPacketsIdx(store storetypes.KVStore) (toReturn uint64) {
 	bz := store.Get(consumertypes.PendingPacketsIndexKey())
 	if bz != nil {
 		toReturn = sdk.BigEndianToUint64(bz)

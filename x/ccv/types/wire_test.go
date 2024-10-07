@@ -12,8 +12,8 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v5/testutil/crypto"
-	"github.com/cosmos/interchain-security/v5/x/ccv/types"
+	"github.com/cosmos/interchain-security/v6/testutil/crypto"
+	"github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 func TestPacketDataValidateBasic(t *testing.T) {
@@ -222,4 +222,18 @@ func TestVSCMaturedPacketDataWireBytes(t *testing.T) {
 	expectedStr = strings.ReplaceAll(expectedStr, " ", "")
 
 	require.Equal(t, expectedStr, str)
+}
+
+func TestCreateTransferMemo(t *testing.T) {
+	consumerId := "13"
+	chainId := "chain-13"
+
+	transferMemo, err := types.CreateTransferMemo(consumerId, chainId)
+	require.NoError(t, err)
+
+	rewardMemo, err := types.GetRewardMemoFromTransferMemo(transferMemo)
+	require.NoError(t, err)
+	require.Equal(t, consumerId, rewardMemo.ConsumerId)
+	require.Equal(t, chainId, rewardMemo.ChainId)
+	require.Equal(t, "ICS rewards", rewardMemo.Memo)
 }

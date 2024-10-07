@@ -8,7 +8,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // A validator's consensus address on the provider chain.
@@ -67,7 +67,7 @@ func (c *ConsumerConsAddress) String() string {
 func KeyAssignmentValidateBasic(
 	assignedKeys []ValidatorConsumerPubKey,
 	byConsumerAddrs []ValidatorByConsumerAddr,
-	consumerAddrsToPrune []ConsumerAddrsToPrune,
+	consumerAddrsToPrune []ConsumerAddrsToPruneV2,
 ) error {
 	for _, e := range assignedKeys {
 		if strings.TrimSpace(e.ChainId) == "" {
@@ -95,7 +95,6 @@ func KeyAssignmentValidateBasic(
 		if strings.TrimSpace(e.ChainId) == "" {
 			return errorsmod.Wrap(ccvtypes.ErrInvalidGenesis, "consumer chain id must not be blank")
 		}
-		// Don't check e.vscid, it's an unsigned integer
 		for _, a := range e.ConsumerAddrs.Addresses {
 			if err := sdk.VerifyAddressFormat(a); err != nil {
 				return errorsmod.Wrap(ccvtypes.ErrInvalidGenesis, fmt.Sprintf("invalid consumer address: %s", a))

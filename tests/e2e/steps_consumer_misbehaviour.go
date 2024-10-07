@@ -1,8 +1,6 @@
 package main
 
 import (
-	"strconv"
-
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 )
@@ -51,7 +49,7 @@ func stepsStartChainsForConsumerMisbehaviour(consumerName string) []Step {
 							Chain:         ChainID(consumerName),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+							Status:        gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
 						},
 					},
 				},
@@ -102,7 +100,7 @@ func stepsStartChainsForConsumerMisbehaviour(consumerName string) []Step {
 							Chain:         ChainID(consumerName),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+							Status:        gov.ProposalStatus_PROPOSAL_STATUS_PASSED.String(),
 						},
 					},
 					ValBalances: &map[ValidatorID]uint{
@@ -213,75 +211,104 @@ func stepsCauseConsumerMisbehaviour(consumerName string) []Step {
 			},
 			State: State{},
 		},
-		// start relayer to detect IBC misbehaviour
 		{
-			Action: StartRelayerAction{},
-			State:  State{},
+			Action: SubmitConsumerMisbehaviourAction{
+				FromChain: ChainID(consumerName),
+				ToChain:   ChainID("provi"),
+				ClientID:  consumerClientID,
+				Submitter: ValidatorID("bob"),
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 0, // alice is jailed
+						ValidatorID("bob"):   20,
+					},
+					StakedTokens: &map[ValidatorID]uint{
+						ValidatorID("alice"): 485450000, // alice is slashed
+						ValidatorID("bob"):   20000000,
+					},
+				},
+				ChainID(consumerName): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 511,
+						ValidatorID("bob"):   0,
+					},
+				},
+			},
 		},
+		// the Hermes relayer doesn't support evidence handling for Permissionless ICS yet
+		// TODO: @Simon refactor once https://github.com/informalsystems/hermes/pull/4182 is merged.
+		// start relayer to detect IBC misbehaviour
+		// {
+		// 	Action: StartRelayerAction{},
+		// 	State:  State{},
+		// },
+		// {
+		// 	// update the fork consumer client to create a light client attack
+		// 	// which should trigger a ICS misbehaviour message
+		// 	Action: UpdateLightClientAction{
+		// 		Chain:         ChainID(consumerName),
+		// 		ClientID:      consumerClientID,
+		// 		HostChain:     ChainID("provi"),
+		// 		RelayerConfig: forkRelayerConfig, // this relayer config uses the "forked" consumer
+		// 	},
+		// 	State: State{
+		// 		ChainID("provi"): ChainState{
+		// 			// alice should be jailed on the provider
+		// 			ValPowers: &map[ValidatorID]uint{
+		// 				ValidatorID("alice"): 0,
+		// 				ValidatorID("bob"):   20,
+		// 			},
+		// 			// "alice" should be slashed on the provider, hence representative
+		// 			// power is 511000000 - 0.05 * 511000000 = 485450000
+		// 			StakedTokens: &map[ValidatorID]uint{
+		// 				ValidatorID("alice"): 485450000,
+		// 				ValidatorID("bob"):   20000000,
+		// 			},
+		// 			// The consumer light client should be frozen on the provider
+		// 			ClientsFrozenHeights: &map[string]clienttypes.Height{
+		// 				consumerClientID: {
+		// 					RevisionNumber: 0,
+		// 					RevisionHeight: 1,
+		// 				},
+		// 			},
+		// 		},
+		// 		ChainID(consumerName): ChainState{
+		// 			// consumer should not have learned the jailing of alice
+		// 			// since its light client is frozen on the provider
+		// 			ValPowers: &map[ValidatorID]uint{
+		// 				ValidatorID("alice"): 511,
+		// 				ValidatorID("bob"):   0,
+		// 			},
+		// 		},
+		// 	},
+		// },
 		// run Hermes relayer instance to detect the ICS misbehaviour
 		// and jail alice on the provider
-		{
-			Action: StartConsumerEvidenceDetectorAction{
-				Chain: ChainID(consumerName),
-			},
-			State: State{
-				ChainID("provi"): ChainState{
-					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 511,
-						ValidatorID("bob"):   20,
-					},
-					StakedTokens: &map[ValidatorID]uint{
-						ValidatorID("alice"): 511000000,
-						ValidatorID("bob"):   20000000,
-					},
-				},
-				ChainID(consumerName): ChainState{
-					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 511,
-						ValidatorID("bob"):   0,
-					},
-				},
-			},
-		},
-		{
-			// update the fork consumer client to create a light client attack
-			// which should trigger a ICS misbehaviour message
-			Action: UpdateLightClientAction{
-				Chain:         ChainID(consumerName),
-				ClientID:      consumerClientID,
-				HostChain:     ChainID("provi"),
-				RelayerConfig: forkRelayerConfig, // this relayer config uses the "forked" consumer
-			},
-			State: State{
-				ChainID("provi"): ChainState{
-					// alice should be jailed on the provider
-					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 0,
-						ValidatorID("bob"):   20,
-					},
-					// "alice" should be slashed on the provider, hence representative
-					// power is 511000000 - 0.05 * 511000000 = 485450000
-					StakedTokens: &map[ValidatorID]uint{
-						ValidatorID("alice"): 485450000,
-						ValidatorID("bob"):   20000000,
-					},
-					// The consumer light client should be frozen on the provider
-					ClientsFrozenHeights: &map[string]clienttypes.Height{
-						consumerClientID: {
-							RevisionNumber: 0,
-							RevisionHeight: 1,
-						},
-					},
-				},
-				ChainID(consumerName): ChainState{
-					// consumer should not have learned the jailing of alice
-					// since its light client is frozen on the provider
-					ValPowers: &map[ValidatorID]uint{
-						ValidatorID("alice"): 511,
-						ValidatorID("bob"):   0,
-					},
-				},
-			},
-		},
+		// {
+		// 	Action: StartConsumerEvidenceDetectorAction{
+		// 		Chain:     ChainID(consumerName),
+		// 		Submitter: ValidatorID("bob"),
+		// 	},
+		// 	State: State{
+		// 		ChainID("provi"): ChainState{
+		// 			ValPowers: &map[ValidatorID]uint{
+		// 				ValidatorID("alice"): 511,
+		// 				ValidatorID("bob"):   20,
+		// 			},
+		// 			StakedTokens: &map[ValidatorID]uint{
+		// 				ValidatorID("alice"): 511000000,
+		// 				ValidatorID("bob"):   20000000,
+		// 			},
+		// 		},
+		// 		ChainID(consumerName): ChainState{
+		// 			ValPowers: &map[ValidatorID]uint{
+		// 				ValidatorID("alice"): 511,
+		// 				ValidatorID("bob"):   0,
+		// 			},
+		// 		},
+		// 	},
+		// },
 	}
 }

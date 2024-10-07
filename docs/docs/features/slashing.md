@@ -1,33 +1,29 @@
 ---
-sidebar_position: 4
+sidebar_position: 3
 ---
 
 # Consumer Initiated Slashing
-A consumer chain is essentially a regular Cosmos-SDK based chain that uses the Interchain Security module to achieve economic security by stake deposited on the provider chain, instead of its own chain.
-In essence, provider chain and consumer chains are different networks (different infrastructures) that are bound together by the provider's validator set. By being bound to the provider's validator set, a consumer chain inherits the economic security guarantees of the provider chain (in terms of total stake).
+A consumer chain is essentially a regular Cosmos-SDK based chain that uses the ICS consumer module to achieve economic security by stake deposited on the provider chain, instead of its own chain.
+In essence, the provider chain and consumer chains are different networks (different infrastructures) that share a subset of the provider's validator set. By being bound to the provider's validator set, a consumer chain inherits some of the economic security guarantees of the provider chain.
 
 To maintain the proof of stake model, the consumer chain is able to send evidence of infractions (double signing and downtime) to the provider chain so the offending validators can be penalized.
 Any infraction committed on any of the consumer chains is reflected on the provider and all other consumer chains.
 
-In the current implementation there are two important changes brought by the Interchain Security module.
+The ICS protocol differentiates between downtime and equivocation infractions. 
 
 ## Downtime Infractions
 
-Downtime infractions are reported by consumer chains and are acted upon on the provider as soon as the provider receives the infraction evidence.
-
-Instead of slashing, the provider will only jail offending validator for the duration of time established by the chain parameters.
-
-:::info
-[Slash throttling](../adrs/adr-002-throttle.md) (sometimes called jail throttling) mechanism ensures that only a fraction of the validator set can be jailed at any one time to prevent malicious consumer chains from harming the provider.
-:::
-
-Note that validators are only jailed for downtime on consumer chains that they opted-in to validate on,
+Downtime infractions are reported by consumer chains and are acted upon on the provider as soon as they are received. 
+Instead of slashing, the provider will **_only jail_** offending validator for the duration of time established by the provider chain parameters.
+Note that validators are only jailed for downtime on consumer chains that they opted in to validate on,
 or in the case of Top N chains, where they are automatically opted in by being in the Top N% of the validator set on the provider.
+
+For preventing malicious consumer chains from harming the provider, [slash throttling](../adrs/adr-002-throttle.md) (also known as _jail throttling_) ensures that only a fraction of the provider validator set can be jailed at any given time.
 
 ## Equivocation Infractions
 
 Equivocation infractions are reported by external agents (e.g., relayers) that can submit to the provider evidence of light client or double signing attacks observed on a consumer chain. 
-The evidence is submitted by sending `MsgSubmitConsumerMisbehaviour` or `MsgSubmitConsumerDoubleVoting` transactions to the provider. 
+The evidence is submitted by sending `MsgSubmitConsumerMisbehaviour` or `MsgSubmitConsumerDoubleVoting` messages to the provider. 
 When valid evidence is received, the malicious validators are slashed, jailed, and tombstoned on the provider.
 This is enabled through the _cryptographic verification of equivocation_ feature. 
 For more details, see [ADR-005](../adrs/adr-005-cryptographic-equivocation-verification.md) and [ADR-013](../adrs/adr-013-equivocation-slashing.md).
@@ -39,7 +35,7 @@ Below are two examples illustrating the process on Cosmos Hub.
 
 Use the following command to submit evidence of double signing attacks:
 ```bash
-gaiad tx provider submit-consumer-double-voting [path/to/evidence.json] [path/to/infraction_header.json] --from node0 --home ../node0 --chain-id $CID 
+gaiad tx provider submit-consumer-double-voting [consumer-id] [path/to/evidence.json] [path/to/infraction_header.json] --from node0 --home ../node0 --chain-id $CID 
 ```
 
 <details>
@@ -257,7 +253,7 @@ gaiad tx provider submit-consumer-double-voting [path/to/evidence.json] [path/to
 
 Use the following command to submit evidence of light client attacks:
 ```bash
-gaiad tx provider submit-consumer-misbehaviour [path/to/misbehaviour.json] --from node0 --home ../node0 --chain-id $CID
+gaiad tx provider submit-consumer-misbehaviour [consumer-id] [path/to/misbehaviour.json] --from node0 --home ../node0 --chain-id $CID
 ```
 
 <details>
@@ -600,7 +596,4 @@ The following command demonstrates how to run a Hermes instance in _evidence mod
 ```bash
 hermes evidence --chain <CONSUMER-CHAIN-ID>
 ```
-
-:::tip
-`hermes evidence` takes a `--check-past-blocks` option giving the possibility to look for older evidence (default is 100).
-:::
+Note that `hermes evidence` takes a `--check-past-blocks` option giving the possibility to look for older evidence (default is 100).

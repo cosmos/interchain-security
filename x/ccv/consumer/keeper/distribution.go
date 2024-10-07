@@ -13,8 +13,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/cosmos/interchain-security/v5/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	"github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // EndBlockRD executes EndBlock logic for the Reward Distribution sub-protocol.
@@ -35,9 +35,6 @@ func (k Keeper) EndBlockRD(ctx sdk.Context) {
 	if err := k.SendRewardsToProvider(cachedCtx); err != nil {
 		k.Logger(ctx).Error("attempt to sent rewards to provider failed", "error", err)
 	} else {
-		// The cached context is created with a new EventManager so we merge the event
-		// into the original context
-		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
 		// write cache
 		writeCache()
 	}
@@ -121,6 +118,11 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 
 	sentCoins := sdk.NewCoins()
 	var allBalances sdk.Coins
+	rewardMemo, err := ccv.CreateTransferMemo(k.GetConsumerId(ctx), ctx.ChainID())
+	if err != nil {
+		return err
+	}
+
 	// iterate over all whitelisted reward denoms
 	for _, denom := range k.AllowedRewardDenoms(ctx) {
 		// get the balance of the denom in the toSendToProviderTokens address
@@ -137,7 +139,7 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 				Receiver:         providerAddr,                  // provider fee pool address to send to
 				TimeoutHeight:    timeoutHeight,                 // timeout height disabled
 				TimeoutTimestamp: timeoutTimestamp,
-				Memo:             "consumer chain rewards distribution",
+				Memo:             rewardMemo,
 			}
 
 			// validate MsgTransfer before calling Transfer()
@@ -227,7 +229,7 @@ func (k Keeper) SetLastTransmissionBlockHeight(ctx sdk.Context, ltbh types.LastT
 func (k Keeper) ChannelOpenInit(ctx sdk.Context, msg *channeltypes.MsgChannelOpenInit) (
 	*channeltypes.MsgChannelOpenInitResponse, error,
 ) {
-	return k.ibcCoreKeeper.ChannelOpenInit(sdk.WrapSDKContext(ctx), msg)
+	return k.ibcCoreKeeper.ChannelOpenInit(ctx, msg)
 }
 
 func (k Keeper) TransferChannelExists(ctx sdk.Context, channelID string) bool {

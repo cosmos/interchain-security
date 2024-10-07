@@ -4,19 +4,20 @@ import (
 	context "context"
 	"time"
 
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 
+	addresscodec "cosmossdk.io/core/address"
 	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 )
@@ -55,6 +56,18 @@ type StakingKeeper interface {
 	GetUnbondingDelegationByUnbondingID(ctx context.Context, id uint64) (stakingtypes.UnbondingDelegation, error)
 	GetRedelegationByUnbondingID(ctx context.Context, id uint64) (stakingtypes.Redelegation, error)
 	GetValidatorByUnbondingID(ctx context.Context, id uint64) (stakingtypes.Validator, error)
+	GetBondedValidatorsByPower(ctx context.Context) ([]stakingtypes.Validator, error)
+	ValidatorAddressCodec() addresscodec.Codec
+	IterateDelegations(
+		ctx context.Context, delegator sdk.AccAddress,
+		fn func(index int64, delegation stakingtypes.DelegationI) (stop bool),
+	) error
+	IterateBondedValidatorsByPower(
+		context.Context, func(index int64, validator stakingtypes.ValidatorI) (stop bool),
+	) error
+	StakingTokenSupply(ctx context.Context) (math.Int, error)
+	BondedRatio(ctx context.Context) (math.LegacyDec, error)
+	TotalBondedTokens(ctx context.Context) (math.Int, error)
 }
 
 // SlashingKeeper defines the contract expected to perform ccv slashing
@@ -130,6 +143,7 @@ type BankKeeper interface {
 // AccountKeeper defines the expected account keeper used for simulations
 type AccountKeeper interface {
 	GetModuleAccount(ctx context.Context, name string) sdk.ModuleAccountI
+	AddressCodec() addresscodec.Codec
 }
 
 // IBCTransferKeeper defines the expected interface needed for distribution transfer

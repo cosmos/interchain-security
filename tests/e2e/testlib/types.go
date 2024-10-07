@@ -12,8 +12,20 @@ import (
 
 type (
 	ChainID     string
+	ConsumerID  string
 	ValidatorID string
 )
+
+type AssignConsumerPubKeyAction struct {
+	Chain          ChainID
+	Validator      ValidatorID
+	ConsumerPubkey string
+	// ReconfigureNode will change keys the node uses and restart
+	ReconfigureNode bool
+	// executing the action should raise an error
+	ExpectError   bool
+	ExpectedError string
+}
 
 type ChainCommands interface {
 	GetBlockHeight(chain ChainID) uint
@@ -26,7 +38,7 @@ type ChainCommands interface {
 	GetProposal(chain ChainID, proposal uint) Proposal
 	GetParam(chain ChainID, param Param) string
 	GetProviderAddressFromConsumer(consumerChain ChainID, validator ValidatorID) string
-	GetReward(chain ChainID, validator ValidatorID, blockHeight uint, isNativeDenom bool) float64
+	GetReward(chain ChainID, validator ValidatorID, blockHeight uint, denom string) float64
 	GetRegisteredConsumerRewardDenoms(chain ChainID) []string
 	GetSlashMeter() int64
 	GetPendingPacketQueueSize(chain ChainID) uint
@@ -37,6 +49,10 @@ type ChainCommands interface {
 	GetValPower(chain ChainID, validator ValidatorID) uint
 	GetValStakedTokens(chain ChainID, validatorAddress string) uint
 	GetQueryNodeIP(chain ChainID) string
+	GetInflationRate(chain ChainID) float64
+	GetConsumerCommissionRate(chain ChainID, validator ValidatorID) float64
+	// Action commands
+	AssignConsumerPubKey(action AssignConsumerPubKeyAction, gas, home, node string, verbose bool) ([]byte, error)
 }
 
 // TODO: replace ExecutionTarget with new TargetDriver interface
@@ -122,7 +138,8 @@ type ValidatorConfig struct {
 // Attributes that are unique to a chain. Allows us to map (part of)
 // the set of strings defined above to a set of viable chains
 type ChainConfig struct {
-	ChainId ChainID
+	ChainId    ChainID
+	ConsumerId ConsumerID
 	// The account prefix configured on the chain. For example, on the Hub, this is "cosmos"
 	AccountPrefix string
 	// Must be unique per chain
@@ -153,7 +170,6 @@ type ProposalAndType struct {
 	RawProposal json.RawMessage
 	Type        string
 }
-
 type ChainState struct {
 	ValBalances                    *map[ValidatorID]uint
 	Proposals                      *map[uint]Proposal
@@ -170,6 +186,8 @@ type ChainState struct {
 	RegisteredConsumerRewardDenoms *[]string
 	ClientsFrozenHeights           *map[string]clienttypes.Height
 	HasToValidate                  *map[ValidatorID][]ChainID // only relevant to provider chain
+	InflationRateChange            *int                       // whether the inflation rate between two blocks changes negatively (any negative number), is equal (0), or changes positively (any positive number)
+	ConsumerCommissionRates        *map[ValidatorID]float64
 }
 
 // custom marshal and unmarshal functions for the chainstate that convert proposals to/from the auxiliary type with type info
@@ -301,10 +319,9 @@ func (p UpgradeProposal) isProposal() {}
 func (p ConsumerAdditionProposal) isProposal() {}
 
 type ConsumerRemovalProposal struct {
-	Deposit  uint
-	Chain    ChainID
-	StopTime int
-	Status   string
+	Deposit uint
+	Chain   ChainID
+	Status  string
 }
 
 func (p ConsumerRemovalProposal) isProposal() {}
@@ -322,9 +339,9 @@ type Rewards struct {
 	// if true it will calculate if the validator/delegator is rewarded between 2 successive blocks,
 	// otherwise it will calculate if it received any rewards since the 1st block
 	IsIncrementalReward bool
-	// if true checks rewards for "stake" token, otherwise checks rewards from
-	// other chains (e.g. false is used to check if provider received rewards from a consumer chain)
-	IsNativeDenom bool
+	// The reward denom to be checked. This can be either the native "stake" denom or
+	// a denom from other chains (e.g. if provider received rewards from a consumer chain)
+	Denom string
 }
 
 type ParamsProposal struct {

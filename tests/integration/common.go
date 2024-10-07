@@ -22,10 +22,10 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	icstestingutils "github.com/cosmos/interchain-security/v5/testutil/ibc_testing"
-	testutil "github.com/cosmos/interchain-security/v5/testutil/integration"
-	providertypes "github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v5/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v6/testutil/ibc_testing"
+	testutil "github.com/cosmos/interchain-security/v6/testutil/integration"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // ChainType defines the type of chain (either provider or consumer)
@@ -42,7 +42,7 @@ func (s *CCVTestSuite) getFirstBundle() icstestingutils.ConsumerBundle {
 }
 
 func (s *CCVTestSuite) getBundleByIdx(index int) icstestingutils.ConsumerBundle {
-	return *s.consumerBundles[ibctesting.GetChainID(2+index)]
+	return *s.consumerBundles[fmt.Sprintf("%d", index)]
 }
 
 func (s *CCVTestSuite) providerCtx() sdk.Context {
@@ -67,7 +67,7 @@ func (s *CCVTestSuite) getValByIdx(index int) (validator stakingtypes.Validator,
 }
 
 func (s *CCVTestSuite) getVal(ctx sdk.Context, valAddr sdk.ValAddress) stakingtypes.Validator {
-	validator, err := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), valAddr)
+	validator, err := s.providerApp.GetTestStakingKeeper().GetValidator(ctx, valAddr)
 	s.Require().NoError(err)
 	return validator
 }
@@ -75,7 +75,7 @@ func (s *CCVTestSuite) getVal(ctx sdk.Context, valAddr sdk.ValAddress) stakingty
 func (s *CCVTestSuite) getValConsAddr(tmVal tmtypes.Validator) sdk.ConsAddress {
 	val, err := tmVal.ToProto()
 	s.Require().NoError(err)
-	pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
+	pubkey, err := cryptocodec.FromCmtProtoPublicKey(val.GetPubKey())
 	s.Require().Nil(err)
 	return sdk.GetConsAddress(pubkey)
 }
@@ -111,41 +111,6 @@ func delegateAndUndelegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt math
 	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
 
 	return initBalance, valsetUpdateId
-}
-
-// Delegates "amount" to a source validator, then redelegates that same amount to a dest validator,
-// with related state assertions along the way.
-//
-// Note: This function advances blocks in-between operations, where validator powers are
-// not checked, since they are checked in integration tests.
-func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
-	srcValAddr, dstValAddr sdk.ValAddress, amount math.Int,
-) {
-	// Delegate to src validator
-	srcValTokensBefore := s.getVal(s.providerCtx(), srcValAddr).GetBondedTokens()
-	_, sharesDelegated, _ := delegate(s, delAddr, amount)
-
-	// Assert expected amount was bonded to src validator
-	srcValTokensAfter := s.getVal(s.providerCtx(), srcValAddr).GetBondedTokens()
-	s.Require().Equal(srcValTokensAfter.Sub(srcValTokensBefore), amount)
-
-	s.nextEpoch()
-
-	dstValTokensBefore := s.getVal(s.providerCtx(), dstValAddr).GetBondedTokens()
-
-	// redelegate shares from src to dst validators
-	redelegate(s, delAddr,
-		srcValAddr,
-		dstValAddr,
-		sharesDelegated,
-	)
-
-	// Assert expected amount was delegated to dst val
-	dstValTokensAfter := s.getVal(s.providerCtx(), dstValAddr).GetBondedTokens()
-	s.Require().Equal(dstValTokensAfter.Sub(dstValTokensBefore), amount)
-
-	// Assert delegated tokens amount returned to original value for src validator
-	s.Require().Equal(srcValTokensBefore, s.getVal(s.providerCtx(), srcValAddr).GetBondedTokens())
 }
 
 // delegate delegates bondAmt to the first validator
@@ -301,6 +266,7 @@ func relayAllCommittedPackets(
 //
 // Note that it is expected for the provider unbonding period
 // to be one day larger than the consumer unbonding period.
+// TODO (mpoke) get rid of consumer unbonding period
 func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 	// Get unboding periods
 	providerUnbondingPeriod, err := s.providerApp.GetTestStakingKeeper().UnbondingTime(s.providerCtx())
@@ -315,7 +281,7 @@ func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 	incrementTime(s, jumpPeriod)
 }
 
-func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found, onHold bool, msgAndArgs ...interface{}) {
+func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, msgAndArgs ...interface{}) {
 	stakingUnbondingOp, wasFound := getStakingUnbondingDelegationEntry(s.providerCtx(), s.providerApp.GetTestStakingKeeper(), id)
 	s.Require().Equal(
 		found,
@@ -323,51 +289,13 @@ func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found, onHold bool, ms
 		fmt.Sprintf("checkStakingUnbondingOps failed - getStakingUnbondingDelegationEntry; %s", msgAndArgs...),
 	)
 	if wasFound {
-		s.Require().True(
-			onHold == (0 < stakingUnbondingOp.UnbondingOnHoldRefCount),
-			fmt.Sprintf("checkStakingUnbondingOps failed - onHold; %s", msgAndArgs...),
-		)
-	}
-}
-
-func checkCCVUnbondingOp(s *CCVTestSuite, providerCtx sdk.Context, chainID string, valUpdateID uint64, found bool, msgAndArgs ...interface{}) {
-	entries := s.providerApp.GetProviderKeeper().GetUnbondingOpsFromIndex(providerCtx, chainID, valUpdateID)
-	if found {
-		s.Require().NotEmpty(entries, fmt.Sprintf("checkCCVUnbondingOp failed - should not be empty; %s", msgAndArgs...))
-		s.Require().Greater(
-			len(entries),
-			0,
-			fmt.Sprintf("checkCCVUnbondingOp failed - no unbonding ops found; %s", msgAndArgs...),
-		)
-		s.Require().Greater(
-			len(entries[0].UnbondingConsumerChains),
-			0,
-			fmt.Sprintf("checkCCVUnbondingOp failed - unbonding op with no consumer chains; %s", msgAndArgs...),
-		)
+		// make sure UnbondingOnHoldRefCount remains zero
 		s.Require().Equal(
-			"testchain2",
-			entries[0].UnbondingConsumerChains[0],
-			fmt.Sprintf("checkCCVUnbondingOp failed - unbonding op with unexpected consumer chain; %s", msgAndArgs...),
+			int64(0),
+			stakingUnbondingOp.UnbondingOnHoldRefCount,
+			fmt.Sprintf("checkStakingUnbondingOps failed - UnbondingOnHoldRefCount; %s", msgAndArgs...),
 		)
 	}
-}
-
-// Checks that an expected amount of redelegations exist for a delegator
-// via the staking keeper, then returns those redelegations.
-func checkRedelegations(s *CCVTestSuite, delAddr sdk.AccAddress,
-	expect uint16,
-) []stakingtypes.Redelegation {
-	redelegations, err := s.providerApp.GetTestStakingKeeper().GetRedelegations(s.providerCtx(), delAddr, 2)
-	s.Require().NoError(err)
-	s.Require().Len(redelegations, int(expect))
-	return redelegations
-}
-
-// Checks that a redelegation entry has a completion time equal to an expected time
-func checkRedelegationEntryCompletionTime(
-	s *CCVTestSuite, entry stakingtypes.RedelegationEntry, expectedCompletion time.Time,
-) {
-	s.Require().Equal(expectedCompletion, entry.CompletionTime)
 }
 
 func getStakingUnbondingDelegationEntry(ctx sdk.Context, k testutil.TestStakingKeeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {

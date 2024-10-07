@@ -10,8 +10,8 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v5/testutil/crypto"
-	uthelpers "github.com/cosmos/interchain-security/v5/testutil/keeper"
+	"github.com/cosmos/interchain-security/v6/testutil/crypto"
+	uthelpers "github.com/cosmos/interchain-security/v6/testutil/keeper"
 )
 
 func TestChangeoverToConsumer(t *testing.T) {
@@ -28,8 +28,6 @@ func TestChangeoverToConsumer(t *testing.T) {
 		cIds[3].SDKStakingValidator(),
 		cIds[4].SDKStakingValidator(),
 	}
-
-	powers := []int64{55, 87324, 2, 42389479, 9089080}
 
 	// Instantiate 5 ics val updates for use in test
 	initialValUpdates := []abci.ValidatorUpdate{
@@ -106,7 +104,6 @@ func TestChangeoverToConsumer(t *testing.T) {
 			mocks.MockStakingKeeper,
 			180, // max validators
 			tc.lastSovVals,
-			powers,
 			-1) // any times
 
 		// Add ref to standalone staking keeper

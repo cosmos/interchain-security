@@ -1,10 +1,11 @@
 package main
 
 import (
-	"strconv"
+	"time"
 
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
 )
 
 func stepStartProviderChain() []Step {
@@ -31,6 +32,152 @@ func stepStartProviderChain() []Step {
 	}
 }
 
+func stepsStartPermissionlessChain(consumerName, consumerChainId string, proposedChains []string, validators []ValidatorID, chainIndex uint) []Step {
+	s := []Step{
+		{
+			Action: CreateConsumerChainAction{
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				ConsumerChain: ChainID(consumerName),
+				InitParams: &InitializationParameters{
+					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+					SpawnTime:     uint(time.Minute * 3),
+				},
+				PowerShapingParams: &PowerShapingParameters{
+					TopN: 0,
+				},
+			},
+			State: State{
+				ChainID("provi"): e2e.ChainState{
+					ProposedConsumerChains: &proposedChains,
+				},
+			},
+		},
+	}
+
+	// Assign validator keys
+	// add a consumer key before the chain starts
+	// the key will be present in the consumer genesis initial_val_set
+	for _, valId := range validators {
+		valCfg := getDefaultValidators()[valId]
+		// no consumer-key assignment needed for validators using provider's public key
+		if !valCfg.UseConsumerKey {
+			continue
+		}
+		step := Step{
+			Action: AssignConsumerPubKeyAction{
+				Chain:          ChainID(consumerName),
+				Validator:      valId,
+				ConsumerPubkey: valCfg.ConsumerValPubKey,
+				// consumer chain has not started
+				// we don't need to reconfigure the node
+				// since it will start with consumer key
+				ReconfigureNode: false,
+			},
+			State: State{
+				ChainID(consumerName): ChainState{
+					AssignedKeys: &map[ValidatorID]string{
+						valId: valCfg.ConsumerValconsAddressOnProvider,
+					},
+					ProviderKeys: &map[ValidatorID]string{
+						valId: valCfg.ValconsAddress,
+					},
+				},
+			},
+		}
+		s = append(s, step)
+	}
+
+	// Opt-in Validators
+	for _, valId := range validators {
+		step := Step{
+			Action: OptInAction{
+				Chain:     ChainID(consumerName),
+				Validator: valId,
+			},
+			State: State{},
+		}
+		s = append(s, step)
+	}
+
+	// Launch chain
+	step := Step{
+		Action: UpdateConsumerChainAction{
+			Chain:         ChainID("provi"),
+			From:          ValidatorID("alice"),
+			ConsumerChain: ChainID(consumerName),
+			InitParams: &InitializationParameters{
+				InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+				SpawnTime:     0, // launch now
+			},
+			PowerShapingParams: &PowerShapingParameters{
+				TopN: 0,
+			},
+		},
+		State: State{},
+	}
+	s = append(s, step)
+
+	// Setup validators for  chain
+	startChainVals := []StartChainValidator{}
+	valBalance := map[ValidatorID]uint{
+		ValidatorID("alice"): 0,
+		ValidatorID("bob"):   0,
+		ValidatorID("carol"): 0,
+	}
+
+	for idx, val := range validators {
+		startChainVals = append(startChainVals,
+			StartChainValidator{
+				Id:         val,
+				Stake:      uint(100000000 * (idx + 1)),
+				Allocation: 10000000000,
+			})
+		valBalance[val] = 10000000000
+	}
+
+	// Start the chain
+	step = Step{
+		Action: StartConsumerChainAction{
+			ConsumerChain: ChainID(consumerName),
+			ProviderChain: ChainID("provi"),
+			Validators:    startChainVals,
+		},
+		State: State{
+			ChainID(consumerName): ChainState{
+				ValBalances: &valBalance,
+			},
+		},
+	}
+	s = append(s, step)
+
+	// Establish IBC connection
+	steps := []Step{
+		{
+			Action: AddIbcConnectionAction{
+				ChainA:  ChainID(consumerName),
+				ChainB:  ChainID("provi"),
+				ClientA: 0,
+				ClientB: chainIndex,
+			},
+			State: State{},
+		},
+		{
+			Action: AddIbcChannelAction{
+				ChainA:      ChainID(consumerName),
+				ChainB:      ChainID("provi"),
+				ConnectionA: 0,
+				PortA:       "consumer",
+				PortB:       "provider",
+				Order:       "ordered",
+			},
+			State: State{},
+		},
+	}
+	s = append(s, steps...)
+	return s
+}
+
 func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint, setupTransferChans bool) []Step {
 	s := []Step{
 		{
@@ -55,7 +202,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 							Chain:         ChainID(consumerName),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD)),
+							Status:        gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
 						},
 					},
 					ProposedConsumerChains: &[]string{consumerName},
@@ -135,7 +282,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 							Chain:         ChainID(consumerName),
 							SpawnTime:     0,
 							InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
-							Status:        strconv.Itoa(int(gov.ProposalStatus_PROPOSAL_STATUS_PASSED)),
+							Status:        gov.ProposalStatus_PROPOSAL_STATUS_PASSED.String(),
 						},
 					},
 					ValBalances: &map[ValidatorID]uint{
