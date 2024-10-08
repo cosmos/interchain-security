@@ -1,7 +1,8 @@
 ---
-sidebar_position: 3
+sidebar_position: 4
 title: Onboarding Checklist
 ---
+
 # Consumer Onboarding Checklist
 
 The following checklists will aid in onboarding a new consumer chain to interchain security.
@@ -34,7 +35,7 @@ Example of such a repository can be found [here](https://github.com/hyphacoop/ic
 
 Before you start your chain, you need to submit a `MsgCreateConsumer` message that generates and returns back the
 `consumerId` that should be used in any upcoming interactions by the consumer chain or the validators that interact
-with your chain. 
+with your chain.
 Additionally, you need to decider whether your chain should be an Opt-In chain or a Top N chain (see [Partial Set Security](../features/partial-set-security.md))
 and act accordingly (see [Permissionless ICS](../features/permissionless.md).
 
@@ -53,6 +54,7 @@ gather community support and accept feedback from the community, validators and 
 - [ ] if desired, decide on power-shaping parameters (see [Power Shaping](../features/power-shaping.md))
 
 Example of initialization parameters:
+
 ```js
 // ConsumerInitializationParameters provided in MsgCreateConsumer or MsgUpdateConsumer
 {
@@ -101,6 +103,7 @@ Example of initialization parameters:
 ```
 
 Example of power-shaping parameters:
+
 ```js
 // PowerShaping parameters provided in MsgCreateConsumer or MsgUpdateConsumer
 {
