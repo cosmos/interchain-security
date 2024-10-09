@@ -222,8 +222,6 @@ func SetupForDeleteConsumerChain(t *testing.T, ctx sdk.Context,
 ) {
 	t.Helper()
 
-	SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{}, 1)
-
 	expectations := GetMocksForCreateConsumerClient(ctx, &mocks,
 		"chainID", clienttypes.NewHeight(4, 5))
 	expectations = append(expectations, GetMocksForSetConsumerChain(ctx, &mocks, "chainID")...)
@@ -241,7 +239,7 @@ func SetupForDeleteConsumerChain(t *testing.T, ctx sdk.Context,
 	// set the chain to initialized so that we can create a consumer client
 	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_INITIALIZED)
 
-	err = providerKeeper.CreateConsumerClient(ctx, consumerId)
+	err = providerKeeper.CreateConsumerClient(ctx, consumerId, []byte{})
 	require.NoError(t, err)
 	// set the mapping consumer ID <> client ID for the consumer chain
 	providerKeeper.SetConsumerClientId(ctx, consumerId, "clientID")

@@ -187,7 +187,8 @@ func TestOptInTopNValidators(t *testing.T) {
 	valDConsAddr, _ := valD.GetConsAddr()
 
 	// Start Test 1: opt in all validators with power >= 0
-	providerKeeper.OptInTopNValidators(ctx, CONSUMER_ID, []stakingtypes.Validator{valA, valB, valC, valD}, 0)
+	err := providerKeeper.OptInTopNValidators(ctx, CONSUMER_ID, []stakingtypes.Validator{valA, valB, valC, valD}, 0)
+	require.NoError(t, err)
 	expectedOptedInValidators := []providertypes.ProviderConsAddress{
 		providertypes.NewProviderConsAddress(valAConsAddr),
 		providertypes.NewProviderConsAddress(valBConsAddr),
@@ -216,7 +217,8 @@ func TestOptInTopNValidators(t *testing.T) {
 	// Start Test 2: opt in all validators with power >= 1
 	// We expect the same `expectedOptedInValidators` as when we opted in all validators with power >= 0 because the
 	// validators with the smallest power have power == 1
-	providerKeeper.OptInTopNValidators(ctx, CONSUMER_ID, []stakingtypes.Validator{valA, valB, valC, valD}, 0)
+	err = providerKeeper.OptInTopNValidators(ctx, CONSUMER_ID, []stakingtypes.Validator{valA, valB, valC, valD}, 0)
+	require.NoError(t, err)
 	actualOptedInValidators = providerKeeper.GetAllOptedIn(ctx, CONSUMER_ID)
 	sortUpdates(actualOptedInValidators)
 	require.Equal(t, expectedOptedInValidators, actualOptedInValidators)
@@ -227,7 +229,8 @@ func TestOptInTopNValidators(t *testing.T) {
 	providerKeeper.DeleteOptedIn(ctx, CONSUMER_ID, providertypes.NewProviderConsAddress(valDConsAddr))
 
 	// Start Test 3: opt in all validators with power >= 2 and hence we do not expect to opt in validator A
-	providerKeeper.OptInTopNValidators(ctx, CONSUMER_ID, []stakingtypes.Validator{valA, valB, valC, valD}, 2)
+	err = providerKeeper.OptInTopNValidators(ctx, CONSUMER_ID, []stakingtypes.Validator{valA, valB, valC, valD}, 2)
+	require.NoError(t, err)
 	expectedOptedInValidators = []providertypes.ProviderConsAddress{
 		providertypes.NewProviderConsAddress(valBConsAddr),
 		providertypes.NewProviderConsAddress(valCConsAddr),
@@ -246,7 +249,8 @@ func TestOptInTopNValidators(t *testing.T) {
 	providerKeeper.DeleteOptedIn(ctx, CONSUMER_ID, providertypes.NewProviderConsAddress(valDConsAddr))
 
 	// Start Test 4: opt in all validators with power >= 4 and hence we do not expect any opted-in validators
-	providerKeeper.OptInTopNValidators(ctx, CONSUMER_ID, []stakingtypes.Validator{valA, valB, valC, valD}, 4)
+	err = providerKeeper.OptInTopNValidators(ctx, CONSUMER_ID, []stakingtypes.Validator{valA, valB, valC, valD}, 4)
+	require.NoError(t, err)
 	require.Empty(t, providerKeeper.GetAllOptedIn(ctx, CONSUMER_ID))
 }
 

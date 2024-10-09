@@ -267,79 +267,81 @@ func (tr Chain) submitTextProposal(
 }
 
 type UpdateConsumerChainAction struct {
-	Chain               ChainID
-	From                ValidatorID
-	ConsumerChain       ChainID
-	NewOwner            string
+	Chain              ChainID
+	From               ValidatorID
+	ConsumerChain      ChainID
+	NewOwner           string
+	InitParams         *InitializationParameters
+	PowerShapingParams *PowerShapingParameters
+}
+
+type InitializationParameters struct {
 	InitialHeight       clienttypes.Height
 	SpawnTime           uint
 	DistributionChannel string
-	TopN                uint32
-	ValidatorsPowerCap  uint32
-	ValidatorSetCap     uint32
-	Allowlist           []string
-	Denylist            []string
-	MinStake            uint64
-	AllowInactiveVals   bool
+}
+
+type PowerShapingParameters struct {
+	TopN               uint32
+	ValidatorsPowerCap uint32
+	ValidatorSetCap    uint32
+	Allowlist          []string
+	Denylist           []string
+	MinStake           uint64
+	AllowInactiveVals  bool
 }
 
 func (tr Chain) updateConsumerChain(action UpdateConsumerChainAction, verbose bool) {
-	spawnTime := tr.testConfig.containerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
-	params := ccvtypes.DefaultParams()
-	initParams := types.ConsumerInitializationParameters{
-		InitialHeight: action.InitialHeight,
-		GenesisHash:   []byte("gen_hash"),
-		BinaryHash:    []byte("bin_hash"),
-		SpawnTime:     spawnTime,
 
-		UnbondingPeriod:                   params.UnbondingPeriod,
-		CcvTimeoutPeriod:                  params.CcvTimeoutPeriod,
-		TransferTimeoutPeriod:             params.TransferTimeoutPeriod,
-		ConsumerRedistributionFraction:    params.ConsumerRedistributionFraction,
-		BlocksPerDistributionTransmission: params.BlocksPerDistributionTransmission,
-		HistoricalEntries:                 params.HistoricalEntries,
-		DistributionTransmissionChannel:   action.DistributionChannel,
+	var initParams *types.ConsumerInitializationParameters
+	if action.InitParams != nil {
+		spawnTime := tr.testConfig.containerConfig.Now.Add(time.Duration(action.InitParams.SpawnTime) * time.Millisecond)
+		params := ccvtypes.DefaultParams()
+		initParams = &types.ConsumerInitializationParameters{
+			InitialHeight: action.InitParams.InitialHeight,
+			GenesisHash:   []byte("gen_hash"),
+			BinaryHash:    []byte("bin_hash"),
+			SpawnTime:     spawnTime,
+
+			UnbondingPeriod:                   params.UnbondingPeriod,
+			CcvTimeoutPeriod:                  params.CcvTimeoutPeriod,
+			TransferTimeoutPeriod:             params.TransferTimeoutPeriod,
+			ConsumerRedistributionFraction:    params.ConsumerRedistributionFraction,
+			BlocksPerDistributionTransmission: params.BlocksPerDistributionTransmission,
+			HistoricalEntries:                 params.HistoricalEntries,
+			DistributionTransmissionChannel:   action.InitParams.DistributionChannel,
+		}
 	}
-
 	powerShapingParams := types.PowerShapingParameters{
-		Top_N:              action.TopN,
-		ValidatorsPowerCap: action.ValidatorsPowerCap,
-		ValidatorSetCap:    action.ValidatorSetCap,
-		Allowlist:          action.Allowlist,
-		Denylist:           action.Denylist,
-		MinStake:           action.MinStake,
-		AllowInactiveVals:  action.AllowInactiveVals,
+		Top_N:              action.PowerShapingParams.TopN,
+		ValidatorsPowerCap: action.PowerShapingParams.ValidatorsPowerCap,
+		ValidatorSetCap:    action.PowerShapingParams.ValidatorSetCap,
+		Allowlist:          action.PowerShapingParams.Allowlist,
+		Denylist:           action.PowerShapingParams.Denylist,
+		MinStake:           action.PowerShapingParams.MinStake,
+		AllowInactiveVals:  action.PowerShapingParams.AllowInactiveVals,
 	}
 
 	consumerId := tr.testConfig.chainConfigs[action.ConsumerChain].ConsumerId
 	msg := types.MsgUpdateConsumer{
 		ConsumerId:               string(consumerId),
 		NewOwnerAddress:          action.NewOwner,
-		InitializationParameters: &initParams,
+		InitializationParameters: initParams,
 		PowerShapingParameters:   &powerShapingParams,
 	}
 	tr.UpdateConsumer(action.Chain, action.From, msg, verbose)
 }
 
 type CreateConsumerChainAction struct {
-	Chain               ChainID
-	From                ValidatorID
-	ConsumerChain       ChainID
-	InitialHeight       clienttypes.Height
-	SpawnTime           uint
-	DistributionChannel string
-	TopN                uint32
-	ValidatorsPowerCap  uint32
-	ValidatorSetCap     uint32
-	Allowlist           []string
-	Denylist            []string
-	MinStake            uint64
-	AllowInactiveVals   bool
+	Chain              ChainID
+	From               ValidatorID
+	ConsumerChain      ChainID
+	InitParams         *InitializationParameters
+	PowerShapingParams *PowerShapingParameters
 }
 
 // createConsumerChain creates and initializes a consumer chain
 func (tr Chain) createConsumerChain(action CreateConsumerChainAction, verbose bool) {
-	spawnTime := tr.testConfig.containerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
 	consumerChainCfg := tr.testConfig.chainConfigs[action.ConsumerChain]
 	providerChainCfg := tr.testConfig.chainConfigs[action.Chain]
 
@@ -347,30 +349,33 @@ func (tr Chain) createConsumerChain(action CreateConsumerChainAction, verbose bo
 		log.Fatalf("consumer chain already created for '%s'", action.ConsumerChain)
 	}
 
-	params := ccvtypes.DefaultParams()
-	initParams := types.ConsumerInitializationParameters{
-		InitialHeight: action.InitialHeight,
-		GenesisHash:   []byte("gen_hash"),
-		BinaryHash:    []byte("bin_hash"),
-		SpawnTime:     spawnTime,
+	var initParams *types.ConsumerInitializationParameters
+	if action.InitParams != nil {
+		spawnTime := tr.testConfig.containerConfig.Now.Add(time.Duration(action.InitParams.SpawnTime) * time.Millisecond)
+		params := ccvtypes.DefaultParams()
+		initParams = &types.ConsumerInitializationParameters{
+			InitialHeight: action.InitParams.InitialHeight,
+			GenesisHash:   []byte("gen_hash"),
+			BinaryHash:    []byte("bin_hash"),
+			SpawnTime:     spawnTime,
 
-		UnbondingPeriod:                   params.UnbondingPeriod,
-		CcvTimeoutPeriod:                  params.CcvTimeoutPeriod,
-		TransferTimeoutPeriod:             params.TransferTimeoutPeriod,
-		ConsumerRedistributionFraction:    params.ConsumerRedistributionFraction,
-		BlocksPerDistributionTransmission: params.BlocksPerDistributionTransmission,
-		HistoricalEntries:                 params.HistoricalEntries,
-		DistributionTransmissionChannel:   action.DistributionChannel,
+			UnbondingPeriod:                   params.UnbondingPeriod,
+			CcvTimeoutPeriod:                  params.CcvTimeoutPeriod,
+			TransferTimeoutPeriod:             params.TransferTimeoutPeriod,
+			ConsumerRedistributionFraction:    params.ConsumerRedistributionFraction,
+			BlocksPerDistributionTransmission: params.BlocksPerDistributionTransmission,
+			HistoricalEntries:                 params.HistoricalEntries,
+			DistributionTransmissionChannel:   action.InitParams.DistributionChannel,
+		}
 	}
-
-	powerShapingParams := types.PowerShapingParameters{
-		Top_N:              action.TopN,
-		ValidatorsPowerCap: action.ValidatorsPowerCap,
-		ValidatorSetCap:    action.ValidatorSetCap,
-		Allowlist:          action.Allowlist,
-		Denylist:           action.Denylist,
-		MinStake:           action.MinStake,
-		AllowInactiveVals:  action.AllowInactiveVals,
+	powerShapingParams := &types.PowerShapingParameters{
+		Top_N:              action.PowerShapingParams.TopN,
+		ValidatorsPowerCap: action.PowerShapingParams.ValidatorsPowerCap,
+		ValidatorSetCap:    action.PowerShapingParams.ValidatorSetCap,
+		Allowlist:          action.PowerShapingParams.Allowlist,
+		Denylist:           action.PowerShapingParams.Denylist,
+		MinStake:           action.PowerShapingParams.MinStake,
+		AllowInactiveVals:  action.PowerShapingParams.AllowInactiveVals,
 	}
 
 	metadata := types.ConsumerMetadata{
@@ -380,7 +385,7 @@ func (tr Chain) createConsumerChain(action CreateConsumerChainAction, verbose bo
 	}
 
 	// create consumer to get a consumer-id
-	consumerId := tr.CreateConsumer(providerChainCfg.ChainId, consumerChainCfg.ChainId, action.From, metadata, &initParams, &powerShapingParams)
+	consumerId := tr.CreateConsumer(providerChainCfg.ChainId, consumerChainCfg.ChainId, action.From, metadata, initParams, powerShapingParams)
 	if verbose {
 		fmt.Println("Created consumer chain", string(consumerChainCfg.ChainId), " with consumer-id", string(consumerId))
 	}
@@ -388,6 +393,58 @@ func (tr Chain) createConsumerChain(action CreateConsumerChainAction, verbose bo
 	// Set the new created consumer-id on the chain's config
 	consumerChainCfg.ConsumerId = consumerId
 	tr.testConfig.chainConfigs[action.ConsumerChain] = consumerChainCfg
+}
+
+type RemoveConsumerChainAction struct {
+	Chain         ChainID
+	From          ValidatorID
+	ConsumerChain ChainID
+}
+
+func (tr Chain) removeConsumerChain(action RemoveConsumerChainAction, verbose bool) {
+	consumerId := tr.testConfig.chainConfigs[action.ConsumerChain].ConsumerId
+	if consumerId == "" {
+		log.Fatal("failed removing consumer chain. no consumer-id found for chain: ",
+			action.ConsumerChain)
+	}
+
+	// Send consumer chain removal
+	cmd := tr.target.ExecCommand(
+		tr.testConfig.chainConfigs[action.Chain].BinaryName,
+		"tx", "provider", "remove-consumer", string(consumerId),
+		`--from`, `validator`+fmt.Sprint(action.From),
+		`--chain-id`, string(tr.testConfig.chainConfigs[action.Chain].ChainId),
+		`--home`, tr.getValidatorHome(action.Chain, action.From),
+		`--gas`, `900000`,
+		`--node`, tr.getValidatorNode(action.Chain, action.From),
+		`--keyring-backend`, `test`,
+		"--output", "json",
+		`-y`,
+	)
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Println("command failed:", cmd)
+		log.Fatalf("remove consumer failed error: %s, output: %s", err.Error(), string(bz))
+	}
+
+	// Check transaction
+	txResponse := &TxResponse{}
+	err = json.Unmarshal(bz, txResponse)
+	if err != nil {
+		log.Fatalf("unmarshalling tx response on remove-consumer: %s, json: %s", err.Error(), string(bz))
+	}
+
+	if txResponse.Code != 0 {
+		log.Fatalf("sending remove-consumer transaction failed with error code %d, Log:'%s'", txResponse.Code, txResponse.RawLog)
+	}
+
+	if verbose {
+		fmt.Println("running 'remove-consumer' returned: ", txResponse)
+	}
+
+	tr.waitBlocks(action.Chain, 2, 10*time.Second)
+
 }
 
 type SubmitConsumerAdditionProposalAction struct {
@@ -438,7 +495,7 @@ func (tr Chain) UpdateConsumer(providerChain ChainID, validator ValidatorID, upd
 	bz, err = cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println("command failed: ", cmd)
-		log.Fatal("update consumer failed error: %w, output: %s", err, string(bz))
+		log.Fatalf("update consumer failed error: %s, output: %s", err, string(bz))
 	}
 
 	// Check transaction
@@ -879,6 +936,7 @@ type SubmitConsumerModificationProposalAction struct {
 	Denylist           []string
 	AllowInactiveVals  bool
 	MinStake           uint64
+	NewOwner           string
 }
 
 func (tr Chain) submitConsumerModificationProposal(
@@ -895,8 +953,9 @@ func (tr Chain) submitConsumerModificationProposal(
 	authority := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
 
 	msg := types.MsgUpdateConsumer{
-		Owner:      authority,
-		ConsumerId: consumerId,
+		Owner:           authority,
+		ConsumerId:      consumerId,
+		NewOwnerAddress: action.NewOwner,
 		PowerShapingParameters: &types.PowerShapingParameters{
 			Top_N:              action.TopN,
 			ValidatorsPowerCap: action.ValidatorsPowerCap,
@@ -1976,12 +2035,11 @@ func (tr Chain) relayPacketsHermes(
 	action RelayPacketsAction,
 	verbose bool,
 ) {
-	// Because `.app_state.provider.params.blocks_per_epoch` is set to 3 in the E2E tests, we wait 4 blocks
+	// Because `.app_state.provider.params.blocks_per_epoch` is set to 3 in the E2E tests, we wait 3 blocks
 	// before relaying the packets to guarantee that at least one epoch passes and hence any `VSCPacket`s get
 	// queued and are subsequently relayed.
-	tr.waitBlocks(action.ChainA, 4, 90*time.Second)
-	tr.waitBlocks(action.ChainB, 4, 90*time.Second)
-
+	tr.waitBlocks(action.ChainA, 3, 90*time.Second)
+	tr.waitBlocks(action.ChainB, 3, 90*time.Second)
 	// hermes clear packets ibc0 transfer channel-13
 	cmd := tr.target.ExecCommand("hermes", "clear", "packets",
 		"--chain", string(tr.testConfig.chainConfigs[action.ChainA].ChainId),
@@ -2285,7 +2343,7 @@ func (tr Chain) invokeDowntimeSlash(action DowntimeSlashAction, verbose bool) {
 	// Bring validator down
 	tr.setValidatorDowntime(action.Chain, action.Validator, true, verbose)
 	// Wait appropriate amount of blocks for validator to be slashed
-	tr.waitBlocks(action.Chain, 11, 3*time.Minute)
+	tr.waitBlocks(action.Chain, 16, 3*time.Minute)
 	// Bring validator back up
 	tr.setValidatorDowntime(action.Chain, action.Validator, false, verbose)
 }
@@ -2478,14 +2536,14 @@ func (tr Chain) registerRepresentative(
 
 type SubmitChangeRewardDenomsProposalAction struct {
 	Chain   ChainID
-	Denom   string
+	Denoms  []string
 	Deposit uint
 	From    ValidatorID
 }
 
 func (tr Chain) submitChangeRewardDenomsProposal(action SubmitChangeRewardDenomsProposalAction, verbose bool) {
 	changeRewMsg := types.MsgChangeRewardDenoms{
-		DenomsToAdd:    []string{action.Denom},
+		DenomsToAdd:    action.Denoms,
 		DenomsToRemove: []string{"stake"},
 		Authority:      "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
 	}
@@ -2546,7 +2604,7 @@ func (tr Chain) submitChangeRewardDenomsLegacyProposal(action SubmitChangeReward
 		ChangeRewardDenomsProposal: types.ChangeRewardDenomsProposal{
 			Title:          "Change reward denoms",
 			Description:    "Change reward denoms",
-			DenomsToAdd:    []string{action.Denom},
+			DenomsToAdd:    action.Denoms,
 			DenomsToRemove: []string{"stake"},
 		},
 		Deposit: fmt.Sprint(action.Deposit) + `stake`,
@@ -2852,26 +2910,162 @@ func (tr Chain) GetPathNameForGorelayer(chainA, chainB ChainID) string {
 	return pathName
 }
 
-// Run an instance of the Hermes relayer using the "evidence" command,
-// which detects evidences committed to the blocks of a consumer chain.
+// detect evidences committed to the blocks of a consumer chain
+// either by running an instance of the Hermes relayer using the "evidence" command,
+// or by queyring manually the consumer chain.
 // Each infraction detected is reported to the provider chain using
 // either a SubmitConsumerDoubleVoting or a SubmitConsumerMisbehaviour message.
-type StartConsumerEvidenceDetectorAction struct {
-	Chain ChainID
+type DetectConsumerEvidenceAction struct {
+	Chain     ChainID
+	Submitter ValidatorID
 }
 
-func (tr Chain) startConsumerEvidenceDetector(
-	action StartConsumerEvidenceDetectorAction,
+func (tr Chain) detectConsumerEvidence(
+	action DetectConsumerEvidenceAction,
+	useRelayer bool,
 	verbose bool,
 ) {
 	chainConfig := tr.testConfig.chainConfigs[action.Chain]
-	// run in detached mode so it will keep running in the background
-	bz, err := tr.target.ExecDetachedCommand(
-		"hermes", "evidence", "--chain", string(chainConfig.ChainId)).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
+	// the Hermes relayer doesn't support evidence handling for Permissionless ICS yet
+	// TODO: @Simon refactor once https://github.com/informalsystems/hermes/pull/4182 is merged.
+	if useRelayer {
+		// run in detached mode so it will keep running in the background
+		bz, err := tr.target.ExecDetachedCommand(
+			"hermes", "evidence", "--chain", string(chainConfig.ChainId)).CombinedOutput()
+		if err != nil {
+			log.Fatal(err, "\n", string(bz))
+		}
+		tr.waitBlocks("provi", 10, 2*time.Minute)
+	} else {
+		// detect the evidence on the consumer chain
+		consumerBinaryName := tr.testConfig.chainConfigs[action.Chain].BinaryName
+
+		// get the infraction height by querying the SDK evidence module of the consumer
+		timeout := time.Now().Add(30 * time.Second)
+		infractionHeight := int64(0)
+		for {
+			cmd := tr.target.ExecCommand(
+				consumerBinaryName,
+				"query", "evidence", "list",
+				`--node`, tr.target.GetQueryNode(action.Chain),
+				`-o`, `json`,
+			)
+
+			if verbose {
+				fmt.Println("query evidence cmd:", cmd.String())
+			}
+
+			bz, err := cmd.CombinedOutput()
+			if err == nil {
+				evidence := gjson.Get(string(bz), "evidence")
+				// we only expect only one evidence
+				if len(evidence.Array()) == 1 {
+					infractionHeight = evidence.Array()[0].Get("value.height").Int()
+					break
+				}
+			}
+
+			if err != nil || time.Now().After(timeout) {
+				log.Print("Failed running command: ", cmd)
+				log.Fatal(err, "\n", string(bz))
+			}
+			time.Sleep(2 * time.Second)
+		}
+
+		// get the evidence data from the block
+		// note that the evidence is added to the next block after the infraction height
+		cmd := tr.target.ExecCommand(
+			consumerBinaryName,
+			"query", "block", "--type=height", strconv.Itoa(int(infractionHeight+1)),
+			`--node`, tr.target.GetQueryNode(action.Chain),
+			`-o`, `json`,
+		)
+
+		if verbose {
+			fmt.Println("query block for evidence cmd:", cmd.String())
+		}
+
+		bz, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Fatal(err, "\n", string(bz))
+		}
+
+		evidence := gjson.Get(string(bz), "evidence.evidence").Array()
+		if len(evidence) == 0 {
+			log.Fatal("expected at least one evidence in block but found zero")
+		}
+
+		if equivocation := evidence[0].Get("duplicate_vote_evidence"); equivocation.String() != "" {
+			// persist evidence in the json format
+			evidenceJson := equivocation.Raw
+			evidencePath := "/temp-evidence.json"
+			bz, err = tr.target.ExecCommand(
+				"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, evidenceJson, evidencePath),
+			).CombinedOutput()
+			if err != nil {
+				log.Fatal(err, "\n", string(bz))
+			}
+
+			// query IBC header at the infraction height
+			cmd = tr.target.ExecCommand(
+				consumerBinaryName,
+				"query", "ibc", "client", "header", "--height", strconv.Itoa(int(infractionHeight)),
+				`--node`, tr.target.GetQueryNode(action.Chain),
+				`-o`, `json`,
+			)
+
+			if verbose {
+				fmt.Println("query IBC header cmd:", cmd.String())
+			}
+
+			bz, err = cmd.CombinedOutput()
+			if err != nil {
+				log.Fatal(err, "\n", string(bz))
+			}
+
+			// persist IBC header in json format
+			headerPath := "/temp-header.json"
+			bz, err = tr.target.ExecCommand(
+				"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, string(bz), headerPath),
+			).CombinedOutput()
+			if err != nil {
+				log.Fatal(err, "\n", string(bz))
+			}
+
+			// submit consumer equivocation to provider
+			gas := "auto"
+			submitEquivocation := fmt.Sprintf(
+				`%s tx provider submit-consumer-double-voting %s %s %s --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
+				tr.testConfig.chainConfigs[ChainID("provi")].BinaryName,
+				string(tr.testConfig.chainConfigs[action.Chain].ConsumerId),
+				evidencePath,
+				headerPath,
+				action.Submitter,
+				tr.testConfig.chainConfigs[ChainID("provi")].ChainId,
+				tr.getValidatorHome(ChainID("provi"), action.Submitter),
+				tr.getValidatorNode(ChainID("provi"), action.Submitter),
+				gas,
+			)
+
+			cmd = tr.target.ExecCommand(
+				"/bin/bash", "-c",
+				submitEquivocation,
+			)
+
+			if verbose {
+				fmt.Println("submit consumer equivocation cmd:", cmd.String())
+			}
+
+			bz, err = cmd.CombinedOutput()
+			if err != nil {
+				log.Fatal(err, "\n", string(bz))
+			}
+		} else {
+			log.Fatal("invalid evidence type", evidence[0].String())
+		}
+
+		tr.waitBlocks("provi", 3, 1*time.Minute)
 	}
-	tr.waitBlocks("provi", 10, 2*time.Minute)
 }
 
 type OptInAction struct {
@@ -3114,4 +3308,96 @@ func (tr Commands) AssignConsumerPubKey(action e2e.AssignConsumerPubKeyAction, g
 	}
 
 	return cmd.CombinedOutput()
+}
+
+type CreateIbcClientAction struct {
+	ChainA ChainID
+	ChainB ChainID
+}
+
+func (tr Chain) createIbcClientHermes(
+	action CreateIbcClientAction,
+	verbose bool,
+) {
+	cmd := tr.target.ExecCommand("hermes",
+		"create", "client",
+		"--host-chain", string(tr.testConfig.chainConfigs[action.ChainA].ChainId),
+		"--reference-chain", string(tr.testConfig.chainConfigs[action.ChainB].ChainId),
+		"--trusting-period", "1200000s",
+	)
+
+	cmdReader, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+	cmd.Stderr = cmd.Stdout
+
+	if err := cmd.Start(); err != nil {
+		log.Fatal(err)
+	}
+
+	scanner := bufio.NewScanner(cmdReader)
+
+	for scanner.Scan() {
+		out := scanner.Text()
+		if verbose {
+			fmt.Println("createIbcClientHermes: " + out)
+		}
+		if out == done {
+			break
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+type TransferIbcTokenAction struct {
+	Chain   ChainID
+	DstAddr string
+	From    ValidatorID
+	Amount  uint
+	Channel uint
+	Memo    string
+}
+
+func (tr Chain) transferIbcToken(
+	action TransferIbcTokenAction,
+	verbose bool,
+) {
+	// Note: to get error response reported back from this command '--gas auto' needs to be set.
+	gas := "auto"
+
+	transferCmd := fmt.Sprintf(
+		`%s tx ibc-transfer transfer transfer \
+%s %s %s --memo %q --from validator%s --chain-id %s \
+--home %s --node %s --gas %s --keyring-backend test -y -o json`,
+		tr.testConfig.chainConfigs[action.Chain].BinaryName,
+		"channel-"+fmt.Sprint(action.Channel),
+		action.DstAddr,
+		fmt.Sprint(action.Amount)+`stake`,
+		action.Memo,
+		action.From,
+		string(tr.testConfig.chainConfigs[action.Chain].ChainId),
+		tr.getValidatorHome(action.Chain, action.From),
+		tr.getValidatorNode(action.Chain, action.From),
+		gas,
+	)
+
+	cmd := tr.target.ExecCommand(
+		"/bin/bash", "-c",
+		transferCmd,
+	)
+
+	if verbose {
+		fmt.Println("transferIbcToken cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatalf("unexpected error during IBC token transfer: %s: %s", string(bz), err)
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.Chain, 2, 30*time.Second)
 }

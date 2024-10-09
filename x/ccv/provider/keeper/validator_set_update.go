@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -254,4 +255,62 @@ func (k Keeper) GetLastBondedValidators(ctx sdk.Context) ([]stakingtypes.Validat
 func (k Keeper) GetLastProviderConsensusActiveValidators(ctx sdk.Context) ([]stakingtypes.Validator, error) {
 	maxVals := k.GetMaxProviderConsensusValidators(ctx)
 	return ccv.GetLastBondedValidatorsUtil(ctx, k.stakingKeeper, uint32(maxVals))
+}
+
+// ComputeConsumerNextValSet computes the consumer next validator set and returns
+// the validator updates to be sent to the consumer chain.
+// For TopN consumer chains, it automatically opts in all validators that
+// belong to the top N of the active validators.
+//
+// TODO add unit test for ComputeConsumerNextValSet
+func (k Keeper) ComputeConsumerNextValSet(
+	ctx sdk.Context,
+	bondedValidators []stakingtypes.Validator,
+	activeValidators []stakingtypes.Validator,
+	consumerId string,
+	currentConsumerValSet []types.ConsensusValidator,
+) ([]abci.ValidatorUpdate, error) {
+	powerShapingParameters, err := k.GetConsumerPowerShapingParameters(ctx, consumerId)
+	if err != nil {
+		return []abci.ValidatorUpdate{},
+			errorsmod.Wrapf(ccv.ErrInvalidConsumerState, "getting power shaping parameters: %s", err.Error())
+	}
+
+	minPower := int64(0)
+	if powerShapingParameters.Top_N > 0 {
+		minPower, err = k.ComputeMinPowerInTopN(ctx, activeValidators, powerShapingParameters.Top_N)
+		if err != nil {
+			return []abci.ValidatorUpdate{},
+				fmt.Errorf("computing min power to opt in, consumerId(%s): %w", consumerId, err)
+		}
+
+		// set the minimal power of validators in the top N in the store
+		k.SetMinimumPowerInTopN(ctx, consumerId, minPower)
+
+		// in a Top-N chain, we automatically opt in all validators that belong to the top N
+		// of the active validators
+		err = k.OptInTopNValidators(ctx, consumerId, activeValidators, minPower)
+		if err != nil {
+			return []abci.ValidatorUpdate{},
+				fmt.Errorf("opting in topN validators, consumerId(%s), minPower(%d): %w", consumerId, minPower, err)
+		}
+	}
+
+	// need to use the bondedValidators, not activeValidators, here since the chain might be opt-in and allow inactive vals
+	nextValidators, err := k.ComputeNextValidators(ctx, consumerId, bondedValidators, powerShapingParameters, minPower)
+	if err != nil {
+		return []abci.ValidatorUpdate{},
+			fmt.Errorf("computing next validators, consumerId(%s), minPower(%d): %w", consumerId, minPower, err)
+	}
+
+	err = k.SetConsumerValSet(ctx, consumerId, nextValidators)
+	if err != nil {
+		return []abci.ValidatorUpdate{},
+			fmt.Errorf("setting consumer validator set, consumerId(%s): %w", consumerId, err)
+	}
+
+	// get the initial updates with the latest set consumer public keys
+	valUpdates := DiffValidators(currentConsumerValSet, nextValidators)
+
+	return valUpdates, nil
 }

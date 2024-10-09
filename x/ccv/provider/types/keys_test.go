@@ -110,7 +110,8 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, byte(37), providertypes.DenylistKeyPrefix())
 	i++
-	require.Equal(t, byte(38), providertypes.ConsumerRewardsAllocationKey("13")[0])
+	// DEPRECATED
+	//require.Equal(t, byte(38), providertypes.ConsumerRewardsAllocationKey("13")[0])
 	i++
 	require.Equal(t, byte(39), providertypes.ConsumerCommissionRateKeyPrefix())
 	i++
@@ -141,6 +142,10 @@ func TestPreserveBytePrefix(t *testing.T) {
 	require.Equal(t, byte(52), providertypes.RemovalTimeToConsumerIdsKeyPrefix())
 	i++
 	require.Equal(t, byte(53), providertypes.ClientIdToConsumerIdKey("clientId")[0])
+	i++
+	require.Equal(t, byte(54), providertypes.ConsumerIdToAllowlistedRewardDenomKey("13")[0])
+	i++
+	require.Equal(t, byte(55), providertypes.ConsumerRewardsAllocationByDenomKey("13", "denom")[0])
 	i++
 
 	prefixes := providertypes.GetAllKeyPrefixes()
@@ -194,7 +199,6 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.AllowlistKey("13", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.DenylistKey("13", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.OptedInKey("13", providertypes.NewProviderConsAddress([]byte{0x05})),
-		providertypes.ConsumerRewardsAllocationKey("13"),
 		providertypes.ConsumerCommissionRateKey("13", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.MinimumPowerInTopNKey("13"),
 		providertypes.ConsumerAddrsToPruneV2Key("13", time.Time{}),
@@ -210,6 +214,8 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.SpawnTimeToConsumerIdsKey(time.Time{}),
 		providertypes.RemovalTimeToConsumerIdsKey(time.Time{}),
 		providertypes.ClientIdToConsumerIdKey("clientId"),
+		providertypes.ConsumerIdToAllowlistedRewardDenomKey("13"),
+		providertypes.ConsumerRewardsAllocationByDenomKey("13", "denom"),
 	}
 }
 

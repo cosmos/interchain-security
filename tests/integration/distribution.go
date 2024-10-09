@@ -114,21 +114,37 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
 	s.Require().Equal(rewardCoins.AmountOf(rewardsIBCdenom), providerExpRewardsAmount)
 
-	// Set the consumer reward denom. This would be done by a governance proposal in prod.
+	// increase the block height so validators are eligible for consumer rewards (see `IsEligibleForConsumerRewards`)
+	currentProviderBlockHeight := s.providerCtx().BlockHeight()
+	numberOfBlocksToStartReceivingRewards := providerKeeper.GetNumberOfEpochsToStartReceivingRewards(s.providerCtx()) * providerKeeper.GetBlocksPerEpoch(s.providerCtx())
+	for s.providerCtx().BlockHeight() <= currentProviderBlockHeight+numberOfBlocksToStartReceivingRewards {
+		s.providerChain.NextBlock()
+	}
+
+	// Allowlist the consumer reward denom. This would be done by a governance proposal in prod.
 	providerKeeper.SetConsumerRewardDenom(s.providerCtx(), rewardsIBCdenom)
 
-	// Refill the consumer fee pool
-	err = consumerBankKeeper.SendCoinsFromAccountToModule(
-		s.consumerCtx(),
-		s.consumerChain.SenderAccount.GetAddress(),
-		authtypes.FeeCollectorName,
-		fees,
-	)
+	// Even though the reward denom is allowlisted, the rewards are not yet distributed because `BeginBlockRD` has not executed.
+	// and hence the distribution has not taken place. Because of this, all the rewards are still stored in consumer rewards allocation by denom.
+	rewardsAlloc, err := providerKeeper.GetConsumerRewardsAllocationByDenom(s.providerCtx(), s.getFirstBundle().ConsumerId, rewardsIBCdenom)
 	s.Require().NoError(err)
+	remainingAlloc := rewardsAlloc.Rewards.AmountOf(rewardsIBCdenom)
+	s.Require().Equal(
+		math.LegacyNewDecFromInt(providerExpRewardsAmount),
+		rewardsAlloc.Rewards.AmountOf(rewardsIBCdenom),
+	)
+	s.Require().False(remainingAlloc.LTE(math.LegacyOneDec()))
 
-	// Pass two blocks
-	s.consumerChain.NextBlock()
-	s.consumerChain.NextBlock()
+	// Move by one block to execute `BeginBlockRD`.
+	s.providerChain.NextBlock()
+
+	// Consumer allocations are now distributed between the validators and the community pool.
+	// The decimals resulting from the distribution are expected to remain in the consumer allocations
+	// and hence the check that remainingAlloc is less than one.
+	rewardsAlloc, err = providerKeeper.GetConsumerRewardsAllocationByDenom(s.providerCtx(), s.getFirstBundle().ConsumerId, rewardsIBCdenom)
+	s.Require().NoError(err)
+	remainingAlloc = rewardsAlloc.Rewards.AmountOf(rewardsIBCdenom)
+	s.Require().True(remainingAlloc.LTE(math.LegacyOneDec()))
 
 	// Save the consumer validators total outstanding rewards on the provider
 	consumerValsOutstandingRewardsFunc := func(ctx sdk.Context) sdk.DecCoins {
@@ -144,45 +160,17 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 			valReward, _ := providerDistributionKeeper.GetValidatorOutstandingRewards(ctx, valAddr)
 			totalRewards = totalRewards.Add(valReward.Rewards...)
 		}
+
 		return totalRewards
 	}
-	consuValsRewards := consumerValsOutstandingRewardsFunc(s.providerCtx())
 
-	// increase the block height so validators are eligible for consumer rewards (see `IsEligibleForConsumerRewards`)
-	numberOfBlocksToStartReceivingRewards := providerKeeper.GetNumberOfEpochsToStartReceivingRewards(s.providerCtx()) * providerKeeper.GetBlocksPerEpoch(s.providerCtx())
-
-	for s.providerCtx().BlockHeight() <= numberOfBlocksToStartReceivingRewards {
-		s.providerChain.NextBlock()
-	}
-
-	// Transfer rewards from consumer to provider and distribute rewards to
-	// validators and community pool by calling BeginBlockRD
-	relayAllCommittedPackets(
-		s,
-		s.consumerChain,
-		s.transferPath,
-		transfertypes.PortID,
-		s.transferPath.EndpointA.ChannelID,
-		1,
-	)
-
-	// Consumer allocations are distributed between the validators and the community pool.
-	// The decimals resulting from the distribution are expected to remain in the consumer allocations.
-	rewardsAlloc := providerKeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.getFirstBundle().ConsumerId)
-	remainingAlloc := rewardsAlloc.Rewards.AmountOf(rewardsIBCdenom)
-	s.Require().True(remainingAlloc.LTE(math.LegacyOneDec()))
-
-	// Check that the reward pool still holds the coins from the first transfer
-	// which were never allocated since they were not whitelisted
-	// plus the remaining decimals from the second transfer.
+	// Check that the reward pool does not hold the coins from the transfer because
+	// after the coin got allowlisted, all coins of this denom were distributed.
 	rewardCoins = providerBankKeeper.GetAllBalances(s.providerCtx(), rewardPool)
-	s.Require().Equal(
-		math.LegacyNewDecFromInt(rewardCoins.AmountOf(rewardsIBCdenom)),
-		math.LegacyNewDecFromInt(providerExpRewardsAmount).Add(remainingAlloc),
-	)
+	s.Require().True(rewardCoins.AmountOf(rewardsIBCdenom).LTE(math.NewInt(1)))
 
 	// Check that the distribution module account balance is equal to the consumer rewards
-	consuValsRewardsReceived := consumerValsOutstandingRewardsFunc(s.providerCtx()).Sub(consuValsRewards)
+	consuValsRewardsReceived := consumerValsOutstandingRewardsFunc(s.providerCtx())
 	distrAcct := providerDistributionKeeper.GetDistributionAccount(s.providerCtx())
 	distrAcctBalance := providerBankKeeper.GetAllBalances(s.providerCtx(), distrAcct.GetAddress())
 
@@ -596,7 +584,7 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 		{
 			"IBC Transfer coin denom isn't registered",
 			func(ctx sdk.Context, keeper *providerkeeper.Keeper, bankKeeper icstestingutils.TestBankKeeper) {},
-			false,
+			true, // even if the denom is not registered/allowlisted, the rewards are still allocated by denom
 			false,
 		},
 		{
@@ -626,9 +614,10 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 					sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(100_000))),
 				)
 				// update consumer allocation
-				keeper.SetConsumerRewardsAllocation(
+				keeper.SetConsumerRewardsAllocationByDenom(
 					ctx,
 					s.getFirstBundle().ConsumerId,
+					getIBCDenom(packet.DestinationPort, packet.DestinationChannel),
 					providertypes.ConsumerRewardsAllocation{
 						Rewards: sdk.NewDecCoins(sdk.NewDecCoin(sdk.DefaultBondDenom, math.NewInt(100_000))),
 					},
@@ -695,7 +684,9 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 			rewardsPoolBalance := bankKeeper.GetAllBalances(s.providerCtx(), sdk.MustAccAddressFromBech32(data.Receiver))
 
 			// save the consumer's rewards allocated
-			consumerRewardsAllocations := providerKeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.getFirstBundle().ConsumerId)
+			ibcDenom := getIBCDenom(packet.DestinationPort, packet.DestinationChannel)
+			consumerRewardsAllocations, err := providerKeeper.GetConsumerRewardsAllocationByDenom(s.providerCtx(), s.getFirstBundle().ConsumerId, ibcDenom)
+			s.Require().NoError(err)
 
 			// execute middleware OnRecvPacket logic
 			ack := cbs.OnRecvPacket(s.providerCtx(), packet, sdk.AccAddress{})
@@ -703,14 +694,15 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 			// compute expected rewards with provider denom
 			expRewards := sdk.Coin{
 				Amount: amount,
-				Denom:  getIBCDenom(packet.DestinationPort, packet.DestinationChannel),
+				Denom:  ibcDenom,
 			}
 
 			// compute the balance and allocation difference
 			rewardsTransferred := bankKeeper.GetAllBalances(s.providerCtx(), sdk.MustAccAddressFromBech32(data.Receiver)).
 				Sub(rewardsPoolBalance...)
-			rewardsAllocated := providerKeeper.GetConsumerRewardsAllocation(s.providerCtx(), s.getFirstBundle().ConsumerId).
-				Rewards.Sub(consumerRewardsAllocations.Rewards)
+			rewardsAllocatedByDenom, err := providerKeeper.GetConsumerRewardsAllocationByDenom(s.providerCtx(), s.getFirstBundle().ConsumerId, ibcDenom)
+			s.Require().NoError(err)
+			rewardsAllocated := rewardsAllocatedByDenom.Rewards.Sub(consumerRewardsAllocations.Rewards)
 
 			if !tc.expErr {
 				s.Require().True(ack.Success())
@@ -769,13 +761,18 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 		totalRewards,
 	)
 
+	// Allowlist a reward denom that the allocated rewards have
+	ibcDenom := "ibc/somedenom"
+	providerKeeper.SetConsumerRewardDenom(providerCtx, ibcDenom)
+
 	// Allocate rewards evenly between consumers
 	rewardsPerChain := totalRewards.QuoInt(math.NewInt(int64(len(s.consumerBundles))))
 	for consumerId := range s.consumerBundles {
 		// update consumer allocation
-		providerKeeper.SetConsumerRewardsAllocation(
+		providerKeeper.SetConsumerRewardsAllocationByDenom(
 			providerCtx,
 			consumerId,
+			ibcDenom,
 			providertypes.ConsumerRewardsAllocation{
 				Rewards: sdk.NewDecCoinsFromCoins(rewardsPerChain...),
 			},
@@ -829,7 +826,9 @@ func (s *CCVTestSuite) TestAllocateTokens() {
 	// check that the total expected rewards are transferred to the distribution module account
 
 	// store the decimal remainders in the consumer reward allocations
-	allocRemainderPerChain := providerKeeper.GetConsumerRewardsAllocation(providerCtx, s.getFirstBundle().ConsumerId).Rewards
+	allocRemainderPerChainRes, err := providerKeeper.GetConsumerRewardsAllocationByDenom(providerCtx, s.getFirstBundle().ConsumerId, ibcDenom)
+	s.Require().NoError(err)
+	allocRemainderPerChain := allocRemainderPerChainRes.Rewards
 
 	// compute the total rewards distributed to the distribution module balance (validator outstanding rewards + community pool tax),
 	totalRewardsDistributed := sdk.NewDecCoinsFromCoins(totalRewards...).Sub(allocRemainderPerChain.MulDec(math.LegacyNewDec(int64(consNum))))
@@ -953,14 +952,14 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidators() {
 			}
 
 			// allocate tokens
-			res := providerKeeper.AllocateTokensToConsumerValidators(
+			err = providerKeeper.AllocateTokensToConsumerValidators(
 				ctx,
 				consumerId,
 				tc.tokens,
 			)
 
-			// check that the expected result is returned
-			s.Require().Equal(tc.expAllocated, res)
+			// check that no error is returned
+			s.Require().NoError(err)
 
 			if !tc.expAllocated.Empty() {
 				// rewards are expected to be allocated evenly between validators
@@ -1076,14 +1075,14 @@ func (s *CCVTestSuite) TestAllocateTokensToConsumerValidatorsWithDifferentValida
 	}
 
 	// allocate tokens
-	res := providerKeeper.AllocateTokensToConsumerValidators(
+	err = providerKeeper.AllocateTokensToConsumerValidators(
 		ctx,
 		consumerId,
 		tokens,
 	)
 
 	// check that the expected result is returned
-	s.Require().Equal(expAllocated, res)
+	s.Require().NoError(err)
 
 	// rewards are expected to be allocated evenly between validators 3 and 4
 	rewardsPerVal := expAllocated.QuoDec(math.LegacyNewDec(int64(2)))

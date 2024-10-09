@@ -449,11 +449,34 @@ message PowerShapingParameters {
   // have to validate the proposed consumer chain. top_N can either be 0 or any value in [50, 100].
   // A chain can join with top_N == 0 as an Opt In chain, or with top_N ∈ [50, 100] as a Top N chain.
   uint32 top_N = 1;
-  // Corresponds to the maximum power (percentage-wise) a validator can have on the consumer chain. For instance, if
-  // `validators_power_cap` is set to 32, it means that no validator can have more than 32% of the voting power on the
-  // consumer chain. Note that this might not be feasible. For example, think of a consumer chain with only
-  // 5 validators and with `validators_power_cap` set to 10%. In such a scenario, at least one validator would need
-  // to have more than 20% of the total voting power. Therefore, `validators_power_cap` operates on a best-effort basis.
+  // `validators_power_cap` corresponds to the maximum power (percentage-wise) a validator can have on the consumer chain.
+  // For instance, if `validators_power_cap` is set to 32, no validator can have more than 32% of the total voting power of the
+  // consumer chain. The power cap is intended as a safeguard against a validator having too much power on the consumer
+  // chain and hence "taking over" the consumer chain.
+  //
+  // To respect this power cap, the voting powers of the validators that run the consumer chain are decremented or
+  // incremented accordingly. It is important to note that the voting powers of validators on the provider do **not** change.
+  // For example, assume that the provider chain has among others, validators `A`, `B`, `C`, and `D` with voting powers
+  // 100, 1, 1, 1 respectively. Assume that only those 4 validators opt in on a consumer chain. Without a power cap set,
+  // validator `A` would have 100 / (100 + 1 + 1 + 1) = ~97% of the total voting power on the consumer chain, while
+  // validators `B`, `C`, and `D` would have 1 /(100 + 1 + 1 + 1) = ~1% of the total voting power on the consumer chain.
+  // If `validators_power_cap` is set to 30%, then the voting power of `A` would be reduced from 100 to 30 on the consumer
+  // chain, the voting power of `B` would be increased from 1 to 25, and the power of `C` and `D` would be increased from
+  // 1 to 24. After those modifications, `A` would have 30 / (30 + 25 + 24 + 24) = ~29% of the total voting power of the
+  // consumer chain, `B` would have 25 / (30 + 25 + 24 + 24) = ~25%, and `C` and `D` would both have 24 / (30 + 25 + 24 + 24) = ~23%.
+  // Naturally, there are many ways to change the voting powers of validators to respect the power cap, and ICS chooses
+  // one of them (see the `NoMoreThanPercentOfTheSum` function).
+  //
+  // Note that respecting `validators_power_cap` might NOT always be possible. For example, if we have a consumer
+  // chain with only 5 validators and `validators_power_cap` is set to 10%, then it is not possible to respect the
+  // `validators_power_cap`. If the voting power of each validator is capped to a maximum of 10% of the total consumer
+  // chain's voting power, then the total voting power of the consumer chain would add up to 50% which obviously does not
+  // make sense (percentages should add up to 100%). In cases where it is not feasible to respect the power cap, all
+  // validators on the consumer chain will have equal voting power in order to minimize the power of a single validator.
+  // Thus, in the example of 5 validators and a `validators_power_cap` set to 10%, all validators would end up having 20%
+  // of the total voting power on the consumer chain. Therefore, `validators_power_cap` operates on a best-effort basis.
+  // For more information on the power cap and other power-shaping parameters, please refer to the ICS docs and
+  // specifically `interchain-security/docs/docs/features/power-shaping.md`.
   uint32 validators_power_cap = 2;
   // Corresponds to the maximum number of validators that can validate a consumer chain.
   // Only applicable to Opt In chains. Setting `validator_set_cap` on a Top N chain is a no-op.
@@ -492,3 +515,6 @@ enum ConsumerPhase {
   // DELETED defines the phase in which the state of a stopped chain has been deleted.
   CONSUMER_PHASE_DELETED = 5;
 }
+
+// AllowlistedRewardDenoms corresponds to the denoms allowlisted by a specific consumer id
+message AllowlistedRewardDenoms { repeated string denoms = 1; }

@@ -30,8 +30,8 @@ func (k Keeper) QueryConsumerGenesis(c context.Context, req *types.QueryConsumer
 	}
 
 	consumerId := req.ConsumerId
-	if err := types.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
+	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	gen, ok := k.GetConsumerGenesis(ctx, consumerId)
@@ -114,22 +114,31 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		strDenylist[i] = addr.String()
 	}
 
-	metadata, _ := k.GetConsumerMetadata(ctx, consumerId)
+	metadata, err := k.GetConsumerMetadata(ctx, consumerId)
+	if err != nil {
+		return types.Chain{}, fmt.Errorf("cannot find metadata (%s): %s", consumerId, err.Error())
+	}
+
+	allowlistedRewardDenoms, err := k.GetAllowlistedRewardDenoms(ctx, consumerId)
+	if err != nil {
+		return types.Chain{}, fmt.Errorf("cannot find allowlisted reward denoms (%s): %s", consumerId, err.Error())
+	}
 
 	return types.Chain{
-		ChainId:            chainID,
-		ClientId:           clientID,
-		Top_N:              powerShapingParameters.Top_N,
-		MinPowerInTop_N:    minPowerInTopN,
-		ValidatorSetCap:    powerShapingParameters.ValidatorSetCap,
-		ValidatorsPowerCap: powerShapingParameters.ValidatorsPowerCap,
-		Allowlist:          strAllowlist,
-		Denylist:           strDenylist,
-		Phase:              k.GetConsumerPhase(ctx, consumerId).String(),
-		Metadata:           metadata,
-		AllowInactiveVals:  powerShapingParameters.AllowInactiveVals,
-		MinStake:           powerShapingParameters.MinStake,
-		ConsumerId:         consumerId,
+		ChainId:                 chainID,
+		ClientId:                clientID,
+		Top_N:                   powerShapingParameters.Top_N,
+		MinPowerInTop_N:         minPowerInTopN,
+		ValidatorSetCap:         powerShapingParameters.ValidatorSetCap,
+		ValidatorsPowerCap:      powerShapingParameters.ValidatorsPowerCap,
+		Allowlist:               strAllowlist,
+		Denylist:                strDenylist,
+		Phase:                   k.GetConsumerPhase(ctx, consumerId).String(),
+		Metadata:                metadata,
+		AllowInactiveVals:       powerShapingParameters.AllowInactiveVals,
+		MinStake:                powerShapingParameters.MinStake,
+		ConsumerId:              consumerId,
+		AllowlistedRewardDenoms: &types.AllowlistedRewardDenoms{Denoms: allowlistedRewardDenoms},
 	}, nil
 }
 
@@ -141,8 +150,8 @@ func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.Que
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	consumerId := req.ConsumerId
-	if err := types.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
+	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	providerAddrTmp, err := sdk.ConsAddressFromBech32(req.ProviderAddress)
@@ -230,8 +239,8 @@ func (k Keeper) QueryAllPairsValConsAddrByConsumer(
 	}
 
 	consumerId := req.ConsumerId
-	if err := types.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
+	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	// list of pairs valconsensus addr <providerValConAddrs : consumerValConAddrs>
@@ -275,8 +284,8 @@ func (k Keeper) QueryConsumerChainOptedInValidators(goCtx context.Context, req *
 	}
 
 	consumerId := req.ConsumerId
-	if err := types.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
+	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	optedInVals := []string{}
@@ -302,8 +311,8 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 	}
 
 	consumerId := req.ConsumerId
-	if err := types.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
+	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -448,6 +457,11 @@ func (k Keeper) hasToValidate(
 	provAddr types.ProviderConsAddress,
 	consumerId string,
 ) (bool, error) {
+	// only ask validators to validate active chains
+	if !k.IsConsumerActive(ctx, consumerId) {
+		return false, nil
+	}
+
 	// if the validator was sent as part of the packet in the last epoch, it has to validate
 	if k.IsConsumerValidator(ctx, consumerId, provAddr) {
 		return true, nil
@@ -502,8 +516,8 @@ func (k Keeper) QueryValidatorConsumerCommissionRate(goCtx context.Context, req 
 	}
 
 	consumerId := req.ConsumerId
-	if err := types.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
+	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	consAddr, err := sdk.ConsAddressFromBech32(req.ProviderAddress)
@@ -564,8 +578,8 @@ func (k Keeper) QueryConsumerChain(goCtx context.Context, req *types.QueryConsum
 	}
 
 	consumerId := req.ConsumerId
-	if err := types.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, errorsmod.Wrap(types.ErrInvalidConsumerId, consumerId).Error())
+	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
 

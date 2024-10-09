@@ -33,6 +33,10 @@ const (
 	// This address receives rewards from consumer chains
 	ConsumerRewardsPool = "consumer_rewards_pool"
 
+	// MaxAllowlistedRewardDenomsPerChain corresponds to the maximum number of reward denoms
+	// a consumer chain can allowlist
+	MaxAllowlistedRewardDenomsPerChain = 3
+
 	// Names for the store keys.
 	// Used for storing the byte prefixes in the constant map.
 	// See getKeyPrefixes().
@@ -115,7 +119,7 @@ const (
 
 	DenylistKeyName = "DenylistKey"
 
-	ConsumerRewardsAllocationKeyName = "ConsumerRewardsAllocationKey"
+	DeprecatedConsumerRewardsAllocationKeyName = "DeprecatedConsumerRewardsAllocationKey"
 
 	ConsumerCommissionRateKeyName = "ConsumerCommissionRateKey"
 
@@ -146,12 +150,16 @@ const (
 	RemovalTimeToConsumerIdsKeyName = "RemovalTimeToConsumerIdsKeyName"
 
 	ClientIdToConsumerIdKeyName = "ClientIdToConsumerIdKey"
+
+	ConsumerIdToAllowlistedRewardDenomKeyName = "ConsumerIdToAllowlistedRewardDenomKey"
+
+	ConsumerRewardsAllocationByDenomKeyName = "ConsumerRewardsAllocationByDenomKey"
 )
 
 // getKeyPrefixes returns a constant map of all the byte prefixes for existing keys
 func getKeyPrefixes() map[string]byte {
 	return map[string]byte{
-		// ParametersKey is the is the key for storing provider's parameters.
+		// ParametersKey is the key for storing provider's parameters.
 		// note that this was set to the max uint8 type value 0xFF in order to protect
 		// from using the ICS v5.0.0 provider module by mistake
 		ParametersKeyName: byte(0xFF),
@@ -323,7 +331,8 @@ func getKeyPrefixes() map[string]byte {
 
 		// ConsumerRewardsAllocationKey is the key for storing for each consumer the ICS rewards
 		// allocated to the consumer rewards pool
-		ConsumerRewardsAllocationKeyName: 38,
+		// [DEPRECATED]
+		DeprecatedConsumerRewardsAllocationKeyName: 38,
 
 		// ConsumerCommissionRateKey is the key for storing the commission rate
 		// per validator per consumer chain
@@ -337,7 +346,7 @@ func getKeyPrefixes() map[string]byte {
 		// consumer validators addresses that need to be pruned.
 		ConsumerAddrsToPruneV2KeyName: 41,
 
-		// LastProviderConsensusValsKey is the byte prefix for storing the last validator set
+		// LastProviderConsensusValsKey is the key for storing the last validator set
 		// sent to the consensus engine of the provider chain
 		LastProviderConsensusValsKeyName: 42,
 
@@ -375,6 +384,12 @@ func getKeyPrefixes() map[string]byte {
 
 		// ClientIdToConsumerIdKeyName is the key for storing the consumer id for the given client id
 		ClientIdToConsumerIdKeyName: 53,
+
+		// ConsumerIdToAllowlistedRewardDenomKeyName is the key for storing the allowlisted reward denom for the given consumer id
+		ConsumerIdToAllowlistedRewardDenomKeyName: 54,
+
+		// ConsumerRewardsAllocationByDenomKeyName is the key for storing the consumer rewards for a specific consumer chain and denom
+		ConsumerRewardsAllocationByDenomKeyName: 55,
 
 		// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO TestPreserveBytePrefix() IN keys_test.go
 	}
@@ -592,11 +607,6 @@ func OptedInKey(consumerId string, providerAddr ProviderConsAddress) []byte {
 	return StringIdAndConsAddrKey(OptedInKeyPrefix(), consumerId, providerAddr.ToSdkConsAddr())
 }
 
-// ConsumerRewardsAllocationKey returns the key used to store the ICS rewards per consumer chain
-func ConsumerRewardsAllocationKey(consumerId string) []byte {
-	return append([]byte{mustGetKeyPrefix(ConsumerRewardsAllocationKeyName)}, []byte(consumerId)...)
-}
-
 // ConsumerCommissionRateKeyPrefix returns the key prefix for storing the commission rate per validator per consumer chain.
 func ConsumerCommissionRateKeyPrefix() byte {
 	return mustGetKeyPrefix(ConsumerCommissionRateKeyName)
@@ -752,6 +762,26 @@ func ClientIdToConsumerIdKey(clientId string) []byte {
 		// Append the client id
 		[]byte(clientId),
 	)
+}
+
+// ConsumerIdToAllowlistedRewardDenomKeyPrefix returns the key prefix for storing the allowlisted reward denom that corresponds to this consumer id
+func ConsumerIdToAllowlistedRewardDenomKeyPrefix() byte {
+	return mustGetKeyPrefix(ConsumerIdToAllowlistedRewardDenomKeyName)
+}
+
+// ConsumerIdToAllowlistedRewardDenomKey returns the key used to store the allowlisted reward denom that corresponds to this consumer id
+func ConsumerIdToAllowlistedRewardDenomKey(consumerId string) []byte {
+	return StringIdWithLenKey(ConsumerIdToAllowlistedRewardDenomKeyPrefix(), consumerId)
+}
+
+// ConsumerRewardsAllocationByDenomKeyPrefix returns the key prefix for storing the allowlisted reward denom that corresponds to this consumer id
+func ConsumerRewardsAllocationByDenomKeyPrefix() byte {
+	return mustGetKeyPrefix(ConsumerRewardsAllocationByDenomKeyName)
+}
+
+// ConsumerRewardsAllocationByDenomKey returns the key used to store the ICS rewards per consumer chain
+func ConsumerRewardsAllocationByDenomKey(consumerId string, denom string) []byte {
+	return append(StringIdWithLenKey(ConsumerRewardsAllocationByDenomKeyPrefix(), consumerId), []byte(denom)...)
 }
 
 // NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go

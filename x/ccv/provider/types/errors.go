@@ -8,7 +8,6 @@ import (
 var (
 	ErrUnknownConsumerId                       = errorsmod.Register(ModuleName, 3, "no consumer chain with this consumer id")
 	ErrUnknownConsumerChannelId                = errorsmod.Register(ModuleName, 4, "no consumer chain with this channel id")
-	ErrInvalidConsumerId                       = errorsmod.Register(ModuleName, 6, "invalid consumer id")
 	ErrConsumerKeyInUse                        = errorsmod.Register(ModuleName, 10, "consumer key is already in use by a validator")
 	ErrCannotAssignDefaultKeyAssignment        = errorsmod.Register(ModuleName, 11, "cannot re-assign default key assignment")
 	ErrInvalidConsumerRewardDenom              = errorsmod.Register(ModuleName, 14, "invalid consumer reward denom")
@@ -40,4 +39,5 @@ var (
 	ErrInvalidMsgOptOut                        = errorsmod.Register(ModuleName, 50, "invalid opt out message")
 	ErrInvalidMsgSetConsumerCommissionRate     = errorsmod.Register(ModuleName, 51, "invalid set consumer commission rate message")
 	ErrInvalidMsgChangeRewardDenoms            = errorsmod.Register(ModuleName, 52, "invalid change reward denoms message")
+	ErrInvalidAllowlistedRewardDenoms          = errorsmod.Register(ModuleName, 53, "invalid allowlisted reward denoms")
 )

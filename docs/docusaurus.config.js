@@ -88,13 +88,6 @@ const config = {
             type: "docsVersionDropdown",
             position: "left",
             dropdownActiveClassDisabled: false,
-            dropdownItemsAfter: [
-              {
-                href: "https://cosmos.github.io/interchain-security/legacy",
-                label: "<= v3.x",
-                target: "_blank",
-              },
-            ],
           },
         ],
       },

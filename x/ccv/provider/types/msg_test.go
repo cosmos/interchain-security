@@ -13,20 +13,6 @@ import (
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 
-func TestValidateConsumerId(t *testing.T) {
-	// empty consumer id
-	require.Error(t, types.ValidateConsumerId(""))
-
-	// not a `uint64` where `uint64` is in the range [0, 2^64)
-	require.Error(t, types.ValidateConsumerId("a"))
-	require.Error(t, types.ValidateConsumerId("-2545"))
-	require.Error(t, types.ValidateConsumerId("18446744073709551616")) // 2^64
-
-	// valid consumer id
-	require.NoError(t, types.ValidateConsumerId("0"))
-	require.NoError(t, types.ValidateConsumerId("18446744073709551615")) // 2^64 - 1
-}
-
 func TestValidateStringField(t *testing.T) {
 	testCases := []struct {
 		name      string
@@ -485,7 +471,7 @@ func TestMsgCreateConsumerValidateBasic(t *testing.T) {
 
 	for _, tc := range testCases {
 		validConsumerMetadata := types.ConsumerMetadata{Name: "name", Description: "description", Metadata: "metadata"}
-		msg, err := types.NewMsgCreateConsumer("submitter", tc.chainId, validConsumerMetadata, nil, tc.powerShapingParameters)
+		msg, err := types.NewMsgCreateConsumer("submitter", tc.chainId, validConsumerMetadata, nil, tc.powerShapingParameters, nil)
 		require.NoError(t, err)
 		err = msg.ValidateBasic()
 		if tc.expPass {
@@ -560,7 +546,7 @@ func TestMsgUpdateConsumerValidateBasic(t *testing.T) {
 
 	for _, tc := range testCases {
 		// TODO (PERMISSIONLESS) add more tests
-		msg, _ := types.NewMsgUpdateConsumer("", "0", "cosmos1p3ucd3ptpw902fluyjzhq3ffgq4ntddac9sa3s", nil, nil, &tc.powerShapingParameters)
+		msg, _ := types.NewMsgUpdateConsumer("", "0", "cosmos1p3ucd3ptpw902fluyjzhq3ffgq4ntddac9sa3s", nil, nil, &tc.powerShapingParameters, nil)
 		err := msg.ValidateBasic()
 		if tc.expPass {
 			require.NoError(t, err, "valid case: %s should not return error. got %w", tc.name, err)

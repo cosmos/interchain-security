@@ -7,7 +7,9 @@ import (
 	"log"
 	"os/exec"
 	"regexp"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -56,17 +58,7 @@ func (tr Chain) waitBlocks(chain ChainID, blocks uint, timeout time.Duration) {
 	}
 	startBlock := tr.target.GetBlockHeight(chain)
 
-	start := time.Now()
-	for {
-		thisBlock := tr.target.GetBlockHeight(chain)
-		if thisBlock >= startBlock+blocks {
-			return
-		}
-		if time.Since(start) > timeout {
-			panic(fmt.Sprintf("\n\n\nwaitBlocks method has timed out after: %s\n\n", timeout))
-		}
-		time.Sleep(time.Second)
-	}
+	tr.waitUntilBlock(chain, startBlock+blocks, timeout)
 }
 
 func (tr Chain) waitUntilBlock(chain ChainID, block uint, timeout time.Duration) {
@@ -163,10 +155,10 @@ func (tr Chain) GetRewards(chain ChainID, modelState Rewards) Rewards {
 		currentBlock = 1
 	}
 	for k := range modelState.IsRewarded {
-		receivedRewards[k] = tr.target.GetReward(chain, k, nextBlock, modelState.IsNativeDenom) > tr.target.GetReward(chain, k, currentBlock, modelState.IsNativeDenom)
+		receivedRewards[k] = tr.target.GetReward(chain, k, nextBlock, modelState.Denom) > tr.target.GetReward(chain, k, currentBlock, modelState.Denom)
 	}
 
-	return Rewards{IsRewarded: receivedRewards, IsIncrementalReward: modelState.IsIncrementalReward, IsNativeDenom: modelState.IsNativeDenom}
+	return Rewards{IsRewarded: receivedRewards, IsIncrementalReward: modelState.IsIncrementalReward, Denom: modelState.Denom}
 }
 
 func (tr Chain) GetConsumerAddresses(chain ChainID, modelState map[ValidatorID]string) map[ValidatorID]string {
@@ -261,7 +253,7 @@ func (tr Commands) GetBlockHeight(chain ChainID) uint {
 	return uint(blockHeight)
 }
 
-func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight uint, isNativeDenom bool) float64 {
+func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight uint, denom string) float64 {
 	valCfg := tr.validatorConfigs[validator]
 	delAddresss := valCfg.DelAddress
 	if chain != ChainID("provi") {
@@ -294,12 +286,18 @@ func (tr Commands) GetReward(chain ChainID, validator ValidatorID, blockHeight u
 		log.Fatal("failed getting rewards: ", err, "\n", string(bz))
 	}
 
-	denomCondition := `total.#(denom!="stake").amount`
-	if isNativeDenom {
-		denomCondition = `total.#(denom=="stake").amount`
+	denomCondition := fmt.Sprintf(`total.#(%%"*%s*")`, denom)
+	amount := strings.Split(gjson.Get(string(bz), denomCondition).String(), denom)[0]
+
+	res := float64(0)
+	if amount != "" {
+		res, err = strconv.ParseFloat(amount, 64)
+		if err != nil {
+			log.Fatal("failed parsing consumer reward:", err)
+		}
 	}
 
-	return gjson.Get(string(bz), denomCondition).Float()
+	return res
 }
 
 // interchain-securityd query gov proposals
@@ -658,8 +656,13 @@ func (tr Commands) GetConsumerChains(chain ChainID) map[ChainID]bool {
 		if phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_INITIALIZED)] ||
 			phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_REGISTERED)] ||
 			phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_LAUNCHED)] {
-			id := c.Get("chain_id").String()
-			chains[ChainID(id)] = true
+			id := c.Get("consumer_id").String()
+			for chainRef, cfg := range tr.chainConfigs {
+				if cfg.ConsumerId == ConsumerID(id) {
+					// note: 'chainRef' is the reference the test uses and not necessarily matching chain id
+					chains[chainRef] = true
+				}
+			}
 		}
 	}
 
@@ -814,9 +817,11 @@ func (tr Commands) GetHasToValidate(
 	arr := gjson.Get(string(bz), "consumer_ids").Array()
 	chains := []ChainID{}
 	for _, c := range arr {
-		for _, chain := range tr.chainConfigs {
+		for chainRef, chain := range tr.chainConfigs {
 			if chain.ConsumerId == ConsumerID(c.String()) {
-				chains = append(chains, chain.ChainId)
+				// we report the test chain reference which might not match the chain ID
+				// to support testing consumer chains with same chain ID
+				chains = append(chains, chainRef)
 				break
 			}
 		}
@@ -903,14 +908,21 @@ func (tr Commands) GetProposedConsumerChains(chain ChainID) []string {
 	arr := gjson.Get(string(bz), "chains").Array()
 	chains := []string{}
 	for _, c := range arr {
-		cid := c.Get("chain_id").String()
 		phase := c.Get("phase").String()
 		if phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_INITIALIZED)] ||
 			phase == types.ConsumerPhase_name[int32(types.CONSUMER_PHASE_REGISTERED)] {
-			chains = append(chains, cid)
+			cid := ConsumerID(c.Get("consumer_id").String())
+			for chainRef, chainCfg := range tr.chainConfigs {
+				if chainCfg.ConsumerId == cid {
+					chains = append(chains, string(chainRef))
+				}
+			}
 		}
 	}
 
+	sort.Slice(chains, func(i, j int) bool {
+		return chains[i] < chains[j]
+	})
 	return chains
 }
 

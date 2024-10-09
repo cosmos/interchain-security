@@ -194,6 +194,8 @@ message Chain {
   // Corresponds to whether inactive validators are allowed to validate the consumer chain.
   bool allow_inactive_vals = 12;
   string consumer_id = 13;
+  // the reward denoms allowlisted by this consumer chain
+  AllowlistedRewardDenoms allowlisted_reward_denoms = 14;
 }
 
 message QueryValidatorConsumerAddrRequest {

@@ -38,7 +38,7 @@ type ChainCommands interface {
 	GetProposal(chain ChainID, proposal uint) Proposal
 	GetParam(chain ChainID, param Param) string
 	GetProviderAddressFromConsumer(consumerChain ChainID, validator ValidatorID) string
-	GetReward(chain ChainID, validator ValidatorID, blockHeight uint, isNativeDenom bool) float64
+	GetReward(chain ChainID, validator ValidatorID, blockHeight uint, denom string) float64
 	GetRegisteredConsumerRewardDenoms(chain ChainID) []string
 	GetSlashMeter() int64
 	GetPendingPacketQueueSize(chain ChainID) uint
@@ -339,9 +339,9 @@ type Rewards struct {
 	// if true it will calculate if the validator/delegator is rewarded between 2 successive blocks,
 	// otherwise it will calculate if it received any rewards since the 1st block
 	IsIncrementalReward bool
-	// if true checks rewards for "stake" token, otherwise checks rewards from
-	// other chains (e.g. false is used to check if provider received rewards from a consumer chain)
-	IsNativeDenom bool
+	// The reward denom to be checked. This can be either the native "stake" denom or
+	// a denom from other chains (e.g. if provider received rewards from a consumer chain)
+	Denom string
 }
 
 type ParamsProposal struct {

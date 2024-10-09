@@ -244,13 +244,13 @@ func (k Keeper) GetProviderClientID(ctx sdk.Context) (string, bool) {
 // SetProviderChannel sets the channelID for the channel to the provider.
 func (k Keeper) SetProviderChannel(ctx sdk.Context, channelID string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ProviderChannelKey(), []byte(channelID))
+	store.Set(types.ProviderChannelIDKey(), []byte(channelID))
 }
 
 // GetProviderChannel gets the channelID for the channel to the provider.
 func (k Keeper) GetProviderChannel(ctx sdk.Context) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
-	channelIdBytes := store.Get(types.ProviderChannelKey())
+	channelIdBytes := store.Get(types.ProviderChannelIDKey())
 	if len(channelIdBytes) == 0 {
 		return "", false
 	}
@@ -260,7 +260,7 @@ func (k Keeper) GetProviderChannel(ctx sdk.Context) (string, bool) {
 // DeleteProviderChannel deletes the channelID for the channel to the provider.
 func (k Keeper) DeleteProviderChannel(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ProviderChannelKey())
+	store.Delete(types.ProviderChannelIDKey())
 }
 
 // SetPendingChanges sets the pending validator set change packet that haven't been flushed to ABCI
@@ -331,6 +331,7 @@ func (k Keeper) DeletePreCCV(ctx sdk.Context) {
 
 func (k Keeper) SetInitialValSet(ctx sdk.Context, initialValSet []tmtypes.ValidatorUpdate) {
 	store := ctx.KVStore(k.storeKey)
+	// TODO it's not necessary to store the entire genesis state
 	initialValSetState := types.GenesisState{
 		Provider: ccv.ProviderInfo{InitialValSet: initialValSet},
 	}
@@ -360,7 +361,7 @@ func (k Keeper) GetLastStandaloneValidators(ctx sdk.Context) ([]stakingtypes.Val
 // i.e., the slice contains the IDs of the matured VSCPackets.
 func (k Keeper) GetElapsedPacketMaturityTimes(ctx sdk.Context) (maturingVSCPackets []types.MaturingVSCPacket) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, types.PacketMaturityTimeKeyPrefix())
 
 	defer iterator.Close()
 
@@ -392,7 +393,7 @@ func (k Keeper) GetElapsedPacketMaturityTimes(ctx sdk.Context) (maturingVSCPacke
 // If two entries have the same maturityTime, then they are ordered by vscID.
 func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context) (maturingVSCPackets []types.MaturingVSCPacket) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, types.PacketMaturityTimeKeyPrefix())
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -493,7 +494,7 @@ func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 // Thus, the returned array is in ascending order of heights.
 func (k Keeper) GetAllHeightToValsetUpdateIDs(ctx sdk.Context) (heightToValsetUpdateIDs []types.HeightToValsetUpdateID) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.HeightValsetUpdateIDBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, types.HeightValsetUpdateIDKeyPrefix())
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -535,7 +536,7 @@ func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, address sdk.ConsAddre
 // Thus, the returned array is in ascending order of consAddresses.
 func (k Keeper) GetAllOutstandingDowntimes(ctx sdk.Context) (downtimes []types.OutstandingDowntime) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.OutstandingDowntimeBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, types.OutstandingDowntimeKeyPrefix())
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -584,7 +585,7 @@ func (k Keeper) DeleteCCValidator(ctx sdk.Context, addr []byte) {
 // Thus, the returned array is in ascending order of addresses.
 func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChainValidator) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.CrossChainValidatorBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, types.CrossChainValidatorKeyPrefix())
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -612,7 +613,7 @@ func (k Keeper) getAndIncrementPendingPacketsIdx(ctx sdk.Context) (toReturn uint
 // DeleteHeadOfPendingPackets deletes the head of the pending packets queue.
 func (k Keeper) DeleteHeadOfPendingPackets(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, types.PendingDataPacketsV1KeyPrefix())
 	defer iterator.Close()
 	if !iterator.Valid() {
 		return
@@ -644,9 +645,7 @@ type ConsumerPacketDataWithIdx struct {
 func (k Keeper) GetAllPendingPacketsWithIdx(ctx sdk.Context) []ConsumerPacketDataWithIdx {
 	packets := []ConsumerPacketDataWithIdx{}
 	store := ctx.KVStore(k.storeKey)
-	// Note: PendingDataPacketsBytePrefix is the correct prefix, NOT PendingDataPacketsByteKey.
-	// See consistency with PendingDataPacketsKey().
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, types.PendingDataPacketsV1KeyPrefix())
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		var packet ccv.ConsumerPacketData
@@ -658,7 +657,7 @@ func (k Keeper) GetAllPendingPacketsWithIdx(ctx sdk.Context) []ConsumerPacketDat
 		}
 		packetWithIdx := ConsumerPacketDataWithIdx{
 			ConsumerPacketData: packet,
-			// index stored in key after prefix, see PendingDataPacketsKey()
+			// index stored in key after prefix, see PendingDataPacketsV1Key()
 			Idx: sdk.BigEndianToUint64(iterator.Key()[1:]),
 		}
 		packets = append(packets, packetWithIdx)
@@ -670,15 +669,13 @@ func (k Keeper) GetAllPendingPacketsWithIdx(ctx sdk.Context) []ConsumerPacketDat
 func (k Keeper) DeletePendingDataPackets(ctx sdk.Context, idxs ...uint64) {
 	store := ctx.KVStore(k.storeKey)
 	for _, idx := range idxs {
-		store.Delete(types.PendingDataPacketsKey(idx))
+		store.Delete(types.PendingDataPacketsV1Key(idx))
 	}
 }
 
 func (k Keeper) DeleteAllPendingDataPackets(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
-	// Note: PendingDataPacketsBytePrefix is the correct prefix, NOT PendingDataPacketsByteKey.
-	// See consistency with PendingDataPacketsKey().
-	iterator := storetypes.KVStorePrefixIterator(store, []byte{types.PendingDataPacketsBytePrefix})
+	iterator := storetypes.KVStorePrefixIterator(store, types.PendingDataPacketsV1KeyPrefix())
 	keysToDel := [][]byte{}
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -692,7 +689,7 @@ func (k Keeper) DeleteAllPendingDataPackets(ctx sdk.Context) {
 // AppendPendingPacket enqueues the given data packet to the end of the pending data packets queue
 func (k Keeper) AppendPendingPacket(ctx sdk.Context, packetType ccv.ConsumerPacketDataType, data ccv.ExportedIsConsumerPacketData_Data) {
 	idx := k.getAndIncrementPendingPacketsIdx(ctx) // for FIFO queue
-	key := types.PendingDataPacketsKey(idx)
+	key := types.PendingDataPacketsV1Key(idx)
 	store := ctx.KVStore(k.storeKey)
 	cpd := ccv.NewConsumerPacketData(packetType, data)
 	bz, err := cpd.Marshal()

@@ -1,1 +1,0 @@
-- Add `QueryAllPairsValConAddrByConsumerChainID` method to get list of all pairs `valConsensus` address by `Consummer chainID`. ([\#1503](https://github.com/cosmos/interchain-security/pull/1503))
