@@ -62,14 +62,8 @@ func main() {
 // in a markdown table format.
 // It returns a list of test functions that are missing docstrings.
 func extractDocstrings(filePath string, out *os.File) []string {
-	// Check if the file exists and is within the allowed directory
-	allowedDir := "../../tests/integration/" // Adjust this to your specific allowed directory
-	if !strings.HasPrefix(filePath, allowedDir) {
-		log.Fatalf("Error: File path %s is outside the allowed directory\n", filePath)
-	}
-
 	// Read the Go source file
-	src, err := os.ReadFile(filePath)
+	src, err := os.ReadFile(filePath) // #nosec G304
 	if err != nil {
 		log.Fatalf("Error reading file %s: %v\n", filePath, err)
 	}
