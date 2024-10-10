@@ -30,7 +30,7 @@ However, governators retain a subset of the validator properties:
 - new governators can be created (via `MsgCreateValidator`)
 - governators can accept delegations
 - governators can vote on governance proposals (with their self stake and delegations)
-- governators earn block rewards -- the block rewards kept on the consumer (see the [ConsumerRedistributionFraction param](../build/modules/03-consumer.md#consumerredistributionfraction)) are distributed to all governators and their delegators.
+- governators earn block rewards -- the block rewards kept on the consumer (see the [ConsumerRedistributionFraction param](./03-consumer.md#consumerredistributionfraction)) are distributed to all governators and their delegators.
 
 With these changes, governators can become community advocates that can specialize in chain governance and they get rewarded for their participation the same way the validators do.
 Additionally, governators can choose to provide additional infrastructure such as RPC/API access points, archive nodes, indexers and similar software.
