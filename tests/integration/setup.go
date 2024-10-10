@@ -9,20 +9,15 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
-	"github.com/cosmos/ibc-go/v8/testing/mock"
 	"github.com/stretchr/testify/suite"
 
 	store "cosmossdk.io/store/types"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	abci "github.com/cometbft/cometbft/abci/types"
-	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 
 	icstestingutils "github.com/cosmos/interchain-security/v6/testutil/ibc_testing"
 	testutil "github.com/cosmos/interchain-security/v6/testutil/integration"
 	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
@@ -144,14 +139,6 @@ func (suite *CCVTestSuite) SetupTest() {
 	params := providerKeeper.GetParams(suite.providerCtx())
 	params.BlocksPerEpoch = 10
 	providerKeeper.SetParams(suite.providerCtx(), params)
-
-	// re-assign all validator keys for the first consumer chain
-	// this has to be done before:
-	//  1. the consumer chain is added to the coordinator
-	//  2. MakeGenesis is called on the provider chain
-	//  3. ibc/testing sets the tendermint header for the consumer chain app
-	providerKeeper.SetConsumerPhase(suite.providerCtx(), icstestingutils.FirstConsumerID, providertypes.CONSUMER_PHASE_INITIALIZED)
-	preProposalKeyAssignment(suite, icstestingutils.FirstConsumerID)
 
 	// start consumer chains
 	suite.consumerBundles = make(map[string]*icstestingutils.ConsumerBundle)
@@ -414,34 +401,6 @@ func (s CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestinguti
 		cs.(*ibctmtypes.ClientState).UnbondingPeriod,
 		"unexpected unbonding period in provider client state",
 	)
-}
-
-// preProposalKeyAssignment assigns keys to all provider validators for
-// the consumer with consumerId before the chain is registered, i.e.,
-// before a client to the consumer is created
-func preProposalKeyAssignment(s *CCVTestSuite, consumerId string) {
-	providerKeeper := s.providerApp.GetProviderKeeper()
-
-	for _, val := range s.providerChain.Vals.Validators {
-		// get SDK validator
-		valAddr, err := sdk.ValAddressFromHex(val.Address.String())
-		s.Require().NoError(err)
-		validator := s.getVal(s.providerCtx(), valAddr)
-
-		// generate new PrivValidator
-		privVal := mock.NewPV()
-		tmPubKey, err := privVal.GetPubKey()
-		s.Require().NoError(err)
-		consumerKey, err := tmencoding.PubKeyToProto(tmPubKey)
-		s.Require().NoError(err)
-
-		// add Signer to the provider chain as there is no consumer chain to add it;
-		// as a result, NewTestChainWithValSet in AddConsumer uses providerChain.Signers
-		s.providerChain.Signers[tmPubKey.Address().String()] = privVal
-
-		err = providerKeeper.AssignConsumerKey(s.providerCtx(), consumerId, validator, consumerKey)
-		s.Require().NoError(err)
-	}
 }
 
 // packetSniffer implements the StreamingService interface.
