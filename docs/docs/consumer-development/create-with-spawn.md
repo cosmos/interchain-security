@@ -104,4 +104,4 @@ Once you're ready you can preview your chain using the section below.
 
 ## List your chain
 
-You can [list your chain on Forge](../launch-your-chain), even if it's not finished, in the **pre-launch** stage.
+You can [list your chain on Forge](https://forge.cosmos.network/list-your-chain), even if it's not finished, in the **pre-launch** stage.
