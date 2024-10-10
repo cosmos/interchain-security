@@ -23,11 +23,11 @@ import (
 const stakeMultiplier = 1000000
 
 // TestMinStake tests the min stake parameter.
-// It starts a provider and single consumer chain,
-// sets the initial powers according to the input, and then
-// sets the min stake parameter according to the test case.
-// Finally, it checks that the validator set on the consumer chain is as expected
-// according to the min stake parameter.
+// @Long Description@
+// * Start a provider and single consumer chain.
+// * Set the initial powers according to the input.
+// * Set the min stake parameter according to the test case.
+// * Check that the validator set on the consumer chain is as expected according to the min stake parameter.
 func TestMinStake(t *testing.T) {
 	testCases := []struct {
 		name                string

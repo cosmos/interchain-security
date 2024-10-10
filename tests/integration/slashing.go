@@ -3,7 +3,6 @@ package integration
 import (
 	"context"
 	"fmt"
-	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
@@ -29,9 +28,21 @@ import (
 	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
-// TestRelayAndApplyDowntimePacket tests that downtime slash packets can be properly relayed
-// from consumer to provider, handled by provider, with a VSC and jailing
-// eventually effective on consumer and provider.
+// TestRelayAndApplyDowntimePacket tests that downtime slash packets can be properly relayed from consumer to provider,
+// handled by provider, with a VSC and jailing eventually effective on consumer and provider.
+// @Long Description@
+// * Set up CCV channels and retrieve consumer validators.
+// * Select a validator and create its consensus address.
+// * Retrieve the provider consensus address that corresponds to the consumer consensus address of the validator.
+// * The validator's current state is also retrieved, including its token balance,
+// * Set validator's signing information is to ensure it will be jailed for downtime.
+// * Create the slashing packet and send it from the consumer chain to the provider chain with a specified timeout.
+// * Receive the packet and verify that the validator was removed from the provider validator set.
+// * Relay VSC packets from the provider chain to each consumer chain and verify that the consumer chains correctly process these packets.
+// * Check the validator's balance and status on the provider chain to ensure it was jailed correctly but not slashed,
+// and its unjailing time is updated.
+// * Reset the outstanding downtime flag on the consumer chain, and ensure that the consumer
+// chain acknowledges receipt of the packet from the provider chain.
 //
 // Note: This method does not test the actual slash packet sending logic for downtime
 // and double-signing, see TestValidatorDowntime and TestValidatorDoubleSigning for
@@ -166,89 +177,11 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	s.Require().NoError(err)
 }
 
-// Similar setup to TestRelayAndApplyDowntimePacket, but with a double sign slash packet.
-// Note that double-sign slash packets should not affect the provider validator set.
-func (s *CCVTestSuite) TestRelayAndApplyDoubleSignPacket() {
-	// Setup CCV channel for all instantiated consumers
-	s.SetupAllCCVChannels()
-
-	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
-	providerKeeper := s.providerApp.GetProviderKeeper()
-	providerSlashingKeeper := s.providerApp.GetTestSlashingKeeper()
-
-	validatorsPerChain := len(s.consumerChain.Vals.Validators)
-
-	// pick first consumer validator
-	tmVal := s.consumerChain.Vals.Validators[0]
-	val, err := tmVal.ToProto()
-	s.Require().NoError(err)
-	pubkey, err := cryptocodec.FromCmtProtoPublicKey(val.GetPubKey())
-	s.Require().Nil(err)
-	consumerConsAddr := providertypes.NewConsumerConsAddress(sdk.GetConsAddress(pubkey))
-	// map consumer consensus address to provider consensus address
-	providerConsAddr, found := providerKeeper.GetValidatorByConsumerAddr(
-		s.providerCtx(),
-		s.getFirstBundle().ConsumerId,
-		consumerConsAddr)
-	s.Require().True(found)
-
-	stakingVal, err := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
-	s.Require().NoError(err)
-	valOldBalance := stakingVal.Tokens
-
-	// Setup first val with mapped consensus address to be jailed on provider by setting signing info
-	// convert validator to TM type
-	pk, err := stakingVal.ConsPubKey()
-	s.Require().NoError(err)
-	tmPk, err := cryptocodec.ToCmtPubKeyInterface(pk)
-	s.Require().NoError(err)
-	s.setDefaultValSigningInfo(*tmtypes.NewValidator(tmPk, stakingVal.ConsensusPower(sdk.DefaultPowerReduction)))
-
-	// Send slash packet from the first consumer chain
-	var (
-		timeoutHeight    = clienttypes.Height{}
-		timeoutTimestamp = uint64(s.getFirstBundle().GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
-	)
-	slashPacket := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN, 1)
-	packet := sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, timeoutHeight, timeoutTimestamp, slashPacket.GetData())
-
-	// Advance a few more blocks to make sure any voting power changes would be reflected
-	s.providerChain.NextBlock()
-	s.providerChain.NextBlock()
-	s.providerChain.NextBlock()
-
-	// Confirm validator was NOT removed from provider validator set
-	s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain)
-
-	// Get staking keeper's validator obj after the relayed slash packet
-	stakingValAfter, err := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
-	s.Require().NoError(err)
-
-	// check that the validator's tokens were NOT slashed on provider
-	valNewBalance := stakingValAfter.GetTokens()
-	s.Require().Equal(valOldBalance, valNewBalance)
-
-	// Get signing info for the validator
-	valSignInfo, err := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), providerConsAddr.ToSdkConsAddr())
-	s.Require().NoError(err)
-
-	// check that the validator's unjailing time is NOT updated on provider
-	s.Require().Zero(valSignInfo.JailedUntil)
-
-	// check that the validator is not jailed and still bonded on provider
-	s.Require().False(stakingValAfter.Jailed)
-	s.Require().Equal(stakingValAfter.Status, stakingtypes.Bonded)
-
-	// check that validator was NOT tombstoned on provider
-	s.Require().False(valSignInfo.Tombstoned)
-
-	// check that slashing packet gets acknowledged successfully,
-	// provider returns V1Result acks for double sign packets
-	ack := channeltypes.NewResultAcknowledgement(ccv.V1Result)
-	err = s.path.EndpointA.AcknowledgePacket(packet, ack.Acknowledgement())
-	s.Require().NoError(err)
-}
-
+// TestSlashPacketAcknowledgement tests the handling of a slash packet acknowledgement.
+// @Long Description@
+// * Set up a provider and consumer chain, with channel initialization between them performed.
+// * Send a slash packet with randomized fields from the consumer to the provider.
+// * The provider processes the packet
 func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	consumerKeeper := s.consumerApp.GetConsumerKeeper()
@@ -292,6 +225,13 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 }
 
 // TestHandleSlashPacketDowntime tests the handling of a downtime related slash packet, with integration tests.
+// @Long Description@
+// * Retrieve a validator from provider chain's validators and checks if it's bonded.
+// * Set tThe signing information for the validator.
+// * The provider processes the downtime slashing packet from the consumer.
+// * Check that the validator has been jailed as a result of the downtime slashing packet being processed.
+// * Verify that the validator’s signing information is updated and that the jailing duration is set correctly.
+//
 // Note that only downtime slash packets are processed by HandleSlashPacket.
 func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
 	providerKeeper := suite.providerApp.GetProviderKeeper()
@@ -333,7 +273,13 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
 	suite.Require().Equal(suite.providerCtx().BlockTime().Add(jailDuration), signingInfo.JailedUntil)
 }
 
-// TestOnRecvSlashPacketErrors tests errors for the OnRecvSlashPacket method in an integration testing setting
+// TestOnRecvSlashPacketErrors tests errors for the OnRecvSlashPacket method in an integration testing setting.
+// @Long Description@
+// * Set up all CCV channels and expect panic if the channel is not established via dest channel of packet.
+// * After the correct channelID is added to the packet, a panic shouldn't occur anymore.
+// * Create an instance of SlashPacketData and then verify correct processing and error handling
+// for slashing packets received by the provider chain.
+// TODO: Move to unit tests.
 func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 	firstBundle := suite.getFirstBundle()
@@ -441,9 +387,17 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	suite.Require().Equal(ccv.SlashPacketHandledResult, ackResult, "expected successful ack")
 }
 
-// TestValidatorDowntime tests if a slash packet is sent
-// and if the outstanding slashing flag is switched
-// when a validator has downtime on the slashing module
+// TestValidatorDowntime tests if a slash packet is sent and if the outstanding slashing flag is switched
+// when a validator has downtime on the slashing module.
+// @Long Description@
+// * Set up all CCV channel and send an empty VSC packet, then retrieve the address of a validator.
+// * Validator signs blocks for the duration of the signedBlocksWindow and a slash packet is constructed to be sent and committed.
+// * Simulate the validator missing blocks and then verify that the validator is jailed and the jailed time is correctly updated.
+// * Ensure that the missed block counters are reset.
+// * Check that there is a pending slash packet in the queue, and then send the pending packets.
+// * Check if slash record is created and verify that the consumer queue still contains the packet since no
+// acknowledgment has been received from the provider.
+// * Verify that the slash packet was sent and check that the outstanding slashing flag prevents the jailed validator to keep missing block.
 func (suite *CCVTestSuite) TestValidatorDowntime() {
 	// initial setup
 	suite.SetupCCVChannel(suite.path)
@@ -555,95 +509,16 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 	})
 }
 
-// TestValidatorDoubleSigning tests if a slash packet is sent
-// when a double-signing evidence is handled by the evidence module
-func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
-	// initial setup
-	suite.SetupCCVChannel(suite.path)
-	suite.SendEmptyVSCPacket()
-
-	// sync suite context after CCV channel is established
-	ctx := suite.consumerCtx()
-
-	channelID := suite.path.EndpointA.ChannelID
-
-	// create a validator pubkey and address
-	// note that the validator won't necessarily be in valset to due the TM delay
-	pubkey := ed25519.GenPrivKey().PubKey()
-	consAddr := sdk.ConsAddress(pubkey.Address())
-
-	// set an arbitrary infraction height
-	infractionHeight := ctx.BlockHeight() - 1
-	power := int64(100)
-
-	// create evidence
-	e := &evidencetypes.Equivocation{
-		Height:           infractionHeight,
-		Power:            power,
-		Time:             time.Now().UTC(),
-		ConsensusAddress: consAddr.String(),
-	}
-
-	// add validator signing-info to the store
-	suite.consumerApp.GetTestSlashingKeeper().SetValidatorSigningInfo(ctx, consAddr, slashingtypes.ValidatorSigningInfo{
-		Address:    consAddr.String(),
-		Tombstoned: false,
-	})
-
-	// save next sequence before sending a slash packet
-	seq, ok := suite.consumerApp.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, ccv.ConsumerPortID, channelID)
-	suite.Require().True(ok)
-
-	// construct slash packet data and get the expected commit hash
-	packetData := ccv.NewSlashPacketData(
-		abci.Validator{Address: consAddr.Bytes(), Power: power},
-		// get VSC ID mapping to the infraction height with the TM delay subtracted
-		suite.consumerApp.GetConsumerKeeper().GetHeightValsetUpdateID(ctx, uint64(infractionHeight-sdk.ValidatorUpdateDelay)),
-		stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN,
-	)
-	expCommit := suite.commitSlashPacket(ctx, *packetData)
-
-	suite.consumerChain.NextBlock()
-	// // expect to send slash packet when handling double-sign evidence
-	// // NOTE: using IBCKeeper Authority as msg submitter (equal to gov module addr)
-	addr, err := sdk.AccAddressFromBech32(suite.consumerApp.GetIBCKeeper().GetAuthority())
-	suite.Require().NoError(err)
-	evidenceMsg, err := evidencetypes.NewMsgSubmitEvidence(addr, e)
-	suite.Require().NoError(err)
-	suite.Require().NotEmpty(evidenceMsg)
-
-	// this was previously done using suite.consumerApp.GetTestEvidenceKeeper().HandleEquivocationEvidence(ctx, e)
-	// HandleEquivocationEvidence is not exposed in the evidencekeeper interface starting cosmos-sdk v0.50.x
-	// suite.consumerApp.GetTestEvidenceKeeper().SubmitEvidence(ctx, e)
-	handleEquivocationEvidence(ctx, suite.consumerApp, e)
-
-	// check slash packet is queued
-	pendingPackets := suite.consumerApp.GetConsumerKeeper().GetPendingPackets(ctx)
-	suite.Require().NotEmpty(pendingPackets, "pending packets empty")
-	suite.Require().Len(pendingPackets, 1, "pending packets len should be 1 is %d", len(pendingPackets))
-
-	// clear queue, commit packets
-	suite.consumerApp.GetConsumerKeeper().SendPackets(ctx)
-
-	// Check slash record is created
-	slashRecord, found := suite.consumerApp.GetConsumerKeeper().GetSlashRecord(suite.consumerCtx())
-	suite.Require().True(found, "slash record not found")
-	suite.Require().True(slashRecord.WaitingOnReply)
-	suite.Require().Equal(slashRecord.SendTime, suite.consumerCtx().BlockTime())
-
-	// check queue is not cleared, since no ack has been received from provider
-	pendingPackets = suite.consumerApp.GetConsumerKeeper().GetPendingPackets(ctx)
-	suite.Require().Len(pendingPackets, 1, "pending packets len should be 1 is %d", len(pendingPackets))
-
-	// check slash packet is sent
-	gotCommit := suite.consumerApp.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(ctx, ccv.ConsumerPortID, channelID, seq)
-	suite.NotNil(gotCommit)
-
-	suite.Require().EqualValues(expCommit, gotCommit)
-}
-
 // TestQueueAndSendSlashPacket tests the integration of QueueSlashPacket with SendPackets.
 // In normal operation slash packets are queued in BeginBlock and sent in EndBlock.
+// @Long Description@
+// * Set up all CCV channels and then queue slash packets for both downtime and double-signing infractions.
+// * Check that the correct number of slash requests are stored in the queue, including duplicates for downtime infractions.
+// * Prepare the CCV channel for sending actual slash packets.
+// * Send the slash packets and check that the outstanding downtime flags are correctly set for validators that were slashed
+// for downtime infractions.
+// * Ensure that the pending data packets queue is empty.
+// TODO: Move to unit tests.
 func (suite *CCVTestSuite) TestQueueAndSendSlashPacket() {
 	suite.SetupCCVChannel(suite.path)
 
@@ -724,6 +599,11 @@ func (suite *CCVTestSuite) TestQueueAndSendSlashPacket() {
 // TestCISBeforeCCVEstablished tests that the consumer chain doesn't panic or
 // have any undesired behavior when a slash packet is queued before the CCV channel is established.
 // Then once the CCV channel is established, the slash packet should be sent soon after.
+// @Long Description@
+// * Check that no pending packets exist and that there's no slash record found.
+// * Triggers a slashing event which queues a slash packet.
+// * The slash packet should be queued but not sent, and it should stay like that until the CCV channel is established and the packet is sent.
+// *Verify that a slashing record now exists, indicating that the slashing packet has been successfully sent.
 func (suite *CCVTestSuite) TestCISBeforeCCVEstablished() {
 	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
 

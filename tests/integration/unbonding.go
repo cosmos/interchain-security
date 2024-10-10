@@ -6,6 +6,13 @@ import (
 
 // TestUndelegationCompletion tests that undelegations complete after
 // the unbonding period elapses on the provider, regardless of the consumer's state
+// @Long Description@
+// * Set up CCV channel.
+// * Perform initial delegation of tokens followed by a partial undelegation (1/4 of the tokens).
+// * Verify that the staking unbonding operation is created as expected.
+// * Increment provider block height.
+// * Check that the unbonding operation has been completed.
+// * Verify that the token balances are correctly updated and the expected amount of tokens has been returned to the account.
 func (s *CCVTestSuite) TestUndelegationCompletion() {
 	s.SetupCCVChannel(s.path)
 
