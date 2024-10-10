@@ -1,5 +1,5 @@
 ---
-sidebar_position: 1
+sidebar_position: 2
 ---
 # Developing an ICS consumer chain
 
@@ -31,4 +31,3 @@ With these modules enabled, the consumer chain can mint its own governance token
 ## Standalone chain to consumer chain changeover
 
 See the [standalone chain to consumer chain changeover guide](./changeover-procedure.md) for more information on how to transition your standalone chain to a consumer chain.
-
