@@ -213,7 +213,7 @@ The consumer module is an IBC application that implements the [IBC module callba
 `OnChanOpenInit` first verifies that the CCV channel was not already created. 
 Then, it validates the channel parameters -- an ordered IBC channel connected on the `consumer` port 
 and with the counterparty port set to `provider` -- and asserts that the version matches the expected version 
-(only verions `1` is supported).
+(only versions `1` is supported).
 
 Finally, it verifies that the underlying client is the expected client of the provider chain 
 (i.e., provided in the consumer module genesis state). 
@@ -226,7 +226,7 @@ Finally, it verifies that the underlying client is the expected client of the pr
 
 `OnChanOpenAck` first verifies that the CCV channel was not already created. 
 Then it verifies that the counterparty version matches the expected version 
-(only verions `1` is supported).
+(only versions `1` is supported).
 
 If the verification passes, it stores the [ProviderFeePoolAddr](#providerfeepooladdrstr) in the state.
 
@@ -313,7 +313,7 @@ In the `EndBlock` of the consumer module the following actions are performed:
   that was just upgraded to include the consumer module, then execute the [changeover logic](../../consumer-development/changeover-procedure.md).
 - Otherwise, distribute block rewards internally and once every [BlocksPerDistributionTransmission](#blocksperdistributiontransmission) send 
   ICS rewards to the provider chain.
-- Send slash packets to the provider chain reporting infractions validators commited on the consumer chain.
+- Send slash packets to the provider chain reporting infractions validators committed on the consumer chain.
 - Send to the consensus engine validator updates reveived from the provider chain.
 
 ## Hooks

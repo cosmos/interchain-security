@@ -19,7 +19,7 @@ The provider module has the following functionalities:
 - The customization of the consumer chains validator sets. 
 - The option for validators to opt in to validate the consumer chains they want.
 - The distribution of rewards from consumer chains to the opted in validators.
-- The slashing and jailing of validators commiting infractions on consumer chains based on cryptographic evidence.
+- The slashing and jailing of validators committing infractions on consumer chains based on cryptographic evidence.
 
 ## State 
 
@@ -144,7 +144,7 @@ Format: `byte(53) | len(clientId) | []byte(clientId) -> string`
 Format: `byte(14) | []byte(consumerId) -> ConsumerGenesisState`
 
 
-### Key Assingment
+### Key Assignment
 
 #### ConsumerValidators
 
@@ -369,7 +369,7 @@ The consumer module is an IBC application that implements the [IBC module callba
 
 `OnChanOpenTry` validates the parameters of the _CCV channel_ -- an ordered IBC channel connected on the `provider` port 
 and with the counterparty port set to `consumer` -- and asserts that the counterparty version matches the expected version 
-(only verions `1` is supported).
+(only versions `1` is supported).
 
 If the validation passes, the provider module verifies that the underlying client is the expected client of the consumer chain 
 (i.e., the client created during the consumer chain launch) and that no other CCV channel exists for this consumer chain.
@@ -486,8 +486,8 @@ As a result, if the `power_shaping_parameters` are provided, then `power_shaping
 To create a top-n consumer chain, the following steps are require:
 
 - Create a opt-in consumer chain (via `MsgCreateConsumer`).
-- Change the ownership of the consuemr chain to the gov module account address (via `MsgUpdateConsumer`).
-- Change `power_shaping_parameters.top_N` to a value in `[50, 100]` trough a governance proposal with a `MsgUpdateConsumer` message.
+- Change the ownership of the consumer chain to the gov module account address (via `MsgUpdateConsumer`).
+- Change `power_shaping_parameters.top_N` to a value in `[50, 100]` through a governance proposal with a `MsgUpdateConsumer` message.
 
 If the `initialization_parameters` field is set and `initialization_parameters.spawn_time > 0`, then the consumer chain will be scheduled to launch at `spawn_time`.
 
@@ -594,7 +594,7 @@ You can use the `list-consumer-chains` query to get the list of all consumer cha
 
 The `consumer_key` field is optional. 
 It enables the validator to set the consensus public key to use on the consumer chain.
-The validator can assing (or re-assing) this key also later via [MsgAssignConsumerKey](#msgassignconsumerkey).
+The validator can assign (or re-assign) this key also later via [MsgAssignConsumerKey](#msgassignconsumerkey).
 
 :::warning
 Validators are strongly recommended to assign a separate key for each consumer chain
@@ -746,7 +746,7 @@ message MsgSetConsumerCommissionRate {
 
 ### MsgSubmitConsumerMisbehaviour
 
-`MsgSubmitConsumerMisbehaviour` enables users to submit to the provider evidence of a light client attack that occured on a consumer chain. 
+`MsgSubmitConsumerMisbehaviour` enables users to submit to the provider evidence of a light client attack that occurred on a consumer chain. 
 This message can be submitted directly by users, e.g., via the CLI command `tx provider submit-consumer-misbehaviour`, 
 or by a relayer that can be set to automatically detect consumer chain misbehaviors, e.g., [Hermes](https://github.com/informalsystems/hermes).
 
@@ -756,7 +756,7 @@ the `chain_id` field is deprecated.
 Users should use `consumer_id` instead. 
 You can use the `list-consumer-chains` query to get the list of all consumer chains and their consumer IDs.
 
-For more details on reporting light client attacks that occured on consumer chains, check out the [guide on equivocation infractions](../../features/slashing.md#equivocation-infractions).
+For more details on reporting light client attacks that occurred on consumer chains, check out the [guide on equivocation infractions](../../features/slashing.md#equivocation-infractions).
 
 ```proto
 message MsgSubmitConsumerMisbehaviour {
@@ -775,7 +775,7 @@ message MsgSubmitConsumerMisbehaviour {
 
 ### MsgSubmitConsumerDoubleVoting
 
-`MsgSubmitConsumerDoubleVoting` enables users to submit to the provider evidence of a double signing infraction that occured on a consumer chain. 
+`MsgSubmitConsumerDoubleVoting` enables users to submit to the provider evidence of a double signing infraction that occurred on a consumer chain. 
 This message can be submitted directly by users, e.g., via the CLI command `tx provider submit-consumer-double-voting`, 
 or by a relayer that can be set to automatically detect consumer chain misbehaviors, e.g., [Hermes](https://github.com/informalsystems/hermes).
 
@@ -785,7 +785,7 @@ the `chain_id` field is deprecated.
 Users should use `consumer_id` instead. 
 You can use the `list-consumer-chains` query to get the list of all consumer chains and their consumer IDs.
 
-For more details on reporting double signing infractions that occured on consumer chains, check out the [guide on equivocation infractions](../../features/slashing.md#equivocation-infractions).
+For more details on reporting double signing infractions that occurred on consumer chains, check out the [guide on equivocation infractions](../../features/slashing.md#equivocation-infractions).
 
 ```proto
 message MsgSubmitConsumerDoubleVoting {
@@ -829,7 +829,7 @@ In the `EndBlock` of the provider module the following actions are performed:
 - Prune the no-longer needed public keys assigned by validators to use when validating on consumer chains.
 - Send validator updates to the consensus engine. 
   The maximum number of validators is set through the [MaxProviderConsensusValidators](#maxproviderconsensusvalidators) param.
-- At the begining of every epoch, 
+- At the beginning of every epoch, 
   - for every launched consumer chain, compute the next consumer validator set and send it to the consumer chain via an IBC packet;
   - increment the VSC id.
 
