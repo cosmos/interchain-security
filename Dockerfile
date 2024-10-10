@@ -29,7 +29,10 @@ RUN go mod tidy
 RUN make install
 
 # Get Hermes build
-FROM --platform=linux/amd64 ghcr.io/informalsystems/hermes:1.10.2 AS hermes-builder
+## TODO: import Hermes release from ghcr.io/informalsystems repository when 
+## a Hermes release contains the patch in 
+# https://github.com/informalsystems/hermes/pull/4182
+FROM --platform=linux/amd64 otacrew/hermes-ics:latest AS hermes-builder
 
 # Get CometMock
 FROM ghcr.io/informalsystems/cometmock:v0.38.x as cometmock-builder
