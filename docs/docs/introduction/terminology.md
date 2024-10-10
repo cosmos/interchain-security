@@ -39,11 +39,6 @@ PSS allows for more flexible security tradeoffs than Replicated Security.
 [Permissionless ICS](../features/permissionless.md) is the latest version of ICS that allows to launch Opt In chains in
 a permissionless way (i.e., without requiring a governance proposal).
 
-## Consumer Chain
-
-Chain that is secured by the validator set of the provider, instead of its own.
-Interchain Security allows a subset of the provider chain's validator set to validate blocks on the consumer chain.
-
 ## Standalone Chain
 
 Chain that is secured by its own validator set. This chain does not participate in Interchain Security.
