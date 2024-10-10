@@ -7,6 +7,7 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	"github.com/cosmos/ibc-go/v8/testing/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
@@ -19,6 +20,7 @@ import (
 	testutil "github.com/cosmos/interchain-security/v6/testutil/integration"
 	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 
@@ -155,9 +157,6 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	powerShapingParameters.Top_N = consumerTopNParams[index] // isn't used in CreateConsumerClient
 
 	consumerId := providerKeeper.FetchAndIncrementConsumerId(providerChain.GetContext())
-	if chainID == firstConsumerChainID {
-		FirstConsumerID = consumerId
-	}
 	providerKeeper.SetConsumerChainId(providerChain.GetContext(), consumerId, chainID)
 	err := providerKeeper.SetConsumerMetadata(providerChain.GetContext(), consumerId, consumerMetadata)
 	s.Require().NoError(err)
@@ -166,6 +165,15 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	err = providerKeeper.SetConsumerPowerShapingParameters(providerChain.GetContext(), consumerId, powerShapingParameters)
 	s.Require().NoError(err)
 	providerKeeper.SetConsumerPhase(providerChain.GetContext(), consumerId, providertypes.CONSUMER_PHASE_INITIALIZED)
+	if chainID == firstConsumerChainID {
+		FirstConsumerID = consumerId
+		// re-assign all validator keys for the first consumer chain
+		// this has to be done before:
+		//  1. the consumer chain is added to the coordinator
+		//  2. MakeGenesis is called on the provider chain
+		//  3. ibc/testing sets the tendermint header for the consumer chain app
+		preProposalKeyAssignment(s, *providerChain, providerKeeper, providerApp, FirstConsumerID)
+	}
 	err = providerKeeper.AppendConsumerToBeLaunched(providerChain.GetContext(), consumerId, coordinator.CurrentTime)
 	s.Require().NoError(err)
 
@@ -226,5 +234,38 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 		Chain:      testChain,
 		App:        consumerToReturn,
 		TopN:       powerShapingParameters.Top_N,
+	}
+}
+
+// preProposalKeyAssignment assigns keys to all provider validators for
+// the consumer with consumerId before the chain is registered, i.e.,
+// before a client to the consumer is created
+func preProposalKeyAssignment(
+	s *suite.Suite,
+	providerChain ibctesting.TestChain,
+	providerKeeper providerkeeper.Keeper,
+	providerApp testutil.ProviderApp,
+	consumerId string,
+) {
+	for _, val := range providerChain.Vals.Validators {
+		// get SDK validator
+		valAddr, err := sdk.ValAddressFromHex(val.Address.String())
+		s.Require().NoError(err)
+		validator, err := providerApp.GetTestStakingKeeper().GetValidator(providerChain.GetContext(), valAddr)
+		s.Require().NoError(err)
+
+		// generate new PrivValidator
+		privVal := mock.NewPV()
+		tmPubKey, err := privVal.GetPubKey()
+		s.Require().NoError(err)
+		consumerKey, err := tmencoding.PubKeyToProto(tmPubKey)
+		s.Require().NoError(err)
+
+		// add Signer to the provider chain as there is no consumer chain to add it;
+		// as a result, NewTestChainWithValSet in AddConsumer uses providerChain.Signers
+		providerChain.Signers[tmPubKey.Address().String()] = privVal
+
+		err = providerKeeper.AssignConsumerKey(providerChain.GetContext(), consumerId, validator, consumerKey)
+		s.Require().NoError(err)
 	}
 }
