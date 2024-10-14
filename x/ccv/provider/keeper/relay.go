@@ -343,10 +343,31 @@ func (k Keeper) OnRecvSlashPacket(
 		return ccv.V1Result, nil
 	}
 
-	// Check that chain is launched and the validator belongs to the consumer chain valset
-	if k.GetConsumerPhase(ctx, consumerId) == providertypes.CONSUMER_PHASE_LAUNCHED && !k.IsConsumerValidator(ctx, consumerId, providerConsAddr) {
-		k.Logger(ctx).Error("cannot jail validator %s that does not belong to consumer %s valset",
-			providerConsAddr.String(), consumerId)
+	// check that the chain is launched
+	if k.GetConsumerPhase(ctx, consumerId) != providertypes.CONSUMER_PHASE_LAUNCHED {
+		k.Logger(ctx).Error("cannot jail validator on a chain that is not currently launched",
+			"consumerId", consumerId,
+			"provider cons addr", providerConsAddr.String(),
+		)
+
+		// Naturally, we do not return a slash ack here because the fact that we are here means:
+		// i)  the chain was at some point launched and hence `k.GetChannelIdToConsumerId` found a consumer (at the beginning
+		//     of the `OnRecvSlashPacket` method);
+		// ii) the chain is not launched anymore which means the chain is now stopped (with `MsgRemoveConsumer`),
+		//     but the chain is not yet fully removed because otherwise `k.GetChannelIdToConsumerId` would have not found
+		//     a consumer.
+		// Therefore, we should not expect any more packets to be sent from this chain.
+
+		return ccv.SlashPacketHandledResult, nil
+	}
+
+	// check that the validator belongs to the consumer chain valset
+	if !k.IsConsumerValidator(ctx, consumerId, providerConsAddr) {
+		k.Logger(ctx).Error("cannot jail validator that does not belong on the consumer valset",
+			"consumerId", consumerId,
+			"provider cons addr", providerConsAddr.String(),
+		)
+
 		// drop packet but return a slash ack so that the consumer can send another slash packet
 		k.AppendSlashAck(ctx, consumerId, consumerConsAddr.String())
 
