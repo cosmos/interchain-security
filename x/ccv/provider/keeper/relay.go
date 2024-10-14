@@ -345,8 +345,9 @@ func (k Keeper) OnRecvSlashPacket(
 
 	// check that the chain is launched
 	if k.GetConsumerPhase(ctx, consumerId) != providertypes.CONSUMER_PHASE_LAUNCHED {
-		k.Logger(ctx).Error("cannot jail validator on a chain that is not currently launched",
+		k.Logger(ctx).Info("cannot jail validator on a chain that is not currently launched",
 			"consumerId", consumerId,
+			"phase", k.GetConsumerPhase(ctx, consumerId),
 			"provider cons addr", providerConsAddr.String(),
 		)
 
