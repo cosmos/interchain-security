@@ -351,13 +351,8 @@ func (k Keeper) OnRecvSlashPacket(
 			"provider cons addr", providerConsAddr.String(),
 		)
 
-		// Naturally, we do not return a slash ack here because the fact that we are here means:
-		// i)  the chain was at some point launched and hence `k.GetChannelIdToConsumerId` found a consumer (at the beginning
-		//     of the `OnRecvSlashPacket` method);
-		// ii) the chain is not launched anymore which means the chain is now stopped (with `MsgRemoveConsumer`),
-		//     but the chain is not yet fully removed because otherwise `k.GetChannelIdToConsumerId` would have not found
-		//     a consumer.
-		// Therefore, we should not expect any more packets to be sent from this chain.
+		// drop packet but return a slash ack
+		k.AppendSlashAck(ctx, consumerId, consumerConsAddr.String())
 
 		return ccv.SlashPacketHandledResult, nil
 	}
