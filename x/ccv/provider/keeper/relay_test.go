@@ -152,8 +152,14 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 	// Set channel to chain (faking multiple established channels)
-	providerKeeper.SetChannelToConsumerId(ctx, "channel-1", "chain-1")
-	providerKeeper.SetChannelToConsumerId(ctx, "channel-2", "chain-2")
+	consumerId0 := "0"
+	channelId0 := "channel-0"
+	consumerId1 := "1"
+	channelId1 := "channel-1"
+	providerKeeper.SetChannelToConsumerId(ctx, channelId0, consumerId0)
+	providerKeeper.SetChannelToConsumerId(ctx, channelId1, consumerId1)
+	providerKeeper.SetConsumerPhase(ctx, consumerId0, providertypes.CONSUMER_PHASE_LAUNCHED)
+	providerKeeper.SetConsumerPhase(ctx, consumerId1, providertypes.CONSUMER_PHASE_LAUNCHED)
 
 	// Generate a new slash packet data instance with double sign infraction type
 	packetData := testkeeper.GetNewSlashPacketData()
@@ -163,25 +169,25 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
 
 	// Set consumer validator
-	err := providerKeeper.SetConsumerValidator(ctx, "chain-1", providertypes.ConsensusValidator{
+	err := providerKeeper.SetConsumerValidator(ctx, consumerId0, providertypes.ConsensusValidator{
 		ProviderConsAddr: packetData.Validator.Address,
 	})
 	require.NoError(t, err)
 
 	// Set slash meter to negative value and assert a bounce ack is returned
 	providerKeeper.SetSlashMeter(ctx, math.NewInt(-5))
-	ackResult, err := executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
+	ackResult, err := executeOnRecvSlashPacket(t, &providerKeeper, ctx, channelId0, 1, packetData)
 	require.Equal(t, ccv.SlashPacketBouncedResult, ackResult)
 	require.NoError(t, err)
 
 	// Set consumer validator
-	err = providerKeeper.SetConsumerValidator(ctx, "chain-2", providertypes.ConsensusValidator{
+	err = providerKeeper.SetConsumerValidator(ctx, consumerId1, providertypes.ConsensusValidator{
 		ProviderConsAddr: packetData.Validator.Address,
 	})
 	require.NoError(t, err)
 
 	// Also bounced for chain-2
-	ackResult, err = executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-2", 2, packetData)
+	ackResult, err = executeOnRecvSlashPacket(t, &providerKeeper, ctx, channelId1, 2, packetData)
 	require.Equal(t, ccv.SlashPacketBouncedResult, ackResult)
 	require.NoError(t, err)
 
@@ -189,7 +195,7 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	providerKeeper.SetSlashMeter(ctx, math.NewInt(5))
 
 	// Set the consumer validator
-	err = providerKeeper.SetConsumerValidator(ctx, "chain-1", providertypes.ConsensusValidator{ProviderConsAddr: packetData.Validator.Address})
+	err = providerKeeper.SetConsumerValidator(ctx, consumerId0, providertypes.ConsensusValidator{ProviderConsAddr: packetData.Validator.Address})
 	require.NoError(t, err)
 
 	// Mock call to GetEffectiveValPower, so that it returns 2.
@@ -213,7 +219,7 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	gomock.InOrder(calls...)
 
 	// Execute on recv and confirm slash packet handled result is returned
-	ackResult, err = executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
+	ackResult, err = executeOnRecvSlashPacket(t, &providerKeeper, ctx, channelId0, 1, packetData)
 	require.Equal(t, ccv.SlashPacketHandledResult, ackResult)
 	require.NoError(t, err)
 
