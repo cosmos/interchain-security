@@ -343,10 +343,27 @@ func (k Keeper) OnRecvSlashPacket(
 		return ccv.V1Result, nil
 	}
 
-	// Check that chain is launched and the validator belongs to the consumer chain valset
-	if k.GetConsumerPhase(ctx, consumerId) == providertypes.CONSUMER_PHASE_LAUNCHED && !k.IsConsumerValidator(ctx, consumerId, providerConsAddr) {
-		k.Logger(ctx).Error("cannot jail validator %s that does not belong to consumer %s valset",
-			providerConsAddr.String(), consumerId)
+	// check that the chain is launched
+	if k.GetConsumerPhase(ctx, consumerId) != providertypes.CONSUMER_PHASE_LAUNCHED {
+		k.Logger(ctx).Info("cannot jail validator on a chain that is not currently launched",
+			"consumerId", consumerId,
+			"phase", k.GetConsumerPhase(ctx, consumerId),
+			"provider cons addr", providerConsAddr.String(),
+		)
+
+		// drop packet but return a slash ack
+		k.AppendSlashAck(ctx, consumerId, consumerConsAddr.String())
+
+		return ccv.SlashPacketHandledResult, nil
+	}
+
+	// check that the validator belongs to the consumer chain valset
+	if !k.IsConsumerValidator(ctx, consumerId, providerConsAddr) {
+		k.Logger(ctx).Error("cannot jail validator that does not belong on the consumer valset",
+			"consumerId", consumerId,
+			"provider cons addr", providerConsAddr.String(),
+		)
+
 		// drop packet but return a slash ack so that the consumer can send another slash packet
 		k.AppendSlashAck(ctx, consumerId, consumerConsAddr.String())
 
