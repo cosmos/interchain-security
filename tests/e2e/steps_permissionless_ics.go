@@ -142,9 +142,10 @@ func stepsPermissionlessICS() []Step {
 						SpawnTime:     0,
 					},
 					PowerShapingParams: &PowerShapingParameters{
-						TopN:      0,
-						Allowlist: []string{getDefaultValidators()[ValidatorID("carol")].ValconsAddress},
-						Denylist:  []string{getDefaultValidators()[ValidatorID("bob")].ValconsAddress},
+						TopN:         0,
+						Allowlist:    []string{getDefaultValidators()[ValidatorID("carol")].ValconsAddress},
+						Denylist:     []string{getDefaultValidators()[ValidatorID("bob")].ValconsAddress},
+						Prioritylist: []string{getDefaultValidators()[ValidatorID("carol")].ValconsAddress},
 					},
 				},
 				State: State{},

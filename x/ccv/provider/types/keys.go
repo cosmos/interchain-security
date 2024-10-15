@@ -154,6 +154,8 @@ const (
 	ConsumerIdToAllowlistedRewardDenomKeyName = "ConsumerIdToAllowlistedRewardDenomKey"
 
 	ConsumerRewardsAllocationByDenomKeyName = "ConsumerRewardsAllocationByDenomKey"
+
+	PrioritylistKeyName = "PrioritylistKey"
 )
 
 // getKeyPrefixes returns a constant map of all the byte prefixes for existing keys
@@ -391,6 +393,10 @@ func getKeyPrefixes() map[string]byte {
 		// ConsumerRewardsAllocationByDenomKeyName is the key for storing the consumer rewards for a specific consumer chain and denom
 		ConsumerRewardsAllocationByDenomKeyName: 55,
 
+		// PrioritylistKey is the key for storing the mapping from a consumer chain to the set of validators that are
+		// prioritylisted.
+		PrioritylistKeyName: 56,
+
 		// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO TestPreserveBytePrefix() IN keys_test.go
 	}
 }
@@ -595,6 +601,16 @@ func DenylistKeyPrefix() byte {
 // DenylistKey returns the key for storing consumer chains denylists
 func DenylistKey(consumerId string, providerAddr ProviderConsAddress) []byte {
 	return StringIdAndConsAddrKey(DenylistKeyPrefix(), consumerId, providerAddr.ToSdkConsAddr())
+}
+
+// PrioritylistKeyPrefix returns the key prefix for storing consumer chains prioritylists
+func PrioritylistKeyPrefix() byte {
+	return mustGetKeyPrefix(PrioritylistKeyName)
+}
+
+// PrioritylistKey returns the key for storing consumer chains prioritylists
+func PrioritylistKey(consumerId string, providerAddr ProviderConsAddress) []byte {
+	return StringIdAndConsAddrKey(PrioritylistKeyPrefix(), consumerId, providerAddr.ToSdkConsAddr())
 }
 
 // OptedInKeyPrefix returns the key prefix for storing whether a validator is opted in on a consumer chain.

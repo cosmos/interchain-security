@@ -447,7 +447,12 @@ func TestGetConsumerChain(t *testing.T) {
 		{types.NewProviderConsAddress([]byte("providerAddr6"))},
 		{},
 	}
-
+	prioritylists := [][]types.ProviderConsAddress{
+		{},
+		{types.NewProviderConsAddress([]byte("providerAddr1")), types.NewProviderConsAddress([]byte("providerAddr2"))},
+		{types.NewProviderConsAddress([]byte("providerAddr3"))},
+		{},
+	}
 	allowInactiveVals := []bool{true, false, true, false}
 
 	minStakes := []math.Int{
@@ -486,6 +491,9 @@ func TestGetConsumerChain(t *testing.T) {
 		for _, addr := range denylists[i] {
 			pk.SetDenylist(ctx, consumerID, addr)
 		}
+		for _, addr := range prioritylists[i] {
+			pk.SetPrioritylist(ctx, consumerID, addr)
+		}
 		strAllowlist := make([]string, len(allowlists[i]))
 		for j, addr := range allowlists[i] {
 			strAllowlist[j] = addr.String()
@@ -494,6 +502,11 @@ func TestGetConsumerChain(t *testing.T) {
 		strDenylist := make([]string, len(denylists[i]))
 		for j, addr := range denylists[i] {
 			strDenylist[j] = addr.String()
+		}
+
+		strPrioritylist := make([]string, len(prioritylists[i]))
+		for j, addr := range allowlists[i] {
+			strPrioritylist[j] = addr.String()
 		}
 
 		metadataLists = append(metadataLists, types.ConsumerMetadata{Name: chainIDs[i]})
@@ -520,6 +533,7 @@ func TestGetConsumerChain(t *testing.T) {
 				MinStake:                minStakes[i].Uint64(),
 				ConsumerId:              consumerIDs[i],
 				AllowlistedRewardDenoms: allowlistedRewardDenoms[i],
+				Prioritylist:            strPrioritylist,
 			})
 	}
 
@@ -666,6 +680,7 @@ func TestQueryConsumerChains(t *testing.T) {
 			Metadata:                metadata,
 			ConsumerId:              consumerId,
 			AllowlistedRewardDenoms: &types.AllowlistedRewardDenoms{Denoms: []string{}},
+			Prioritylist:            []string{},
 		}
 		consumerIds[i] = consumerId
 		consumers[i] = &c

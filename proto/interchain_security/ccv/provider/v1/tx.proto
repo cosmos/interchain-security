@@ -189,11 +189,6 @@ message MsgConsumerAddition {
   uint64 min_stake = 19;
   // Corresponds to whether inactive validators are allowed to validate the consumer chain.
   bool allow_inactive_vals = 20;
-  // Corresponds to a list of provider consensus addresses of validators that should have PRIORITY to validate on the consumer chain,
-  // meaning as long as they are eligible/opted in to validate on the consumer chain, the validator set will be
-  // filled with these validators first, and other validators will be added to the validator set only if there are
-  // not enough eligible priority validators.
-  repeated string prioritylist = 21;
 }
 
 
@@ -345,11 +340,6 @@ message MsgConsumerModification {
   uint64 min_stake = 10;
   // Corresponds to whether inactive validators are allowed to validate the consumer chain.
   bool allow_inactive_vals = 11;
-  // Corresponds to a list of provider consensus addresses of validators that should have PRIORITY to validate on the consumer chain,
-  // meaning as long as they are eligible/opted in to validate on the consumer chain, the validator set will be
-  // filled with these validators first, and other validators will be added to the validator set only if there are
-  // not enough eligible priority validators.
-  repeated string prioritylist = 12;
 }
 
 message MsgConsumerModificationResponse {}

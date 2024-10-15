@@ -527,6 +527,9 @@ func ValidatePowerShapingParameters(powerShapingParameters PowerShapingParameter
 	if err := ValidateConsAddressList(powerShapingParameters.Denylist, MaxValidatorCount); err != nil {
 		return errorsmod.Wrapf(ErrInvalidPowerShapingParameters, "Denylist: %s", err.Error())
 	}
+	if err := ValidateConsAddressList(powerShapingParameters.Prioritylist, MaxValidatorCount); err != nil {
+		return errorsmod.Wrapf(ErrInvalidPowerShapingParameters, "Prioritylist: %s", err.Error())
+	}
 
 	return nil
 }
