@@ -13,6 +13,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+          ref: tk/check-testing-docs-nightly
 
     - name: Setup Go
       uses: actions/setup-go@v5
@@ -43,6 +45,7 @@ jobs:
         commit-message: "docs: update testing documentation"
         title: "docs: update testing documentation"
         branch: "bot/update-testing-docs"
+        base: tk/check-testing-docs-nightly
         delete-branch: true
         body: |
           This PR updates the testing documentation.
