@@ -25,8 +25,8 @@ jobs:
     - name: Generate testing docs
       run: make build-testing-docs
 
-    - name: Check for changes
-      id: check_changes
+    - name: Check for changes in integration tests documentation
+      id: check_changes_pr
       run: |
         git show HEAD:scripts/test_doc/test_documentation.md > committed_file.md
         cp scripts/test_doc/test_documentation.md generated_file.md
@@ -34,7 +34,6 @@ jobs:
           echo "changes_detected=true" >> $GITHUB_OUTPUT
         else
           echo "changes_detected=false" >> $GITHUB_OUTPUT
-        fi
 
     - name: Create Pull Request
       if: steps.check_changes.outputs.changes_detected == 'true'
