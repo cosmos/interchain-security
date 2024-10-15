@@ -1,7 +1,7 @@
 name: Check testing docs nightly
 on:
   schedule:
-    - cron: "0 12 * * *"
+    - cron: "30 20 * * *" #trigger it in 5 minutes
 
 jobs:
   check-testing-docs:
