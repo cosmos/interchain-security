@@ -272,6 +272,8 @@ message PowerShapingParameters {
   uint64 min_stake = 6;
   // Corresponds to whether inactive validators are allowed to validate the consumer chain.
   bool allow_inactive_vals = 7;
+  // corresponds to a list of provider consensus addresses of validators that have priority
+  repeated string prioritylist = 8;
 }
 
 ```
