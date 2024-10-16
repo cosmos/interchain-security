@@ -1840,6 +1840,191 @@ func stepsValidatorsDenylistedChain() []Step {
 	return s
 }
 
+// stepsValidatorsAllowlistedChain starts a provider chain and an Opt-In chain with an prioritylist
+func stepsValidatorsPrioritylistedChain() []Step {
+	s := []Step{
+		{
+			Action: StartChainAction{
+				Chain: ChainID("provi"),
+				Validators: []StartChainValidator{
+					{Id: ValidatorID("alice"), Stake: 100000000, Allocation: 10000000000},
+					{Id: ValidatorID("bob"), Stake: 200000000, Allocation: 10000000000},
+					{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
+				},
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 300,
+					},
+				},
+			},
+		},
+		{
+			Action: CreateConsumerChainAction{
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				ConsumerChain: ChainID("consu"),
+				InitParams: &InitializationParameters{
+					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+					SpawnTime:     uint(time.Minute * 10),
+				},
+				PowerShapingParams: &PowerShapingParameters{
+					TopN:            0,
+					ValidatorSetCap: 2,
+				},
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					ProposedConsumerChains: &[]string{"consu"},
+				},
+			},
+		},
+		{
+			Action: OptInAction{
+				Chain:     ChainID("consu"),
+				Validator: ValidatorID("alice"),
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {},
+						ValidatorID("bob"):   {},
+						ValidatorID("carol"): {},
+					},
+				},
+			},
+		},
+		{
+			Action: OptInAction{
+				Chain:     ChainID("consu"),
+				Validator: ValidatorID("bob"),
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {},
+						ValidatorID("bob"):   {},
+						ValidatorID("carol"): {},
+					},
+				},
+			},
+		},
+		{
+			Action: OptInAction{
+				Chain:     ChainID("consu"),
+				Validator: ValidatorID("carol"),
+			},
+			State: State{
+				ChainID("provi"): ChainState{
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {},
+						ValidatorID("bob"):   {},
+						ValidatorID("carol"): {},
+					},
+				},
+			},
+		},
+		{
+			Action: AssignConsumerPubKeyAction{
+				Chain:           ChainID("consu"),
+				Validator:       ValidatorID("carol"),
+				ConsumerPubkey:  getDefaultValidators()[ValidatorID("carol")].ConsumerValPubKey,
+				ReconfigureNode: true,
+			},
+			State: State{},
+		},
+		{
+			Action: UpdateConsumerChainAction{
+				Chain:         ChainID("provi"),
+				From:          ValidatorID("alice"),
+				ConsumerChain: ChainID("consu"),
+				InitParams: &InitializationParameters{
+					InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
+					SpawnTime:     0,
+				},
+				PowerShapingParams: &PowerShapingParameters{
+					TopN:            0,
+					ValidatorSetCap: 2,
+					Prioritylist: []string{
+						"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
+						"cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
+					},
+				},
+			},
+			State: State{},
+		},
+		{
+			Action: StartConsumerChainAction{
+				ConsumerChain: ChainID("consu"),
+				ProviderChain: ChainID("provi"),
+				Validators: []StartChainValidator{
+					{Id: ValidatorID("alice"), Stake: 100000000, Allocation: 10000000000},
+					{Id: ValidatorID("bob"), Stake: 200000000, Allocation: 10000000000},
+					{Id: ValidatorID("carol"), Stake: 300000000, Allocation: 10000000000},
+				},
+			},
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 0, // Carol is not in the validator set due to ValidatorSetCap and priority list
+					},
+				},
+			},
+		},
+		{
+			Action: AddIbcConnectionAction{
+				ChainA:  ChainID("consu"),
+				ChainB:  ChainID("provi"),
+				ClientA: 0,
+				ClientB: 0,
+			},
+			State: State{},
+		},
+		{
+			Action: AddIbcChannelAction{
+				ChainA:      ChainID("consu"),
+				ChainB:      ChainID("provi"),
+				ConnectionA: 0,
+				PortA:       "consumer",
+				PortB:       "provider",
+				Order:       "ordered",
+			},
+			State: State{},
+		},
+		{
+			Action: RelayPacketsAction{
+				ChainA:  ChainID("provi"),
+				ChainB:  ChainID("consu"),
+				Port:    "provider",
+				Channel: 0,
+			},
+			State: State{
+				ChainID("consu"): ChainState{
+					ValPowers: &map[ValidatorID]uint{
+						ValidatorID("alice"): 100,
+						ValidatorID("bob"):   200,
+						ValidatorID("carol"): 0,
+					},
+				},
+				ChainID("provi"): ChainState{
+					HasToValidate: &map[ValidatorID][]ChainID{
+						ValidatorID("alice"): {"consu"},
+						ValidatorID("bob"):   {"consu"},
+						ValidatorID("carol"): {},
+					},
+				},
+			},
+		},
+	}
+
+	return s
+}
+
 // stepsModifyChain issues multiple `ConsumerModificationProposal`s on a consumer chain to assert that indeed
 // partial-set security parameters can be changed.
 func stepsModifyChain() []Step {
