@@ -691,6 +691,15 @@ func TestValidateInitialHeight(t *testing.T) {
 			},
 			expPass: false,
 		},
+		{
+			name:    "valid: evmos-like chain IDs",
+			chainId: "evmos_9001-2",
+			initialHeight: clienttypes.Height{
+				RevisionNumber: 2,
+				RevisionHeight: 0,
+			},
+			expPass: true,
+		},
 	}
 	for _, tc := range testCases {
 		err := types.ValidateInitialHeight(tc.initialHeight, tc.chainId)
