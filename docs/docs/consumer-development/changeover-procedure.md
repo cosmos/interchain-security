@@ -34,12 +34,11 @@ However, here are the most important notes and differences between a new consume
         // must correspond to a height that is at least 1 block after the upgrade
         // that will add the `consumer` module to the standalone chain
         // e.g. "upgrade_height": 100 => "revision_height": 101
-        "revision_height": 1,
+        "revision_height": 101,
     },
 ...
 }
 ```
-RevisionNumber: 0, RevisionHeight: 111
 :::
 
 * `genesis_hash` can be safely ignored because the chain is already running. A hash of the standalone chain's initial genesis may be used
