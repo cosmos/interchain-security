@@ -139,6 +139,9 @@ func (k Keeper) DeleteConsumerRewardsAllocationByDenom(ctx sdk.Context, consumer
 
 // AllocateConsumerRewards allocates the given rewards to provider consumer chain with the given consumer id
 func (k Keeper) AllocateConsumerRewards(ctx sdk.Context, consumerId string, alloc types.ConsumerRewardsAllocation) (types.ConsumerRewardsAllocation, error) {
+	if alloc.Rewards.IsZero() {
+		return types.ConsumerRewardsAllocation{}, nil
+	}
 
 	chainId, err := k.GetConsumerChainId(ctx, consumerId)
 	if err != nil {
@@ -268,10 +271,6 @@ func (k Keeper) AllocateConsumerRewards(ctx sdk.Context, consumerId string, allo
 // AllocateTokens performs rewards distribution to the community pool and validators
 // based on the Partial Set Security distribution specification.
 func (k Keeper) AllocateTokens(ctx sdk.Context) {
-	// return if there is no coins in the consumer rewards pool
-	if k.GetConsumerRewardsPool(ctx).IsZero() {
-		return
-	}
 
 	// Iterate over all launched consumer chains.
 	// To avoid large iterations over all the consumer IDs, iterate only over
@@ -312,15 +311,19 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 				)
 				continue
 			}
-			err = k.SetConsumerRewardsAllocationByDenom(cachedCtx, consumerId, denom, remainingRewardDec)
-			if err != nil {
-				k.Logger(ctx).Error(
-					"fail to set rewards for consumer chain",
-					"consumer id", consumerId,
-					"error", err.Error(),
-				)
-				continue
+
+			if !remainingRewardDec.Rewards.IsZero() {
+				err = k.SetConsumerRewardsAllocationByDenom(cachedCtx, consumerId, denom, remainingRewardDec)
+				if err != nil {
+					k.Logger(ctx).Error(
+						"fail to set rewards for consumer chain",
+						"consumer id", consumerId,
+						"error", err.Error(),
+					)
+					continue
+				}
 			}
+
 			writeCache()
 		}
 	}
