@@ -1,7 +1,13 @@
 name: Check testing docs nightly
 on:
-  schedule:
-    - cron: "36 20 * * *" #trigger it in 5 minutes
+  workflow_call:
+  pull_request:
+  merge_group:
+  push:
+    branches:
+      - main
+      - release/v*
+      - feat/*
 
 jobs:
   check-testing-docs:
@@ -34,17 +40,7 @@ jobs:
         cp scripts/test_doc/test_documentation.md generated_file.md
         if ! diff -q generated_file.md committed_file.md; then
           echo "Documentation for integration tests is out of date.Creating the PR..."
-          uses: peter-evans/create-pull-request@v7
-          with:
-            token: ${{ secrets.PRBOT_PAT  }}
-            commit-message: "docs: update testing documentation"
-            title: "docs: update testing documentation"
-            branch: "bot/update-testing-docs"
-            base: tk/check-testing-docs-nightly
-            delete-branch: true
-            body: |
-              This PR updates the testing documentation.
-              Please review the changes and merge if everything looks correct.
+          
         fi
       
         
