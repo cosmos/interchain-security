@@ -30,7 +30,7 @@ jobs:
         cache: true
         cache-dependency-path: go.sum
 
-    - name: Generate testing-docs
+    - name: Generate testing docs for PR
       run: make build-testing-docs
 
     - name: Check for changes in integration tests documentation
@@ -39,18 +39,17 @@ jobs:
         git show HEAD:scripts/test_doc/test_documentation.md > committed_file.md
         cp scripts/test_doc/test_documentation.md generated_file.md
         if ! diff -q generated_file.md committed_file.md; then
-          echo "Documentation for integration tests is out of date.Creating the PR..."
-          uses: peter-evans/create-pull-request@v7
-          with:
-            token: ${{ secrets.PRBOT_PAT  }}
-            commit-message: "docs: update testing documentation"
-            title: "docs: update testing documentation"
-            branch: "bot/update-testing-docs"
-            base: tk/check-testing-docs-nightly
-            delete-branch: true
-            body: |
-              This PR updates the testing documentation.
-              Please review the changes and merge if everything looks correct.
+          echo "changes_detected=true" >> $GITHUB_OUTPUT
+        else
+          echo "changes_detected=false" >> $GITHUB_OUTPUT
         fi
+
+    - name: Create Pull Request
+      if: steps.check_changes.outputs.changes_detected == 'true'
+      run: |
+        echo "Changes detected in testing documentation."
+        echo "A pull request should be created to update the documentation."
+        
+
       
         
