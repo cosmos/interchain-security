@@ -128,7 +128,7 @@ func (k Keeper) CapValidatorSet(
 		return validators
 	}
 
-	// Filter and sort the priority list
+	// Filter and sort the priority list by power
 	priorityValidators := k.FilterAndSortPriorityList(powerShapingParameters.Prioritylist, validators)
 
 	// Create a map to keep track of added validators
