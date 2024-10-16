@@ -1,2 +1,2 @@
 - Allow consumer chains to specify a list of priority validators that are included in the validator set before other validators are considered
-  ([\#xxxx](https://github.com/cosmos/interchain-security/pull/xxxx))
+  ([\#2101](https://github.com/cosmos/interchain-security/pull/2101))

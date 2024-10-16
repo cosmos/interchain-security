@@ -293,12 +293,12 @@ func TestCapValidatorSet(t *testing.T) {
 			expectedValidators:     []providertypes.ConsensusValidator{validatorD, validatorC, validatorB},
 		},
 		{
-			name:                   "ValidatorSetCap = 2 ,with priority list",
+			name:                   "ValidatorSetCap = 2, with priority list",
 			powerShapingParameters: providertypes.PowerShapingParameters{ValidatorSetCap: 2, Prioritylist: []string{string(validatorA.ProviderConsAddr), string(validatorB.ProviderConsAddr)}},
 			expectedValidators:     []providertypes.ConsensusValidator{validatorB, validatorA},
 		},
 		{
-			name:                   "ValidatorSetCap = 3 ,with partial priority list",
+			name:                   "ValidatorSetCap = 3, with partial priority list",
 			powerShapingParameters: providertypes.PowerShapingParameters{ValidatorSetCap: 3, Prioritylist: []string{string(validatorA.ProviderConsAddr)}},
 			expectedValidators:     []providertypes.ConsensusValidator{validatorA, validatorD, validatorC},
 		},
