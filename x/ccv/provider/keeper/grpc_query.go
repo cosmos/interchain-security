@@ -145,7 +145,7 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		MinStake:                powerShapingParameters.MinStake,
 		ConsumerId:              consumerId,
 		AllowlistedRewardDenoms: &types.AllowlistedRewardDenoms{Denoms: allowlistedRewardDenoms},
-		Prioritylist:            strPrioritylist, //strPrioritylist, Should I retrieve from somewhere => where do I retrieve it from? Basically where does priority list come from and where is it stored
+		Prioritylist:            strPrioritylist,
 	}, nil
 }
 
