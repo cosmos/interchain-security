@@ -6,18 +6,21 @@ import (
 	"sort"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	sdkquery "github.com/cosmos/cosmos-sdk/types/query"
+	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
+	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	cryptotestutil "github.com/cosmos/interchain-security/v6/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
@@ -744,6 +747,116 @@ func TestQueryConsumerChains(t *testing.T) {
 			require.Equal(t, expectedResponse.GetChains(), res.GetChains(), tc.name)
 			if tc.limit != 0 {
 				require.Len(t, res.GetChains(), int(tc.limit), tc.name)
+			}
+		})
+	}
+}
+
+func TestQueryConsumerGenesisTime(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	consumerId := "0"
+	initialHeight := clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1}
+	clientId := "07-tendermint-0"
+	genesisTime := time.Now()
+	req := &types.QueryConsumerGenesisTimeRequest{
+		ConsumerId: consumerId,
+	}
+
+	testCases := []struct {
+		name           string
+		setup          func(ctx sdk.Context, pk keeper.Keeper)
+		req            *types.QueryConsumerGenesisTimeRequest
+		expErr         bool
+		expGenesisTime time.Time
+	}{
+		{
+			name:   "expect error request is empty",
+			setup:  func(ctx sdk.Context, pk keeper.Keeper) {},
+			req:    nil,
+			expErr: true,
+		},
+		{
+			name:  "expect error when consumer Id is invalid",
+			setup: func(ctx sdk.Context, pk keeper.Keeper) {},
+			req: &types.QueryConsumerGenesisTimeRequest{
+				ConsumerId: "invalidCID",
+			},
+			expErr: true,
+		},
+		{
+			name:   "expect error when there is no consumer chain with this consumer id",
+			setup:  func(ctx sdk.Context, pk keeper.Keeper) {},
+			req:    req,
+			expErr: true,
+		},
+		{
+			name: "expect error when consumer hasn't been launched yet",
+			setup: func(ctx sdk.Context, pk keeper.Keeper) {
+				err := pk.SetConsumerInitializationParameters(
+					ctx,
+					consumerId,
+					types.ConsumerInitializationParameters{},
+				)
+				require.NoError(t, err)
+			},
+			req:    req,
+			expErr: true,
+		},
+		{
+			name: "expect error when consensus state cannot be found for consumer initial height",
+			setup: func(ctx sdk.Context, pk keeper.Keeper) {
+				err := pk.SetConsumerInitializationParameters(
+					ctx,
+					consumerId,
+					types.ConsumerInitializationParameters{
+						InitialHeight: initialHeight,
+					},
+				)
+				require.NoError(t, err)
+
+				pk.SetConsumerClientId(ctx, consumerId, clientId)
+				mocks.MockClientKeeper.EXPECT().GetClientConsensusState(ctx, clientId, initialHeight).Return(
+					nil, false,
+				)
+			},
+			req:    req,
+			expErr: true,
+		},
+		{
+			name: "expect no error when there is a consensus state for the consumer initial height",
+			setup: func(ctx sdk.Context, pk keeper.Keeper) {
+				err := pk.SetConsumerInitializationParameters(
+					ctx,
+					consumerId,
+					types.ConsumerInitializationParameters{
+						InitialHeight: initialHeight,
+					},
+				)
+				require.NoError(t, err)
+
+				pk.SetConsumerClientId(ctx, consumerId, clientId)
+				mocks.MockClientKeeper.EXPECT().GetClientConsensusState(ctx, clientId, initialHeight).Return(
+					ibcexported.ConsensusState(&ibctm.ConsensusState{Timestamp: genesisTime}), true,
+				)
+			},
+			req:            req,
+			expErr:         false,
+			expGenesisTime: genesisTime,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.setup(ctx, providerKeeper)
+			res, err := providerKeeper.QueryConsumerGenesisTime(ctx, tc.req)
+			if !tc.expErr {
+				require.NoError(t, err)
+				require.True(t, tc.expGenesisTime.Equal(res.GenesisTime))
+			} else {
+				require.Error(t, err)
+				require.Equal(t, res, (*types.QueryConsumerGenesisTimeResponse)(nil))
 			}
 		})
 	}

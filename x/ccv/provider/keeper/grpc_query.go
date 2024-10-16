@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"sort"
+	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -615,5 +616,76 @@ func (k Keeper) QueryConsumerChain(goCtx context.Context, req *types.QueryConsum
 		Metadata:           metadata,
 		InitParams:         &initParams,
 		PowerShapingParams: &powerParams,
+	}, nil
+}
+
+// QueryConsumerChain returns the genesis time
+// of the consumer chain associated with the provided consumer id
+func (k Keeper) QueryConsumerGenesisTime(goCtx context.Context, req *types.QueryConsumerGenesisTimeRequest) (*types.QueryConsumerGenesisTimeResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	consumerId := req.ConsumerId
+	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// phase := k.GetConsumerPhase(ctx, consumerId)
+	// if phase == types.CONSUMER_PHASE_UNSPECIFIED {
+	// 	return nil, status.Errorf(
+	// 		codes.InvalidArgument,
+	// 		"cannot get consumer genesis time for consumer Id: %s: %s",
+	// 		consumerId, types.ErrUnknownConsumerId,
+	// 	)
+	// }
+
+	// if phase != types.CONSUMER_PHASE_LAUNCHED {
+	// 	return nil, status.Errorf(
+	// 		codes.InvalidArgument,
+	// 		"cannot get consumer genesis time for consumer Id: %s: consumer hasn't been launched yet",
+	// 		consumerId,
+	// 	)
+	// }
+
+	// Get consumer initialization params. If they aren't found,
+	// it means that there is no consumer for that consumerId.
+	params, err := k.GetConsumerInitializationParameters(ctx, consumerId)
+	if err != nil {
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			"cannot get consumer genesis time for consumer Id: %s: %s",
+			consumerId, types.ErrUnknownConsumerId,
+		)
+	}
+
+	// Get the consumer clientId. If it isn't found, it means
+	// that the consumer hasn't been launched or has been stopped and deleted.
+	clientID, ok := k.GetConsumerClientId(ctx, consumerId)
+	if !ok {
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			"cannot get consumer genesis time for consumer Id: %s: consumer hasn't been launched or has been stopped and deleted",
+			consumerId,
+		)
+	}
+
+	cs, ok := k.clientKeeper.GetClientConsensusState(
+		ctx,
+		clientID,
+		params.InitialHeight,
+	)
+	if !ok {
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			"cannot get consumer genesis time for consumer Id: %s: cannot find consensus state for initial height: %s",
+			consumerId,
+			params.InitialHeight,
+		)
+	}
+
+	return &types.QueryConsumerGenesisTimeResponse{
+		GenesisTime: time.Unix(0, int64(cs.GetTimestamp())),
 	}, nil
 }

@@ -144,6 +144,14 @@ service Query {
     option (google.api.http).get =
         "/interchain_security/ccv/provider/consumer_chain/{consumer_id}";
   }
+
+  // QueryConsumerGenesisTime returns the genesis time
+  // of the consumer chain associated with the provided consumer id
+  rpc QueryConsumerGenesisTime(QueryConsumerGenesisTimeRequest)
+      returns (QueryConsumerGenesisTimeResponse) {
+    option (google.api.http).get =
+        "/interchain_security/ccv/provider/consumer_genesis_time/{consumer_id}";
+  }
 }
 
 message QueryConsumerGenesisRequest {
@@ -384,4 +392,13 @@ message QueryConsumerChainResponse {
   ConsumerMetadata metadata = 5 [ (gogoproto.nullable) = false ];
   ConsumerInitializationParameters init_params = 6;
   PowerShapingParameters power_shaping_params = 7;
+}
+
+message QueryConsumerGenesisTimeRequest {
+  string consumer_id = 1;
+}
+
+message QueryConsumerGenesisTimeResponse {
+  google.protobuf.Timestamp genesis_time = 1
+  [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
 }
