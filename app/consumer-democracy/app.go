@@ -38,6 +38,7 @@ import (
 	"cosmossdk.io/x/feegrant"
 	feegrantkeeper "cosmossdk.io/x/feegrant/keeper"
 	feegrantmodule "cosmossdk.io/x/feegrant/module"
+
 	// add mint
 	"cosmossdk.io/x/upgrade"
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
@@ -681,12 +682,7 @@ func New(
 			// upgrade handler code is application specific. However, as an example, standalone to consumer
 			// changeover chains should utilize customized upgrade handler code similar to below.
 
-			// TODO: should have a way to read from current node home
-			userHomeDir, err := os.UserHomeDir()
-			if err != nil {
-				stdlog.Println("Failed to get home dir %2", err)
-			}
-			nodeHome := userHomeDir + "/.sovereign/config/genesis.json"
+			nodeHome := homePath + "/.sovereign/config/genesis.json"
 			appState, _, err := genutiltypes.GenesisStateFromGenFile(nodeHome)
 			if err != nil {
 				return fromVM, fmt.Errorf("failed to unmarshal genesis state: %w", err)
