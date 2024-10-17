@@ -59,7 +59,7 @@ Example of initialization parameters:
     // Initial height of new consumer chain.
     // For a completely new chain, this will be {0,1}.
     "initial_height" : {
-        "revision_height": 0,
+        "revision_height": 1,
         "revision_number": 1,
     },
     // Hash of the consumer chain genesis state without the consumer CCV module genesis params.
