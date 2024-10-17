@@ -35,14 +35,11 @@ jobs:
 
     - name: Check for changes in integration tests documentation
       id: check_changes_pr
+      continue-on-error: true
       run: |
         git show HEAD:scripts/test_doc/test_documentation.md > committed_file.md
         cp scripts/test_doc/test_documentation.md generated_file.md
-        if ! diff -q generated_file.md committed_file.md; then
-          echo "changes_detected=true" >> $GITHUB_OUTPUT
-        else
-          echo "changes_detected=false" >> $GITHUB_OUTPUT
-        fi
+        diff -q generated_file.md committed_file.md
 
     - name: Create Pull Request
       if: steps.check_changes.outputs.changes_detected == true
