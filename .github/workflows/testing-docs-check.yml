@@ -42,9 +42,17 @@ jobs:
         diff -q generated_file.md committed_file.md
 
     - name: Create Pull Request
-      run: |
-        echo "Changes detected in testing documentation."
-        echo "A pull request should be created to update the documentation."
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.PRBOT_PAT }}
+        commit-message: "docs: update testing documentation"
+        title: "docs: update testing documentation"
+        branch: "bot/update-testing-docs"
+        base: tk/check-testing-docs-nightly
+        delete-branch: true
+        body: |
+          This PR updates the testing documentation.
+          Please review the changes and merge if everything looks correct.
         
 
       
