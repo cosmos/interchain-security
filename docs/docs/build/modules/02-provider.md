@@ -1660,7 +1660,7 @@ where `update-consumer-msg.json` contains:
   "initialization_parameters":{
       "initial_height":{
           "revision_number": 1,
-          "revision_height": 0
+          "revision_height": 1
           },
       "genesis_hash": "",
       "binary_hash": "",
