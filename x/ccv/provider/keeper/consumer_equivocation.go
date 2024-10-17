@@ -184,7 +184,7 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, consumerId string, m
 		return err
 	}
 
-	provAddrs := make([]types.ProviderConsAddress, len(byzantineValidators))
+	provAddrs := make([]types.ProviderConsAddress, 0, len(byzantineValidators))
 
 	// slash, jail, and tombstone the Byzantine validators
 	for _, v := range byzantineValidators {
