@@ -1949,8 +1949,7 @@ func stepsValidatorsPrioritylistedChain() []Step {
 					TopN:            0,
 					ValidatorSetCap: 2,
 					Prioritylist: []string{
-						"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
-						"cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
+						"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq", //alice
 					},
 				},
 			},
@@ -1970,8 +1969,8 @@ func stepsValidatorsPrioritylistedChain() []Step {
 				ChainID("consu"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 100,
-						ValidatorID("bob"):   200,
-						ValidatorID("carol"): 0, // Carol is not in the validator set due to ValidatorSetCap and priority list
+						ValidatorID("bob"):   0, // Bob is not in the validator set due to ValidatorSetCap and priority list
+						ValidatorID("carol"): 300,
 					},
 				},
 			},
