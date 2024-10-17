@@ -48,8 +48,6 @@ jobs:
         commit-message: "docs: update testing documentation"
         title: "docs: update testing documentation"
         branch: "bot/update-testing-docs"
-        base: "tk/check-testing-docs-nightly"
-        delete-branch: true
         body: |
           This PR updates the testing documentation.
           Please review the changes and merge if everything looks correct.
