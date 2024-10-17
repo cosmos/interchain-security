@@ -289,6 +289,7 @@ type PowerShapingParameters struct {
 	Denylist           []string
 	MinStake           uint64
 	AllowInactiveVals  bool
+	Prioritylist       []string
 }
 
 func (tr Chain) updateConsumerChain(action UpdateConsumerChainAction, verbose bool) {
@@ -320,6 +321,7 @@ func (tr Chain) updateConsumerChain(action UpdateConsumerChainAction, verbose bo
 		Denylist:           action.PowerShapingParams.Denylist,
 		MinStake:           action.PowerShapingParams.MinStake,
 		AllowInactiveVals:  action.PowerShapingParams.AllowInactiveVals,
+		Prioritylist:       action.PowerShapingParams.Prioritylist,
 	}
 
 	consumerId := tr.testConfig.chainConfigs[action.ConsumerChain].ConsumerId
@@ -376,6 +378,7 @@ func (tr Chain) createConsumerChain(action CreateConsumerChainAction, verbose bo
 		Denylist:           action.PowerShapingParams.Denylist,
 		MinStake:           action.PowerShapingParams.MinStake,
 		AllowInactiveVals:  action.PowerShapingParams.AllowInactiveVals,
+		Prioritylist:       action.PowerShapingParams.Prioritylist,
 	}
 
 	metadata := types.ConsumerMetadata{
@@ -463,6 +466,7 @@ type SubmitConsumerAdditionProposalAction struct {
 	Denylist            []string
 	MinStake            uint64
 	AllowInactiveVals   bool
+	Prioritylist        []string
 }
 
 func (tr Chain) UpdateConsumer(providerChain ChainID, validator ValidatorID, update types.MsgUpdateConsumer, verbose bool) {
@@ -657,6 +661,7 @@ func (tr Chain) submitConsumerAdditionProposal(
 		Denylist:           action.Denylist,
 		MinStake:           action.MinStake,
 		AllowInactiveVals:  action.AllowInactiveVals,
+		Prioritylist:       action.Prioritylist,
 	}
 	update.PowerShapingParameters = &powerShapingParameters
 	tr.UpdateConsumer(action.Chain, action.From, *update, verbose)
@@ -757,6 +762,7 @@ func (tr Chain) submitConsumerAdditionLegacyProposal(
 		Denylist:                          action.Denylist,
 		MinStake:                          action.MinStake,
 		AllowInactiveVals:                 action.AllowInactiveVals,
+		Prioritylist:                      action.Prioritylist,
 	}
 
 	bz, err := json.Marshal(prop)
@@ -937,6 +943,7 @@ type SubmitConsumerModificationProposalAction struct {
 	AllowInactiveVals  bool
 	MinStake           uint64
 	NewOwner           string
+	Prioritylist       []string
 }
 
 func (tr Chain) submitConsumerModificationProposal(
@@ -962,6 +969,7 @@ func (tr Chain) submitConsumerModificationProposal(
 			ValidatorSetCap:    action.ValidatorSetCap,
 			Allowlist:          action.Allowlist,
 			Denylist:           action.Denylist,
+			Prioritylist:       action.Prioritylist,
 		},
 	}
 
@@ -1019,6 +1027,7 @@ func (tr Chain) submitConsumerModificationLegacyProposal(
 		ValidatorSetCap:    action.ValidatorSetCap,
 		Allowlist:          action.Allowlist,
 		Denylist:           action.Denylist,
+		Prioritylist:       action.Prioritylist,
 	}
 
 	bz, err := json.Marshal(prop)

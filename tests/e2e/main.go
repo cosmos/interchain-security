@@ -192,6 +192,12 @@ var stepChoices = map[string]StepChoice{
 		description: "test partial set security for an Opt-In chain that has a validator denylisted",
 		testConfig:  DefaultTestCfg,
 	},
+	"partial-set-security-validators-prioritylisted": {
+		name:        "partial-set-security-validators-prioritylisted",
+		steps:       stepsValidatorsPrioritylistedChain(),
+		description: "test partial set security for an Opt-In chain that has has some validators prioritylisted",
+		testConfig:  DefaultTestCfg,
+	},
 	"partial-set-security-modification-proposal": {
 		name:        "partial-set-security-modification-proposal",
 		steps:       stepsModifyChain(),
@@ -360,6 +366,7 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 			"partial-set-security-validators-power-cap",
 			"partial-set-security-validators-allowlisted",
 			"partial-set-security-validators-denylisted",
+			"partial-set-security-validators-prioritylisted",
 			"partial-set-security-modification-proposal",
 			"active-set-changes",
 			"inactive-provider-validators-on-consumer",

@@ -80,6 +80,10 @@ This can be useful for chains that want to have a larger validator set than the 
 Consumer chains that enable this feature should strongly consider setting a minimum validator stake to ensure that only validators with some reputation/stake can validate the chain.
 By default, this parameter is set to `false`, i.e., validators outside of the provider's active set are not eligible to opt in. 
 
+### Prioritylist
+
+The consumer chain can specify a priority list of validators for participation in the validator set. Validators on the priority list are considered first when forming the consumer chain's validator set. If a priority list isn't set, the remaining slots are filled based on validator power.
+
 ## Setting Power Shaping Parameters
 
 All the power shaping parameters can be set by the consumer chain in the `MsgCreateConsumer` or `MsgUpdateConsumer` messages.
