@@ -1,6 +1,10 @@
 package main
 
-import "time"
+import (
+	"time"
+
+	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
+)
 
 // stepsDowntime tests validator jailing and slashing.
 //
@@ -434,7 +438,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						ValidatorID("bob"):   500,
 						ValidatorID("carol"): 500,
 					},
-					ConsumerPendingPacketQueueSize: uintPtr(1), // bob's downtime slash packet is queued
+					ConsumerPendingPacketQueueSize: e2e.UintPtr(1), // bob's downtime slash packet is queued
 				},
 			},
 		},
@@ -463,7 +467,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						ValidatorID("bob"):   500,
 						ValidatorID("carol"): 500,
 					},
-					ConsumerPendingPacketQueueSize: uintPtr(0), // slash packet handled ack clears consumer queue
+					ConsumerPendingPacketQueueSize: e2e.UintPtr(0), // slash packet handled ack clears consumer queue
 				},
 			},
 		},
@@ -487,7 +491,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						ValidatorID("bob"):   500, // VSC packet jailing bob is not yet relayed to consumer
 						ValidatorID("carol"): 500,
 					},
-					ConsumerPendingPacketQueueSize: uintPtr(1), // carol's downtime slash packet is queued
+					ConsumerPendingPacketQueueSize: e2e.UintPtr(1), // carol's downtime slash packet is queued
 				},
 			},
 		},
@@ -513,7 +517,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						ValidatorID("bob"):   0, // VSC packet applying bob jailing is also relayed and recv by consumer
 						ValidatorID("carol"): 500,
 					},
-					ConsumerPendingPacketQueueSize: uintPtr(1), // slash packet bounced ack keeps carol's downtime slash packet queued
+					ConsumerPendingPacketQueueSize: e2e.UintPtr(1), // slash packet bounced ack keeps carol's downtime slash packet queued
 				},
 			},
 		},
@@ -541,7 +545,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						ValidatorID("bob"):   0,
 						ValidatorID("carol"): 500,
 					},
-					ConsumerPendingPacketQueueSize: uintPtr(1), // packet still queued
+					ConsumerPendingPacketQueueSize: e2e.UintPtr(1), // packet still queued
 				},
 			},
 		},
@@ -561,7 +565,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 					},
 				},
 				ChainID(consumerName): ChainState{
-					ConsumerPendingPacketQueueSize: uintPtr(1), // packet still queued
+					ConsumerPendingPacketQueueSize: e2e.UintPtr(1), // packet still queued
 				},
 			},
 		},
@@ -582,7 +586,7 @@ func stepsThrottledDowntime(consumerName string) []Step {
 					},
 				},
 				ChainID(consumerName): ChainState{
-					ConsumerPendingPacketQueueSize: uintPtr(0), // relayed slash packet handled ack clears consumer queue
+					ConsumerPendingPacketQueueSize: e2e.UintPtr(0), // relayed slash packet handled ack clears consumer queue
 				},
 			},
 		},

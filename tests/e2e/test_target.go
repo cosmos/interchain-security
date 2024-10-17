@@ -38,23 +38,36 @@ type DockerContainer struct {
 	ImageName    string
 }
 
-func createTarget(testCfg TestConfig, targetCfg TargetConfig) (DockerContainer, error) {
-	targetCfg.providerVersion = testCfg.providerVersion
-	targetCfg.consumerVersion = testCfg.consumerVersion
+func createTarget(testCfg TestConfig, targetCfg TargetConfig, image string) (DockerContainer, error) {
+	targetCfg.providerVersion = testCfg.ProviderVersion
+	targetCfg.consumerVersion = testCfg.ConsumerVersion
 	target := DockerContainer{
 		targetConfig: targetCfg,
-		containerCfg: testCfg.containerConfig,
+		containerCfg: testCfg.ContainerConfig,
 	}
 
-	err := target.Build()
-	if err != nil {
-		return target, fmt.Errorf("failed building target %s\n: %v", target.Info(), err)
+	if len(image) > 0 {
+		if err := target.SetImage(image); err != nil {
+			return target, err
+		}
+	} else {
+		err := target.Build()
+		if err != nil {
+			return target, fmt.Errorf("failed building target %s\n: %v", target.Info(), err)
+		}
 	}
 	return target, nil
 }
 
 func (dc *DockerContainer) GetTargetConfig() TargetConfig {
 	return dc.targetConfig
+}
+
+// Build the docker image for the target container
+func (dc *DockerContainer) SetImage(image string) error {
+	dc.ImageName = image
+	// TODO: check if image exists
+	return nil
 }
 
 // Build the docker image for the target container
@@ -133,7 +146,7 @@ func (dc *DockerContainer) Delete() error {
 // ExecCommand returns the command struct to execute the named program with
 // given arguments on the current target (docker container)
 func (dc *DockerContainer) ExecCommand(name string, arg ...string) *exec.Cmd {
-	args := []string{"exec", dc.containerCfg.InstanceName, name}
+	args := []string{"exec", dc.containerCfg.ContainerName, name}
 	args = append(args, arg...)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	return exec.Command("docker", args...)
@@ -142,7 +155,7 @@ func (dc *DockerContainer) ExecCommand(name string, arg ...string) *exec.Cmd {
 // ExecDetachedCommand returns the command struct to execute the named program with
 // given arguments on the current target (docker container) in _detached_ mode
 func (dc *DockerContainer) ExecDetachedCommand(name string, arg ...string) *exec.Cmd {
-	args := []string{"exec", "-d", dc.containerCfg.InstanceName, name}
+	args := []string{"exec", "-d", dc.containerCfg.ContainerName, name}
 	args = append(args, arg...)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with variable
 	return exec.Command("docker", args...)
@@ -173,14 +186,14 @@ func (dc *DockerContainer) Start() error {
 	if err := dc.Stop(); err != nil {
 		return err
 	}
-	fmt.Println("Starting container: ", dc.containerCfg.InstanceName)
+	fmt.Println("Starting container: ", dc.containerCfg.ContainerName)
 
 	// Run new test container instance with extended privileges.
 	// Extended privileges are granted to the container here to allow for network namespace manipulation (bringing a node up/down)
 	// See: https://docs.docker.com/engine/reference/run/#runtime-privilege-and-linux-capabilities
 	beaconScript := dc.GetTestScriptPath(false, "beacon.sh")
 	//#nosec G204 -- subprocess launched with potential tainted input (no production code)
-	cmd := exec.Command("docker", "run", "--name", dc.containerCfg.InstanceName,
+	cmd := exec.Command("docker", "run", "--name", dc.containerCfg.ContainerName,
 		"--cap-add=NET_ADMIN", "--privileged", dc.ImageName,
 		"/bin/bash", beaconScript)
 
@@ -215,16 +228,16 @@ func (dc *DockerContainer) Start() error {
 
 // Stop will stop the container and remove it
 func (dc *DockerContainer) Stop() error {
-	fmt.Println("Stopping existing containers: ", dc.containerCfg.InstanceName)
+	fmt.Println("Stopping existing containers: ", dc.containerCfg.ContainerName)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "stop", dc.containerCfg.InstanceName)
+	cmd := exec.Command("docker", "stop", dc.containerCfg.ContainerName)
 	bz, err := cmd.CombinedOutput()
 	if err != nil && !strings.Contains(string(bz), "No such container") {
 		return fmt.Errorf("error stopping docker container: %v, %s", err, string(bz))
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd = exec.Command("docker", "rm", dc.containerCfg.InstanceName)
+	cmd = exec.Command("docker", "rm", dc.containerCfg.ContainerName)
 	bz, err = cmd.CombinedOutput()
 	if err != nil && !strings.Contains(string(bz), "No such container") {
 		return fmt.Errorf("error removing docker container: %v, %s", err, string(bz))
@@ -253,5 +266,5 @@ Docker
 		consumerVersion,
 		providerVersion,
 		dc.ImageName,
-		dc.containerCfg.InstanceName)
+		dc.containerCfg.ContainerName)
 }
