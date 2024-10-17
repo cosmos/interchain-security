@@ -45,7 +45,7 @@ jobs:
         fi
 
     - name: Create Pull Request
-      if: steps.check_changes.outputs.changes_detected == 'true'
+      if: steps.check_changes.outputs.changes_detected == true
       run: |
         echo "Changes detected in testing documentation."
         echo "A pull request should be created to update the documentation."
