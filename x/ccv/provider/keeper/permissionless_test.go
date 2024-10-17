@@ -150,14 +150,16 @@ func TestConsumerInitializationParameters(t *testing.T) {
 		HistoricalEntries:                 456,
 		DistributionTransmissionChannel:   "distribution_transmission_channel",
 	}
-	providerKeeper.SetConsumerInitializationParameters(ctx, CONSUMER_ID, expectedInitializationParameters)
+	providerKeeper.SetConsumerChainId(ctx, CONSUMER_ID, "chain-1")
+	err = providerKeeper.SetConsumerInitializationParameters(ctx, CONSUMER_ID, expectedInitializationParameters)
+	require.NoError(t, err)
 	actualInitializationParameters, err := providerKeeper.GetConsumerInitializationParameters(ctx, CONSUMER_ID)
 	require.NoError(t, err)
 	require.Equal(t, expectedInitializationParameters, actualInitializationParameters)
 
 	// assert that overwriting the current initialization record works
 	expectedInitializationParameters = providertypes.ConsumerInitializationParameters{
-		InitialHeight:                     types.Height{RevisionNumber: 2, RevisionHeight: 3},
+		InitialHeight:                     types.Height{RevisionNumber: 1, RevisionHeight: 3},
 		GenesisHash:                       []byte{2, 3},
 		BinaryHash:                        []byte{4, 5},
 		SpawnTime:                         time.Unix(2, 3).UTC(),

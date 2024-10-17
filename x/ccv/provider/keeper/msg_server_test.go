@@ -84,7 +84,7 @@ func TestUpdateConsumer(t *testing.T) {
 	// create a chain before updating it
 	createConsumerResponse, err := msgServer.CreateConsumer(ctx,
 		&providertypes.MsgCreateConsumer{
-			Submitter: "submitter", ChainId: "chainId",
+			Submitter: "submitter", ChainId: "chainId-1",
 			Metadata: providertypes.ConsumerMetadata{
 				Name:        "name",
 				Description: "description",
@@ -113,6 +113,7 @@ func TestUpdateConsumer(t *testing.T) {
 	}
 
 	expectedInitializationParameters := testkeeper.GetTestInitializationParameters()
+	expectedInitializationParameters.InitialHeight.RevisionNumber = 1
 	expectedPowerShapingParameters := testkeeper.GetTestPowerShapingParameters()
 
 	expectedOwnerAddress := "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la"

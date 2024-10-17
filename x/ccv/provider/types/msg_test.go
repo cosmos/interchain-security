@@ -647,3 +647,66 @@ func TestMsgAssignConsumerKeyValidateBasic(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateInitialHeight(t *testing.T) {
+	testCases := []struct {
+		name          string
+		chainId       string
+		initialHeight clienttypes.Height
+		expPass       bool
+	}{
+		{
+			name:    "valid with revision number",
+			chainId: "chain-1",
+			initialHeight: clienttypes.Height{
+				RevisionNumber: 1,
+				RevisionHeight: 0,
+			},
+			expPass: true,
+		},
+		{
+			name:    "valid without revision number",
+			chainId: "chain",
+			initialHeight: clienttypes.Height{
+				RevisionNumber: 0,
+				RevisionHeight: 0,
+			},
+			expPass: true,
+		},
+		{
+			name:    "invalid without revision number",
+			chainId: "chain",
+			initialHeight: clienttypes.Height{
+				RevisionNumber: 1,
+				RevisionHeight: 0,
+			},
+			expPass: false,
+		},
+		{
+			name:    "invalid without revision number",
+			chainId: "chain-1",
+			initialHeight: clienttypes.Height{
+				RevisionNumber: 0,
+				RevisionHeight: 0,
+			},
+			expPass: false,
+		},
+		{
+			name:    "valid: evmos-like chain IDs",
+			chainId: "evmos_9001-2",
+			initialHeight: clienttypes.Height{
+				RevisionNumber: 2,
+				RevisionHeight: 0,
+			},
+			expPass: true,
+		},
+	}
+	for _, tc := range testCases {
+		err := types.ValidateInitialHeight(tc.initialHeight, tc.chainId)
+		if tc.expPass {
+			require.NoError(t, err, "valid case: '%s' should not return error. got %w", tc.name, err)
+		} else {
+			require.Error(t, err, "invalid case: '%s' must return error but got none", tc.name)
+		}
+	}
+}

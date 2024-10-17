@@ -312,11 +312,15 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 
 	// set up some consumer chains
 	for i := 0; i < consumerNum; i++ {
-		chainID := "consumer-" + strconv.Itoa(i)
+		revisionNumber := i + 1
+		chainID := "consumer-" + strconv.Itoa(revisionNumber)
 		metadata := types.ConsumerMetadata{Name: chainID}
+		initializationParameters := types.DefaultConsumerInitializationParameters()
+		initializationParameters.InitialHeight.RevisionNumber = uint64(revisionNumber)
 		msg := types.MsgCreateConsumer{
-			ChainId:  chainID,
-			Metadata: metadata,
+			ChainId:                  chainID,
+			Metadata:                 metadata,
+			InitializationParameters: &initializationParameters,
 		}
 		resp, err := msgServer.CreateConsumer(ctx, &msg)
 		require.NoError(t, err)
@@ -535,7 +539,7 @@ func TestQueryConsumerChain(t *testing.T) {
 	defer ctrl.Finish()
 
 	consumerId := "0"
-	chainId := "consumer-1"
+	chainId := "consumer"
 
 	req := types.QueryConsumerChainRequest{
 		ConsumerId: consumerId,
@@ -644,11 +648,15 @@ func TestQueryConsumerChains(t *testing.T) {
 
 	// create four consumer chains in different phase
 	for i := 0; i < consumerNum; i++ {
-		chainID := "consumer-" + strconv.Itoa(i)
+		revisionNumber := i + 1
+		chainID := "consumer-" + strconv.Itoa(revisionNumber)
 		metadata := types.ConsumerMetadata{Name: chainID}
+		initializationParameters := types.DefaultConsumerInitializationParameters()
+		initializationParameters.InitialHeight.RevisionNumber = uint64(revisionNumber)
 		msg := types.MsgCreateConsumer{
-			ChainId:  chainID,
-			Metadata: metadata,
+			ChainId:                  chainID,
+			Metadata:                 metadata,
+			InitializationParameters: &initializationParameters,
 		}
 		resp, err := msgServer.CreateConsumer(ctx, &msg)
 		require.NoError(t, err)

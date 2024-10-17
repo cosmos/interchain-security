@@ -378,7 +378,7 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 
 	// initialization parameters are optional and hence could be nil;
 	// in that case, set the default
-	initializationParameters := types.ConsumerInitializationParameters{} // default params
+	initializationParameters := types.DefaultConsumerInitializationParameters() // default params
 	if msg.InitializationParameters != nil {
 		initializationParameters = *msg.InitializationParameters
 	}
