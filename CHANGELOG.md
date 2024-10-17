@@ -1,5 +1,33 @@
 # CHANGELOG
 
+## v6.2.0
+
+*October 4, 2024*
+
+### DEPENDENCIES
+
+- Bump [ibc-go](https://github.com/cosmos/ibc-go) to
+  [v8.5.1](https://github.com/cosmos/ibc-go/releases/tag/v8.5.1).
+  ([\#2277](https://github.com/cosmos/interchain-security/pull/2277))
+
+### FEATURES
+
+- `[x/consumer]` Populate the memo on the IBC transfer packets used to send ICS rewards.
+with the required consumer chain Id to identify the consumer to the provider.
+- `[x/provider]` Identify the source of ICS rewards from the IBC transfer packet memo.
+  ([\#2290](https://github.com/cosmos/interchain-security/pull/2290))
+- `[x/provider]` Enable permissionless allowlisting of reward denoms (at most 3) per consumer chain. 
+  ([\#2309](https://github.com/cosmos/interchain-security/pull/2309))
+
+### STATE BREAKING
+
+- `[x/consumer]` Populate the memo on the IBC transfer packets used to send ICS rewards.
+with the required consumer chain Id to identify the consumer to the provider.
+- `[x/provider]` Identify the source of ICS rewards from the IBC transfer packet memo.
+  ([\#2290](https://github.com/cosmos/interchain-security/pull/2290))
+- `[x/provider]` Enable permissionless allowlisting of reward denoms (at most 3) per consumer chain.
+  ([\#2309](https://github.com/cosmos/interchain-security/pull/2309))
+
 ## v6.1.0
 
 *September 20, 2024*
@@ -316,6 +344,29 @@ Backporting of ([\#1964](https://github.com/cosmos/interchain-security/pull/1964
   ([\#1698](https://github.com/cosmos/interchain-security/pull/1698))
 - Revert `PutUnbondingOnHold` behavior to ICS@v1
 ([\#1819](https://github.com/cosmos/interchain-security/pull/1819))
+
+## v4.5.0
+
+*September 30, 2024*
+
+### BUG FIXES
+
+- Remove duplicate event emission on cached context.
+  ([\#2282](https://github.com/cosmos/interchain-security/pull/2282))
+
+### FEATURES
+
+- `[x/consumer]` Populate the memo on the IBC transfer packets used to send ICS rewards
+with the required consumer chain Id to identify the consumer to the provider.
+- `[x/provider]` Identify the source of ICS rewards from the IBC transfer packet memo.
+  ([\#2290](https://github.com/cosmos/interchain-security/pull/2290))
+
+### STATE BREAKING
+
+- `[x/consumer]` Populate the memo on the IBC transfer packets used to send ICS rewards
+with the required consumer chain Id to identify the consumer to the provider.
+- `[x/provider]` Identify the source of ICS rewards from the IBC transfer packet memo.
+  ([\#2290](https://github.com/cosmos/interchain-security/pull/2290))
 
 ## v4.4.0
 
