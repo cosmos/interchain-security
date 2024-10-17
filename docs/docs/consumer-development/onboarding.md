@@ -73,10 +73,10 @@ Example of initialization parameters:
     "spawn_time": "2023-02-28T20:40:00.000000Z",
     // Unbonding period for the consumer chain.
     // It should be smaller than that of the provider.
-    "unbonding_period": 86400000000000,
+    "unbonding_period": 1728000000000000,
     // Timeout period for CCV related IBC packets.
     // Packets are considered timed-out after this interval elapses.
-    "ccv_timeout_period": 259200000000000,
+    "ccv_timeout_period": 2419200000000000,
     // IBC transfer packets will timeout after this interval elapses.
     "transfer_timeout_period": 1800000000000,
     // The fraction of tokens allocated to the consumer redistribution address during distribution events.
@@ -108,7 +108,7 @@ Example of power-shaping parameters:
     // For example, 53 corresponds to a Top 53% chain, meaning that the top 53% provider validators by voting power
     // have to validate the proposed consumer chain. top_N can either be 0 or any value in [50, 100].
     // A chain can join with top_N == 0 as an Opt In chain, or with top_N ∈ [50, 100] as a Top N chain.
-    "top_N": 95,
+    "top_N": 0,
     // Corresponds to the maximum power (percentage-wise) a validator can have on the consumer chain. For instance, if
     // `validators_power_cap` is set to 32, it means that no validator can have more than 32% of the voting power on the
     // consumer chain. Note that this might not be feasible. For example, think of a consumer chain with only
@@ -120,7 +120,7 @@ Example of power-shaping parameters:
     "validator_set_cap": 0,
     // Corresponds to a list of provider consensus addresses of validators that are the ONLY ones that can validate
     // the consumer chain.
-    "allowlist": [],
+    "allowlist": ["cosmosvalcons1l9qq4m300z8c5ez86ak2mp8znftewkwgjlxh88"],
     // Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
     "denylist": [],
     // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.

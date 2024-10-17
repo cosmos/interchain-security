@@ -34,12 +34,11 @@ However, here are the most important notes and differences between a new consume
         // must correspond to a height that is at least 1 block after the upgrade
         // that will add the `consumer` module to the standalone chain
         // e.g. "upgrade_height": 100 => "revision_height": 101
-        "revision_height": 1,
+        "revision_height": 101,
     },
 ...
 }
 ```
-RevisionNumber: 0, RevisionHeight: 111
 :::
 
 * `genesis_hash` can be safely ignored because the chain is already running. A hash of the standalone chain's initial genesis may be used
@@ -177,10 +176,10 @@ Example of initialization parameters  (compare with the [those](./onboarding.md#
     "spawn_time": "2023-02-28T20:40:00.000000Z",
     // Unbonding period for the consumer chain.
     // It should should be smaller than that of the provider.
-    "unbonding_period": 86400000000000,
+    "unbonding_period": 1728000000000000,
     // Timeout period for CCV related IBC packets.
     // Packets are considered timed-out after this interval elapses.
-    "ccv_timeout_period": 259200000000000,
+    "ccv_timeout_period": 2419200000000000,    
     // IBC transfer packets will timeout after this interval elapses.
     "transfer_timeout_period": 1800000000000,
     // The fraction of tokens allocated to the consumer redistribution address during distribution events.

@@ -457,7 +457,7 @@ message MsgUpdateParams {
 }
 ```
 
-### ChangeRewardDenomsProposal
+### MsgChangeRewardDenoms
 
 `MsgChangeRewardDenoms` updates the list of whitelisted denoms accepted by the provider as ICS rewards. 
 The list of accepted denoms is updated through a governance proposal where the signer is the gov module account address.
@@ -1557,7 +1557,7 @@ power_shaping_params:
   allow_inactive_vals: false
   allowlist: []
   denylist: []
-  min_stake: "0"
+  min_stake: 0
   top_N: 100
   validator_set_cap: 0
   validators_power_cap: 0
@@ -1627,7 +1627,7 @@ where `create-consumer-msg.json` contains:
 	"metadata": {
         "name": "pion-1",
         "description":"description of your chain and all other relevant information",
-        "metadata": "some metadata about your chain"
+        "metadata": "{\"forge_json_url\": \"...\", \"stage\": \"mainnet\"}"
     }
 }
 ```
@@ -1663,28 +1663,28 @@ where `update-consumer-msg.json` contains:
 	"metadata": {
         "name": "pion-1",
         "description":"description of your chain and all other relevant information",
-        "metadata": "some metadata about your"
+        "metadata": "{\"forge_json_url\": \"...\", \"stage\": \"mainnet\"}"
     },
   "initialization_parameters":{
       "initial_height":{
-          "revision_number": 0,
-          "revision_height": 1
+          "revision_number": 1,
+          "revision_height": 0
           },
-      "genesis_hash":"2D5C2110941DA54BE07CBB9FACD7E4A2E3253E79BE7BE3E5A1A7BDA518BAA4BE",
-      "binary_hash": "6EF05C2F38BE62A833E5AB51EBF3BA72D1BC1664D7E4A2E3253DA54BE07CF38A",
+      "genesis_hash": "",
+      "binary_hash": "",
       "spawn_time": "2024-09-29T12:57:43Z",
-      "unbonding_period":"2419200s",
-      "ccv_timeout_period": "2419200s",
-      "transfer_timeout_period": "3600s",
+      "unbonding_period": 1728000000000000,
+      "ccv_timeout_period": 2419200000000000,
+      "transfer_timeout_period": 1800000000000,
       "consumer_redistribution_fraction": "0.75",
       "blocks_per_distribution_transmission": "1500",
-      "historical_entries":"1000",
+      "historical_entries": "1000",
       "distribution_transmission_channel": ""
   },
   "power_shaping_parameters":{
-      "top_N":50,
-      "validators_power_cap":50,
-      "validator_set_cap":50,
+      "top_N": 0,
+      "validators_power_cap": 10,
+      "validator_set_cap": 50,
       "allowlist":["cosmosvalcons1l9qq4m300z8c5ez86ak2mp8znftewkwgjlxh88"],
       "denylist":[],
       "min_stake": "1000",
