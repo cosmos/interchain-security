@@ -15,8 +15,13 @@ import (
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
 
-// TestHandleConsumerMisbehaviour tests that handling a valid misbehaviour,
-// with conflicting headers forming an equivocation, results in the jailing of the validators
+// TestHandleConsumerMisbehaviour tests the handling of consumer misbehavior.
+// @Long Description@
+// * Set up a CCV channel and send an empty VSC packet to ensure that the consumer client revision height is greater than 0.
+// * Construct a Misbehaviour object with two conflicting headers and process the equivocation evidence.
+// * Verify that the provider chain correctly processes this misbehavior.
+// * Ensure that all involved validators are jailed, tombstoned, and slashed according to the expected outcomes.
+// * Assert that their tokens are adjusted based on the slashing fraction.
 func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
@@ -82,6 +87,17 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 	}
 }
 
+// TestGetByzantineValidators checks the GetByzantineValidators function on various instances of misbehaviour.
+// @Long Description@
+// * Set up a provider and consumer chain.
+// * Create a header with a subset of the validators on the consumer chain, then create a second header (in a variety of different ways),
+// and check which validators are considered Byzantine by calling the GetByzantineValidators function.
+// * The test scenarios are:
+// - when one of the headers is empty, the function should return an error
+// - when one of the headers has a corrupted validator set (e.g. by a validator having a different public key), the function should return an error
+// - when the signatures in one of the headers are corrupted, the function should return an error
+// - when the attack is an amnesia attack (i.e. the headers have different block IDs), no validator is considered byzantine
+// - for non-amnesia misbehaviour, all validators that signed both headers are considered byzantine
 func (s *CCVTestSuite) TestGetByzantineValidators() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0
@@ -364,6 +380,22 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 	}
 }
 
+// TestCheckMisbehaviour tests that the CheckMisbehaviour function correctly checks for misbehaviour.
+// @Long Description@
+// * Set up a provider and consumer chain.
+// * Create a valid client header and then create a misbehaviour by creating a second header in a variety of different ways.
+// * Check that the CheckMisbehaviour function correctly checks for misbehaviour by verifying that
+// it returns an error when the misbehaviour is invalid and no error when the misbehaviour is valid.
+// * The test scenarios are:
+//   - both headers are identical (returns an error)
+//   - the misbehaviour is not for the consumer chain (returns an error)
+//   - passing an invalid client id (returns an error)
+//   - passing a misbehaviour with different header height (returns an error)
+//   - passing a misbehaviour older than the min equivocation evidence height (returns an error)
+//   - one header of the misbehaviour has insufficient voting power (returns an error)
+//   - passing a valid misbehaviour (no error)
+//
+// * Test does not test actually submitting the misbehaviour to the chain or freezing the client.
 func (s *CCVTestSuite) TestCheckMisbehaviour() {
 	s.SetupCCVChannel(s.path)
 	// required to have the consumer client revision height greater than 0

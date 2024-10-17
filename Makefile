@@ -265,6 +265,9 @@ build-docs-deploy:
 build-docs-local:
 	@cd docs && ./build_local.sh
 
+build-testing-docs:
+	@cd scripts/test_doc && go run extract_docstrings.go
+
 ###############################################################################
 ### 							Test Traces									###
 ###############################################################################
