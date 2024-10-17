@@ -12,7 +12,7 @@ func DefaultConsumerInitializationParameters() ConsumerInitializationParameters 
 	return ConsumerInitializationParameters{
 		InitialHeight: clienttypes.Height{
 			RevisionNumber: 1,
-			RevisionHeight: 0,
+			RevisionHeight: 1,
 		},
 		GenesisHash:                       []byte{},
 		BinaryHash:                        []byte{},
