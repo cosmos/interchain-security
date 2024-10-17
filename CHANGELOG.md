@@ -1,5 +1,33 @@
 # CHANGELOG
 
+## v6.2.0
+
+*October 4, 2024*
+
+### DEPENDENCIES
+
+- Bump [ibc-go](https://github.com/cosmos/ibc-go) to
+  [v8.5.1](https://github.com/cosmos/ibc-go/releases/tag/v8.5.1).
+  ([\#2277](https://github.com/cosmos/interchain-security/pull/2277))
+
+### FEATURES
+
+- `[x/consumer]` Populate the memo on the IBC transfer packets used to send ICS rewards.
+with the required consumer chain Id to identify the consumer to the provider.
+- `[x/provider]` Identify the source of ICS rewards from the IBC transfer packet memo.
+  ([\#2290](https://github.com/cosmos/interchain-security/pull/2290))
+- `[x/provider]` Enable permissionless allowlisting of reward denoms (at most 3) per consumer chain. 
+  ([\#2309](https://github.com/cosmos/interchain-security/pull/2309))
+
+### STATE BREAKING
+
+- `[x/consumer]` Populate the memo on the IBC transfer packets used to send ICS rewards.
+with the required consumer chain Id to identify the consumer to the provider.
+- `[x/provider]` Identify the source of ICS rewards from the IBC transfer packet memo.
+  ([\#2290](https://github.com/cosmos/interchain-security/pull/2290))
+- `[x/provider]` Enable permissionless allowlisting of reward denoms (at most 3) per consumer chain.
+  ([\#2309](https://github.com/cosmos/interchain-security/pull/2309))
+
 ## v6.1.0
 
 *September 20, 2024*
