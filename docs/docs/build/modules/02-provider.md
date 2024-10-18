@@ -3562,9 +3562,9 @@ Output:
 
 </details>
 
-#### Consumer Chain Time
+#### Consumer Genesis Time
 
-The `consumer_chain` endpoint allows to query the consumer chain associated with the consumer id.
+The `consumer_genesis_time` endpoint allows to query command allows to query the genesis time of the consumer chain associated with the consumer id.
 
 ```bash
 interchain_security/ccv/provider/consumer_genesis_time/{consumer_id}
@@ -3580,7 +3580,9 @@ curl http://localhost:1317/interchain_security/ccv/provider/consumer_genesis_tim
 Output:
 
 ```json
-{"genesis_time":"2024-10-18T08:29:46.153234Z"}
+{
+  "genesis_time":"2024-10-18T08:29:46.153234Z"
+}
 ```
 
 </details>
