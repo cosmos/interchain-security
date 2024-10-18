@@ -1558,6 +1558,29 @@ power_shaping_params:
 
 </details>
 
+##### Consumer Genesis Time
+
+The `consumer-genesis-time` command allows to query the genesis time of the consumer chain associated with the consumer id.
+
+```bash
+interchain-security-pd query provider consumer-genesis-time [consumer-id] [flags]
+```
+
+<details>
+  <summary>Example</summary>
+
+```bash
+interchain-security-pd query provider consumer-genesis-time 0
+```
+
+Output: 
+
+```bash
+genesis_time: "2024-10-18T08:13:23.507178095Z"
+```
+
+</details>
+
 #### Transactions
 
 The `tx` commands allows users to interact with the `provider` module.
@@ -2841,6 +2864,29 @@ grpcurl -plaintext -d '{"consumer_id": "0"}' localhost:9090 interchain_security.
 
 </details>
 
+#### Consumer Genesis Time
+
+The `QueryConsumerGenesisTime` command allows to query the genesis time of the consumer chain associated with the consumer id.
+
+```bash
+interchain_security.ccv.provider.v1.Query/QueryConsumerGenesisTime
+```
+
+<details>
+  <summary>Example</summary>
+
+```bash
+grpcurl -plaintext -d '{"consumer_id": "0"}' localhost:9090 interchain_security.ccv.provider.v1.Query/QueryConsumerGenesisTime
+```
+
+```json
+{
+  "genesisTime": "2024-10-18T08:13:23.507178095Z"
+}
+```
+
+</details>
+
 ### REST
 
 A user can query the `provider` module using REST endpoints.
@@ -3512,6 +3558,29 @@ Output:
     "allowInactiveVals": true
   }
 }
+```
+
+</details>
+
+#### Consumer Chain Time
+
+The `consumer_chain` endpoint allows to query the consumer chain associated with the consumer id.
+
+```bash
+interchain_security/ccv/provider/consumer_genesis_time/{consumer_id}
+```
+
+<details>
+  <summary>Example</summary>
+
+```bash
+curl http://localhost:1317/interchain_security/ccv/provider/consumer_genesis_time/0
+```
+
+Output:
+
+```json
+{"genesis_time":"2024-10-18T08:29:46.153234Z"}
 ```
 
 </details>
