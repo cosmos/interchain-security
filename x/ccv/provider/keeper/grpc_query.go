@@ -632,23 +632,6 @@ func (k Keeper) QueryConsumerGenesisTime(goCtx context.Context, req *types.Query
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// phase := k.GetConsumerPhase(ctx, consumerId)
-	// if phase == types.CONSUMER_PHASE_UNSPECIFIED {
-	// 	return nil, status.Errorf(
-	// 		codes.InvalidArgument,
-	// 		"cannot get consumer genesis time for consumer Id: %s: %s",
-	// 		consumerId, types.ErrUnknownConsumerId,
-	// 	)
-	// }
-
-	// if phase != types.CONSUMER_PHASE_LAUNCHED {
-	// 	return nil, status.Errorf(
-	// 		codes.InvalidArgument,
-	// 		"cannot get consumer genesis time for consumer Id: %s: consumer hasn't been launched yet",
-	// 		consumerId,
-	// 	)
-	// }
-
 	// Get consumer initialization params. If they aren't found,
 	// it means that there is no consumer for that consumerId.
 	params, err := k.GetConsumerInitializationParameters(ctx, consumerId)
@@ -671,6 +654,8 @@ func (k Keeper) QueryConsumerGenesisTime(goCtx context.Context, req *types.Query
 		)
 	}
 
+	// Get the consensus state of the consumer client at the initial height,
+	// for which the timestamps corresponds to the consumer genesis time
 	cs, ok := k.clientKeeper.GetClientConsensusState(
 		ctx,
 		clientID,
