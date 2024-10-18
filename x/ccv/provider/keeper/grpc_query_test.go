@@ -765,7 +765,8 @@ func TestQueryConsumerGenesisTime(t *testing.T) {
 	defer ctrl.Finish()
 
 	consumerId := "0"
-	initialHeight := clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1}
+	chainId := "consumer-1"
+	initialHeight := clienttypes.Height{RevisionNumber: 1, RevisionHeight: 1}
 	clientId := "07-tendermint-0"
 	genesisTime := time.Now()
 	req := &types.QueryConsumerGenesisTimeRequest{
@@ -802,10 +803,17 @@ func TestQueryConsumerGenesisTime(t *testing.T) {
 		{
 			name: "expect error when consumer hasn't been launched yet",
 			setup: func(ctx sdk.Context, pk keeper.Keeper) {
+				pk.SetConsumerChainId(
+					ctx,
+					consumerId,
+					chainId,
+				)
 				err := pk.SetConsumerInitializationParameters(
 					ctx,
 					consumerId,
-					types.ConsumerInitializationParameters{},
+					types.ConsumerInitializationParameters{
+						InitialHeight: initialHeight,
+					},
 				)
 				require.NoError(t, err)
 			},
@@ -815,6 +823,11 @@ func TestQueryConsumerGenesisTime(t *testing.T) {
 		{
 			name: "expect error when consensus state cannot be found for consumer initial height",
 			setup: func(ctx sdk.Context, pk keeper.Keeper) {
+				pk.SetConsumerChainId(
+					ctx,
+					consumerId,
+					chainId,
+				)
 				err := pk.SetConsumerInitializationParameters(
 					ctx,
 					consumerId,
@@ -835,6 +848,11 @@ func TestQueryConsumerGenesisTime(t *testing.T) {
 		{
 			name: "expect no error when there is a consensus state for the consumer initial height",
 			setup: func(ctx sdk.Context, pk keeper.Keeper) {
+				pk.SetConsumerChainId(
+					ctx,
+					consumerId,
+					chainId,
+				)
 				err := pk.SetConsumerInitializationParameters(
 					ctx,
 					consumerId,
