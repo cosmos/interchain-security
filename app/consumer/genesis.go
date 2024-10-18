@@ -33,24 +33,16 @@ type GenesisState map[string]json.RawMessage
 type IcsVersion string
 
 const (
-	v2_x   IcsVersion = "v2.x"
-	v3_0_x IcsVersion = "v3.0.x"
-	v3_1_x IcsVersion = "v3.1.x"
-	v3_2_x IcsVersion = "v3.2.x"
-	v3_3_x IcsVersion = "v3.3.x"
 	v4_x_x IcsVersion = "v4.x"
+	v5_x_x IcsVersion = "v5.x"
 )
 
 var TransformationVersions map[string]IcsVersion = map[string]IcsVersion{
-	"v2.x":   v2_x,
-	"v3.0.x": v3_0_x,
-	"v3.1.x": v3_1_x,
-	"v3.2.x": v3_2_x,
-	"v3.3.x": v3_3_x,
-	"v4.x":   v4_x_x,
+	"v4.x": v4_x_x,
+	"v5.x": v5_x_x,
 }
 
-// Transformation of consumer genesis content as it is exported from a provider version v1,2,3
+// Transformation of consumer genesis content as it is exported from a provider version v4
 // to a format readable by current consumer implementation.
 func transformToNew(jsonRaw []byte, ctx client.Context) (json.RawMessage, error) {
 	// v1,2,3 uses deprecated fields of GenesisState type
@@ -101,6 +93,57 @@ func transformToNew(jsonRaw []byte, ctx client.Context) (json.RawMessage, error)
 		return nil, fmt.Errorf("failed marshalling data to new type: %s", err)
 	}
 	return newJson, nil
+}
+
+// Remove a parameter from a JSON object
+func removeParameterFromParams(params json.RawMessage, param string) (json.RawMessage, error) {
+	paramsMap := map[string]json.RawMessage{}
+	if err := json.Unmarshal(params, &paramsMap); err != nil {
+		return nil, fmt.Errorf("unmarshalling 'params' failed: %v", err)
+	}
+	_, exists := paramsMap[param]
+	if exists {
+		delete(paramsMap, param)
+	}
+	return json.Marshal(paramsMap)
+}
+
+// Transformation of consumer genesis content as it is exported by current provider version
+// to a format supported by consumer version v5.x
+func transformToV5(jsonRaw []byte, ctx client.Context) (json.RawMessage, error) {
+	srcConGen := types.ConsumerGenesisState{}
+	err := ctx.Codec.UnmarshalJSON(jsonRaw, &srcConGen)
+	if err != nil {
+		return nil, fmt.Errorf("reading consumer genesis data failed: %s", err)
+	}
+
+	// Remove 'consumer_id' from 'params'
+	params, err := ctx.Codec.MarshalJSON(&srcConGen.Params)
+	if err != nil {
+		return nil, err
+	}
+
+	params, err = removeParameterFromParams(params, "consumer_id")
+	if err != nil {
+		return nil, err
+	}
+
+	// Marshal GenesisState and patch 'params' value
+	result, err := ctx.Codec.MarshalJSON(&srcConGen)
+	if err != nil {
+		return nil, err
+	}
+	genState := map[string]json.RawMessage{}
+	if err := json.Unmarshal(result, &genState); err != nil {
+		return nil, fmt.Errorf("unmarshalling 'GenesisState' failed: %v", err)
+	}
+	genState["params"] = params
+
+	result, err = json.Marshal(genState)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling transformation result failed: %v", err)
+	}
+	return result, nil
 }
 
 // Transformation of consumer genesis content as it is exported by current provider version
@@ -258,16 +301,10 @@ func transformGenesis(ctx client.Context, targetVersion IcsVersion, jsonRaw []by
 	var err error
 
 	switch targetVersion {
-	// v2.x, v3.0-v3.2 share same consumer genesis type
-	case v2_x:
-		newConsumerGenesis, err = transformToV2(jsonRaw, ctx, true)
-	case v3_0_x, v3_1_x, v3_2_x:
-		// same as v2 replacement without need of `prehash_key_before_comparison` removal
-		newConsumerGenesis, err = transformToV2(jsonRaw, ctx, false)
-	case v3_3_x:
-		newConsumerGenesis, err = transformToV33(jsonRaw, ctx)
 	case v4_x_x:
 		newConsumerGenesis, err = transformToNew(jsonRaw, ctx)
+	case v5_x_x:
+		newConsumerGenesis, err = transformToV5(jsonRaw, ctx)
 	default:
 		err = fmt.Errorf("unsupported target version '%s'. Run %s --help",
 			targetVersion, version.AppName)
@@ -336,7 +373,7 @@ func GetConsumerGenesisTransformCmd() *cobra.Command {
 		Short: "Transform CCV consumer genesis data exported to a specific target format",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`
-Transform the consumer genesis data exported from a provider version v1,v2, v3, v4 to a specified consumer target version.
+Transform the consumer genesis data exported from a provider version v5.x v6.x to a specified consumer target version.
 The result is printed to STDOUT.
 
 Note: Content to be transformed is not the consumer genesis file itself but the exported content from provider chain which is used to patch the consumer genesis file!
@@ -349,7 +386,7 @@ $ %s --to v2.x transform /path/to/ccv_consumer_genesis.json
 		Args: cobra.RangeArgs(1, 2),
 		RunE: TransformConsumerGenesis,
 	}
-	cmd.Flags().String("to", string(v4_x_x),
+	cmd.Flags().String("to", string(v5_x_x),
 		fmt.Sprintf("target version for consumer genesis. Supported versions %s",
 			maps.Keys(TransformationVersions)))
 	return cmd
