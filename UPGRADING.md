@@ -1,6 +1,10 @@
-# Upgrading Replicated Security
+# Upgrading Interchain Security
 
-## Unreleased
+## v6.3.x
+
+Upgrading from `v6.2.0` will not require state migration. To upgrade from lower versions, please check the sections below.
+
+## v6.2.x
 
 ### Consumer
 
@@ -21,6 +25,13 @@ func InitializeConsumerId(ctx sdk.Context, consumerKeeper consumerkeeper.Keeper)
 	return consumerKeeper.SetParams(ctx, params)
 }
 ```
+
+## [v6.1.x](https://github.com/cosmos/interchain-security/releases/tag/v6.1.0)
+
+Upgrading from `v6.0.0` will not require state migration.
+
+
+## [v6.0.x](https://github.com/cosmos/interchain-security/releases/tag/v6.0.0)
 
 ### Provider
 
