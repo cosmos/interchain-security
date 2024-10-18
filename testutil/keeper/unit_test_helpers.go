@@ -309,6 +309,7 @@ func GetTestPowerShapingParameters() providertypes.PowerShapingParameters {
 		Denylist:           nil,
 		MinStake:           0,
 		AllowInactiveVals:  false,
+		Prioritylist:       nil,
 	}
 }
 

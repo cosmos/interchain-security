@@ -226,6 +226,7 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 			ValidatorSetCap:    0,
 			Allowlist:          []string{},
 			Denylist:           []string{},
+			Prioritylist:       []string{},
 		},
 		{
 			Top_N:              50,
@@ -233,6 +234,7 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 			ValidatorSetCap:    0,
 			Allowlist:          []string{},
 			Denylist:           []string{},
+			Prioritylist:       []string{},
 		},
 		{
 			Top_N:              50,
@@ -240,6 +242,7 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 			ValidatorSetCap:    0,
 			Allowlist:          []string{},
 			Denylist:           []string{},
+			Prioritylist:       []string{},
 		},
 		{
 			Top_N:              0,
@@ -247,6 +250,7 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 			ValidatorSetCap:    0,
 			Allowlist:          []string{},
 			Denylist:           []string{},
+			Prioritylist:       []string{},
 		},
 		{
 			Top_N:              0,
@@ -254,6 +258,7 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 			ValidatorSetCap:    0,
 			Allowlist:          []string{},
 			Denylist:           []string{},
+			Prioritylist:       []string{},
 		},
 	}
 

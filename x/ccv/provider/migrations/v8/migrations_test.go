@@ -209,6 +209,8 @@ func StoreChainDataUsingChainIdAsKey(ctx sdk.Context, store storetypes.KVStore, 
 
 	providerKeeper.AppendConsumerAddrsToPrune(ctx, data.ChainId, data.PruneTs, data.ConsumerAddr)
 
+	providerKeeper.SetPrioritylist(ctx, data.ChainId, data.ProviderAddr)
+
 	// set Top N
 	topNKey := providertypes.StringIdWithLenKey(LegacyTopNKeyPrefix, data.ChainId)
 	buf := make([]byte, 4)
@@ -284,6 +286,14 @@ func GetChainDataUsingStringId(ctx sdk.Context, providerKeeper providerkeeper.Ke
 	denylist := providerKeeper.GetDenyList(ctx, id)
 	if len(denylist) > 0 {
 		tempProviderAddr := denylist[0]
+		if stopEarly && tempProviderAddr.String() != providerAddr.String() {
+			return ChainData{}, fmt.Errorf("retrieved providerAddr (%s) should be (%s)", tempProviderAddr.String(), providerAddr.String())
+		}
+	}
+
+	prioritylist := providerKeeper.GetPriorityList(ctx, id)
+	if len(prioritylist) > 0 {
+		tempProviderAddr := prioritylist[0]
 		if stopEarly && tempProviderAddr.String() != providerAddr.String() {
 			return ChainData{}, fmt.Errorf("retrieved providerAddr (%s) should be (%s)", tempProviderAddr.String(), providerAddr.String())
 		}
