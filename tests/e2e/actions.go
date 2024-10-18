@@ -637,7 +637,7 @@ func (tr Chain) submitConsumerAdditionProposal(
 		DistributionTransmissionChannel:   action.DistributionChannel,
 	}
 
-	consumerId := tr.CreateConsumer(providerChainCfg.ChainId, consumerChainCfg.ChainId, action.From, Metadata, nil, nil)
+	consumerId := tr.CreateConsumer(providerChainCfg.ChainId, consumerChainCfg.ChainId, action.From, Metadata, &initializationParameters, nil)
 	authority := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
 	// Set the new created consumer-id on the chain's config
 	consumerChainCfg.ConsumerId = consumerId

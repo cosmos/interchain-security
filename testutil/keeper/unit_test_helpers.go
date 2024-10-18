@@ -223,7 +223,7 @@ func SetupForDeleteConsumerChain(t *testing.T, ctx sdk.Context,
 	t.Helper()
 
 	expectations := GetMocksForCreateConsumerClient(ctx, &mocks,
-		"chainID", clienttypes.NewHeight(4, 5))
+		"chainID", clienttypes.NewHeight(0, 5))
 	expectations = append(expectations, GetMocksForSetConsumerChain(ctx, &mocks, "chainID")...)
 
 	gomock.InOrder(expectations...)
@@ -286,7 +286,7 @@ func GetTestConsumerMetadata() providertypes.ConsumerMetadata {
 
 func GetTestInitializationParameters() providertypes.ConsumerInitializationParameters {
 	return providertypes.ConsumerInitializationParameters{
-		InitialHeight:                     clienttypes.NewHeight(4, 5),
+		InitialHeight:                     clienttypes.NewHeight(0, 5),
 		GenesisHash:                       []byte("gen_hash"),
 		BinaryHash:                        []byte("bin_hash"),
 		SpawnTime:                         time.Now().UTC(),
@@ -323,7 +323,7 @@ func GetTestMsgUpdateConsumer() providertypes.MsgUpdateConsumer {
 func GetTestMsgConsumerAddition() providertypes.MsgConsumerAddition {
 	return providertypes.MsgConsumerAddition{
 		ChainId:                           "a ChainId",
-		InitialHeight:                     clienttypes.NewHeight(4, 5),
+		InitialHeight:                     clienttypes.NewHeight(0, 5),
 		GenesisHash:                       []byte(base64.StdEncoding.EncodeToString([]byte("gen_hash"))),
 		BinaryHash:                        []byte(base64.StdEncoding.EncodeToString([]byte("bin_hash"))),
 		SpawnTime:                         time.Now(),

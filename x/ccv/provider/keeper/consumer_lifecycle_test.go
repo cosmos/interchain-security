@@ -56,7 +56,8 @@ func TestPrepareConsumerForLaunch(t *testing.T) {
 
 func TestInitializeConsumer(t *testing.T) {
 	now := time.Now().UTC()
-	consumerId := "13"
+	consumerId := CONSUMER_ID
+	chainId := CONSUMER_CHAIN_ID
 
 	testCases := []struct {
 		name           string
@@ -69,6 +70,7 @@ func TestInitializeConsumer(t *testing.T) {
 			spawnTime: now,
 			setup: func(pk *providerkeeper.Keeper, ctx sdk.Context, spawnTime time.Time) {
 				pk.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_REGISTERED)
+				pk.SetConsumerChainId(ctx, consumerId, chainId)
 				err := pk.SetConsumerInitializationParameters(ctx, consumerId,
 					providertypes.ConsumerInitializationParameters{
 						SpawnTime: spawnTime,
@@ -89,6 +91,7 @@ func TestInitializeConsumer(t *testing.T) {
 			spawnTime: now,
 			setup: func(pk *providerkeeper.Keeper, ctx sdk.Context, spawnTime time.Time) {
 				pk.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_LAUNCHED)
+				pk.SetConsumerChainId(ctx, consumerId, chainId)
 				err := pk.SetConsumerInitializationParameters(ctx, consumerId,
 					providertypes.ConsumerInitializationParameters{
 						SpawnTime: spawnTime,
@@ -110,6 +113,7 @@ func TestInitializeConsumer(t *testing.T) {
 			spawnTime: now,
 			setup: func(pk *providerkeeper.Keeper, ctx sdk.Context, spawnTime time.Time) {
 				pk.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_REGISTERED)
+				pk.SetConsumerChainId(ctx, consumerId, chainId)
 				err := pk.SetConsumerInitializationParameters(ctx, consumerId,
 					providertypes.ConsumerInitializationParameters{
 						SpawnTime: time.Time{},
@@ -150,7 +154,7 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 
 	initializationParameters := []providertypes.ConsumerInitializationParameters{
 		{
-			InitialHeight:                     clienttypes.NewHeight(3, 4),
+			InitialHeight:                     clienttypes.NewHeight(0, 4),
 			GenesisHash:                       []byte{},
 			BinaryHash:                        []byte{},
 			SpawnTime:                         now.Add(-time.Hour * 2).UTC(),
@@ -163,7 +167,7 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 			DistributionTransmissionChannel:   "",
 		},
 		{
-			InitialHeight:                     clienttypes.NewHeight(3, 4),
+			InitialHeight:                     clienttypes.NewHeight(0, 4),
 			GenesisHash:                       []byte{},
 			BinaryHash:                        []byte{},
 			SpawnTime:                         now.Add(-time.Hour).UTC(),
@@ -176,7 +180,7 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 			DistributionTransmissionChannel:   "",
 		},
 		{
-			InitialHeight:                     clienttypes.NewHeight(3, 4),
+			InitialHeight:                     clienttypes.NewHeight(0, 4),
 			GenesisHash:                       []byte{},
 			BinaryHash:                        []byte{},
 			SpawnTime:                         now.Add(time.Hour).UTC(),
@@ -189,7 +193,7 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 			DistributionTransmissionChannel:   "",
 		},
 		{
-			InitialHeight:                     clienttypes.NewHeight(3, 4),
+			InitialHeight:                     clienttypes.NewHeight(0, 4),
 			GenesisHash:                       []byte{},
 			BinaryHash:                        []byte{},
 			SpawnTime:                         now.Add(-time.Hour).UTC(),
@@ -202,7 +206,7 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 			DistributionTransmissionChannel:   "",
 		},
 		{
-			InitialHeight:                     clienttypes.NewHeight(3, 4),
+			InitialHeight:                     clienttypes.NewHeight(0, 4),
 			GenesisHash:                       []byte{},
 			BinaryHash:                        []byte{},
 			SpawnTime:                         now.Add(-time.Minute).UTC(),
@@ -283,11 +287,11 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 
 	// Expect genesis and client creation for only the first, second, and fifth chains (spawn time already passed and valid)
 	expectedCalls := testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, time.Hour)
-	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain0", clienttypes.NewHeight(3, 4))...)
+	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain0", clienttypes.NewHeight(0, 4))...)
 	expectedCalls = append(expectedCalls, testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, time.Hour)...)
-	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain1", clienttypes.NewHeight(3, 4))...)
+	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain1", clienttypes.NewHeight(0, 4))...)
 	expectedCalls = append(expectedCalls, testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, time.Hour)...)
-	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain3", clienttypes.NewHeight(3, 4))...)
+	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain3", clienttypes.NewHeight(0, 4))...)
 
 	gomock.InOrder(expectedCalls...)
 
@@ -479,7 +483,7 @@ func TestCreateConsumerClient(t *testing.T) {
 
 				// Valid client creation is asserted with mock expectations here
 				gomock.InOrder(
-					testkeeper.GetMocksForCreateConsumerClient(ctx, mocks, CONSUMER_CHAIN_ID, clienttypes.NewHeight(4, 5))...,
+					testkeeper.GetMocksForCreateConsumerClient(ctx, mocks, CONSUMER_CHAIN_ID, clienttypes.NewHeight(0, 5))...,
 				)
 			},
 			expClientCreated: true,
@@ -774,7 +778,7 @@ func TestBeginBlockStopConsumers(t *testing.T) {
 		chainId := chainIds[i]
 		// A consumer chain is setup corresponding to each consumerId, making these mocks necessary
 		expectations = append(expectations, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks,
-			chainId, clienttypes.NewHeight(2, 3))...)
+			chainId, clienttypes.NewHeight(0, 3))...)
 		expectations = append(expectations, testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, chainId)...)
 	}
 	// Only first two consumer chains should be stopped
@@ -789,7 +793,7 @@ func TestBeginBlockStopConsumers(t *testing.T) {
 	for i, consumerId := range consumerIds {
 		// Setup a valid consumer chain for each consumerId
 		initializationRecord := testkeeper.GetTestInitializationParameters()
-		initializationRecord.InitialHeight = clienttypes.NewHeight(2, 3)
+		initializationRecord.InitialHeight = clienttypes.NewHeight(0, 3)
 		registrationRecord := testkeeper.GetTestConsumerMetadata()
 
 		providerKeeper.SetConsumerChainId(ctx, consumerId, chainIds[i])
