@@ -2423,7 +2423,7 @@ Output:
 
 #### Throttle State
 
-The `QueryThrottleState` queries the main on-chain state relevant to slash packet throttling.
+The `QueryThrottleState` endpoint queries the main on-chain state relevant to slash packet throttling.
 
 ```bash
 interchain_security.ccv.provider.v1.Query/QueryThrottleState
@@ -2815,7 +2815,7 @@ Output:
 
 #### Consumer Chain
 
-The `QueryConsumerChain` command allows to query the consumer chain associated with the consumer id.
+The `QueryConsumerChain` endpoint allows to query the consumer chain associated with the consumer id.
 
 ```bash
 interchain_security.ccv.provider.v1.Query/QueryConsumerChain
@@ -2866,7 +2866,7 @@ grpcurl -plaintext -d '{"consumer_id": "0"}' localhost:9090 interchain_security.
 
 #### Consumer Genesis Time
 
-The `QueryConsumerGenesisTime` command allows to query the genesis time of the consumer chain associated with the consumer id.
+The `QueryConsumerGenesisTime` endpoint allows to query the genesis time of the consumer chain associated with the consumer id.
 
 ```bash
 interchain_security.ccv.provider.v1.Query/QueryConsumerGenesisTime
