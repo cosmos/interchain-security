@@ -245,7 +245,8 @@ func buildDockerImage(version string, targetCfg TargetConfig, noCache bool) (str
 	out, err := cmd.CombinedOutput()
 	if err != nil && !noCache {
 		// Retry image creation from pristine state by enforcing --no-cache
-		log.Printf("Image creation failed '%v'. Re-trying without cache!", err)
+		log.Printf("Image creation failed '%v'.\n%s\nRe-trying without cache!",
+			err, string(out))
 		return buildDockerImage(version, targetCfg, true)
 	}
 	if err != nil {
