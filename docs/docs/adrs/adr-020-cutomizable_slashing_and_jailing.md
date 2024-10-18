@@ -170,7 +170,7 @@ The additional economical security a consumer gets from slashing is limited:
 Since most of the stake is delegated, slashing punishes delegators more than validators.  
 
 One benefit of slashing is that it acts as a deterrent for someone buying a large amount of staking tokens in order to attack a consumer chain. 
-For example, an attacker could get `$15.000.000` worth of ATOM, which would give them around `1%` voting power on the Cosmos Hub (at the time of this writing).
+For example, an attacker could get `$15,000,000` worth of ATOM, which would give them around `1%` voting power on the Cosmos Hub (at the time of this writing).
 On a consumer chain, this voting power could be amplified depending on the other validators that opt in.
 However, by having the right [power shaping](https://cosmos.github.io/interchain-security/features/power-shaping) settings, the voting power of validators can be capped. 
 This means that even if the attacker manages to double sign without getting slashed, as long as they don't have 1/3+ of the voting power, they cannot benefit from the attack. 
