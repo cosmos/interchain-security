@@ -772,7 +772,7 @@ func TestQueryConsumerGenesisTime(t *testing.T) {
 		expGenesisTime time.Time
 	}{
 		{
-			name:   "expect error request is empty",
+			name:   "expect error when request is empty",
 			setup:  func(ctx sdk.Context, pk keeper.Keeper) {},
 			req:    nil,
 			expErr: true,
