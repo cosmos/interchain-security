@@ -3564,7 +3564,7 @@ Output:
 
 #### Consumer Genesis Time
 
-The `consumer_genesis_time` endpoint allows to query command allows to query the genesis time of the consumer chain associated with the consumer id.
+The `consumer_genesis_time` endpoint allows to query the genesis time of the consumer chain associated with the consumer id.
 
 ```bash
 interchain_security/ccv/provider/consumer_genesis_time/{consumer_id}
