@@ -4,11 +4,8 @@ import (
 	"encoding/binary"
 	fmt "fmt"
 	"sort"
-	time "time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 const (
@@ -59,7 +56,7 @@ const (
 
 	HistoricalInfoKeyName = "HistoricalInfoKey"
 
-	PacketMaturityTimeKeyName = "PacketMaturityTimeKey"
+	DeprecatedPacketMaturityTimeKeyName = "DeprecatedPacketMaturityTimeKey"
 
 	HeightValsetUpdateIDKeyName = "HeightValsetUpdateIDKey"
 
@@ -127,7 +124,9 @@ func getKeyPrefixes() map[string]byte {
 		HistoricalInfoKeyName: 11,
 
 		// PacketMaturityTimeKey is the key for storing maturity time for each received VSC packet
-		PacketMaturityTimeKeyName: 12,
+		// NOTE: This prefix is deprecated, but left in place to avoid state migrations
+		// [DEPRECATED]
+		DeprecatedPacketMaturityTimeKeyName: 12,
 
 		// HeightValsetUpdateIDKey is the key for storing the mapping from block height to valset update ID
 		HeightValsetUpdateIDKeyName: 13,
@@ -261,24 +260,6 @@ func HistoricalInfoKey(height int64) []byte {
 	hBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(hBytes, uint64(height))
 	return append(HistoricalInfoKeyPrefix(), hBytes...)
-}
-
-// PacketMaturityTimeKeyPrefix returns the key prefix for storing maturity time for each received VSC packet
-func PacketMaturityTimeKeyPrefix() []byte {
-	return []byte{mustGetKeyPrefix(PacketMaturityTimeKeyName)}
-}
-
-// PacketMaturityTimeKey returns the key for storing the maturity time for a given received VSC packet id
-func PacketMaturityTimeKey(vscID uint64, maturityTime time.Time) []byte {
-	ts := uint64(maturityTime.UTC().UnixNano())
-	return ccvtypes.AppendMany(
-		// Append the prefix
-		PacketMaturityTimeKeyPrefix(),
-		// Append the time
-		sdk.Uint64ToBigEndian(ts),
-		// Append the vscID
-		sdk.Uint64ToBigEndian(vscID),
-	)
 }
 
 // HeightValsetUpdateIDKeyPrefix returns the key for storing a valset update ID for a given block height
