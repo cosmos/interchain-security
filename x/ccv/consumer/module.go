@@ -197,10 +197,6 @@ func (am AppModule) EndBlock(goCtx context.Context) ([]abci.ValidatorUpdate, err
 	// Execute EndBlock logic for the Reward Distribution sub-protocol
 	am.keeper.EndBlockRD(ctx)
 
-	// NOTE: Slash packets are queued in BeginBlock via the Slash function
-	// Packet ordering is managed by the PendingPackets queue.
-	am.keeper.QueueVSCMaturedPackets(ctx)
-
 	// panics on invalid packets and unexpected send errors
 	am.keeper.SendPackets(ctx)
 
