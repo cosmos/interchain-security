@@ -255,7 +255,7 @@ where create_consumer.json has the following structure:
     "denylist": [],
     "min_stake": "0",
     "allow_inactive_vals": false,
-	  "prioritylist": []
+	"prioritylist": []
   },
   "allowlisted_reward_denoms": {
     "denoms": ["ibc/...", "ibc/..."]
@@ -354,7 +354,7 @@ where update_consumer.json has the following structure:
     "denylist": [],
     "min_stake": "0",
     "allow_inactive_vals": false,
-	  "prioritylist": []
+	"prioritylist": []
    },
   "allowlisted_reward_denoms": {
     "denoms": ["ibc/...", "ibc/..."]

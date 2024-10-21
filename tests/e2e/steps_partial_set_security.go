@@ -1840,7 +1840,7 @@ func stepsValidatorsDenylistedChain() []Step {
 	return s
 }
 
-// stepsValidatorsAllowlistedChain starts a provider chain and an Opt-In chain with an prioritylist
+// stepsValidatorsPrioritylistedChain starts a provider chain and an Opt-In chain with an prioritylist
 func stepsValidatorsPrioritylistedChain() []Step {
 	s := []Step{
 		{
@@ -2006,15 +2006,15 @@ func stepsValidatorsPrioritylistedChain() []Step {
 				ChainID("consu"): ChainState{
 					ValPowers: &map[ValidatorID]uint{
 						ValidatorID("alice"): 100,
-						ValidatorID("bob"):   200,
-						ValidatorID("carol"): 0,
+						ValidatorID("bob"):   0,
+						ValidatorID("carol"): 300,
 					},
 				},
 				ChainID("provi"): ChainState{
 					HasToValidate: &map[ValidatorID][]ChainID{
 						ValidatorID("alice"): {"consu"},
-						ValidatorID("bob"):   {"consu"},
-						ValidatorID("carol"): {},
+						ValidatorID("bob"):   {},
+						ValidatorID("carol"): {"consu"},
 					},
 				},
 			},

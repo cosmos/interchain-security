@@ -88,30 +88,6 @@ func (k Keeper) UpdateMinimumPowerInTopN(ctx sdk.Context, consumerId string, old
 }
 
 // CapValidatorSet caps the provided `validators` if chain with `consumerId` is an Opt In chain with a validator-set cap.
-// If cap is `k`, `CapValidatorSet` returns the first `k` validators from `validators` with the highest power.
-func (k Keeper) CapValidatorSet2(
-	ctx sdk.Context,
-	powerShapingParameters types.PowerShapingParameters,
-	validators []types.ConsensusValidator,
-) []types.ConsensusValidator {
-	if powerShapingParameters.Top_N > 0 {
-		// is a no-op if the chain is a Top N chain
-		return validators
-	}
-
-	validatorSetCap := powerShapingParameters.ValidatorSetCap
-	if validatorSetCap != 0 && int(validatorSetCap) < len(validators) {
-		sort.Slice(validators, func(i, j int) bool {
-			return validators[i].Power > validators[j].Power
-		})
-
-		return validators[:int(validatorSetCap)]
-	} else {
-		return validators
-	}
-}
-
-// CapValidatorSet caps the provided `validators` if chain with `consumerId` is an Opt In chain with a validator-set cap.
 // It prioritizes validators from the priority list and then adds remaining validators up to the cap.
 func (k Keeper) CapValidatorSet(
 	ctx sdk.Context,
