@@ -88,48 +88,34 @@ func (k Keeper) UpdateMinimumPowerInTopN(ctx sdk.Context, consumerId string, old
 }
 
 // CapValidatorSet caps the provided `validators` if chain with `consumerId` is an Opt In chain with a validator-set cap.
-// It prioritizes validators from the priority list and then adds remaining validators up to the cap.
+// It prioritizes validators from the priority list and then adds remaining validators.
 func (k Keeper) CapValidatorSet(
 	ctx sdk.Context,
 	powerShapingParameters types.PowerShapingParameters,
-	validators []types.ConsensusValidator,
+	priorityValidators []types.ConsensusValidator,
+	nonPriorityValidators []types.ConsensusValidator,
 ) []types.ConsensusValidator {
 	if powerShapingParameters.Top_N > 0 {
 		// is a no-op if the chain is a Top N chain
-		return validators
+		return append(priorityValidators, nonPriorityValidators...)
 	}
 
 	validatorSetCap := powerShapingParameters.ValidatorSetCap
-	if validatorSetCap == 0 || int(validatorSetCap) >= len(validators) {
-		return validators
+	totalValidators := len(priorityValidators) + len(nonPriorityValidators)
+	if validatorSetCap == 0 || int(validatorSetCap) >= totalValidators {
+		return append(priorityValidators, nonPriorityValidators...)
 	}
-
-	// Filter and sort the priority list by power
-	priorityValidators := k.FilterAndSortPriorityList(powerShapingParameters.Prioritylist, validators)
-
-	// Create a map to keep track of added validators
-	addedValidators := make(map[string]bool)
 
 	resultValidators := make([]types.ConsensusValidator, 0, validatorSetCap)
 
-	// Add priority validators first.
-	// For each added validator, it marks it as added in the addedValidators map to avoid duplicates later.
+	// Add priority validators first
 	for i := 0; i < len(priorityValidators) && len(resultValidators) < int(validatorSetCap); i++ {
 		resultValidators = append(resultValidators, priorityValidators[i])
-		addedValidators[string(priorityValidators[i].ProviderConsAddr)] = true
 	}
 
-	// Sort validators by power
-	sort.Slice(validators, func(i, j int) bool {
-		return validators[i].Power > validators[j].Power
-	})
-
 	// Add remaining validators up to the cap
-	for i := 0; i < len(validators) && len(resultValidators) < int(validatorSetCap); i++ {
-		if !addedValidators[string(validators[i].ProviderConsAddr)] {
-			resultValidators = append(resultValidators, validators[i])
-			addedValidators[string(validators[i].ProviderConsAddr)] = true
-		}
+	for i := 0; i < len(nonPriorityValidators) && len(resultValidators) < int(validatorSetCap); i++ {
+		resultValidators = append(resultValidators, nonPriorityValidators[i])
 	}
 
 	return resultValidators
@@ -655,30 +641,69 @@ func (k Keeper) UpdatePrioritylist(ctx sdk.Context, consumerId string, priorityl
 	}
 }
 
+// // FilterAndSortPriorityList filters the priority list to include only validators that can validate the chain
+// // by ensuring they are present in the validators list.
+// // It then sorts the filtered list of validators in descending order based on their power.
+// func (k Keeper) FilterAndSortPriorityList(priorityList []string, validators []types.ConsensusValidator) []types.ConsensusValidator {
+// 	validatorMap := make(map[string]types.ConsensusValidator)
+// 	for _, v := range validators {
+// 		validatorMap[string(v.ProviderConsAddr)] = v
+// 	}
+
+// 	filteredPriority := make([]types.ConsensusValidator, 0)
+// 	addedAddresses := make(map[string]bool)
+
+// 	for _, address := range priorityList {
+// 		if validator, exists := validatorMap[address]; exists {
+// 			if !addedAddresses[address] {
+// 				filteredPriority = append(filteredPriority, validator)
+// 				addedAddresses[address] = true
+// 			}
+// 		}
+// 	}
+
+// 	sort.Slice(filteredPriority, func(i, j int) bool {
+// 		return filteredPriority[i].Power > filteredPriority[j].Power
+// 	})
+
+// 	return filteredPriority
+// }
+
 // FilterAndSortPriorityList filters the priority list to include only validators that can validate the chain
-// by ensuring they are present in the validators list.
-// It then sorts the filtered list of validators in descending order based on their power.
-func (k Keeper) FilterAndSortPriorityList(priorityList []string, validators []types.ConsensusValidator) []types.ConsensusValidator {
+// and splits the validators into priority and non-priority sets.
+func (k Keeper) FilterAndSortPriorityList(ctx sdk.Context, priorityList []string, nextValidators []types.ConsensusValidator) ([]types.ConsensusValidator, []types.ConsensusValidator) {
 	validatorMap := make(map[string]types.ConsensusValidator)
-	for _, v := range validators {
+	for _, v := range nextValidators {
 		validatorMap[string(v.ProviderConsAddr)] = v
 	}
 
-	filteredPriority := make([]types.ConsensusValidator, 0)
+	priorityValidators := make([]types.ConsensusValidator, 0)
+	nonPriorityValidators := make([]types.ConsensusValidator, 0)
 	addedAddresses := make(map[string]bool)
 
+	// Form priorityValidators
 	for _, address := range priorityList {
 		if validator, exists := validatorMap[address]; exists {
 			if !addedAddresses[address] {
-				filteredPriority = append(filteredPriority, validator)
+				priorityValidators = append(priorityValidators, validator)
 				addedAddresses[address] = true
+				delete(validatorMap, address)
 			}
 		}
 	}
 
-	sort.Slice(filteredPriority, func(i, j int) bool {
-		return filteredPriority[i].Power > filteredPriority[j].Power
+	// Add remaining validators to nonPriorityValidators
+	for _, validator := range validatorMap {
+		nonPriorityValidators = append(nonPriorityValidators, validator)
+	}
+
+	sort.Slice(priorityValidators, func(i, j int) bool {
+		return priorityValidators[i].Power > priorityValidators[j].Power
 	})
 
-	return filteredPriority
+	sort.Slice(nonPriorityValidators, func(i, j int) bool {
+		return nonPriorityValidators[i].Power > nonPriorityValidators[j].Power
+	})
+
+	return priorityValidators, nonPriorityValidators
 }
