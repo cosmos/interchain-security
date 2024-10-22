@@ -157,6 +157,7 @@ type PlatformDriver interface {
 	// ExecDetachedCommand: when executed the command will be run in the background and call will return immediately
 	ExecDetachedCommand(name string, args ...string) *exec.Cmd
 	GetTestScriptPath(isConsumer bool, script string) string
+	UseCometMock() bool
 }
 type TargetDriver interface {
 	// ChainCommands

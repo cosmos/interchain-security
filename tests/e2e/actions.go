@@ -2598,10 +2598,9 @@ func (tr Chain) AssignConsumerPubKey(action e2e.AssignConsumerPubKeyAction, verb
 	}
 
 	if !action.ExpectError {
+		// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 		tr.waitForTx(e2e.ChainID("provi"), bz, 30*time.Second)
 	}
-	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-	//tr.waitBlocks(ChainID("provi"), 2, 30*time.Second)
 }
 
 // SlashMeterReplenishmentAction polls the slash meter on provider until value is achieved

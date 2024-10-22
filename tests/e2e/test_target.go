@@ -18,6 +18,7 @@ type ExecutionTarget interface {
 	ExecCommand(name string, arg ...string) *exec.Cmd
 	// ExecDetachedCommand: when executed the command will be run in the background and call will return immediately
 	ExecDetachedCommand(name string, args ...string) *exec.Cmd
+	UseCometMock() bool
 	Start() error
 	Stop() error
 	Build() error
@@ -30,6 +31,7 @@ type TargetConfig struct {
 	useGaia         bool
 	providerVersion string
 	consumerVersion string
+	useCometMock    bool
 }
 type DockerContainer struct {
 	targetConfig TargetConfig
@@ -57,6 +59,10 @@ func createTarget(testCfg TestConfig, targetCfg TargetConfig, image string) (Doc
 		}
 	}
 	return target, nil
+}
+
+func (dc *DockerContainer) UseCometMock() bool {
+	return dc.targetConfig.useCometMock
 }
 
 func (dc *DockerContainer) GetTargetConfig() TargetConfig {

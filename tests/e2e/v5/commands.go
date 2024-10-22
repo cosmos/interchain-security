@@ -56,6 +56,10 @@ type Commands struct {
 	Target           e2e.PlatformDriver
 }
 
+func (tr Commands) UseCometMock() bool {
+	return tr.Target.UseCometMock()
+}
+
 func (tr Commands) ExecCommand(name string, arg ...string) *exec.Cmd {
 	return tr.Target.ExecCommand(name, arg...)
 }
@@ -801,10 +805,8 @@ func (tr Commands) GetQueryNodeRPCAddress(chain ChainID) string {
 
 func (tr Commands) getValidatorNode(chain ChainID, validator ValidatorID) string {
 	// for CometMock, validatorNodes are all the same address as the query node (which is CometMocks address)
-	// TODO: @bermuell Fix this !!!
-	/* 	if tr.useCometmock {
-		return tr.target.GetQueryNode(chain)
+	if tr.UseCometMock() {
+		return tr.GetQueryNode(chain)
 	}
-	*/
 	return "tcp://" + tr.GetValidatorIP(chain, validator) + ":26658"
 }

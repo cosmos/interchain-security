@@ -62,6 +62,7 @@ func (tr Chain) waitForTx(chain ChainID, txResponse []byte, timeout time.Duratio
 			log.Printf("query transaction failed with err=%s, resp=%s", err.Error(), res)
 			panic(fmt.Sprintf("\n\nwaitForTx on chain '%s' has timed out after: %s\n\n", chain, timeout))
 		}
+		time.Sleep(1 * time.Second)
 	}
 }
 

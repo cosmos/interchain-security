@@ -481,7 +481,7 @@ func createTestConfigs(cfgType TestConfigType, providerVersions, consumerVersion
 // createTestRunners creates test runners to run each test case on each target
 func createTestRunners(testCases []testStepsWithConfig) []TestRunner {
 	runners := []TestRunner{}
-	targetCfg := TargetConfig{useGaia: *useGaia, localSdkPath: *localSdkPath, gaiaTag: *gaiaTag}
+	targetCfg := TargetConfig{useGaia: *useGaia, localSdkPath: *localSdkPath, gaiaTag: *gaiaTag, useCometMock: *useCometmock}
 
 	for _, tc := range testCases {
 		testConfigs := createTestConfigs(tc.config, providerVersions, consumerVersions)
