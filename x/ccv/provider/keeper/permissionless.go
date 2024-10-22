@@ -134,6 +134,14 @@ func (k Keeper) SetConsumerInitializationParameters(ctx sdk.Context, consumerId 
 	if err != nil {
 		return fmt.Errorf("failed to marshal initialization parameters (%+v) for consumer id (%s): %w", parameters, consumerId, err)
 	}
+	chainId, err := k.GetConsumerChainId(ctx, consumerId)
+	if err != nil {
+		return fmt.Errorf("failed to get consumer chain ID for consumer id (%s): %w", consumerId, err)
+	}
+	// validate that the initial height matches the chain ID
+	if err := types.ValidateInitialHeight(parameters.InitialHeight, chainId); err != nil {
+		return fmt.Errorf("invalid initial height for consumer id (%s): %w", consumerId, err)
+	}
 	store.Set(types.ConsumerIdToInitializationParametersKey(consumerId), bz)
 	return nil
 }

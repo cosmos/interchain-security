@@ -3,9 +3,11 @@ package types
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	"strings"
 
+	"github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
 	errorsmod "cosmossdk.io/errors"
@@ -618,5 +620,13 @@ func validateProviderAddress(addr, signer string) error {
 		return fmt.Errorf("ValAddress converted to AccAddress (%s) must match the signer address (%s)", accAddr, signer)
 	}
 
+	return nil
+}
+
+func ValidateInitialHeight(initialHeight clienttypes.Height, chainID string) error {
+	revision := clienttypes.ParseChainID(chainID)
+	if initialHeight.RevisionNumber != revision {
+		return fmt.Errorf("chain ID (%s) doesn't match revision number (%d)", chainID, initialHeight.RevisionNumber)
+	}
 	return nil
 }

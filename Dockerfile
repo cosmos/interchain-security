@@ -29,8 +29,8 @@ RUN go mod tidy
 RUN make install
 
 # Get Hermes build
-## TODO: import Hermes release from ghcr.io/informalsystems repository when 
-## a Hermes release contains the patch in 
+# TODO: import Hermes release from ghcr.io/informalsystems repository when 
+# a Hermes release contains the patch in 
 # https://github.com/informalsystems/hermes/pull/4182
 FROM --platform=linux/amd64 otacrew/hermes-ics:latest AS hermes-builder
 

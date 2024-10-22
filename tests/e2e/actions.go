@@ -500,7 +500,7 @@ func (tr Chain) SubmitConsumerAdditionProposal(
 		DistributionTransmissionChannel:   action.DistributionChannel,
 	}
 
-	bz, err := tr.target.CreateConsumer(providerChainCfg.ChainId, consumerChainCfg.ChainId, action.From, Metadata, nil, nil)
+	bz, err := tr.target.CreateConsumer(providerChainCfg.ChainId, consumerChainCfg.ChainId, action.From, Metadata, &initializationParameters, nil)
 	if err != nil {
 		log.Fatalf("create consumer failed error: '%s'\n%s", err.Error(), string(bz))
 	}
