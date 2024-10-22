@@ -235,7 +235,7 @@ func (k Keeper) ComputeNextValidators(
 
 	priorityValidators, nonPriorityValidators := k.FilterAndSortPriorityList(ctx, powerShapingParameters.Prioritylist, nextValidators)
 
-	nextValidators = k.CapValidatorSet(ctx, powerShapingParameters, priorityValidators, nonPriorityValidators)
+	nextValidators = k.CapValidatorSet(ctx, powerShapingParameters, append(priorityValidators, nonPriorityValidators...))
 
 	nextValidators = k.CapValidatorsPower(ctx, powerShapingParameters.ValidatorsPowerCap, nextValidators)
 
