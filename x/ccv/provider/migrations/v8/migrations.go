@@ -218,12 +218,6 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 			return err
 		}
 
-		// chainId -> Prioritylist
-		err = rekeyChainIdAndConsAddrKey(store, providertypes.PrioritylistKeyPrefix(), chainId, consumerId)
-		if err != nil {
-			return err
-		}
-
 		// chainId -> ConsumerRewardsAllocations
 		rekeyFromChainIdToConsumerId(store, ConsumerRewardsAllocationKeyPrefix, chainId, consumerId)
 
@@ -292,7 +286,6 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 
 		allowlist := TransformConsAddressesToBech32Addresses(pk.GetAllowList(ctx, consumerId))
 		denylist := TransformConsAddressesToBech32Addresses(pk.GetDenyList(ctx, consumerId))
-		prioritylist := TransformConsAddressesToBech32Addresses(pk.GetPriorityList(ctx, consumerId))
 
 		powerShapingParameters := providertypes.PowerShapingParameters{
 			Top_N:              topN,
@@ -303,7 +296,6 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 			// do not set those since they do not exist in a previous interchain-security version and hence cannot be set
 			MinStake:          0,
 			AllowInactiveVals: false,
-			Prioritylist:      prioritylist,
 		}
 		err = pk.SetConsumerPowerShapingParameters(ctx, consumerId, powerShapingParameters)
 		if err != nil {

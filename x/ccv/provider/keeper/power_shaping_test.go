@@ -1163,7 +1163,7 @@ func TestFilterAndSortPriorityList(t *testing.T) {
 	}
 }
 
-// Helper function to check if validators are sorted by power in descending order
+// Checks if validators are sorted by power in descending order
 func checkSortedByPower(t *testing.T, validators []providertypes.ConsensusValidator) {
 	for i := 1; i < len(validators); i++ {
 		require.GreaterOrEqual(t, validators[i-1].Power, validators[i].Power, "Validators are not sorted by power in descending order")
