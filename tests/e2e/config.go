@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
-	"strconv"
 	"strings"
 	"time"
 
@@ -13,64 +12,14 @@ import (
 	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
 )
 
+type (
+	TestConfig = e2e.TestConfig
+)
+
 var (
 	ProviderAccountPrefix = "cosmos"
 	ConsumerAccountPrefix = "consumer"
 )
-
-// hermesTemplates maps hermes configuration templates to hermes versions
-var hermesTemplates = map[string]string{
-	"v1.4": `
-
-	[[chains]]
-	account_prefix = "%s"
-	clock_drift = "5s"
-	gas_multiplier = 1.1
-	grpc_addr = "%s"
-	id = "%s"
-	key_name = "%s"
-	max_gas = 20000000
-	rpc_addr = "%s"
-	rpc_timeout = "10s"
-	store_prefix = "ibc"
-	trusting_period = "14days"
-	websocket_addr = "%s"
-
-	[chains.gas_price]
-		denom = "stake"
-		price = 0.000
-
-	[chains.trust_threshold]
-		denominator = "3"
-		numerator = "1"
-	`,
-	// introduction of event_source
-	"v1.6": `
-
-	[[chains]]
-	account_prefix = "%s"
-	clock_drift = "5s"
-	gas_multiplier = 1.1
-	grpc_addr = "%s"
-	id = "%s"
-	key_name = "%s"
-	max_gas = 20000000
-	rpc_addr = "%s"
-	rpc_timeout = "10s"
-	store_prefix = "ibc"
-	trusting_period = "14days"
-	event_source = { mode = "push", url = "%s", batch_delay = "50ms" }
-	ccv_consumer_chain = %v
-
-	[chains.gas_price]
-		denom = "stake"
-		price = 0.000
-
-	[chains.trust_threshold]
-		denominator = "3"
-		numerator = "1"
-	`,
-}
 
 // type aliases for shared types from e2e package
 type (
@@ -103,35 +52,6 @@ const (
 	InactiveValsExtraValsTestCfg TestConfigType = "inactive-vals-extra-vals"
 	PermissionlessTestCfg        TestConfigType = "permissionless-ics"
 )
-
-type TestConfig struct {
-	// These are the non altered values during a typical test run, where multiple test runs can exist
-	// to validate different action sequences and corresponding state checks.
-	containerConfig  ContainerConfig
-	validatorConfigs map[ValidatorID]ValidatorConfig
-	chainConfigs     map[ChainID]ChainConfig
-	consumerChains   map[ConsumerID]ChainConfig
-	providerVersion  string
-	consumerVersion  string
-	// override config.toml parameters
-	// usually used to override timeout_commit
-	// having shorter timeout_commit reduces the test runtime because blocks are produced faster
-	// lengthening the timeout_commit increases the test runtime because blocks are produced slower but the test is more reliable
-	tendermintConfigOverride string
-	useCometmock             bool // if false, nodes run CometBFT
-	useGorelayer             bool // if false, Hermes is used as the relayer
-	// chains which are running, i.e. producing blocks, at the moment
-	runningChains map[ChainID]bool
-	// Used with CometMock. The time by which chains have been advanced. Used to keep chains in sync: when a new chain is started, advance its time by this value to keep chains in sync.
-	timeOffset       time.Duration
-	transformGenesis bool
-	name             string
-}
-
-// Initialize initializes the TestConfig instance by setting the runningChains field to an empty map.
-func (tr *TestConfig) Initialize() {
-	tr.runningChains = make(map[ChainID]bool)
-}
 
 // getIcsVersion returns earliest ICS version (relevant to config) a git reference is part of
 // This is needed for version dependent configs as CompatibilityConfig.
@@ -217,8 +137,8 @@ func GetTestConfig(cfgType TestConfigType, providerVersion, consumerVersion stri
 	default:
 		panic(fmt.Sprintf("Invalid test config: %s", cfgType))
 	}
-	testCfg.consumerVersion = consumerVersion
-	testCfg.providerVersion = providerVersion
+	testCfg.ConsumerVersion = consumerVersion
+	testCfg.ProviderVersion = providerVersion
 	return testCfg
 }
 
@@ -304,15 +224,14 @@ func getDefaultValidators() map[ValidatorID]ValidatorConfig {
 
 func SlashThrottleTestConfig() TestConfig {
 	tr := TestConfig{
-		name: string(SlashThrottleTestCfg),
-		containerConfig: ContainerConfig{
-			ContainerName: "interchain-security-slash-container",
-			InstanceName:  "interchain-security-slash-instance",
+		Name: string(SlashThrottleTestCfg),
+		ContainerConfig: ContainerConfig{
+			ContainerName: "interchain-security-slash-instance",
 			CcvVersion:    "1",
 			Now:           time.Now(),
 		},
-		validatorConfigs: getDefaultValidators(),
-		chainConfigs: map[ChainID]ChainConfig{
+		ValidatorConfigs: getDefaultValidators(),
+		ChainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
 				AccountPrefix:  ProviderAccountPrefix,
@@ -345,7 +264,7 @@ func SlashThrottleTestConfig() TestConfig {
 					".app_state.ccvconsumer.params.retry_delay_period = \"30s\"",
 			},
 		},
-		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
+		TendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 	}
 	tr.Initialize()
@@ -358,12 +277,12 @@ func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig
 	testCfg := DefaultTestConfig()
 
 	// get version dependent validator configs
-	testCfg.validatorConfigs = getValidatorConfigFromVersion(providerVersion, consumerVersion)
+	testCfg.ValidatorConfigs = getValidatorConfigFromVersion(providerVersion, consumerVersion)
 
 	var providerConfig, consumerConfig ChainConfig
 	if !semver.IsValid(consumerVersion) {
 		fmt.Printf("Invalid sem-version '%s' for provider.Using default provider chain config\n", consumerVersion)
-		consumerConfig = testCfg.chainConfigs[ChainID("consu")]
+		consumerConfig = testCfg.ChainConfigs[ChainID("consu")]
 	} else if semver.Compare(consumerVersion, "v3.0.0") < 0 {
 		fmt.Println("Using consumer chain config for v2.0.0")
 		consumerConfig = ChainConfig{
@@ -394,13 +313,13 @@ func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig
 		}
 	} else {
 		fmt.Println("Using default consumer chain config")
-		consumerConfig = testCfg.chainConfigs[ChainID("consu")]
+		consumerConfig = testCfg.ChainConfigs[ChainID("consu")]
 	}
 
 	// Get the provider chain config for a specific version
 	if !semver.IsValid(providerVersion) {
 		fmt.Printf("Invalid sem-version '%s' for provider. Using default provider chain config\n", providerVersion)
-		providerConfig = testCfg.chainConfigs[ChainID("provi")]
+		providerConfig = testCfg.ChainConfigs[ChainID("provi")]
 	} else if semver.Compare(providerVersion, "v3.0.0") < 0 {
 		fmt.Println("Using provider chain config for v2.x.x")
 		providerConfig = ChainConfig{
@@ -479,29 +398,28 @@ func CompatibilityTestConfig(providerVersion, consumerVersion string) TestConfig
 		}
 	} else {
 		fmt.Println("Using default provider chain config")
-		providerConfig = testCfg.chainConfigs[ChainID("provi")]
+		providerConfig = testCfg.ChainConfigs[ChainID("provi")]
 	}
 
-	testCfg.chainConfigs[ChainID("consu")] = consumerConfig
-	testCfg.chainConfigs[ChainID("provi")] = providerConfig
-	testCfg.name = string(CompatibilityTestCfg)
-	testCfg.containerConfig.InstanceName = fmt.Sprintf("%s_%s-%s",
-		testCfg.containerConfig.InstanceName,
+	testCfg.ChainConfigs[ChainID("consu")] = consumerConfig
+	testCfg.ChainConfigs[ChainID("provi")] = providerConfig
+	testCfg.Name = string(CompatibilityTestCfg)
+	testCfg.ContainerConfig.ContainerName = fmt.Sprintf("%s_%s-%s",
+		testCfg.ContainerConfig.ContainerName,
 		consumerVersion, providerVersion)
 	return testCfg
 }
 
 func DefaultTestConfig() TestConfig {
 	tr := TestConfig{
-		name: string(DefaultTestCfg),
-		containerConfig: ContainerConfig{
-			ContainerName: "interchain-security-container",
-			InstanceName:  "interchain-security-instance",
+		Name: string(DefaultTestCfg),
+		ContainerConfig: ContainerConfig{
+			ContainerName: "interchain-security-instance",
 			CcvVersion:    "1",
 			Now:           time.Now(),
 		},
-		validatorConfigs: getDefaultValidators(),
-		chainConfigs: map[ChainID]ChainConfig{
+		ValidatorConfigs: getDefaultValidators(),
+		ChainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
 				AccountPrefix:  ProviderAccountPrefix,
@@ -533,7 +451,7 @@ func DefaultTestConfig() TestConfig {
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 		},
-		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
+		TendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 	}
 	tr.Initialize()
@@ -556,15 +474,14 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 	}
 
 	tr := TestConfig{
-		name: name,
-		containerConfig: ContainerConfig{
-			ContainerName: "interchain-security-democ-container",
-			InstanceName:  "interchain-security-democ-instance",
+		Name: name,
+		ContainerConfig: ContainerConfig{
+			ContainerName: "interchain-security-democ-instance",
 			CcvVersion:    "1",
 			Now:           time.Now(),
 		},
-		validatorConfigs: getDefaultValidators(),
-		chainConfigs: map[ChainID]ChainConfig{
+		ValidatorConfigs: getDefaultValidators(),
+		ChainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
 				AccountPrefix:  ProviderAccountPrefix,
@@ -591,7 +508,7 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 				GenesisChanges: consumerGenChanges,
 			},
 		},
-		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
+		TendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 	}
 	tr.Initialize()
@@ -601,15 +518,14 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 // PermissionlessTestConfig contains a provider chain and 2 cosumer chains with the same chain identifier
 func PermissionlessTestConfig() TestConfig {
 	tr := TestConfig{
-		name: string(PermissionlessTestCfg),
-		containerConfig: e2e.ContainerConfig{
-			ContainerName: "interchain-security-container",
-			InstanceName:  "interchain-security-instance",
+		Name: string(PermissionlessTestCfg),
+		ContainerConfig: e2e.ContainerConfig{
+			ContainerName: "interchain-security-instance",
 			CcvVersion:    "1",
 			Now:           time.Now(),
 		},
-		validatorConfigs: getDefaultValidators(),
-		chainConfigs: map[ChainID]e2e.ChainConfig{
+		ValidatorConfigs: getDefaultValidators(),
+		ChainConfigs: map[ChainID]e2e.ChainConfig{
 			"provi": {
 				ChainId:        ChainID("provi"),
 				AccountPrefix:  ProviderAccountPrefix,
@@ -654,7 +570,7 @@ func PermissionlessTestConfig() TestConfig {
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 		},
-		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
+		TendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 	}
 	tr.Initialize()
@@ -662,21 +578,21 @@ func PermissionlessTestConfig() TestConfig {
 }
 func InactiveProviderValsTestConfig() TestConfig {
 	tr := DefaultTestConfig()
-	tr.name = "InactiveValsConfig"
+	tr.Name = "InactiveValsConfig"
 	// set the MaxProviderConsensusValidators param to 2
-	proviConfig := tr.chainConfigs[ChainID("provi")]
+	proviConfig := tr.ChainConfigs[ChainID("provi")]
 	proviConfig.GenesisChanges += " | .app_state.provider.params.max_provider_consensus_validators = \"2\""
 
-	consuConfig := tr.chainConfigs[ChainID("consu")]
+	consuConfig := tr.ChainConfigs[ChainID("consu")]
 	// set the soft_opt_out threshold to 0% to make sure all validators are slashed for downtime
 	consuConfig.GenesisChanges += " | .app_state.ccvconsumer.params.soft_opt_out_threshold = \"0.0\""
-	tr.chainConfigs[ChainID("provi")] = proviConfig
-	tr.chainConfigs[ChainID("consu")] = consuConfig
+	tr.ChainConfigs[ChainID("provi")] = proviConfig
+	tr.ChainConfigs[ChainID("consu")] = consuConfig
 
 	// make it so that carol does not use a consumer key
-	carolConfig := tr.validatorConfigs[ValidatorID("carol")]
+	carolConfig := tr.ValidatorConfigs[ValidatorID("carol")]
 	carolConfig.UseConsumerKey = false
-	tr.validatorConfigs[ValidatorID("carol")] = carolConfig
+	tr.ValidatorConfigs[ValidatorID("carol")] = carolConfig
 
 	return tr
 }
@@ -685,16 +601,16 @@ func InactiveValsExtraValsTestConfig() TestConfig {
 	tr := InactiveProviderValsTestConfig()
 
 	// set the MaxProviderConsensusValidators param to 4
-	proviConfig := tr.chainConfigs[ChainID("provi")]
+	proviConfig := tr.ChainConfigs[ChainID("provi")]
 	proviConfig.GenesisChanges += " | .app_state.provider.params.max_provider_consensus_validators = \"4\""
 	// set max validators to 5
 	proviConfig.GenesisChanges += " | .app_state.staking.params.max_validators = \"5\""
-	tr.chainConfigs[ChainID("provi")] = proviConfig
+	tr.ChainConfigs[ChainID("provi")] = proviConfig
 
 	// add the extra validators to the validator config
 	extraVals := GetExtraValidatorConfigs()
 	for valId, val := range extraVals {
-		tr.validatorConfigs[valId] = val
+		tr.ValidatorConfigs[valId] = val
 	}
 
 	return tr
@@ -704,14 +620,14 @@ func SmallMaxValidatorsTestConfig() TestConfig {
 	cfg := DefaultTestConfig()
 
 	// set the MaxValidators to 2
-	proviConfig := cfg.chainConfigs[ChainID("provi")]
+	proviConfig := cfg.ChainConfigs[ChainID("provi")]
 	proviConfig.GenesisChanges += "| .app_state.staking.params.max_validators = 2"
-	cfg.chainConfigs[ChainID("provi")] = proviConfig
+	cfg.ChainConfigs[ChainID("provi")] = proviConfig
 
-	carolConfig := cfg.validatorConfigs["carol"]
+	carolConfig := cfg.ValidatorConfigs["carol"]
 	// make carol use her own key
 	carolConfig.UseConsumerKey = false
-	cfg.validatorConfigs["carol"] = carolConfig
+	cfg.ValidatorConfigs["carol"] = carolConfig
 
 	return cfg
 }
@@ -720,14 +636,14 @@ func GovTestConfig() TestConfig {
 	cfg := DefaultTestConfig()
 
 	// set the quorum to 50%
-	proviConfig := cfg.chainConfigs[ChainID("provi")]
+	proviConfig := cfg.ChainConfigs[ChainID("provi")]
 	proviConfig.GenesisChanges += "| .app_state.gov.params.quorum = \"0.5\""
-	cfg.chainConfigs[ChainID("provi")] = proviConfig
+	cfg.ChainConfigs[ChainID("provi")] = proviConfig
 
-	carolConfig := cfg.validatorConfigs["carol"]
+	carolConfig := cfg.ValidatorConfigs["carol"]
 	// make carol use her own key
 	carolConfig.UseConsumerKey = false
-	cfg.validatorConfigs["carol"] = carolConfig
+	cfg.ValidatorConfigs["carol"] = carolConfig
 
 	return cfg
 }
@@ -736,9 +652,9 @@ func InactiveValsGovTestConfig() TestConfig {
 	cfg := GovTestConfig()
 
 	// set the MaxValidators to 1
-	proviConfig := cfg.chainConfigs[ChainID("provi")]
+	proviConfig := cfg.ChainConfigs[ChainID("provi")]
 	proviConfig.GenesisChanges += "| .app_state.staking.params.max_validators = 1"
-	cfg.chainConfigs[ChainID("provi")] = proviConfig
+	cfg.ChainConfigs[ChainID("provi")] = proviConfig
 
 	return cfg
 }
@@ -760,27 +676,26 @@ func InactiveValsMintTestConfig() TestConfig {
 // AdjustMint adjusts the mint parameters to have a very low goal bonded amount
 // and a high inflation rate change
 func AdjustMint(cfg TestConfig) {
-	proviConfig := cfg.chainConfigs[ChainID("provi")]
+	proviConfig := cfg.ChainConfigs[ChainID("provi")]
 	// total supply is 30000000000stake; we want to set the mint bonded goal to
 	// a small fraction of that
 	proviConfig.GenesisChanges += "| .app_state.mint.params.goal_bonded = \"0.001\"" +
 		"| .app_state.mint.params.inflation_rate_change = \"1\"" +
 		"| .app_state.mint.params.inflation_max = \"0.5\"" +
 		"| .app_state.mint.params.inflation_min = \"0.1\""
-	cfg.chainConfigs[ChainID("provi")] = proviConfig
+	cfg.ChainConfigs[ChainID("provi")] = proviConfig
 }
 
 func MultiConsumerTestConfig() TestConfig {
 	tr := TestConfig{
-		name: string(MulticonsumerTestCfg),
-		containerConfig: ContainerConfig{
-			ContainerName: "interchain-security-multic-container",
-			InstanceName:  "interchain-security-multic-instance",
+		Name: string(MulticonsumerTestCfg),
+		ContainerConfig: ContainerConfig{
+			ContainerName: "interchain-security-multic-instance",
 			CcvVersion:    "1",
 			Now:           time.Now(),
 		},
-		validatorConfigs: getDefaultValidators(),
-		chainConfigs: map[ChainID]ChainConfig{
+		ValidatorConfigs: getDefaultValidators(),
+		ChainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
 				AccountPrefix:  ProviderAccountPrefix,
@@ -823,7 +738,7 @@ func MultiConsumerTestConfig() TestConfig {
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 		},
-		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "3s"/;` +
+		TendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "3s"/;` +
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "100ms"/;`,
 	}
 	tr.Initialize()
@@ -832,15 +747,14 @@ func MultiConsumerTestConfig() TestConfig {
 
 func ChangeoverTestConfig() TestConfig {
 	tr := TestConfig{
-		name: string(ChangeoverTestCfg),
-		containerConfig: ContainerConfig{
-			ContainerName: "interchain-security-changeover-container",
-			InstanceName:  "interchain-security-changeover-instance",
+		Name: string(ChangeoverTestCfg),
+		ContainerConfig: ContainerConfig{
+			ContainerName: "interchain-security-changeover-instance",
 			CcvVersion:    "1",
 			Now:           time.Now(),
 		},
-		validatorConfigs: getDefaultValidators(),
-		chainConfigs: map[ChainID]ChainConfig{
+		ValidatorConfigs: getDefaultValidators(),
+		ChainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
 				AccountPrefix:  ProviderAccountPrefix,
@@ -874,7 +788,7 @@ func ChangeoverTestConfig() TestConfig {
 					".app_state.staking.params.unbonding_time = \"1728000s\"", // making the genesis unbonding time equal to unbonding time in the consumer addition proposal
 			},
 		},
-		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
+		TendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 	}
 	tr.Initialize()
@@ -883,14 +797,13 @@ func ChangeoverTestConfig() TestConfig {
 
 func ConsumerMisbehaviourTestConfig() TestConfig {
 	tc := TestConfig{
-		name: string(ConsumerMisbehaviourTestCfg),
-		containerConfig: ContainerConfig{
-			ContainerName: "interchain-security-container",
-			InstanceName:  "interchain-security-instance",
+		Name: string(ConsumerMisbehaviourTestCfg),
+		ContainerConfig: ContainerConfig{
+			ContainerName: "interchain-security-instance",
 			CcvVersion:    "1",
 			Now:           time.Now(),
 		},
-		validatorConfigs: map[ValidatorID]ValidatorConfig{
+		ValidatorConfigs: map[ValidatorID]ValidatorConfig{
 			ValidatorID("alice"): {
 				Mnemonic:                 "pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",
 				DelAddress:               "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
@@ -942,7 +855,7 @@ func ConsumerMisbehaviourTestConfig() TestConfig {
 				UseConsumerKey:                   false,
 			},
 		},
-		chainConfigs: map[ChainID]ChainConfig{
+		ChainConfigs: map[ChainID]ChainConfig{
 			ChainID("provi"): {
 				ChainId:        ChainID("provi"),
 				AccountPrefix:  ProviderAccountPrefix,
@@ -974,63 +887,13 @@ func ConsumerMisbehaviourTestConfig() TestConfig {
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 		},
-		tendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
+		TendermintConfigOverride: `s/timeout_commit = "5s"/timeout_commit = "1s"/;` +
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;` +
 			// Required to start consumer chain by running a single big validator
 			`s/block_sync = true/block_sync = false/;`,
 	}
 	tc.Initialize()
 	return tc
-}
-
-func (s *TestConfig) SetCometMockConfig(useCometmock bool) {
-	s.useCometmock = useCometmock
-}
-
-func (s *TestConfig) SetRelayerConfig(useRly bool) {
-	s.useGorelayer = useRly
-}
-
-// validateStringLiterals enforces that configs follow the constraints
-// necessary to execute the tests
-//
-// Note: Network interfaces (name of virtual ethernet interfaces for ip link)
-// within the container will be named as "$CHAIN_ID-$VAL_ID-out" etc.
-// where this name is constrained to 15 bytes or less. Therefore each string literal
-// used as a validatorID or chainID needs to be 5 char or less.
-func (s *TestConfig) validateStringLiterals() {
-	for valID, valConfig := range s.validatorConfigs {
-		if len(valID) > 5 {
-			panic("validator id string literal must be 5 char or less")
-		}
-
-		ipSuffix, err := strconv.Atoi(valConfig.IpSuffix)
-		if err != nil {
-			panic(fmt.Sprintf("ip suffix must be an int: %v\n", err))
-		}
-
-		if ipSuffix == 253 {
-			panic("ip suffix 253 is reserved for query node")
-		}
-
-		if ipSuffix == 252 {
-			panic("ip suffix 252 is reserved for double signing node")
-		}
-
-		if ipSuffix < 1 || 251 < ipSuffix {
-			panic("ip suffix out of range, need to change config")
-		}
-	}
-
-	for chainID, chainConfig := range s.chainConfigs {
-		if len(chainID) > 5 {
-			panic(fmt.Sprintf("chain id string literal must be 5 char or less: %s", chainID))
-		}
-
-		if chainID != chainConfig.ChainId {
-			log.Println("chain config is mapped to a chain id that is different than what's stored in the config")
-		}
-	}
 }
 
 // getValidatorConfigFromVersion returns validator configuration based on provider/consumer version used.
@@ -1324,46 +1187,6 @@ func getValidatorConfigFromVersion(providerVersion, consumerVersion string) map[
 		}
 	}
 	return validatorCfg
-}
-
-// GetHermesConfig returns a configuration string for a given hermes version
-//
-// Currently templates for Hermes v1.6.0 and v1.4 are supported.
-// If provided version is before v1.6.0 then a configuration based on template for v1.4.x is returned
-// otherwise the returned configuration is based on template v1.4.
-func GetHermesConfig(hermesVersion, queryNodeIP string, chainCfg ChainConfig, isConsumer bool) string {
-
-	ChainId := chainCfg.ChainId
-	keyName := "query"
-	rpcAddr := "http://" + queryNodeIP + ":26658"
-	grpcAddr := "tcp://" + queryNodeIP + ":9091"
-	wsAddr := "ws://" + queryNodeIP + ":26658/websocket"
-
-	hermesConfig := ""
-	if semver.Compare(hermesVersion, "1.6.0") < 0 {
-		fmt.Println("Using hermes config template", "1.4")
-		template := hermesTemplates["v1.4"]
-		hermesConfig = fmt.Sprintf(template,
-			chainCfg.AccountPrefix,
-			grpcAddr,
-			ChainId,
-			keyName,
-			rpcAddr,
-			wsAddr)
-	} else {
-		// added event_source (v1.6) + ccv_consumer_chain (v1.5)
-		fmt.Println("Using hermes config template", "1.6")
-		template := hermesTemplates["v1.6"]
-		hermesConfig = fmt.Sprintf(template,
-			chainCfg.AccountPrefix,
-			grpcAddr,
-			ChainId,
-			keyName,
-			rpcAddr,
-			wsAddr,
-			isConsumer)
-	}
-	return hermesConfig
 }
 
 // GetExtraValidatorConfigs returns a map of extra validator configurations.
