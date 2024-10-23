@@ -250,16 +250,21 @@ func TestCapValidatorSet(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	validatorA := providertypes.ConsensusValidator{ProviderConsAddr: []byte("providerConsAddrA"), Power: 1, PublicKey: &crypto.PublicKey{}}
-	validatorB := providertypes.ConsensusValidator{ProviderConsAddr: []byte("providerConsAddrB"), Power: 2, PublicKey: &crypto.PublicKey{}}
-	validatorC := providertypes.ConsensusValidator{ProviderConsAddr: []byte("providerConsAddrC"), Power: 3, PublicKey: &crypto.PublicKey{}}
-	validatorD := providertypes.ConsensusValidator{ProviderConsAddr: []byte("providerConsAddrD"), Power: 4, PublicKey: &crypto.PublicKey{}}
+	consAddrA, _ := sdk.ConsAddressFromBech32("cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6")
+	consAddrB, _ := sdk.ConsAddressFromBech32("cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39")
+	consAddrC, _ := sdk.ConsAddressFromBech32("cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq")
+	consAddrD, _ := sdk.ConsAddressFromBech32("cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk")
+
+	validatorA := providertypes.ConsensusValidator{ProviderConsAddr: consAddrA, Power: 1, PublicKey: &crypto.PublicKey{}}
+	validatorB := providertypes.ConsensusValidator{ProviderConsAddr: consAddrB, Power: 2, PublicKey: &crypto.PublicKey{}}
+	validatorC := providertypes.ConsensusValidator{ProviderConsAddr: consAddrC, Power: 3, PublicKey: &crypto.PublicKey{}}
+	validatorD := providertypes.ConsensusValidator{ProviderConsAddr: consAddrD, Power: 4, PublicKey: &crypto.PublicKey{}}
 	validators := []providertypes.ConsensusValidator{validatorA, validatorB, validatorC, validatorD}
 
 	// Initial error check
 	powerShapingParameters, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, CONSUMER_ID)
 	require.Error(t, err)
-	priorityValidators, nonPriorityValidators := providerKeeper.FilterAndSortPriorityList(ctx, powerShapingParameters.Prioritylist, validators)
+	priorityValidators, nonPriorityValidators := providerKeeper.FilterAndSortPriorityList(ctx, CONSUMER_ID, validators)
 	consumerValidators := providerKeeper.CapValidatorSet(ctx, powerShapingParameters, append(priorityValidators, nonPriorityValidators...))
 	require.Equal(t, []providertypes.ConsensusValidator{validatorD, validatorC, validatorB, validatorA}, consumerValidators)
 
@@ -296,22 +301,22 @@ func TestCapValidatorSet(t *testing.T) {
 		},
 		{
 			name:                   "ValidatorSetCap = 2, with priority list",
-			powerShapingParameters: providertypes.PowerShapingParameters{ValidatorSetCap: 2, Prioritylist: []string{string(validatorA.ProviderConsAddr), string(validatorB.ProviderConsAddr)}},
+			powerShapingParameters: providertypes.PowerShapingParameters{ValidatorSetCap: 2, Prioritylist: []string{"cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6", "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"}},
 			expectedValidators:     []providertypes.ConsensusValidator{validatorB, validatorA},
 		},
 		{
 			name:                   "ValidatorSetCap = 3, with partial priority list",
-			powerShapingParameters: providertypes.PowerShapingParameters{ValidatorSetCap: 3, Prioritylist: []string{string(validatorA.ProviderConsAddr)}},
+			powerShapingParameters: providertypes.PowerShapingParameters{ValidatorSetCap: 3, Prioritylist: []string{"cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"}},
 			expectedValidators:     []providertypes.ConsensusValidator{validatorA, validatorD, validatorC},
 		},
 		{
 			name:                   "All validators in priority list",
-			powerShapingParameters: providertypes.PowerShapingParameters{ValidatorSetCap: 4, Prioritylist: []string{string(validatorC.ProviderConsAddr), string(validatorA.ProviderConsAddr), string(validatorD.ProviderConsAddr), string(validatorB.ProviderConsAddr)}},
+			powerShapingParameters: providertypes.PowerShapingParameters{ValidatorSetCap: 4, Prioritylist: []string{"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq", "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6", "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk", "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"}},
 			expectedValidators:     []providertypes.ConsensusValidator{validatorD, validatorC, validatorB, validatorA},
 		},
 		{
 			name:                   "ValidatorSetCap = 1 (capping to highest power, with priority list)",
-			powerShapingParameters: providertypes.PowerShapingParameters{ValidatorSetCap: 1, Prioritylist: []string{string(validatorA.ProviderConsAddr)}},
+			powerShapingParameters: providertypes.PowerShapingParameters{ValidatorSetCap: 1, Prioritylist: []string{"cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"}},
 			expectedValidators:     []providertypes.ConsensusValidator{validatorA},
 		},
 	}
@@ -328,9 +333,8 @@ func TestCapValidatorSet(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tc.powerShapingParameters, powerShapingParameters)
 			}
-
-			priorityValidators, nonPriorityValidators := providerKeeper.FilterAndSortPriorityList(ctx, tc.powerShapingParameters.Prioritylist, validators)
-			consumerValidators := providerKeeper.CapValidatorSet(ctx, tc.powerShapingParameters, append(priorityValidators, nonPriorityValidators...))
+			priorityValidators, nonPriorityValidators := providerKeeper.FilterAndSortPriorityList(ctx, CONSUMER_ID, validators)
+			consumerValidators := providerKeeper.CapValidatorSet(ctx, powerShapingParameters, append(priorityValidators, nonPriorityValidators...))
 			require.Equal(t, tc.expectedValidators, consumerValidators)
 		})
 	}
@@ -767,6 +771,8 @@ func TestConsumerPowerShapingParameters(t *testing.T) {
 	sortProviderConsAddr(expectedAllowlist)
 	expectedDenylist := []providertypes.ProviderConsAddress{providerConsAddr[2], providerConsAddr[3]}
 	sortProviderConsAddr(expectedDenylist)
+	expectedPrioritylist := []providertypes.ProviderConsAddress{providerConsAddr[1]}
+	sortProviderConsAddr(expectedPrioritylist)
 	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, expectedPowerShapingParameters)
 	require.NoError(t, err)
 	actualPowerShapingParameters, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, consumerId)
@@ -774,6 +780,7 @@ func TestConsumerPowerShapingParameters(t *testing.T) {
 	require.Equal(t, expectedPowerShapingParameters, actualPowerShapingParameters)
 	require.Equal(t, expectedAllowlist, providerKeeper.GetAllowList(ctx, consumerId))
 	require.Equal(t, expectedDenylist, providerKeeper.GetDenyList(ctx, consumerId))
+	require.Equal(t, expectedPrioritylist, providerKeeper.GetPriorityList(ctx, consumerId))
 
 	// assert that overwriting the current initialization record works
 	expectedPowerShapingParameters = providertypes.PowerShapingParameters{
@@ -790,6 +797,8 @@ func TestConsumerPowerShapingParameters(t *testing.T) {
 	sortProviderConsAddr(expectedAllowlist)
 	expectedDenylist = []providertypes.ProviderConsAddress{providerConsAddr[2], providerConsAddr[3]}
 	sortProviderConsAddr(expectedDenylist)
+	expectedPrioritylist = []providertypes.ProviderConsAddress{providerConsAddr[4], providerConsAddr[5]}
+	sortProviderConsAddr(expectedAllowlist)
 	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, expectedPowerShapingParameters)
 	require.NoError(t, err)
 	actualPowerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, consumerId)
@@ -797,6 +806,7 @@ func TestConsumerPowerShapingParameters(t *testing.T) {
 	require.Equal(t, expectedPowerShapingParameters, actualPowerShapingParameters)
 	require.Equal(t, expectedAllowlist, providerKeeper.GetAllowList(ctx, consumerId))
 	require.Equal(t, expectedDenylist, providerKeeper.GetDenyList(ctx, consumerId))
+	require.Equal(t, expectedPrioritylist, providerKeeper.GetPriorityList(ctx, consumerId))
 }
 
 // TestAllowlist tests the `SetAllowlist`, `IsAllowlisted`, `DeleteAllowlist`, and `IsAllowlistEmpty` methods
@@ -1070,102 +1080,4 @@ func TestUpdatePrioritylist(t *testing.T) {
 		providertypes.NewProviderConsAddress(consAddr2),
 	}
 	require.Equal(t, expectedPrioritylist, providerKeeper.GetPriorityList(ctx, consumerId))
-}
-
-func TestFilterAndSortPriorityList(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	// Create test validators
-	validator1 := providertypes.ConsensusValidator{
-		ProviderConsAddr: []byte("providerConsAddr1"),
-		Power:            300,
-		PublicKey:        &crypto.PublicKey{},
-	}
-	validator2 := providertypes.ConsensusValidator{
-		ProviderConsAddr: []byte("providerConsAddr2"),
-		Power:            200,
-		PublicKey:        &crypto.PublicKey{},
-	}
-	validator3 := providertypes.ConsensusValidator{
-		ProviderConsAddr: []byte("providerConsAddr3"),
-		Power:            150,
-		PublicKey:        &crypto.PublicKey{},
-	}
-	validator4 := providertypes.ConsensusValidator{
-		ProviderConsAddr: []byte("providerConsAddr4"),
-		Power:            50,
-		PublicKey:        &crypto.PublicKey{},
-	}
-
-	validators := []providertypes.ConsensusValidator{validator1, validator2, validator3, validator4}
-
-	testCases := []struct {
-		name                string
-		priorityList        []string
-		expectedPriority    []providertypes.ConsensusValidator
-		expectedNonPriority []providertypes.ConsensusValidator
-	}{
-		{
-			name:                "Empty priority list",
-			priorityList:        []string{},
-			expectedPriority:    []providertypes.ConsensusValidator{},
-			expectedNonPriority: []providertypes.ConsensusValidator{validator1, validator2, validator3, validator4},
-		},
-		{
-			name:                "Priority list with non-existent addresses",
-			priorityList:        []string{"providerConsAddr5", "providerConsAddr6"},
-			expectedPriority:    []providertypes.ConsensusValidator{},
-			expectedNonPriority: []providertypes.ConsensusValidator{validator1, validator2, validator3, validator4},
-		},
-		{
-			name:                "Priority list with some existing addresses",
-			priorityList:        []string{"providerConsAddr2", "providerConsAddr5", "providerConsAddr4"},
-			expectedPriority:    []providertypes.ConsensusValidator{validator2, validator4},
-			expectedNonPriority: []providertypes.ConsensusValidator{validator1, validator3},
-		},
-		{
-			name:                "Priority list with all existing addresses",
-			priorityList:        []string{"providerConsAddr4", "providerConsAddr1", "providerConsAddr3", "providerConsAddr2"},
-			expectedPriority:    []providertypes.ConsensusValidator{validator1, validator2, validator3, validator4},
-			expectedNonPriority: []providertypes.ConsensusValidator{},
-		},
-		{
-			name:                "Priority list with duplicate addresses",
-			priorityList:        []string{"providerConsAddr1", "providerConsAddr2", "providerConsAddr1", "providerConsAddr3"},
-			expectedPriority:    []providertypes.ConsensusValidator{validator1, validator2, validator3},
-			expectedNonPriority: []providertypes.ConsensusValidator{validator4},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			priorityResult, nonPriorityResult := providerKeeper.FilterAndSortPriorityList(ctx, tc.priorityList, validators)
-
-			// Check priority validators
-			require.Equal(t, len(tc.expectedPriority), len(priorityResult), "Length of priority result doesn't match expected")
-			for i, v := range priorityResult {
-				require.Equal(t, tc.expectedPriority[i].ProviderConsAddr, v.ProviderConsAddr, "Priority validator address doesn't match expected at index %d", i)
-				require.Equal(t, tc.expectedPriority[i].Power, v.Power, "Priority validator power doesn't match expected at index %d", i)
-			}
-
-			// Check non-priority validators
-			require.Equal(t, len(tc.expectedNonPriority), len(nonPriorityResult), "Length of non-priority result doesn't match expected")
-			for i, v := range nonPriorityResult {
-				require.Equal(t, tc.expectedNonPriority[i].ProviderConsAddr, v.ProviderConsAddr, "Non-priority validator address doesn't match expected at index %d", i)
-				require.Equal(t, tc.expectedNonPriority[i].Power, v.Power, "Non-priority validator power doesn't match expected at index %d", i)
-			}
-
-			// Check if both results are sorted by power in descending order
-			checkSortedByPower(t, priorityResult)
-			checkSortedByPower(t, nonPriorityResult)
-		})
-	}
-}
-
-// Checks if validators are sorted by power in descending order
-func checkSortedByPower(t *testing.T, validators []providertypes.ConsensusValidator) {
-	for i := 1; i < len(validators); i++ {
-		require.GreaterOrEqual(t, validators[i-1].Power, validators[i].Power, "Validators are not sorted by power in descending order")
-	}
 }

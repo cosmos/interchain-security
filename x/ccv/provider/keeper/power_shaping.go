@@ -14,6 +14,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
@@ -628,7 +629,7 @@ func (k Keeper) UpdatePrioritylist(ctx sdk.Context, consumerId string, priorityl
 
 // FilterAndSortPriorityList filters the priority list to include only validators that can validate the chain
 // and splits the validators into priority and non-priority sets.
-func (k Keeper) FilterAndSortPriorityList(ctx sdk.Context, priorityList []string, nextValidators []types.ConsensusValidator) ([]types.ConsensusValidator, []types.ConsensusValidator) {
+func (k Keeper) FilterAndSortPriorityList(ctx sdk.Context, consumerId string, nextValidators []types.ConsensusValidator) ([]types.ConsensusValidator, []types.ConsensusValidator) {
 	validatorMap := make(map[string]types.ConsensusValidator)
 	for _, v := range nextValidators {
 		validatorMap[string(v.ProviderConsAddr)] = v
@@ -639,14 +640,12 @@ func (k Keeper) FilterAndSortPriorityList(ctx sdk.Context, priorityList []string
 	addedAddresses := make(map[string]bool)
 
 	// Form priorityValidators
-	for _, address := range priorityList {
-		for _, validator := range nextValidators {
-			if string(validator.ProviderConsAddr) == address {
-				if !addedAddresses[address] {
-					priorityValidators = append(priorityValidators, validator)
-					addedAddresses[address] = true
-				}
-				break
+	for _, validator := range nextValidators {
+		addr := providertypes.NewProviderConsAddress(validator.ProviderConsAddr)
+		if k.IsPrioritylisted(ctx, consumerId, addr) {
+			if !addedAddresses[string(validator.ProviderConsAddr)] {
+				priorityValidators = append(priorityValidators, validator)
+				addedAddresses[string(validator.ProviderConsAddr)] = true
 			}
 		}
 	}

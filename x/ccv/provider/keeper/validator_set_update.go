@@ -233,7 +233,7 @@ func (k Keeper) ComputeNextValidators(
 		return []types.ConsensusValidator{}, err
 	}
 
-	priorityValidators, nonPriorityValidators := k.FilterAndSortPriorityList(ctx, powerShapingParameters.Prioritylist, nextValidators)
+	priorityValidators, nonPriorityValidators := k.FilterAndSortPriorityList(ctx, consumerId, nextValidators)
 
 	nextValidators = k.CapValidatorSet(ctx, powerShapingParameters, append(priorityValidators, nonPriorityValidators...))
 
