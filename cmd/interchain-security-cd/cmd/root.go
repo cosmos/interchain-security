@@ -88,7 +88,7 @@ func NewRootCmd() *cobra.Command {
 		},
 	}
 
-	initRootCmd(rootCmd, encodingConfig)
+	initRootCmd(rootCmd)
 	autoCliOpts, err := enrichAutoCliOpts(tempApp.AutoCliOpts(), initClientCtx)
 	if err != nil {
 		panic(err)
@@ -203,7 +203,7 @@ lru_size = 0`
 	return customAppTemplate, customAppConfig
 }
 
-func initRootCmd(rootCmd *cobra.Command, encodingConfig appencoding.EncodingConfig) {
+func initRootCmd(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(
 		genutilcli.InitCmd(consumer.ModuleBasics, consumer.DefaultNodeHome),
 		debug.Cmd(),
@@ -216,7 +216,6 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig appencoding.EncodingConf
 	// add keybase, auxiliary RPC, query, genesis, and tx child commands
 	rootCmd.AddCommand(
 		server.StatusCommand(),
-		genesisCommand(encodingConfig, consumer.GetConsumerGenesisTransformCmd()),
 		queryCommand(),
 		txCommand(),
 		keys.Commands(),
@@ -284,16 +283,6 @@ func appExport(
 
 func addModuleInitFlags(startCmd *cobra.Command) {
 	crisis.AddModuleInitFlags(startCmd)
-}
-
-// genesisCommand builds genesis-related `simd genesis` command. Users may provide application specific commands as a parameter
-func genesisCommand(encodingConfig appencoding.EncodingConfig, cmds ...*cobra.Command) *cobra.Command {
-	cmd := genutilcli.GenesisCoreCommand(encodingConfig.TxConfig, consumer.ModuleBasics, consumer.DefaultNodeHome)
-
-	for _, sub_cmd := range cmds {
-		cmd.AddCommand(sub_cmd)
-	}
-	return cmd
 }
 
 func queryCommand() *cobra.Command {
