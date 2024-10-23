@@ -250,15 +250,16 @@ func TestCapValidatorSet(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	consAddrA, _ := sdk.ConsAddressFromBech32("cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6")
-	consAddrB, _ := sdk.ConsAddressFromBech32("cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39")
-	consAddrC, _ := sdk.ConsAddressFromBech32("cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq")
-	consAddrD, _ := sdk.ConsAddressFromBech32("cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk")
+	// Define validator addresses with clear names
+	valAddrA := "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"
+	valAddrB := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
+	valAddrC := "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"
+	valAddrD := "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"
 
-	validatorA := providertypes.ConsensusValidator{ProviderConsAddr: consAddrA, Power: 1, PublicKey: &crypto.PublicKey{}}
-	validatorB := providertypes.ConsensusValidator{ProviderConsAddr: consAddrB, Power: 2, PublicKey: &crypto.PublicKey{}}
-	validatorC := providertypes.ConsensusValidator{ProviderConsAddr: consAddrC, Power: 3, PublicKey: &crypto.PublicKey{}}
-	validatorD := providertypes.ConsensusValidator{ProviderConsAddr: consAddrD, Power: 4, PublicKey: &crypto.PublicKey{}}
+	validatorA := providertypes.ConsensusValidator{ProviderConsAddr: consAddressFromBech32(valAddrA), Power: 1, PublicKey: &crypto.PublicKey{}}
+	validatorB := providertypes.ConsensusValidator{ProviderConsAddr: consAddressFromBech32(valAddrB), Power: 2, PublicKey: &crypto.PublicKey{}}
+	validatorC := providertypes.ConsensusValidator{ProviderConsAddr: consAddressFromBech32(valAddrC), Power: 3, PublicKey: &crypto.PublicKey{}}
+	validatorD := providertypes.ConsensusValidator{ProviderConsAddr: consAddressFromBech32(valAddrD), Power: 4, PublicKey: &crypto.PublicKey{}}
 	validators := []providertypes.ConsensusValidator{validatorA, validatorB, validatorC, validatorD}
 
 	// Initial error check
@@ -300,24 +301,44 @@ func TestCapValidatorSet(t *testing.T) {
 			expectedValidators:     []providertypes.ConsensusValidator{validatorD, validatorC, validatorB},
 		},
 		{
-			name:                   "ValidatorSetCap = 2, with priority list",
-			powerShapingParameters: providertypes.PowerShapingParameters{ValidatorSetCap: 2, Prioritylist: []string{"cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6", "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"}},
-			expectedValidators:     []providertypes.ConsensusValidator{validatorB, validatorA},
+			name: "ValidatorSetCap = 2, with priority list",
+			powerShapingParameters: providertypes.PowerShapingParameters{
+				ValidatorSetCap: 2,
+				Prioritylist: []string{
+					valAddrA,
+					valAddrB,
+				},
+			},
+			expectedValidators: []providertypes.ConsensusValidator{validatorB, validatorA},
 		},
 		{
-			name:                   "ValidatorSetCap = 3, with partial priority list",
-			powerShapingParameters: providertypes.PowerShapingParameters{ValidatorSetCap: 3, Prioritylist: []string{"cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"}},
-			expectedValidators:     []providertypes.ConsensusValidator{validatorA, validatorD, validatorC},
+			name: "ValidatorSetCap = 3, with partial priority list",
+			powerShapingParameters: providertypes.PowerShapingParameters{
+				ValidatorSetCap: 3,
+				Prioritylist:    []string{valAddrA},
+			},
+			expectedValidators: []providertypes.ConsensusValidator{validatorA, validatorD, validatorC},
 		},
 		{
-			name:                   "All validators in priority list",
-			powerShapingParameters: providertypes.PowerShapingParameters{ValidatorSetCap: 4, Prioritylist: []string{"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq", "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6", "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk", "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"}},
-			expectedValidators:     []providertypes.ConsensusValidator{validatorD, validatorC, validatorB, validatorA},
+			name: "All validators in priority list",
+			powerShapingParameters: providertypes.PowerShapingParameters{
+				ValidatorSetCap: 4,
+				Prioritylist: []string{
+					valAddrC,
+					valAddrA,
+					valAddrD,
+					valAddrB,
+				},
+			},
+			expectedValidators: []providertypes.ConsensusValidator{validatorD, validatorC, validatorB, validatorA},
 		},
 		{
-			name:                   "ValidatorSetCap = 1 (capping to highest power, with priority list)",
-			powerShapingParameters: providertypes.PowerShapingParameters{ValidatorSetCap: 1, Prioritylist: []string{"cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"}},
-			expectedValidators:     []providertypes.ConsensusValidator{validatorA},
+			name: "ValidatorSetCap = 1 (capping to highest power, with priority list)",
+			powerShapingParameters: providertypes.PowerShapingParameters{
+				ValidatorSetCap: 1,
+				Prioritylist:    []string{valAddrA},
+			},
+			expectedValidators: []providertypes.ConsensusValidator{validatorA},
 		},
 	}
 
@@ -338,6 +359,15 @@ func TestCapValidatorSet(t *testing.T) {
 			require.Equal(t, tc.expectedValidators, consumerValidators)
 		})
 	}
+}
+
+// Helper function to handle address conversion
+func consAddressFromBech32(addr string) sdk.ConsAddress {
+	consAddr, err := sdk.ConsAddressFromBech32(addr)
+	if err != nil {
+		panic(fmt.Sprintf("invalid consensus address: %s", addr))
+	}
+	return consAddr
 }
 
 func TestCapValidatorsPower(t *testing.T) {
