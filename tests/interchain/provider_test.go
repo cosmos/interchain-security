@@ -160,27 +160,19 @@ func (s *ProviderSuite) TestConsumerRemovalProposal() {
 // Each test can be divided into smaller tests if the developer wants to.
 
 // Test Creating a chain (MsgCreateConsumer)
-// Confirm that a chain can be create with the minimum params (metadata)
+// Confirm that a chain can be created with the minimum params (only consumer metadata)
 // Confirm that a chain can be created with all params
-// Confirm that a chain can be created with a future and a past spawn time
-// Confirm that a chain with TopN > 0 is rejected (this is done giva governance and should be tested in a different test)
-// If there are no opted-in validators, the chain should not start.
+// Confirm that a chain can be created with initialization parameters that do not contain a spawn time
+// Confirm that a chain with TopN > 0 is rejected (this is done via governance and should be tested in a different test)
+// Confirm that if there are no opted-in validators at spawn time, the chain fails to launch and moves back to its Registered phase having reset its spawn time
 func (s *ProviderSuite) TestProviderCreateConsumer() {
 }
 
 // Test Opting in validators to a chain (MsgOptIn)
 // Confirm that a chain can be created and validators can be opted in
-// Scenario 1: No validators opted in spawn time is in the past, the chain should not start.
-// Scenario 2: Validators opted in, MsgUpdateConsumer called to set spawn time in the past -> chain should start.
-// Scenario 3: Validators opted in, spawn time is in the future, the chain should not start before the spawn time.
+// Scenario 1: Validators opted in, MsgUpdateConsumer called to set spawn time in the past -> chain should start.
+// Scenario 2: Validators opted in, spawn time is in the future, the chain starts after the spawn time.
 func (s *ProviderSuite) TestProviderValidatorOptIn() {
-}
-
-// Test Updating a chain (MsgUpdateConsumer)
-// Confirm that a chain can be created and updated with the minimum params (metadata), all params, a future and a past spawn time
-// If there are no opted-in validators and the spawn time is in the past, the chain should not start.
-// Confirm that a chain with TopN > 0 is rejected
-func (s *ProviderSuite) TestProviderUpdateConsumer() {
 }
 
 // Test Opting in with key assignment validators to a chain (MsgOptIn with a KeyAssignment during OptIn)
@@ -190,19 +182,35 @@ func (s *ProviderSuite) TestProviderUpdateConsumer() {
 func (s *ProviderSuite) TestProviderValidatorOptInWithKeyAssignment() {
 }
 
+// Test Updating a chain (MsgUpdateConsumer)
+// Confirm that a chain can update a combination of the metadata, initialization, and power-shaping parameters
+// If there are no opted-in validators and the spawn time is in the past, the chain should not start.
+// Confirm that a chain with TopN > 0 is rejected
+// Confirm that a chain remains in the Registered phase unless all the initialization parameters are set for it
+func (s *ProviderSuite) TestProviderUpdateConsumer() {
+}
+
 // Create a chain, opt-in validators, and transform the opt-in to TopN via `tx gov submit-proposal` using MsgUpdateConsumer
-// Confirm that the chain starts successfully
+// Confirm that the chain starts successfully and is owned by governance
 // Confirm that the chain can be updated to a lower TopN
 // Confirm that the chain can be updated to a higher TopN
-func (s *ProviderSuite) TestProviderTransformOptinToTopN() {
+// Confirm that the owner of the chain cannot change as long as it remains a Top N chain
+func (s *ProviderSuite) TestProviderTransformOptInToTopN() {
+}
+
+// Create a Top N chain, and transform it to an opt-in via `tx gov submit-proposal` using MsgUpdateConsumer
+// Confirm that the chain is now not owned by governance
+func (s *ProviderSuite) TestProviderTransformTopNtoOptIn() {
 }
 
 // Test removing a chain (MsgRemoveConsumer)
-func (s *ProviderSuite) TestProviderUpgrade() {
+// Confirm that the chain moves to the Stopped phase and is not getting any VSCPackets anymore
+// Confirm that after unbonding period, the chain moves to the Deleted phase and things like consumer id to client id
+// associations are deleted, but the chain metadata and the chain id are not deleted
+func (s *ProviderSuite) TestProviderRemoveConsumer() {
 }
 
 // Confirm that only the owner can send MsgUpdateConsumer, MsgRemoveConsumer
 // Confirm that ownership can be transferred to a different address -> results in the "old" owner losing ownership
-// Confirm that submitting a gov proposal with MsgUpdateConsumer transfers ownership to the gov module account (chain must be topN)
 func (s *ProviderSuite) TestProviderOwnerChecks() {
 }
