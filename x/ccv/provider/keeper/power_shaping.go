@@ -586,8 +586,7 @@ func (k Keeper) IsPrioritylisted(
 	providerAddr types.ProviderConsAddress,
 ) bool {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.PrioritylistKey(consumerId, providerAddr))
-	return bz != nil
+	return store.Get(types.PrioritylistKey(consumerId, providerAddr)) != nil
 }
 
 // DeletePrioritylist deletes all prioritylisted validators
