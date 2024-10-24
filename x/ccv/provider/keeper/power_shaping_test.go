@@ -250,7 +250,6 @@ func TestCapValidatorSet(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	// Define validator addresses with clear names
 	valAddrA := "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"
 	valAddrB := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
 	valAddrC := "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"
@@ -265,7 +264,7 @@ func TestCapValidatorSet(t *testing.T) {
 	// Initial error check
 	powerShapingParameters, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, CONSUMER_ID)
 	require.Error(t, err)
-	priorityValidators, nonPriorityValidators := providerKeeper.FilterAndSortPriorityList(ctx, CONSUMER_ID, validators)
+	priorityValidators, nonPriorityValidators := providerKeeper.PartitionBasedOnPriorityList(ctx, CONSUMER_ID, validators)
 	consumerValidators := providerKeeper.CapValidatorSet(ctx, powerShapingParameters, append(priorityValidators, nonPriorityValidators...))
 	require.Equal(t, []providertypes.ConsensusValidator{validatorD, validatorC, validatorB, validatorA}, consumerValidators)
 
@@ -354,7 +353,7 @@ func TestCapValidatorSet(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tc.powerShapingParameters, powerShapingParameters)
 			}
-			priorityValidators, nonPriorityValidators := providerKeeper.FilterAndSortPriorityList(ctx, CONSUMER_ID, validators)
+			priorityValidators, nonPriorityValidators := providerKeeper.PartitionBasedOnPriorityList(ctx, CONSUMER_ID, validators)
 			consumerValidators := providerKeeper.CapValidatorSet(ctx, powerShapingParameters, append(priorityValidators, nonPriorityValidators...))
 			require.Equal(t, tc.expectedValidators, consumerValidators)
 		})
