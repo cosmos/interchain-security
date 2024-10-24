@@ -630,10 +630,6 @@ func (k Keeper) UpdatePrioritylist(ctx sdk.Context, consumerId string, priorityl
 // PartitionBasedOnPriorityList filters the priority list to include only validators that can validate the chain
 // and splits the validators into priority and non-priority sets.
 func (k Keeper) PartitionBasedOnPriorityList(ctx sdk.Context, consumerId string, nextValidators []types.ConsensusValidator) ([]types.ConsensusValidator, []types.ConsensusValidator) {
-	validatorMap := make(map[string]types.ConsensusValidator)
-	for _, v := range nextValidators {
-		validatorMap[string(v.ProviderConsAddr)] = v
-	}
 
 	priorityValidators := make([]types.ConsensusValidator, 0)
 	nonPriorityValidators := make([]types.ConsensusValidator, 0)
