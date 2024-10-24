@@ -251,10 +251,11 @@ where create_consumer.json has the following structure:
     "top_N": 0,
     "validators_power_cap": 10,
     "validator_set_cap": 0,
-    "allowlist": ["cosmosvalcons..."],
-    "denylist": ["cosmosvalcons..."],
-    "min_stake": 0,
-    "allow_inactive_vals": false
+    "allowlist": [],
+    "denylist": [],
+    "min_stake": "0",
+    "allow_inactive_vals": false,
+    "prioritylist": []
   },
   "allowlisted_reward_denoms": {
     "denoms": ["ibc/...", "ibc/..."]
@@ -349,10 +350,11 @@ where update_consumer.json has the following structure:
     "top_N": 0,
     "validators_power_cap": 10,
     "validator_set_cap": 0,
-    "allowlist": ["cosmosvalcons..."],
-    "denylist": ["cosmosvalcons..."],
-    "min_stake": 0,
-    "allow_inactive_vals": false
+    "allowlist": [],
+    "denylist": [],
+    "min_stake": "0",
+    "allow_inactive_vals": false,
+    "prioritylist": []
    },
   "allowlisted_reward_denoms": {
     "denoms": ["ibc/...", "ibc/..."]

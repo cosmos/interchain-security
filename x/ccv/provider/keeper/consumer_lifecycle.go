@@ -486,6 +486,7 @@ func (k Keeper) DeleteConsumerChain(ctx sdk.Context, consumerId string) (err err
 	k.DeleteDenylist(ctx, consumerId)
 	k.DeleteAllOptedIn(ctx, consumerId)
 	k.DeleteConsumerValSet(ctx, consumerId)
+	k.DeletePrioritylist(ctx, consumerId)
 
 	k.DeleteConsumerRemovalTime(ctx, consumerId)
 

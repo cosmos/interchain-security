@@ -125,7 +125,9 @@ Example of power-shaping parameters:
     // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
     "min_stake": 0,
     // Corresponds to whether inactive validators are allowed to validate the consumer chain.
-    "allow_inactive_vals": false
+    "allow_inactive_vals": false,
+    // Corresponds to a list of provider consensus addresses of validators that have priority
+    "prioritylist": [],
 }
 ```
 
