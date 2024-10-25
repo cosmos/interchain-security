@@ -619,7 +619,7 @@ func (k Keeper) QueryConsumerChain(goCtx context.Context, req *types.QueryConsum
 	}, nil
 }
 
-// QueryConsumerChain returns the genesis time
+//  QueryConsumerGenesisTime returns the genesis time
 // of the consumer chain associated with the provided consumer id
 func (k Keeper) QueryConsumerGenesisTime(goCtx context.Context, req *types.QueryConsumerGenesisTimeRequest) (*types.QueryConsumerGenesisTimeResponse, error) {
 	if req == nil {
