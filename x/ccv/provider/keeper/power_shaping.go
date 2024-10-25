@@ -102,6 +102,7 @@ func (k Keeper) CapValidatorSet(
 
 	validatorSetCap := powerShapingParameters.ValidatorSetCap
 	if validatorSetCap != 0 && int(validatorSetCap) < len(validators) {
+		// validators are already sorted by priority and power
 		return validators[:int(validatorSetCap)]
 	} else {
 		return validators

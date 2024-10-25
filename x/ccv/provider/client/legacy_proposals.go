@@ -43,7 +43,6 @@ type ConsumerAdditionProposalJSON struct {
 	Denylist           []string `json:"denylist"`
 	MinStake           uint64   `json:"min_stake"`
 	AllowInactiveVals  bool     `json:"allow_inactive_vals"`
-	Prioritylist       []string `json:"prioritylist"`
 }
 
 type ConsumerAdditionProposalReq struct {
@@ -177,7 +176,6 @@ type ConsumerModificationProposalJSON struct {
 	Denylist           []string `json:"denylist"`
 	MinStake           uint64   `json:"min_stake"`
 	AllowInactiveVals  bool     `json:"allow_inactive_vals"`
-	Prioritylist       []string `json:"prioritylist"`
 
 	Deposit string `json:"deposit"`
 }
