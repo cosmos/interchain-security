@@ -280,6 +280,17 @@ func TestCapValidatorSet(t *testing.T) {
 			expectedValidators:     []providertypes.ConsensusValidator{validatorD, validatorC, validatorB, validatorA},
 		},
 		{
+			name: "ValidatorSetCap = 0, with priority list",
+			powerShapingParameters: providertypes.PowerShapingParameters{
+				ValidatorSetCap: 0,
+				Prioritylist: []string{
+					valAddrA,
+					valAddrB,
+				},
+			},
+			expectedValidators: []providertypes.ConsensusValidator{validatorB, validatorA, validatorD, validatorC},
+		},
+		{
 			name:                   "ValidatorSetCap > len(validators) (no capping)",
 			powerShapingParameters: providertypes.PowerShapingParameters{ValidatorSetCap: 100},
 			expectedValidators:     []providertypes.ConsensusValidator{validatorD, validatorC, validatorB, validatorA},
