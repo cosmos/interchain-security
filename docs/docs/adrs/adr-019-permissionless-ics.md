@@ -143,7 +143,6 @@ or a combination of them.
 | `ConsumerCommissionRatePrefix`          | Commission rate per chain per validator                                                                                      | validator                        | consumer chain                   | Every `MsgSetConsumerCommissionRate` message                                                             |
 | `MinimumPowerInTopNBytePrefix`          | Stores the minimum power needed to opt in for a chain                                                                        | not applicable for Opt In chains | not applicable for Opt In chains | Every epoch                                                                                              |
 | `ConsumerAddrsToPruneV2BytePrefix`      | Stores consumer addresses to be pruned (as part of `VSCMaturedPacket`s deprecation)                                          | validator or provider chain      | provider chain                   | Every `MsgAssignConsumerKey` or `MsgOptIn` and later during actual pruning                               |
-| `PrioritylistPrefix`                        | Stores the prioritylist of a chain                                                                                               | consumer chain                   | consumer chain| Every parameter update    |
 
 Everything stored under one of the above keys is associated with a `chainId` and has to be migrated to new state under a `consumerId`.
 
@@ -272,8 +271,6 @@ message PowerShapingParameters {
   uint64 min_stake = 6;
   // Corresponds to whether inactive validators are allowed to validate the consumer chain.
   bool allow_inactive_vals = 7;
-  // corresponds to a list of provider consensus addresses of validators that have priority
-  repeated string prioritylist = 8;
 }
 
 ```
