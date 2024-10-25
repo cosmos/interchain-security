@@ -505,7 +505,7 @@ func TestGetConsumerChain(t *testing.T) {
 		}
 
 		strPrioritylist := make([]string, len(prioritylists[i]))
-		for j, addr := range allowlists[i] {
+		for j, addr := range prioritylists[i] {
 			strPrioritylist[j] = addr.String()
 		}
 
