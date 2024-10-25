@@ -14,7 +14,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
@@ -637,7 +636,7 @@ func (k Keeper) PartitionBasedOnPriorityList(ctx sdk.Context, consumerId string,
 
 	// Form priorityValidators
 	for _, validator := range nextValidators {
-		addr := providertypes.NewProviderConsAddress(validator.ProviderConsAddr)
+		addr := types.NewProviderConsAddress(validator.ProviderConsAddr)
 		if k.IsPrioritylisted(ctx, consumerId, addr) {
 			priorityValidators = append(priorityValidators, validator)
 		} else {
