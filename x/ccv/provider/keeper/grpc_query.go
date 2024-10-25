@@ -114,6 +114,12 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		strDenylist[i] = addr.String()
 	}
 
+	prioritylist := k.GetPriorityList(ctx, consumerId)
+	strPrioritylist := make([]string, len(prioritylist))
+	for i, addr := range prioritylist {
+		strPrioritylist[i] = addr.String()
+	}
+
 	metadata, err := k.GetConsumerMetadata(ctx, consumerId)
 	if err != nil {
 		return types.Chain{}, fmt.Errorf("cannot find metadata (%s): %s", consumerId, err.Error())
@@ -139,6 +145,7 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		MinStake:                powerShapingParameters.MinStake,
 		ConsumerId:              consumerId,
 		AllowlistedRewardDenoms: &types.AllowlistedRewardDenoms{Denoms: allowlistedRewardDenoms},
+		Prioritylist:            strPrioritylist,
 	}, nil
 }
 
