@@ -56,23 +56,26 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 	store := ctx.KVStore(k.storeKey)
 	storePrefix := types.ConsumerIdToPhaseKeyPrefix()
 	consumerPhaseStore := prefix.NewStore(store, []byte{storePrefix})
-	pageRes, err := query.Paginate(consumerPhaseStore, req.Pagination, func(key, value []byte) error {
+	pageRes, err := query.FilteredPaginate(consumerPhaseStore, req.Pagination, func(key, value []byte, accumulate bool) (bool, error) {
 		consumerId, err := types.ParseStringIdWithLenKey(storePrefix, append([]byte{storePrefix}, key...))
 		if err != nil {
-			return status.Error(codes.Internal, err.Error())
+			return false, status.Error(codes.Internal, err.Error())
 		}
 
 		phase := types.ConsumerPhase(binary.BigEndian.Uint32(value))
 		if req.Phase != types.CONSUMER_PHASE_UNSPECIFIED && req.Phase != phase {
-			return nil
+			return false, nil
 		}
 
 		c, err := k.GetConsumerChain(ctx, consumerId)
 		if err != nil {
-			return status.Error(codes.Internal, err.Error())
+			return false, status.Error(codes.Internal, err.Error())
 		}
-		chains = append(chains, &c)
-		return nil
+
+		if accumulate {
+			chains = append(chains, &c)
+		}
+		return true, nil
 	})
 
 	if err != nil {
