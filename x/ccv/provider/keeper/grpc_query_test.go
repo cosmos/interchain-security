@@ -312,11 +312,15 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 
 	// set up some consumer chains
 	for i := 0; i < consumerNum; i++ {
-		chainID := "consumer-" + strconv.Itoa(i)
+		revisionNumber := i + 1
+		chainID := "consumer-" + strconv.Itoa(revisionNumber)
 		metadata := types.ConsumerMetadata{Name: chainID}
+		initializationParameters := types.DefaultConsumerInitializationParameters()
+		initializationParameters.InitialHeight.RevisionNumber = uint64(revisionNumber)
 		msg := types.MsgCreateConsumer{
-			ChainId:  chainID,
-			Metadata: metadata,
+			ChainId:                  chainID,
+			Metadata:                 metadata,
+			InitializationParameters: &initializationParameters,
 		}
 		resp, err := msgServer.CreateConsumer(ctx, &msg)
 		require.NoError(t, err)
@@ -447,7 +451,12 @@ func TestGetConsumerChain(t *testing.T) {
 		{types.NewProviderConsAddress([]byte("providerAddr6"))},
 		{},
 	}
-
+	prioritylists := [][]types.ProviderConsAddress{
+		{},
+		{types.NewProviderConsAddress([]byte("providerAddr1")), types.NewProviderConsAddress([]byte("providerAddr2"))},
+		{types.NewProviderConsAddress([]byte("providerAddr3"))},
+		{},
+	}
 	allowInactiveVals := []bool{true, false, true, false}
 
 	minStakes := []math.Int{
@@ -486,6 +495,9 @@ func TestGetConsumerChain(t *testing.T) {
 		for _, addr := range denylists[i] {
 			pk.SetDenylist(ctx, consumerID, addr)
 		}
+		for _, addr := range prioritylists[i] {
+			pk.SetPrioritylist(ctx, consumerID, addr)
+		}
 		strAllowlist := make([]string, len(allowlists[i]))
 		for j, addr := range allowlists[i] {
 			strAllowlist[j] = addr.String()
@@ -494,6 +506,11 @@ func TestGetConsumerChain(t *testing.T) {
 		strDenylist := make([]string, len(denylists[i]))
 		for j, addr := range denylists[i] {
 			strDenylist[j] = addr.String()
+		}
+
+		strPrioritylist := make([]string, len(prioritylists[i]))
+		for j, addr := range prioritylists[i] {
+			strPrioritylist[j] = addr.String()
 		}
 
 		metadataLists = append(metadataLists, types.ConsumerMetadata{Name: chainIDs[i]})
@@ -520,6 +537,7 @@ func TestGetConsumerChain(t *testing.T) {
 				MinStake:                minStakes[i].Uint64(),
 				ConsumerId:              consumerIDs[i],
 				AllowlistedRewardDenoms: allowlistedRewardDenoms[i],
+				Prioritylist:            strPrioritylist,
 			})
 	}
 
@@ -535,7 +553,7 @@ func TestQueryConsumerChain(t *testing.T) {
 	defer ctrl.Finish()
 
 	consumerId := "0"
-	chainId := "consumer-1"
+	chainId := "consumer"
 
 	req := types.QueryConsumerChainRequest{
 		ConsumerId: consumerId,
@@ -644,11 +662,15 @@ func TestQueryConsumerChains(t *testing.T) {
 
 	// create four consumer chains in different phase
 	for i := 0; i < consumerNum; i++ {
-		chainID := "consumer-" + strconv.Itoa(i)
+		revisionNumber := i + 1
+		chainID := "consumer-" + strconv.Itoa(revisionNumber)
 		metadata := types.ConsumerMetadata{Name: chainID}
+		initializationParameters := types.DefaultConsumerInitializationParameters()
+		initializationParameters.InitialHeight.RevisionNumber = uint64(revisionNumber)
 		msg := types.MsgCreateConsumer{
-			ChainId:  chainID,
-			Metadata: metadata,
+			ChainId:                  chainID,
+			Metadata:                 metadata,
+			InitializationParameters: &initializationParameters,
 		}
 		resp, err := msgServer.CreateConsumer(ctx, &msg)
 		require.NoError(t, err)
@@ -666,6 +688,7 @@ func TestQueryConsumerChains(t *testing.T) {
 			Metadata:                metadata,
 			ConsumerId:              consumerId,
 			AllowlistedRewardDenoms: &types.AllowlistedRewardDenoms{Denoms: []string{}},
+			Prioritylist:            []string{},
 		}
 		consumerIds[i] = consumerId
 		consumers[i] = &c

@@ -357,7 +357,7 @@ The consumer module contains the following parameters.
 Providing an IBC transfer channel enables a consumer chain to re-use one of the existing channels to the provider for consumer chain rewards distribution. 
 This will preserve the `ibc denom` that may already be in use. 
 This is especially important for standalone chains transitioning to become consumer chains. 
-For more details, see the [changeover procedure](../consumer-development/changeover-procedure.md).
+For more details, see the [changeover procedure](../../consumer-development/changeover-procedure.md).
 
 ### ProviderFeePoolAddrStr
 
@@ -439,7 +439,7 @@ It is recommended that every consumer chain set and unbonding period shorter tha
 | time.Duration | 3600s (1 hour) |
 
 `RetryDelayPeriod` is the period at which the consumer retries to send a `SlashPacket` that was rejected by the provider.
-For more details, see [ADR-008](../adrs/adr-008-throttle-retries.md).
+For more details, see [ADR-008](../../adrs/adr-008-throttle-retries.md).
 
 ## Client
 

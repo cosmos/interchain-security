@@ -317,7 +317,8 @@ tee ${PROV_NODE_DIR}/consumer_prop.json<<EOF
                 "allowlist": [],
                 "denylist": [],
                 "min_stake": 1000,
-                "allow_inactive_vals": true
+                "allow_inactive_vals": true,
+                "prioritylist": []
             }
         }
     ],

@@ -9,7 +9,13 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
-// Tests the tracking of historical info in the context of new blocks being committed
+// TestHistoricalInfo tests the tracking of historical information in the context of new blocks being committed.
+// @Long Description@
+// * Save the initial number of CC validators and current block height.
+// * Add a new validator and then advance the blockchain by one block, triggering the tracking of historical information.
+// * Create 2 validators and then call TrackHistoricalInfo with header block height.
+// * Verify that historical information is pruned correctly and that the validator set is updated as expected.
+// * Check if the historical information is correctly handled and pruned based on the block height.
 func (k CCVTestSuite) TestHistoricalInfo() { //nolint:govet // this is a test so we can copy locks
 	consumerKeeper := k.consumerApp.GetConsumerKeeper()
 	cCtx := k.consumerChain.GetContext

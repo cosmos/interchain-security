@@ -139,7 +139,6 @@ func (k Keeper) DeleteConsumerRewardsAllocationByDenom(ctx sdk.Context, consumer
 
 // AllocateConsumerRewards allocates the given rewards to provider consumer chain with the given consumer id
 func (k Keeper) AllocateConsumerRewards(ctx sdk.Context, consumerId string, alloc types.ConsumerRewardsAllocation) (types.ConsumerRewardsAllocation, error) {
-
 	chainId, err := k.GetConsumerChainId(ctx, consumerId)
 	if err != nil {
 		k.Logger(ctx).Error(
@@ -268,11 +267,6 @@ func (k Keeper) AllocateConsumerRewards(ctx sdk.Context, consumerId string, allo
 // AllocateTokens performs rewards distribution to the community pool and validators
 // based on the Partial Set Security distribution specification.
 func (k Keeper) AllocateTokens(ctx sdk.Context) {
-	// return if there is no coins in the consumer rewards pool
-	if k.GetConsumerRewardsPool(ctx).IsZero() {
-		return
-	}
-
 	// Iterate over all launched consumer chains.
 	// To avoid large iterations over all the consumer IDs, iterate only over
 	// chains with an IBC client created.
@@ -303,7 +297,12 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 				)
 				continue
 			}
-			remainingRewardDec, err := k.AllocateConsumerRewards(cachedCtx, consumerId, consumerRewards)
+			if consumerRewards.Rewards.IsZero() {
+				// note that GetConsumerRewardsAllocationByDenom returns an empty ConsumerRewardsAllocation
+				// when there is no (consumerId, denom) key for consumer rewards allocations
+				continue
+			}
+			remainingRewardAllocation, err := k.AllocateConsumerRewards(cachedCtx, consumerId, consumerRewards)
 			if err != nil {
 				k.Logger(ctx).Error(
 					"fail to allocate rewards for consumer chain",
@@ -312,15 +311,23 @@ func (k Keeper) AllocateTokens(ctx sdk.Context) {
 				)
 				continue
 			}
-			err = k.SetConsumerRewardsAllocationByDenom(cachedCtx, consumerId, denom, remainingRewardDec)
-			if err != nil {
-				k.Logger(ctx).Error(
-					"fail to set rewards for consumer chain",
-					"consumer id", consumerId,
-					"error", err.Error(),
-				)
-				continue
+
+			if remainingRewardAllocation.Rewards.IsZero() {
+				// if there is no remaining consumer rewards allocation, then just delete the (consumerId, denom) key
+				k.DeleteConsumerRewardsAllocationByDenom(cachedCtx, consumerId, denom)
+			} else {
+				// otherwise, update the consumer rewards allocation
+				err = k.SetConsumerRewardsAllocationByDenom(cachedCtx, consumerId, denom, remainingRewardAllocation)
+				if err != nil {
+					k.Logger(ctx).Error(
+						"fail to set rewards for consumer chain",
+						"consumer id", consumerId,
+						"error", err.Error(),
+					)
+					continue
+				}
 			}
+
 			writeCache()
 		}
 	}

@@ -95,7 +95,7 @@ An IBC misbehaviour contains two conflicting IBC client headers, which are used 
 The misbehaviour type definition can be found in the IBC client messages, see ibc-go/proto/ibc/core/client/v1/tx.proto.
 
 Example:
-%s tx provider submit-consumer-misbehaviour [consumer-id] [path/to/misbehaviour.json] --from node0 --home ../node0 --chain-id $CID
+%s tx provider submit-consumer-misbehaviour [consumer-id] [path/to/misbehaviour.json]
 			`, version.AppName)),
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -154,7 +154,7 @@ func NewSubmitConsumerDoubleVotingCmd() *cobra.Command {
  definition can be found in the IBC messages, see ibc-go/proto/ibc/lightclients/tendermint/v1/tendermint.proto.
 
 Example:
-%s tx provider submit-consumer-double-voting [consumer-id] [path/to/evidence.json] [path/to/infraction_header.json] --from node0 --home ../node0 --chain-id $CID
+%s tx provider submit-consumer-double-voting [consumer-id] [path/to/evidence.json] [path/to/infraction_header.json]
 `, version.AppName)),
 		Args: cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -221,23 +221,23 @@ Note that the one that signs this message is the owner of this consumer chain. T
 changed by updating the consumer chain.
 
 Example:
-%s tx provider create-consumer [path/to/create_consumer.json] --from node0 --home ../node0 --chain-id $CID
+%s tx provider create-consumer [path/to/create_consumer.json]
 
 where create_consumer.json has the following structure:
 {
-  "chain_id": "consu",
+  "chain_id": "consumer-1",
   "metadata": {
     "name": "chain consumer",
     "description": "description",
-    "metadata": "metadata"
+    "metadata": "{\"forge_json_url\": \"...\", \"stage\": \"mainnet\"}"
   },
   "initialization_parameters": {
     "initial_height": {
-     "revision_number": 0,
+     "revision_number": 1,
      "revision_height": 1
     },
-    "genesis_hash": "Z2VuX2hhc2g=",
-    "binary_hash": "YmluX2hhc2g=",
+    "genesis_hash": "",
+    "binary_hash": "",
     "spawn_time": "2024-08-29T12:26:16.529913Z",
     "unbonding_period": 1728000000000000,
     "ccv_timeout_period": 2419200000000000,
@@ -248,13 +248,14 @@ where create_consumer.json has the following structure:
     "distribution_transmission_channel": ""
   },
   "power_shaping_parameters": {
-    "top_N": 100,
-    "validators_power_cap": 0,
+    "top_N": 0,
+    "validators_power_cap": 10,
     "validator_set_cap": 0,
-    "allowlist": [],
-    "denylist": [],
-    "min_stake": "0",
-    "allow_inactive_vals": false
+    "allowlist": ["cosmosvalcons..."],
+    "denylist": ["cosmosvalcons..."],
+    "min_stake": 0,
+    "allow_inactive_vals": false,
+    "prioritylist": ["cosmosvalcons..."]
   },
   "allowlisted_reward_denoms": {
     "denoms": ["ibc/...", "ibc/..."]
@@ -318,7 +319,7 @@ func NewUpdateConsumerCmd() *cobra.Command {
 Note that only the owner of the chain can initialize it.
 
 Example:
-%s tx provider update-consumer [path/to/update_consumer.json] --from node0 --home ../node0 --chain-id $CID
+%s tx provider update-consumer [path/to/update_consumer.json]
 
 where update_consumer.json has the following structure:
 {
@@ -327,15 +328,15 @@ where update_consumer.json has the following structure:
    "metadata": {
     "name": "chain consumer",
     "description": "description",
-    "metadata": "metadata"
+    "metadata": "{\"forge_json_url\": \"...\", \"stage\": \"mainnet\"}"
    },
    "initialization_parameters": {
     "initial_height": {
-     "revision_number": 0,
+     "revision_number": 1,
      "revision_height": 1
     },
-    "genesis_hash": "Z2VuX2hhc2g=",
-    "binary_hash": "YmluX2hhc2g=",
+    "genesis_hash": "",
+    "binary_hash": "",
     "spawn_time": "2024-08-29T12:26:16.529913Z",
     "unbonding_period": 1728000000000000,
     "ccv_timeout_period": 2419200000000000,
@@ -346,13 +347,14 @@ where update_consumer.json has the following structure:
     "distribution_transmission_channel": ""
    },
    "power_shaping_parameters": {
-    "top_N": 100,
-    "validators_power_cap": 0,
+    "top_N": 0,
+    "validators_power_cap": 10,
     "validator_set_cap": 0,
-    "allowlist": [],
-    "denylist": [],
-    "min_stake": "0",
-    "allow_inactive_vals": false
+    "allowlist": ["cosmosvalcons..."],
+    "denylist": ["cosmosvalcons..."],
+    "min_stake": 0,
+    "allow_inactive_vals": false,
+    "prioritylist": ["cosmosvalcons..."]
    },
   "allowlisted_reward_denoms": {
     "denoms": ["ibc/...", "ibc/..."]
@@ -421,7 +423,7 @@ func NewRemoveConsumerCmd() *cobra.Command {
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Removes (and stops) a consumer chain. Note that only the owner of the chain can remove it.
 Example:
-%s tx provider remove-consumer [consumer-id] --from node0 --home ../node0 --chain-id $CID
+%s tx provider remove-consumer [consumer-id]
 `, version.AppName)),
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -552,7 +554,7 @@ func NewSetConsumerCommissionRateCmd() *cobra.Command {
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Note that the "commission-rate" argument is a fraction and should be in the range [0,1].
 			Example:
-			%s set-consumer-commission-rate 123 0.5 --from node0 --home ../node0`,
+			%s set-consumer-commission-rate 123 0.5`,
 				version.AppName),
 		),
 		Args: cobra.ExactArgs(2),

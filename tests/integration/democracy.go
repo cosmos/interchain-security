@@ -70,6 +70,11 @@ func (suite *ConsumerDemocracyTestSuite) SetupTest() {
 		suite.consumerApp = suite.setupCallback(&suite.Suite)
 }
 
+// TestDemocracyRewardsDistribution checks that rewards to democracy representatives, community pool, and provider redistribution account are done correctly.
+// @Long Description@
+// * Set up a democracy consumer chain.
+// * Create a new block.
+// * Check that rewards to democracy representatives, community pool, and provider redistribution account are distributed in the right proportions.
 func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	s.consumerChain.NextBlock()
 	stakingKeeper := s.consumerApp.GetTestStakingKeeper()
@@ -153,7 +158,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	totalFees := nextConsumerRedistributeBalance.Add(providerDifference)
 	s.Require().Equal(totalFees.Mul(consumerRedistributionFraction), nextConsumerRedistributeBalance)
 
-	// confirm begin blocker changes: democracy module distributes the fees from c onsumer redistribute address to representatives
+	// confirm begin blocker changes: democracy module distributes the fees from consumer redistribute address to representatives
 	// and community fee pool
 	// distribution module got tokens from previous consumer redistribute balance
 	s.Require().Equal(distrModuleDifference, previousConsumerRedistributeBalance)
@@ -175,6 +180,17 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	}
 }
 
+// TestDemocracyGovernanceWhitelisting checks that only whitelisted governance proposals
+// can be executed on democracy consumer chains.
+// @Long Description@
+// For context, see the whitelist for proposals in app/consumer-democracy/proposals_whitelisting.go.
+// * Set up a democracy consumer chain.
+// * Submit a proposal containing changes to the auth and mint module parameters.
+// * Check that the proposal is not executed, since the change to the auth module is not whitelisted.
+// * Submit a proposal containing changes *only* to the mint module parameters.
+// * Check that the proposal is executed, since the change to the mint module is whitelisted.
+// * Submit a proposal containing changes *only* to the auth module parameters.
+// * Check that again, the proposal is not executed, since the change to the auth module is not whitelisted.
 func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	govKeeper := s.consumerApp.GetTestGovKeeper()
 	params, err := govKeeper.Params.Get(s.consumerCtx())
@@ -270,6 +286,11 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 }
 
+// TestDemocracyMsgUpdateParams checks that the consumer parameters can be updated through a governance proposal.
+// @Long Description@
+// * Set up a democracy consumer chain.
+// * Submit a proposal containing changes to the consumer module parameters.
+// * Check that the proposal is executed, and the parameters are updated.
 func (s *ConsumerDemocracyTestSuite) TestDemocracyMsgUpdateParams() {
 	govKeeper := s.consumerApp.GetTestGovKeeper()
 	params, err := govKeeper.Params.Get(s.consumerCtx())
@@ -280,11 +301,13 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyMsgUpdateParams() {
 	votingAccounts := s.consumerChain.SenderAccounts
 	bondDenom, err := stakingKeeper.BondDenom(s.consumerCtx())
 	s.Require().NoError(err)
+
 	depositAmount := params.MinDeposit
 	duration := (3 * time.Second)
 	params.VotingPeriod = &duration
 	err = govKeeper.Params.Set(s.consumerCtx(), params)
 	s.Assert().NoError(err)
+
 	proposer := s.consumerChain.SenderAccount
 	s.consumerChain.NextBlock()
 	votersOldBalances := getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts)
