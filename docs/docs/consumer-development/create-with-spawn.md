@@ -9,7 +9,7 @@ sidebar_position: 1
 - [`go 1.22+`](https://go.dev/doc/install)
 - [`Docker`](https://docs.docker.com/get-docker/)
 
-[MacOS + Ubuntu Setup](https://github.com/rollchains/spawn/blob/release/v0.50/docs/SYSTEM_SETUP.md)
+[MacOS + Ubuntu Setup](https://github.com/rollchains/spawn/blob/release/v0.50/docs/versioned_docs/version-v0.50.x/01-setup/01-system-setup.md)
 
 ## Getting Started
 
