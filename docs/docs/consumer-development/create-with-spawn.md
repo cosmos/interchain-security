@@ -17,27 +17,66 @@ sidebar_position: 1
 
 In this tutorial, we'll create and interact with a new Interchain security enabled blockchain called "consumer", with the token denomination "uconsu".
 
-1. Clone this repo and install
+1. Install Spawn
 
 ```shell
-git clone https://github.com/rollchains/spawn.git
+# Install from latest source
+git clone https://github.com/rollchains/spawn.git --depth 1 --branch v0.50.10
+
+# Change to this directory
 cd spawn
-git checkout v0.50.4
+
+# Clear Go modules cache for a fresh install
+go clean -modcache
+
+# Install Spawn
 make install
+
+# Install Local Interchain (testnet runner)
+make get-localic
+
+# Install docker container builder
+make get-heighliner
+
+# Verify installations were successful
+spawn
+
+local-ic
+
+heighliner
+
+# If you get "command 'spawn' not found", run the following
+# Linux / Windows / Some MacOS
+echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> ~/.bashrc
+source ~/.bashrc
+
+# MacOS
+echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> ~/.zshrc
+source ~/.zshrc
+
+# Legacy MacOS Go
+echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.zshrc
+source ~/.zshrc
+
+# Sometimes it can be good to also clear your cache
+# especially WSL users
+go clean -cache
+
+
 ```
 
 2. Create your chain using the `spawn` command and customize it to your needs!
 
 ```shell
-GITHUB_USERNAME=<your-github-username>
+GITHUB_USERNAME=<your github username>
 
 spawn new consumer \
 --consensus=interchain-security \
---bech32=consu `# the prefix for addresses` \
---denom=uconsu `# the coin denomination to create` \
---bin=consumerd `# the name of the binary` \
---disabled=tokenfactory,globalfee,ibc-packetforward,ibc-ratelimit,cosmwasm,wasm-light-client,optimistic-execution,ignite-cli `# disable features. [tokenfactory,globalfee,ibc-packetforward,ibc-ratelimit,cosmwasm,wasm-light-client,ignite-cli]` \
---org=${GITHUB_USERNAME} `# the github username or organization to use for the module imports, optional`
+--bech32=consu \
+--denom=uconsu \
+--bin=consumerd \
+--disabled=tokenfactory,ibc-packetforward,ibc-ratelimit,cosmwasm,wasm-light-client \
+--org=${GITHUB_USERNAME}
 ```
 
 > _NOTE:_ `spawn` creates a ready to use repository complete with `git` and GitHub CI. It can be quickly pushed to a new repository getting you and your team up and running quickly.
