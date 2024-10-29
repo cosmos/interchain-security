@@ -343,7 +343,7 @@ func (msg MsgCreateConsumer) ValidateBasic() error {
 // NewMsgUpdateConsumer creates a new MsgUpdateConsumer instance
 func NewMsgUpdateConsumer(owner, consumerId, ownerAddress string, metadata *ConsumerMetadata,
 	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters,
-	allowlistedRewardDenoms *AllowlistedRewardDenoms,
+	allowlistedRewardDenoms *AllowlistedRewardDenoms, newChainId string,
 ) (*MsgUpdateConsumer, error) {
 	return &MsgUpdateConsumer{
 		Owner:                    owner,
@@ -353,6 +353,7 @@ func NewMsgUpdateConsumer(owner, consumerId, ownerAddress string, metadata *Cons
 		InitializationParameters: initializationParameters,
 		PowerShapingParameters:   powerShapingParameters,
 		AllowlistedRewardDenoms:  allowlistedRewardDenoms,
+		NewChainId:               newChainId,
 	}, nil
 }
 
@@ -386,6 +387,11 @@ func (msg MsgUpdateConsumer) ValidateBasic() error {
 		if err := ValidateAllowlistedRewardDenoms(*msg.AllowlistedRewardDenoms); err != nil {
 			return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "AllowlistedRewardDenoms: %s", err.Error())
 		}
+	}
+
+	if msg.NewChainId != "" && len(msg.NewChainId) > cmttypes.MaxChainIDLen {
+		return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "NewChainId (%s) is too long; got: %d, max: %d",
+			msg.NewChainId, len(msg.NewChainId), cmttypes.MaxChainIDLen)
 	}
 
 	return nil

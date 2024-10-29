@@ -82,9 +82,10 @@ func TestUpdateConsumer(t *testing.T) {
 	require.Error(t, err, "cannot update consumer chain")
 
 	// create a chain before updating it
+	chainId := "chainId-1"
 	createConsumerResponse, err := msgServer.CreateConsumer(ctx,
 		&providertypes.MsgCreateConsumer{
-			Submitter: "submitter", ChainId: "chainId-1",
+			Submitter: "submitter", ChainId: chainId,
 			Metadata: providertypes.ConsumerMetadata{
 				Name:        "name",
 				Description: "description",
@@ -106,6 +107,21 @@ func TestUpdateConsumer(t *testing.T) {
 		})
 	require.Error(t, err, "expected owner address")
 
+	// assert that we can change the chain id of a registered chain
+	expectedChainId := "newChainId-1"
+	_, err = msgServer.UpdateConsumer(ctx,
+		&providertypes.MsgUpdateConsumer{
+			Owner: "submitter", ConsumerId: consumerId,
+			Metadata:                 nil,
+			InitializationParameters: nil,
+			PowerShapingParameters:   nil,
+			NewChainId:               expectedChainId,
+		})
+	require.NoError(t, err)
+	chainId, err = providerKeeper.GetConsumerChainId(ctx, consumerId)
+	require.NoError(t, err)
+	require.Equal(t, expectedChainId, chainId)
+
 	expectedConsumerMetadata := providertypes.ConsumerMetadata{
 		Name:        "name2",
 		Description: "description2",
@@ -117,12 +133,14 @@ func TestUpdateConsumer(t *testing.T) {
 	expectedPowerShapingParameters := testkeeper.GetTestPowerShapingParameters()
 
 	expectedOwnerAddress := "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la"
+	expectedChainId = "updatedChainId-1"
 	_, err = msgServer.UpdateConsumer(ctx,
 		&providertypes.MsgUpdateConsumer{
 			Owner: "submitter", ConsumerId: consumerId, NewOwnerAddress: expectedOwnerAddress,
 			Metadata:                 &expectedConsumerMetadata,
 			InitializationParameters: &expectedInitializationParameters,
 			PowerShapingParameters:   &expectedPowerShapingParameters,
+			NewChainId:               expectedChainId,
 		})
 	require.NoError(t, err)
 
@@ -145,6 +163,11 @@ func TestUpdateConsumer(t *testing.T) {
 	actualPowerShapingParameters, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, consumerId)
 	require.NoError(t, err)
 	require.Equal(t, expectedPowerShapingParameters, actualPowerShapingParameters)
+
+	// assert that the chain id has been updated
+	actualChainId, err := providerKeeper.GetConsumerChainId(ctx, consumerId)
+	require.NoError(t, err)
+	require.Equal(t, expectedChainId, actualChainId)
 
 	// assert phase
 	phase := providerKeeper.GetConsumerPhase(ctx, consumerId)
@@ -190,6 +213,33 @@ func TestUpdateConsumer(t *testing.T) {
 			PowerShapingParameters:   nil,
 		})
 	require.ErrorContains(t, err, "cannot update the initialization parameters of an an already launched chain")
+
+	// assert that we CANNOT change the chain id of a launched chain
+	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_LAUNCHED)
+	_, err = msgServer.UpdateConsumer(ctx,
+		&providertypes.MsgUpdateConsumer{
+			Owner: expectedOwnerAddress, ConsumerId: consumerId,
+			Metadata:                 nil,
+			InitializationParameters: nil,
+			PowerShapingParameters:   nil,
+			NewChainId:               "newChainId",
+		})
+	require.ErrorContains(t, err, "cannot update chain id of a non-prelaunched chain")
+
+	// assert that we can use the chain's current chain id as `NewChainId` even if the chain has launched
+	// as effectively this does not change anything
+	chainId, err = providerKeeper.GetConsumerChainId(ctx, consumerId)
+	require.NoError(t, err)
+	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_LAUNCHED)
+	_, err = msgServer.UpdateConsumer(ctx,
+		&providertypes.MsgUpdateConsumer{
+			Owner: expectedOwnerAddress, ConsumerId: consumerId,
+			Metadata:                 nil,
+			InitializationParameters: nil,
+			PowerShapingParameters:   nil,
+			NewChainId:               chainId,
+		})
+	require.NoError(t, err)
 
 	// assert that we can update the consumer metadata of a launched chain
 	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_LAUNCHED)

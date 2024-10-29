@@ -177,6 +177,13 @@ func (k Keeper) DeleteConsumerPhase(ctx sdk.Context, consumerId string) {
 	store.Delete(types.ConsumerIdToPhaseKey(consumerId))
 }
 
+// IsConsumerPrelaunched checks if a consumer chain is in its prelaunch phase
+func (k Keeper) IsConsumerPrelaunched(ctx sdk.Context, consumerId string) bool {
+	phase := k.GetConsumerPhase(ctx, consumerId)
+	return phase == types.CONSUMER_PHASE_REGISTERED ||
+		phase == types.CONSUMER_PHASE_INITIALIZED
+}
+
 // IsConsumerActive checks if a consumer chain is either registered, initialized, or launched.
 func (k Keeper) IsConsumerActive(ctx sdk.Context, consumerId string) bool {
 	phase := k.GetConsumerPhase(ctx, consumerId)

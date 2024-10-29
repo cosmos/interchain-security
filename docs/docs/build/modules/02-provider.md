@@ -538,6 +538,9 @@ If the `power_shaping_parameters` field is set and `power_shaping_parameters.top
 
 If the `new_owner_address` field is set to a value different than the gov module account address, then `top_N` needs to be zero.
 
+We can also update the `chain_id` of a consumer chain by using the optional `new_chain_id` field. Note that the chain id of a consumer chain
+can only be updated if the chain has not yet launched. After launch, the chain id of a consumer chain cannot be updated anymore.
+
 ```proto
 message MsgUpdateConsumer {
   option (cosmos.msg.v1.signer) = "owner";
@@ -562,6 +565,9 @@ message MsgUpdateConsumer {
 
   // allowlisted reward denoms by the consumer chain
   AllowlistedRewardDenoms allowlisted_reward_denoms = 7;
+
+  // to update the chain id of the chain (can only be updated if the chain has not yet launched)
+  string new_chain_id = 8;
 }
 ```
 

@@ -359,6 +359,7 @@ where update_consumer.json has the following structure:
   "allowlisted_reward_denoms": {
     "denoms": ["ibc/...", "ibc/..."]
   }
+  "new_chain_id": "newConsumer-1",
 }
 
 Note that only 'consumer_id' is mandatory. The others are optional.
@@ -397,7 +398,7 @@ If one of the fields is missing, it will be set to its zero value.
 			}
 
 			msg, err := types.NewMsgUpdateConsumer(owner, consUpdate.ConsumerId, consUpdate.NewOwnerAddress, consUpdate.Metadata,
-				consUpdate.InitializationParameters, consUpdate.PowerShapingParameters, consUpdate.AllowlistedRewardDenoms)
+				consUpdate.InitializationParameters, consUpdate.PowerShapingParameters, consUpdate.AllowlistedRewardDenoms, consUpdate.NewChainId)
 			if err != nil {
 				return err
 			}

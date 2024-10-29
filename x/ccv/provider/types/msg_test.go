@@ -490,6 +490,7 @@ func TestMsgUpdateConsumerValidateBasic(t *testing.T) {
 	testCases := []struct {
 		name                   string
 		powerShapingParameters types.PowerShapingParameters
+		newChainId             string
 		expPass                bool
 	}{
 		{
@@ -504,6 +505,7 @@ func TestMsgUpdateConsumerValidateBasic(t *testing.T) {
 				AllowInactiveVals:  false,
 				Prioritylist:       []string{consAddr1},
 			},
+			"validchainid-0",
 			true,
 		},
 		{
@@ -516,6 +518,7 @@ func TestMsgUpdateConsumerValidateBasic(t *testing.T) {
 				Denylist:           nil,
 				Prioritylist:       nil,
 			},
+			"validchainid-0",
 			false,
 		},
 		{
@@ -530,6 +533,7 @@ func TestMsgUpdateConsumerValidateBasic(t *testing.T) {
 				AllowInactiveVals:  false,
 				Prioritylist:       nil,
 			},
+			"validchainid-0",
 			false,
 		},
 		{
@@ -544,13 +548,20 @@ func TestMsgUpdateConsumerValidateBasic(t *testing.T) {
 				AllowInactiveVals:  false,
 				Prioritylist:       []string{consAddr1},
 			},
+			"validchainid-0",
 			true,
+		},
+		{
+			"too long new chain id",
+			types.PowerShapingParameters{},
+			"this is an extremely long chain id that is so long that the validation would fail",
+			false,
 		},
 	}
 
 	for _, tc := range testCases {
 		// TODO (PERMISSIONLESS) add more tests
-		msg, _ := types.NewMsgUpdateConsumer("", "0", "cosmos1p3ucd3ptpw902fluyjzhq3ffgq4ntddac9sa3s", nil, nil, &tc.powerShapingParameters, nil)
+		msg, _ := types.NewMsgUpdateConsumer("", "0", "cosmos1p3ucd3ptpw902fluyjzhq3ffgq4ntddac9sa3s", nil, nil, &tc.powerShapingParameters, nil, tc.newChainId)
 		err := msg.ValidateBasic()
 		if tc.expPass {
 			require.NoError(t, err, "valid case: %s should not return error. got %w", tc.name, err)

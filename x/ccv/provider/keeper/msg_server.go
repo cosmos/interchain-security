@@ -474,6 +474,16 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 		return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState, "cannot get consumer chain ID: %s", err.Error())
 	}
 
+	if strings.TrimSpace(msg.NewChainId) != "" && msg.NewChainId != chainId {
+		if k.IsConsumerPrelaunched(ctx, consumerId) {
+			chainId = msg.NewChainId
+			k.SetConsumerChainId(ctx, consumerId, chainId)
+		} else {
+			// the chain id cannot be updated if the chain is NOT in a prelaunched (i.e., registered or initialized) phase
+			return &resp, errorsmod.Wrapf(types.ErrInvalidPhase, "cannot update chain id of a non-prelaunched chain: %s", k.GetConsumerPhase(ctx, consumerId))
+		}
+	}
+
 	// add event attributes
 	eventAttributes = append(eventAttributes, []sdk.Attribute{
 		sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
