@@ -1,14 +1,13 @@
 package provider
 
 import (
+	"cosmossdk.io/math"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
-
-	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -177,8 +176,33 @@ func (im IBCMiddleware) OnRecvPacket(
 				}
 			}
 		} else {
-			logger.Info("transfer memo:%#+v", rewardMemo)
+			logger.Info("transfer memo",
+				"consumerId", rewardMemo.ConsumerId,
+				"chainId", rewardMemo.ChainId,
+				"memo", rewardMemo.Memo)
+
 			consumerId = rewardMemo.ConsumerId
+
+			// (exceptional case): the consumer chain provides a transfer memo, but with an invalid consumer id
+			if err = ccvtypes.ValidateConsumerId(consumerId); err != nil {
+				logger.Error(
+					"consumer id in memo is invalid",
+					"consumerId", consumerId,
+					"error", err.Error(),
+				)
+
+				// try to identify the consumer id from the packet
+				consumerId, err = im.keeper.IdentifyConsumerIdFromIBCPacket(ctx, packet)
+				if err != nil {
+					logger.Error(
+						"cannot identify consumer id from IBC packet",
+						"packet", packet.String(),
+						"fungibleTokenPacketData", data.String(),
+						"error", err.Error(),
+					)
+					return ack
+				}
+			}
 		}
 
 		chainId, err := im.keeper.GetConsumerChainId(ctx, consumerId)
