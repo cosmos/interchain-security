@@ -1,6 +1,8 @@
 package chainsuite
 
-import "time"
+import (
+	"time"
+)
 
 type Metadata struct {
 	Name        string `json:"name"`
@@ -144,13 +146,34 @@ type InnerSpec struct {
 }
 
 type Provider struct {
-	ClientState    ClientState    `json:"client_state"`
-	ConsensusState ConsensusState `json:"consensus_state"`
-	InitialValSet  []interface{}  `json:"initial_val_set"`
+	ClientState    ClientState        `json:"client_state"`
+	ConsensusState ConsensusState     `json:"consensus_state"`
+	InitialValSet  []InitialValidator `json:"initial_val_set"`
+}
+
+type InitialValidator struct {
+	PubKey PubKey `json:"pub_key"`
+	Power  string `json:"power"`
+}
+
+type PubKey struct {
+	Ed25519 string `json:"ed25519"`
 }
 
 type ConsumerGenesisResponse struct {
 	Params   Params   `json:"params"`
 	NewChain bool     `json:"new_chain"`
 	Provider Provider `json:"provider"`
+}
+
+type OptInValidatorsResponse struct {
+	ValidatorsProviderAddresses []string `json:"validators_provider_addresses"`
+}
+
+type ValidatorConsumerAddressResponse struct {
+	ConsumerAddress string `json:"consumer_address"`
+}
+
+type ValidatorProviderAddressResponse struct {
+	ProviderAddress string `json:"provider_address"`
 }

@@ -29,14 +29,15 @@ const (
 	GasPrices                 = "0.005"
 	UpgradeDelta              = 30
 	SlashingWindowConsumer    = 20
-	CommitTimeout             = 4 * time.Second
+	CommitTimeout             = 2 * time.Second
 	TotalValidatorFunds       = 11_000_000_000
 	ValidatorFunds            = 30_000_000
 	ValidatorCount            = 1
 	FullNodeCount             = 0
 	ChainSpawnWait            = 155 * time.Second
 	CosmosChainType           = "cosmos"
-	GovModuleAddress = "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
+	GovModuleAddress          = "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
+	TestWalletsNumber         = 5 // Ensure that test accounts are used in a way that maintains the mutual independence of tests
 )
 
 func DefaultConfigToml() testutil.Toml {

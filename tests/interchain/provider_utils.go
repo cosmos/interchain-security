@@ -28,12 +28,11 @@ func msgCreateConsumer(
 	}
 }
 
-func consumerInitParamsTemplate(spawnTime time.Time) *providertypes.ConsumerInitializationParameters {
-	return &providertypes.ConsumerInitializationParameters{
+func consumerInitParamsTemplate(spawnTime *time.Time) *providertypes.ConsumerInitializationParameters {
+	initParams := &providertypes.ConsumerInitializationParameters{
 		InitialHeight:                     clienttypes.NewHeight(0, 1),
 		GenesisHash:                       []byte("gen_hash"),
 		BinaryHash:                        []byte("bin_hash"),
-		SpawnTime:                         spawnTime,
 		UnbondingPeriod:                   10 * time.Second,
 		CcvTimeoutPeriod:                  time.Duration(100000000000),
 		TransferTimeoutPeriod:             time.Duration(100000000000),
@@ -42,6 +41,12 @@ func consumerInitParamsTemplate(spawnTime time.Time) *providertypes.ConsumerInit
 		HistoricalEntries:                 10000,
 		DistributionTransmissionChannel:   "",
 	}
+
+	if spawnTime != nil {
+		initParams.SpawnTime = *spawnTime
+	}
+
+	return initParams
 }
 
 func powerShapingParamsTemplate() *providertypes.PowerShapingParameters {
