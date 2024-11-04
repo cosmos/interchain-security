@@ -57,10 +57,6 @@ func TestDemocracyRewardsDistribution(t *testing.T) {
 	runConsumerDemocracyTestByName(t, "TestDemocracyRewardsDistribution")
 }
 
-func TestDemocracyGovernanceWhitelisting(t *testing.T) {
-	runConsumerDemocracyTestByName(t, "TestDemocracyGovernanceWhitelisting")
-}
-
 func TestDemocracyMsgUpdateParams(t *testing.T) {
 	runConsumerDemocracyTestByName(t, "TestDemocracyMsgUpdateParams")
 }
