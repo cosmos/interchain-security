@@ -166,6 +166,7 @@ func TestValidateInitializationParameters(t *testing.T) {
 				BlocksPerDistributionTransmission: 10,
 				HistoricalEntries:                 10000,
 				DistributionTransmissionChannel:   "",
+				ConnectionId:                      "",
 			},
 			valid: true,
 		},
@@ -183,6 +184,7 @@ func TestValidateInitializationParameters(t *testing.T) {
 				BlocksPerDistributionTransmission: 10,
 				HistoricalEntries:                 10000,
 				DistributionTransmissionChannel:   "",
+				ConnectionId:                      "",
 			},
 			valid: false,
 		},
@@ -200,6 +202,7 @@ func TestValidateInitializationParameters(t *testing.T) {
 				BlocksPerDistributionTransmission: 10,
 				HistoricalEntries:                 10000,
 				DistributionTransmissionChannel:   "",
+				ConnectionId:                      "",
 			},
 			valid: false,
 		},
@@ -217,6 +220,7 @@ func TestValidateInitializationParameters(t *testing.T) {
 				BlocksPerDistributionTransmission: 10,
 				HistoricalEntries:                 10000,
 				DistributionTransmissionChannel:   "",
+				ConnectionId:                      "",
 			},
 			valid: true,
 		},
@@ -234,6 +238,7 @@ func TestValidateInitializationParameters(t *testing.T) {
 				BlocksPerDistributionTransmission: 10,
 				HistoricalEntries:                 10000,
 				DistributionTransmissionChannel:   "",
+				ConnectionId:                      "",
 			},
 			valid: false,
 		},
@@ -251,6 +256,7 @@ func TestValidateInitializationParameters(t *testing.T) {
 				BlocksPerDistributionTransmission: 10,
 				HistoricalEntries:                 10000,
 				DistributionTransmissionChannel:   "",
+				ConnectionId:                      "",
 			},
 			valid: false,
 		},
@@ -268,6 +274,7 @@ func TestValidateInitializationParameters(t *testing.T) {
 				BlocksPerDistributionTransmission: 10,
 				HistoricalEntries:                 10000,
 				DistributionTransmissionChannel:   "",
+				ConnectionId:                      "",
 			},
 			valid: false,
 		},
@@ -285,6 +292,7 @@ func TestValidateInitializationParameters(t *testing.T) {
 				BlocksPerDistributionTransmission: 0,
 				HistoricalEntries:                 10000,
 				DistributionTransmissionChannel:   "",
+				ConnectionId:                      "",
 			},
 			valid: false,
 		},
@@ -302,6 +310,7 @@ func TestValidateInitializationParameters(t *testing.T) {
 				BlocksPerDistributionTransmission: 10,
 				HistoricalEntries:                 0,
 				DistributionTransmissionChannel:   "",
+				ConnectionId:                      "",
 			},
 			valid: false,
 		},
@@ -319,6 +328,25 @@ func TestValidateInitializationParameters(t *testing.T) {
 				BlocksPerDistributionTransmission: 10,
 				HistoricalEntries:                 10000,
 				DistributionTransmissionChannel:   coolStr,
+				ConnectionId:                      "",
+			},
+			valid: false,
+		},
+		{
+			name: "invalid - ConnectionId too long",
+			params: types.ConsumerInitializationParameters{
+				InitialHeight:                     clienttypes.NewHeight(3, 4),
+				GenesisHash:                       []byte{0x01},
+				BinaryHash:                        []byte{0x01},
+				SpawnTime:                         now,
+				UnbondingPeriod:                   time.Duration(100000000000),
+				CcvTimeoutPeriod:                  time.Duration(100000000000),
+				TransferTimeoutPeriod:             time.Duration(100000000000),
+				ConsumerRedistributionFraction:    "0.75",
+				BlocksPerDistributionTransmission: 10,
+				HistoricalEntries:                 10000,
+				DistributionTransmissionChannel:   "",
+				ConnectionId:                      coolStr,
 			},
 			valid: false,
 		},
@@ -707,6 +735,49 @@ func TestValidateInitialHeight(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		err := types.ValidateInitialHeight(tc.initialHeight, tc.chainId)
+		if tc.expPass {
+			require.NoError(t, err, "valid case: '%s' should not return error. got %w", tc.name, err)
+		} else {
+			require.Error(t, err, "invalid case: '%s' must return error but got none", tc.name)
+		}
+	}
+}
+
+func TestValidateConnectionIdentifier(t *testing.T) {
+	testCases := []struct {
+		name    string
+		connId  string
+		expPass bool
+	}{
+		{
+			name:    "valid connection ID",
+			connId:  "connection-0",
+			expPass: true,
+		},
+		{
+			name:    "valid empty connection ID",
+			connId:  "",
+			expPass: true,
+		},
+		{
+			name:    "invalid connection ID with /",
+			connId:  "invalid-connection-id/",
+			expPass: false,
+		},
+		{
+			name:    "invalid connection ID with special characters",
+			connId:  "connection-@#",
+			expPass: false,
+		},
+		{
+			name:    "invalid connection ID with spaces",
+			connId:  "connection id",
+			expPass: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		err := types.ValidateConnectionIdentifier(tc.connId)
 		if tc.expPass {
 			require.NoError(t, err, "valid case: '%s' should not return error. got %w", tc.name, err)
 		} else {
