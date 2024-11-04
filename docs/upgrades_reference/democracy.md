@@ -67,5 +67,11 @@ The inner workings of `EndBlock` were refactored to allow using the cosmos-sdk g
 
 ## App wiring & tests
 
+Whitelisted proposal list was changed because `param-change` proposals were deprecated for most modules (they cannot be submitted).
+
+Added to whitelists:
+* `/cosmos.gov.v1beta1.TextProposal`
+
+
 e2e tests were refactored to send the `TextProposal` instead of a `param-change` because there are no modules that can process `param-change` so we cannot use those proposals any longer.
 

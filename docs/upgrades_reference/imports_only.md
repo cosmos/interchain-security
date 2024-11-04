@@ -1,4 +1,8 @@
 # import change only [file list]
+* app/consumer-democracy/ante_handler.go
+* app/consumer-democracy/proposals_whitelisting.go
+* app/consumer-democracy/proposals_whitelisting_test.go
+* app/consumer/ante/disabled_modules_ante_test.go
 * app/consumer/ante/msg_filter_ante_test.go
 * app/consumer/ante_handler.go
 * app/provider/ante_handler.go
