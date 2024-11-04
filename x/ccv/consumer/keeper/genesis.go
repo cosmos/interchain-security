@@ -24,7 +24,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 	// Once the provider validator set starts validating blocks, the consumer CCV module
 	// will take over proof of stake capabilities, but the standalone staking keeper will
 	// stick around for slashing/jailing purposes.
-	if state.PreCCV {
+	if state.Provider.PreCCV {
 		k.SetPreCCVTrue(ctx)
 		k.MarkAsPrevStandaloneChain(ctx)
 		k.SetInitialValSet(ctx, state.Provider.InitialValSet)
@@ -106,7 +106,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		k.SetProviderClientID(ctx, state.ProviderClientId)
 	}
 
-	if state.PreCCV {
+	if state.Provider.PreCCV {
 		return []abci.ValidatorUpdate{}
 	}
 

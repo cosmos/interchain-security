@@ -38,6 +38,7 @@ import (
 	"cosmossdk.io/x/feegrant"
 	feegrantkeeper "cosmossdk.io/x/feegrant/keeper"
 	feegrantmodule "cosmossdk.io/x/feegrant/module"
+
 	// add mint
 	"cosmossdk.io/x/upgrade"
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
@@ -695,7 +696,7 @@ func New(
 			consumerGenesis := consumertypes.GenesisState{}
 			appCodec.MustUnmarshalJSON(appState[consumertypes.ModuleName], &consumerGenesis)
 
-			consumerGenesis.PreCCV = true
+			consumerGenesis.Provider.PreCCV = true
 			app.ConsumerKeeper.InitGenesis(sdkCtx, &consumerGenesis)
 
 			app.Logger().Info("start to run module migrations...")
