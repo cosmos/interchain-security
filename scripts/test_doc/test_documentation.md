@@ -13,8 +13,8 @@
 
 | Function | Short Description |
 |----------|-------------------|
- [TestDemocracyRewardsDistribution](../../tests/integration/democracy.go#L78) | TestDemocracyRewardsDistribution checks that rewards to democracy representatives, community pool, and provider redistribution account are done correctly.<details><summary>Details</summary>* Set up a democracy consumer chain.<br>* Create a new block.<br>* Check that rewards to democracy representatives, community pool, and provider redistribution account are distributed in the right proportions.</details> |
- [TestDemocracyMsgUpdateParams](../../tests/integration/democracy.go#L294) | TestDemocracyMsgUpdateParams checks that the consumer parameters can be updated through a governance proposal.<details><summary>Details</summary>* Set up a democracy consumer chain.<br>* Submit a proposal containing changes to the consumer module parameters.<br>* Check that the proposal is executed, and the parameters are updated.</details> |
+ [TestDemocracyRewardsDistribution](../../tests/integration/democracy.go#L77) | TestDemocracyRewardsDistribution checks that rewards to democracy representatives, community pool, and provider redistribution account are done correctly.<details><summary>Details</summary>* Set up a democracy consumer chain.<br>* Create a new block.<br>* Check that rewards to democracy representatives, community pool, and provider redistribution account are distributed in the right proportions.</details> |
+ [TestDemocracyMsgUpdateParams](../../tests/integration/democracy.go#L187) | TestDemocracyMsgUpdateParams checks that the consumer parameters can be updated through a governance proposal.<details><summary>Details</summary>* Set up a democracy consumer chain.<br>* Submit a proposal containing changes to the consumer module parameters.<br>* Check that the proposal is executed, and the parameters are updated.</details> |
 </details>
 
 # [distribution.go](../../tests/integration/distribution.go) 
