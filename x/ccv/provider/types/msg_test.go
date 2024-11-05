@@ -1,6 +1,7 @@
 package types_test
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -554,7 +555,7 @@ func TestMsgUpdateConsumerValidateBasic(t *testing.T) {
 		{
 			"too long new chain id",
 			types.PowerShapingParameters{},
-			"this is an extremely long chain id that is so long that the validation would fail",
+			strings.Repeat("thisIsAnExtremelyLongChainId", 2),
 			false,
 		},
 	}
@@ -718,6 +719,53 @@ func TestValidateInitialHeight(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		err := types.ValidateInitialHeight(tc.initialHeight, tc.chainId)
+		if tc.expPass {
+			require.NoError(t, err, "valid case: '%s' should not return error. got %w", tc.name, err)
+		} else {
+			require.Error(t, err, "invalid case: '%s' must return error but got none", tc.name)
+		}
+	}
+}
+
+func TestValidateChainId(t *testing.T) {
+	testCases := []struct {
+		name    string
+		chainId string
+		expPass bool
+	}{
+		{
+			name:    "valid chain id",
+			chainId: "chain-1",
+			expPass: true,
+		},
+		{
+			name:    "valid chain id with no revision",
+			chainId: "chainId",
+			expPass: true,
+		},
+		{
+			name:    "invalid (too long) chain id",
+			chainId: strings.Repeat("thisIsAnExtremelyLongChainId", 2),
+			expPass: false,
+		},
+		{
+			name:    "reserved chain id",
+			chainId: "stride-1",
+			expPass: false,
+		},
+		{
+			name:    "reserved chain id",
+			chainId: "neutron-1",
+			expPass: false,
+		},
+		{
+			name:    "empty chain id",
+			chainId: "    ",
+			expPass: false,
+		},
+	}
+	for _, tc := range testCases {
+		err := types.ValidateChainId("ChainId", tc.chainId)
 		if tc.expPass {
 			require.NoError(t, err, "valid case: '%s' should not return error. got %w", tc.name, err)
 		} else {

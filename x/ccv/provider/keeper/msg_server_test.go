@@ -122,6 +122,17 @@ func TestUpdateConsumer(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, expectedChainId, chainId)
 
+	// assert that we cannot change the chain to that of a reserved chain id
+	_, err = msgServer.UpdateConsumer(ctx,
+		&providertypes.MsgUpdateConsumer{
+			Owner: "submitter", ConsumerId: consumerId,
+			Metadata:                 nil,
+			InitializationParameters: nil,
+			PowerShapingParameters:   nil,
+			NewChainId:               "stride-1", // reversed chain id
+		})
+	require.ErrorContains(t, err, "cannot use a reserved chain id")
+
 	expectedConsumerMetadata := providertypes.ConsumerMetadata{
 		Name:        "name2",
 		Description: "description2",

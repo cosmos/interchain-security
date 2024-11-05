@@ -474,7 +474,13 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 		return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState, "cannot get consumer chain ID: %s", err.Error())
 	}
 
+	// We only validate and use `NewChainId` if it is not empty (because `NewChainId` is an optional argument)
+	// or `NewChainId` is different from the current chain id of the consumer chain.
 	if strings.TrimSpace(msg.NewChainId) != "" && msg.NewChainId != chainId {
+		if err = types.ValidateChainId("NewChainId", msg.NewChainId); err != nil {
+			return &resp, errorsmod.Wrapf(types.ErrInvalidMsgUpdateConsumer, "invalid new chain id: %s", err.Error())
+		}
+
 		if k.IsConsumerPrelaunched(ctx, consumerId) {
 			chainId = msg.NewChainId
 			k.SetConsumerChainId(ctx, consumerId, chainId)
@@ -521,14 +527,13 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 	previousSpawnTime := previousInitializationParameters.SpawnTime
 
 	if msg.InitializationParameters != nil {
-		phase := k.GetConsumerPhase(ctx, consumerId)
-
-		if phase == types.CONSUMER_PHASE_LAUNCHED {
+		if !k.IsConsumerPrelaunched(ctx, consumerId) {
 			return &resp, errorsmod.Wrap(types.ErrInvalidMsgUpdateConsumer,
 				"cannot update the initialization parameters of an an already launched chain; "+
 					"do not provide any initialization parameters when updating a launched chain")
 		}
 
+		phase := k.GetConsumerPhase(ctx, consumerId)
 		if msg.InitializationParameters.SpawnTime.IsZero() {
 			if phase == types.CONSUMER_PHASE_INITIALIZED {
 				// chain was previously ready to launch at `previousSpawnTime` so we remove the
