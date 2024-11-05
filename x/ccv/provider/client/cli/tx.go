@@ -359,7 +359,7 @@ where update_consumer.json has the following structure:
   "allowlisted_reward_denoms": {
     "denoms": ["ibc/...", "ibc/..."]
   }
-  "new_chain_id": "newConsumer-1",
+  "new_chain_id": "newConsumer-1", // is optional and can be empty (i.e., "new_chain_id": "")
 }
 
 Note that only 'consumer_id' is mandatory. The others are optional.
