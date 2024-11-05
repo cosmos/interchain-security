@@ -233,7 +233,9 @@ func (k Keeper) ComputeNextValidators(
 		return []types.ConsensusValidator{}, err
 	}
 
-	nextValidators = k.CapValidatorSet(ctx, powerShapingParameters, nextValidators)
+	priorityValidators, nonPriorityValidators := k.PartitionBasedOnPriorityList(ctx, consumerId, nextValidators)
+
+	nextValidators = k.CapValidatorSet(ctx, powerShapingParameters, append(priorityValidators, nonPriorityValidators...))
 
 	nextValidators = k.CapValidatorsPower(ctx, powerShapingParameters.ValidatorsPowerCap, nextValidators)
 

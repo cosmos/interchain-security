@@ -57,23 +57,26 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 	store := ctx.KVStore(k.storeKey)
 	storePrefix := types.ConsumerIdToPhaseKeyPrefix()
 	consumerPhaseStore := prefix.NewStore(store, []byte{storePrefix})
-	pageRes, err := query.Paginate(consumerPhaseStore, req.Pagination, func(key, value []byte) error {
+	pageRes, err := query.FilteredPaginate(consumerPhaseStore, req.Pagination, func(key, value []byte, accumulate bool) (bool, error) {
 		consumerId, err := types.ParseStringIdWithLenKey(storePrefix, append([]byte{storePrefix}, key...))
 		if err != nil {
-			return status.Error(codes.Internal, err.Error())
+			return false, status.Error(codes.Internal, err.Error())
 		}
 
 		phase := types.ConsumerPhase(binary.BigEndian.Uint32(value))
 		if req.Phase != types.CONSUMER_PHASE_UNSPECIFIED && req.Phase != phase {
-			return nil
+			return false, nil
 		}
 
 		c, err := k.GetConsumerChain(ctx, consumerId)
 		if err != nil {
-			return status.Error(codes.Internal, err.Error())
+			return false, status.Error(codes.Internal, err.Error())
 		}
-		chains = append(chains, &c)
-		return nil
+
+		if accumulate {
+			chains = append(chains, &c)
+		}
+		return true, nil
 	})
 
 	if err != nil {
@@ -115,6 +118,12 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		strDenylist[i] = addr.String()
 	}
 
+	prioritylist := k.GetPriorityList(ctx, consumerId)
+	strPrioritylist := make([]string, len(prioritylist))
+	for i, addr := range prioritylist {
+		strPrioritylist[i] = addr.String()
+	}
+
 	metadata, err := k.GetConsumerMetadata(ctx, consumerId)
 	if err != nil {
 		return types.Chain{}, fmt.Errorf("cannot find metadata (%s): %s", consumerId, err.Error())
@@ -140,6 +149,7 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		MinStake:                powerShapingParameters.MinStake,
 		ConsumerId:              consumerId,
 		AllowlistedRewardDenoms: &types.AllowlistedRewardDenoms{Denoms: allowlistedRewardDenoms},
+		Prioritylist:            strPrioritylist,
 	}, nil
 }
 

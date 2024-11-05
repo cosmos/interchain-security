@@ -225,6 +225,12 @@ Format: `byte(37) | len(consumerId) | []byte(consumerId) | addr -> []byte{}`, wi
 
 Format: `byte(40) | len(consumerId) | []byte(consumerId) -> uint64`
 
+#### Prioritylist
+
+`Prioritylist` is the list of provider validators that have priority to validate a given consumer chain.
+
+Format: `byte(56) | len(consumerId) | []byte(consumerId) | addr -> []byte{}`, with `addr` the validator's consensus address on the provider chain.
+
 ### Validator Set Updates
 
 #### ValidatorSetUpdateId
@@ -1089,6 +1095,7 @@ Output:
 chains:
 - allow_inactive_vals: true
   allowlist: []
+  prioritylist: []
   chain_id: pion-1
   client_id: 07-tendermint-0
   consumer_id: "0"
@@ -1554,6 +1561,7 @@ power_shaping_params:
   top_N: 100
   validator_set_cap: 0
   validators_power_cap: 0
+  prioritylist: []
 ```
 
 </details>
@@ -1683,7 +1691,7 @@ where `update-consumer-msg.json` contains:
   "initialization_parameters":{
       "initial_height":{
           "revision_number": 1,
-          "revision_height": 0
+          "revision_height": 1
           },
       "genesis_hash": "",
       "binary_hash": "",
@@ -1702,8 +1710,9 @@ where `update-consumer-msg.json` contains:
       "validator_set_cap": 50,
       "allowlist":["cosmosvalcons1l9qq4m300z8c5ez86ak2mp8znftewkwgjlxh88"],
       "denylist":[],
-      "min_stake": 1000,
-      "allow_inactive_vals":true
+      "min_stake": "1000",
+      "allow_inactive_vals":true,
+      "prioritylist":[]
   },
   "allowlisted_reward_denoms": {
     "denoms": ["ibc/0025F8A87464A471E66B234C4F93AEC5B4DA3D42D7986451A059273426290DD5"]

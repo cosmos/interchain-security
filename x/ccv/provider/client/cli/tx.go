@@ -234,7 +234,7 @@ where create_consumer.json has the following structure:
   "initialization_parameters": {
     "initial_height": {
      "revision_number": 1,
-     "revision_height": 0
+     "revision_height": 1
     },
     "genesis_hash": "",
     "binary_hash": "",
@@ -254,7 +254,8 @@ where create_consumer.json has the following structure:
     "allowlist": ["cosmosvalcons..."],
     "denylist": ["cosmosvalcons..."],
     "min_stake": 0,
-    "allow_inactive_vals": false
+    "allow_inactive_vals": false,
+    "prioritylist": ["cosmosvalcons..."]
   },
   "allowlisted_reward_denoms": {
     "denoms": ["ibc/...", "ibc/..."]
@@ -332,7 +333,7 @@ where update_consumer.json has the following structure:
    "initialization_parameters": {
     "initial_height": {
      "revision_number": 1,
-     "revision_height": 0
+     "revision_height": 1
     },
     "genesis_hash": "",
     "binary_hash": "",
@@ -352,7 +353,8 @@ where update_consumer.json has the following structure:
     "allowlist": ["cosmosvalcons..."],
     "denylist": ["cosmosvalcons..."],
     "min_stake": 0,
-    "allow_inactive_vals": false
+    "allow_inactive_vals": false,
+    "prioritylist": ["cosmosvalcons..."]
    },
   "allowlisted_reward_denoms": {
     "denoms": ["ibc/...", "ibc/..."]
