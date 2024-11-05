@@ -552,12 +552,6 @@ func TestMsgUpdateConsumerValidateBasic(t *testing.T) {
 			"validchainid-0",
 			true,
 		},
-		{
-			"too long new chain id",
-			types.PowerShapingParameters{},
-			strings.Repeat("thisIsAnExtremelyLongChainId", 2),
-			false,
-		},
 	}
 
 	for _, tc := range testCases {

@@ -404,12 +404,6 @@ func (msg MsgUpdateConsumer) ValidateBasic() error {
 		}
 	}
 
-	if strings.TrimSpace(msg.NewChainId) != "" {
-		if err := ValidateStringField("NewChainId", msg.NewChainId, cmttypes.MaxChainIDLen); err != nil {
-			return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "NewChainId: %s", err.Error())
-		}
-	}
-
 	return nil
 }
 
