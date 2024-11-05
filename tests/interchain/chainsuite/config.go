@@ -37,7 +37,7 @@ const (
 	ChainSpawnWait            = 155 * time.Second
 	CosmosChainType           = "cosmos"
 	GovModuleAddress          = "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
-	TestWalletsNumber         = 5 // Ensure that test accounts are used in a way that maintains the mutual independence of tests
+	TestWalletsNumber         = 15 // Ensure that test accounts are used in a way that maintains the mutual independence of tests
 )
 
 func DefaultConfigToml() testutil.Toml {

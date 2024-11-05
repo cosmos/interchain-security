@@ -3,8 +3,6 @@ package interchain
 import (
 	"time"
 
-	"cosmos/interchain-security/tests/interchain/chainsuite"
-
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
@@ -12,7 +10,8 @@ import (
 func msgCreateConsumer(
 	chainId string,
 	initParams *providertypes.ConsumerInitializationParameters,
-	powerParams *providertypes.PowerShapingParameters) *providertypes.MsgCreateConsumer {
+	powerParams *providertypes.PowerShapingParameters,
+	submiter string) *providertypes.MsgCreateConsumer {
 	consumerMetadata := providertypes.ConsumerMetadata{
 		Name:        chainId,
 		Description: "description",
@@ -20,7 +19,7 @@ func msgCreateConsumer(
 	}
 
 	return &providertypes.MsgCreateConsumer{
-		Submitter:                chainsuite.GovModuleAddress,
+		Submitter:                submiter,
 		ChainId:                  chainId,
 		Metadata:                 consumerMetadata,
 		InitializationParameters: initParams,

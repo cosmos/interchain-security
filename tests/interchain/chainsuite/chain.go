@@ -249,7 +249,7 @@ func (c *Chain) CreateConsumer(ctx context.Context, msg *providertypes.MsgCreate
 	return consumerId, err
 }
 
-func (c *Chain) UpdateConsumer(ctx context.Context, msg *providertypes.MsgUpdateConsumer, keyName string) error {
+func (c *Chain) UpdateConsumer(ctx context.Context, msg *providertypes.MsgUpdateConsumer, ownerKeyName string) error {
 	content, err := json.Marshal(msg)
 	if err != nil {
 		return err
@@ -261,7 +261,7 @@ func (c *Chain) UpdateConsumer(ctx context.Context, msg *providertypes.MsgUpdate
 
 	filePath := path.Join(c.GetNode().HomeDir(), jsonFile)
 
-	_, err = c.GetNode().ExecTx(ctx, keyName, "provider", "update-consumer", filePath)
+	_, err = c.GetNode().ExecTx(ctx, ownerKeyName, "provider", "update-consumer", filePath)
 	if err != nil {
 		return err
 	}
