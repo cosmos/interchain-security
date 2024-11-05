@@ -1,3 +1,3 @@
-- Bump [ibc-go](https://github.com/cosmos/ibc-go) to
-  [v8.5.2](https://github.com/cosmos/ibc-go/releases/tag/v8.5.2).
+- Bump [CometBFT](https://github.com/cometbft/cometbft) to
+  [v0.38.12](https://github.com/cometbft/cometbft/releases/tag/v0.38.12).
   ([\#2339](https://github.com/cosmos/interchain-security/pull/2339))
