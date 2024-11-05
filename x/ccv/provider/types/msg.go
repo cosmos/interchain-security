@@ -8,7 +8,6 @@ import (
 	"github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	ibchost "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
 	errorsmod "cosmossdk.io/errors"
@@ -593,7 +592,7 @@ func ValidateInitializationParameters(initializationParameters ConsumerInitializ
 		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "UnbondingPeriod: %s", err.Error())
 	}
 
-	if err := ValidateConnectionIdentifier(initializationParameters.ConnectionId); err != nil {
+	if err := ccvtypes.ValidateConnectionIdentifier(initializationParameters.ConnectionId); err != nil {
 		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "ConnectionId: %s", err.Error())
 	}
 
@@ -637,12 +636,4 @@ func ValidateInitialHeight(initialHeight clienttypes.Height, chainID string) err
 		return fmt.Errorf("chain ID (%s) doesn't match revision number (%d)", chainID, initialHeight.RevisionNumber)
 	}
 	return nil
-}
-
-func ValidateConnectionIdentifier(connId string) error {
-	// accept empty string as valid
-	if connId == "" {
-		return nil
-	}
-	return ibchost.ConnectionIdentifierValidator(connId)
 }

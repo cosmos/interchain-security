@@ -33,7 +33,7 @@ func TestValidateGenesisState(t *testing.T) {
 			types.NewGenesisState(
 				types.DefaultValsetUpdateID,
 				nil,
-				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid", ClientId: "client-id", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid-1")}},
+				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid", ClientId: "client-id", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid-1", false)}},
 				types.DefaultParams(),
 				nil,
 				nil,
@@ -47,10 +47,10 @@ func TestValidateGenesisState(t *testing.T) {
 				types.DefaultValsetUpdateID,
 				nil,
 				[]types.ConsumerState{
-					{ChainId: "chainid-1", ChannelId: "channelid1", ClientId: "client-id", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid-1")},
-					{ChainId: "chainid-2", ChannelId: "channelid2", ClientId: "client-id", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid-2")},
-					{ChainId: "chainid-3", ChannelId: "channelid3", ClientId: "client-id", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid-3")},
-					{ChainId: "chainid-4", ChannelId: "channelid4", ClientId: "client-id", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid-4")},
+					{ChainId: "chainid-1", ChannelId: "channelid1", ClientId: "client-id", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid-1", false)},
+					{ChainId: "chainid-2", ChannelId: "channelid2", ClientId: "client-id", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid-2", true)},
+					{ChainId: "chainid-3", ChannelId: "channelid3", ClientId: "client-id", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid-3", false)},
+					{ChainId: "chainid-4", ChannelId: "channelid4", ClientId: "client-id", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid-4", true)},
 				},
 				types.DefaultParams(),
 				nil,
@@ -64,9 +64,8 @@ func TestValidateGenesisState(t *testing.T) {
 			types.NewGenesisState(
 				types.DefaultValsetUpdateID,
 				nil,
-				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid", ClientId: "client-id", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid-1")}},
-				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
+				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid", ClientId: "client-id", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid-1", false)}},
+				types.NewParams(types.DefaultTemplateClient(),
 					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, "0.1", sdk.Coin{Denom: "stake", Amount: math.NewInt(10000000)}, 600, 24, 180),
 				nil,
 				nil,
@@ -80,9 +79,7 @@ func TestValidateGenesisState(t *testing.T) {
 				0,
 				nil,
 				nil,
-				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
-					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, "0.1", sdk.Coin{Denom: "stake", Amount: math.NewInt(10000000)}, 600, 24, 180),
+				types.DefaultParams(),
 				nil,
 				nil,
 				nil,
@@ -95,28 +92,7 @@ func TestValidateGenesisState(t *testing.T) {
 				types.DefaultValsetUpdateID,
 				[]types.ValsetUpdateIdToHeight{{ValsetUpdateId: 0}},
 				nil,
-				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
-					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, "0.1", sdk.Coin{Denom: "stake", Amount: math.NewInt(10000000)}, 600, 24, 180),
-				nil,
-				nil,
-				nil,
-			),
-			false,
-		},
-		{
-			"invalid params",
-			types.NewGenesisState(
-				types.DefaultValsetUpdateID,
-				nil,
-				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid", ClientId: "client-id"}},
-				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-					0, clienttypes.Height{}, nil, []string{"ibc", "upgradedIBCState"}),
-					types.DefaultTrustingPeriodFraction,
-					ccv.DefaultCCVTimeoutPeriod,
-					types.DefaultSlashMeterReplenishPeriod,
-					types.DefaultSlashMeterReplenishFraction,
-					sdk.Coin{Denom: "stake", Amount: math.NewInt(10000000)}, 600, 24, 180),
+				types.DefaultParams(),
 				nil,
 				nil,
 				nil,
@@ -129,8 +105,7 @@ func TestValidateGenesisState(t *testing.T) {
 				types.DefaultValsetUpdateID,
 				nil,
 				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid", ClientId: "client-id"}},
-				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
+				types.NewParams(types.DefaultTemplateClient(),
 					"0.0", // 0 trusting period fraction here
 					ccv.DefaultCCVTimeoutPeriod,
 					types.DefaultSlashMeterReplenishPeriod,
@@ -148,8 +123,7 @@ func TestValidateGenesisState(t *testing.T) {
 				types.DefaultValsetUpdateID,
 				nil,
 				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid", ClientId: "client-id"}},
-				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
+				types.NewParams(types.DefaultTemplateClient(),
 					types.DefaultTrustingPeriodFraction,
 					0, // 0 ccv timeout here
 					types.DefaultSlashMeterReplenishPeriod,
@@ -167,8 +141,7 @@ func TestValidateGenesisState(t *testing.T) {
 				types.DefaultValsetUpdateID,
 				nil,
 				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid", ClientId: "client-id"}},
-				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
+				types.NewParams(types.DefaultTemplateClient(),
 					types.DefaultTrustingPeriodFraction,
 					ccv.DefaultCCVTimeoutPeriod,
 					0, // 0 slash meter replenish period here
@@ -186,8 +159,7 @@ func TestValidateGenesisState(t *testing.T) {
 				types.DefaultValsetUpdateID,
 				nil,
 				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid", ClientId: "client-id"}},
-				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
+				types.NewParams(types.DefaultTemplateClient(),
 					types.DefaultTrustingPeriodFraction,
 					ccv.DefaultCCVTimeoutPeriod,
 					types.DefaultSlashMeterReplenishPeriod,
@@ -200,24 +172,11 @@ func TestValidateGenesisState(t *testing.T) {
 			false,
 		},
 		{
-			"invalid consumer state chain id",
-			types.NewGenesisState(
-				types.DefaultValsetUpdateID,
-				nil,
-				[]types.ConsumerState{{ChainId: "", ChannelId: "channelid", ClientId: "client-id"}},
-				types.DefaultParams(),
-				nil,
-				nil,
-				nil,
-			),
-			false,
-		},
-		{
 			"invalid consumer state channel id",
 			types.NewGenesisState(
 				types.DefaultValsetUpdateID,
 				nil,
-				[]types.ConsumerState{{ChainId: "chainid", ChannelId: "ivnalidChannel{}", ClientId: "client-id"}},
+				[]types.ConsumerState{{ChainId: "chainid", ChannelId: "invalidChannel{}", ClientId: "client-id"}},
 				types.DefaultParams(),
 				nil,
 				nil,
@@ -243,23 +202,7 @@ func TestValidateGenesisState(t *testing.T) {
 			types.NewGenesisState(
 				types.DefaultValsetUpdateID,
 				nil,
-				[]types.ConsumerState{{ChainId: "chainid", ChannelId: "channel-0", ClientId: "abc", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid")}},
-				types.DefaultParams(),
-				nil,
-				nil,
-				nil,
-			),
-			false,
-		},
-		{
-			"empty consumer state consumer genesis",
-			types.NewGenesisState(
-				types.DefaultValsetUpdateID,
-				nil,
-				[]types.ConsumerState{{
-					ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
-					ConsumerGenesis: ccv.ConsumerGenesisState{},
-				}},
+				[]types.ConsumerState{{ChainId: "chainid", ChannelId: "channel-0", ClientId: "abc", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid", false)}},
 				types.DefaultParams(),
 				nil,
 				nil,
@@ -274,7 +217,7 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				[]types.ConsumerState{{
 					ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
-					ConsumerGenesis:  getInitialConsumerGenesis(t, "chainid"),
+					ConsumerGenesis:  getInitialConsumerGenesis(t, "chainid", false),
 					SlashDowntimeAck: []string{"cosmosvaloper1qlmk6r5w5taqrky4ycur4zq6jqxmuzr688htpp"},
 				}},
 				types.DefaultParams(),
@@ -291,7 +234,7 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				[]types.ConsumerState{{
 					ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
-					ConsumerGenesis:      getInitialConsumerGenesis(t, "chainid"),
+					ConsumerGenesis:      getInitialConsumerGenesis(t, "chainid", false),
 					PendingValsetChanges: []ccv.ValidatorSetChangePacketData{{}},
 				}},
 				types.DefaultParams(),
@@ -308,7 +251,7 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				[]types.ConsumerState{{
 					ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
-					ConsumerGenesis: getInitialConsumerGenesis(t, "chainid"),
+					ConsumerGenesis: getInitialConsumerGenesis(t, "chainid", false),
 					PendingValsetChanges: []ccv.ValidatorSetChangePacketData{{
 						SlashAcks:        []string{"cosmosvaloper1qlmk6r5w5taqrky4ycur4zq6jqxmuzr688htpp"},
 						ValsetUpdateId:   1,
@@ -327,9 +270,8 @@ func TestValidateGenesisState(t *testing.T) {
 			types.NewGenesisState(
 				types.DefaultValsetUpdateID,
 				nil,
-				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid", ClientId: "client-id", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid-1")}},
-				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
+				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid", ClientId: "client-id", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid-1", false)}},
+				types.NewParams(types.DefaultTemplateClient(),
 					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, "0.1", sdk.Coin{Denom: "st", Amount: math.NewInt(10000000)}, 600, 24, 180),
 				nil,
 				nil,
@@ -342,9 +284,8 @@ func TestValidateGenesisState(t *testing.T) {
 			types.NewGenesisState(
 				types.DefaultValsetUpdateID,
 				nil,
-				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid", ClientId: "client-id", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid-1")}},
-				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
+				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid", ClientId: "client-id", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid-1", false)}},
+				types.NewParams(types.DefaultTemplateClient(),
 					types.DefaultTrustingPeriodFraction, time.Hour, time.Hour, "0.1", sdk.Coin{Denom: "stake", Amount: math.NewInt(-1000000)}, 600, 24, 180),
 				nil,
 				nil,
@@ -367,7 +308,7 @@ func TestValidateGenesisState(t *testing.T) {
 	}
 }
 
-func getInitialConsumerGenesis(t *testing.T, chainID string) ccv.ConsumerGenesisState {
+func getInitialConsumerGenesis(t *testing.T, chainID string, preCCV bool) ccv.ConsumerGenesisState {
 	t.Helper()
 	// generate validator public key
 	cId := crypto.NewCryptoIdentityFromIntSeed(239668)
@@ -379,18 +320,27 @@ func getInitialConsumerGenesis(t *testing.T, chainID string) ccv.ConsumerGenesis
 	valHash := valSet.Hash()
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(valSet)
 
-	cs := ibctmtypes.NewClientState(
-		chainID,
-		ibctmtypes.DefaultTrustLevel,
-		time.Duration(1),
-		time.Duration(2),
-		time.Duration(1),
-		clienttypes.Height{RevisionNumber: clienttypes.ParseChainID(chainID), RevisionHeight: 1},
-		commitmenttypes.GetSDKSpecs(),
-		[]string{"upgrade", "upgradedIBCState"})
-	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash)
+	var clientState *ibctmtypes.ClientState = nil
+	var consensusState *ibctmtypes.ConsensusState = nil
+	connectionId := ""
+
+	if preCCV {
+		connectionId = "connection-1"
+	} else {
+		clientState = ibctmtypes.NewClientState(
+			chainID,
+			ibctmtypes.DefaultTrustLevel,
+			time.Duration(1),
+			time.Duration(2),
+			time.Duration(1),
+			clienttypes.Height{RevisionNumber: clienttypes.ParseChainID(chainID), RevisionHeight: 1},
+			commitmenttypes.GetSDKSpecs(),
+			[]string{"upgrade", "upgradedIBCState"})
+		consensusState = ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash)
+	}
 
 	params := ccv.DefaultParams()
 	params.Enabled = true
-	return *ccv.NewInitialConsumerGenesisState(cs, consensusState, valUpdates, params)
+
+	return *ccv.NewInitialConsumerGenesisState(clientState, consensusState, valUpdates, preCCV, connectionId, params)
 }

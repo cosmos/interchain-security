@@ -696,7 +696,7 @@ func New(
 			consumerGenesis := consumertypes.GenesisState{}
 			appCodec.MustUnmarshalJSON(appState[consumertypes.ModuleName], &consumerGenesis)
 
-			consumerGenesis.Provider.PreCCV = true
+			consumerGenesis.PreCCV = true
 			app.ConsumerKeeper.InitGenesis(sdkCtx, &consumerGenesis)
 
 			app.Logger().Info("start to run module migrations...")

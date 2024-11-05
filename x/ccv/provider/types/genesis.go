@@ -81,10 +81,6 @@ func (cs ConsumerState) Validate() error {
 	if err := host.ClientIdentifierValidator(cs.ClientId); err != nil {
 		return err
 	}
-	// consumer genesis should be for a new chain only
-	if !cs.ConsumerGenesis.NewChain {
-		return fmt.Errorf("consumer genesis must be for a new chain")
-	}
 	// validate a new chain genesis
 	if err := cs.ConsumerGenesis.Validate(); err != nil {
 		return err

@@ -81,6 +81,14 @@ func ValidateChannelIdentifier(i interface{}) error {
 	return ibchost.ChannelIdentifierValidator(value)
 }
 
+func ValidateConnectionIdentifier(connId string) error {
+	// accept empty string as valid
+	if strings.TrimSpace(connId) == "" {
+		return nil
+	}
+	return ibchost.ConnectionIdentifierValidator(connId)
+}
+
 func ValidateAccAddress(i interface{}) error {
 	value, ok := i.(string)
 	if !ok {
@@ -105,6 +113,19 @@ func ValidateStringFraction(i interface{}) error {
 	if dec.Sub(math.LegacyNewDec(1)).IsPositive() {
 		return fmt.Errorf("param cannot be greater than 1, got %s", str)
 	}
+	return nil
+}
+
+func ValidateStringFractionNonZero(i interface{}) error {
+	if err := ValidateStringFraction(i); err != nil {
+		return err
+	}
+	str, _ := i.(string)
+	dec, _ := math.LegacyNewDecFromStr(str)
+	if dec.IsZero() {
+		return fmt.Errorf("param cannot be zero, got %s", str)
+	}
+
 	return nil
 }
 

@@ -349,39 +349,60 @@ func (k Keeper) MakeConsumerGenesis(
 		consumerId,
 	)
 
-	// create provider client state and consensus state for the consumer to be able
-	// to create a provider client
+	var clientState *ibctmtypes.ClientState = nil
+	var tmConsState *ibctmtypes.ConsensusState = nil
+	var preCCV bool
+	var counterpartyConnectionId string
 
-	providerUnbondingPeriod, err := k.stakingKeeper.UnbondingTime(ctx)
-	if err != nil {
-		return gen, errorsmod.Wrapf(types.ErrNoUnbondingTime, "unbonding time not found: %s", err)
-	}
-	height := clienttypes.GetSelfHeight(ctx)
+	if initializationRecord.ConnectionId == "" {
+		// no connection ID provided
+		preCCV = false
+		counterpartyConnectionId = ""
 
-	clientState := k.GetTemplateClient(ctx)
-	// this is the counter party chain ID for the consumer
-	clientState.ChainId = ctx.ChainID()
-	// this is the latest height the client was updated at, i.e.,
-	// the height of the latest consensus state (see below)
-	clientState.LatestHeight = height
-	trustPeriod, err := ccv.CalculateTrustPeriod(providerUnbondingPeriod, k.GetTrustingPeriodFraction(ctx))
-	if err != nil {
-		return gen, errorsmod.Wrapf(sdkerrors.ErrInvalidHeight, "error %s calculating trusting_period for: %s", err, height)
-	}
-	clientState.TrustingPeriod = trustPeriod
-	clientState.UnbondingPeriod = providerUnbondingPeriod
+		// create provider client state and consensus state for the consumer to be able
+		// to create a provider client
 
-	consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)
-	if err != nil {
-		return gen, errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
+		providerUnbondingPeriod, err := k.stakingKeeper.UnbondingTime(ctx)
+		if err != nil {
+			return gen, errorsmod.Wrapf(types.ErrNoUnbondingTime, "unbonding time not found: %s", err)
+		}
+		height := clienttypes.GetSelfHeight(ctx)
+
+		clientState = k.GetTemplateClient(ctx)
+		// this is the counter party chain ID for the consumer
+		clientState.ChainId = ctx.ChainID()
+		// this is the latest height the client was updated at, i.e.,
+		// the height of the latest consensus state (see below)
+		clientState.LatestHeight = height
+		trustPeriod, err := ccv.CalculateTrustPeriod(providerUnbondingPeriod, k.GetTrustingPeriodFraction(ctx))
+		if err != nil {
+			return gen, errorsmod.Wrapf(sdkerrors.ErrInvalidHeight, "error %s calculating trusting_period for: %s", err, height)
+		}
+		clientState.TrustingPeriod = trustPeriod
+		clientState.UnbondingPeriod = providerUnbondingPeriod
+
+		consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)
+		if err != nil {
+			return gen, errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
+		}
+		tmConsState = consState.(*ibctmtypes.ConsensusState)
+	} else {
+		// connection ID provided
+		preCCV = true
+		// TODO
+		// check validity
+		// connectionEnd.counterpartyConnectionIdentifier,
 	}
 
 	gen = *ccv.NewInitialConsumerGenesisState(
 		clientState,
-		consState.(*ibctmtypes.ConsensusState),
+		tmConsState,
 		initialValidatorUpdates,
+		preCCV,
+		counterpartyConnectionId,
 		consumerGenesisParams,
 	)
+
 	return gen, nil
 }
 
