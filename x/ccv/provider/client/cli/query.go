@@ -41,6 +41,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdBlocksUntilNextEpoch())
 	cmd.AddCommand(CmdConsumerIdFromClientId())
 	cmd.AddCommand(CmdConsumerChain())
+	cmd.AddCommand(CmdConsumerGenesisTime())
 	return cmd
 }
 
@@ -572,6 +573,33 @@ func CmdConsumerChain() *cobra.Command {
 
 			req := &types.QueryConsumerChainRequest{ConsumerId: args[0]}
 			res, err := queryClient.QueryConsumerChain(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdConsumerGenesisTime() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "consumer-genesis-time [consumer-id]",
+		Short: "Query the genesis time of the consumer chain associated with the consumer id",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			req := &types.QueryConsumerGenesisTimeRequest{ConsumerId: args[0]}
+			res, err := queryClient.QueryConsumerGenesisTime(cmd.Context(), req)
 			if err != nil {
 				return err
 			}

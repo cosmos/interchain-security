@@ -250,74 +250,134 @@ func TestCapValidatorSet(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	validatorA := providertypes.ConsensusValidator{
-		ProviderConsAddr: []byte("providerConsAddrA"),
-		Power:            1,
-		PublicKey:        &crypto.PublicKey{},
-	}
+	valAddrA := "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"
+	valAddrB := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
+	valAddrC := "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"
+	valAddrD := "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"
 
-	validatorB := providertypes.ConsensusValidator{
-		ProviderConsAddr: []byte("providerConsAddrB"),
-		Power:            2,
-		PublicKey:        &crypto.PublicKey{},
-	}
+	validatorA := providertypes.ConsensusValidator{ProviderConsAddr: consAddressFromBech32(valAddrA), Power: 1, PublicKey: &crypto.PublicKey{}}
+	validatorB := providertypes.ConsensusValidator{ProviderConsAddr: consAddressFromBech32(valAddrB), Power: 2, PublicKey: &crypto.PublicKey{}}
+	validatorC := providertypes.ConsensusValidator{ProviderConsAddr: consAddressFromBech32(valAddrC), Power: 3, PublicKey: &crypto.PublicKey{}}
+	validatorD := providertypes.ConsensusValidator{ProviderConsAddr: consAddressFromBech32(valAddrD), Power: 4, PublicKey: &crypto.PublicKey{}}
+	validators := []providertypes.ConsensusValidator{validatorA, validatorB, validatorC, validatorD}
 
-	validatorC := providertypes.ConsensusValidator{
-		ProviderConsAddr: []byte("providerConsAddrC"),
-		Power:            3,
-		PublicKey:        &crypto.PublicKey{},
-	}
-	validators := []providertypes.ConsensusValidator{validatorA, validatorB, validatorC}
-
+	// Initial error check
 	powerShapingParameters, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, CONSUMER_ID)
 	require.Error(t, err)
-	consumerValidators := providerKeeper.CapValidatorSet(ctx, powerShapingParameters, validators)
-	require.Equal(t, validators, consumerValidators)
+	priorityValidators, nonPriorityValidators := providerKeeper.PartitionBasedOnPriorityList(ctx, CONSUMER_ID, validators)
+	consumerValidators := providerKeeper.CapValidatorSet(ctx, powerShapingParameters, append(priorityValidators, nonPriorityValidators...))
+	require.Equal(t, []providertypes.ConsensusValidator{validatorD, validatorC, validatorB, validatorA}, consumerValidators)
 
-	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, CONSUMER_ID, providertypes.PowerShapingParameters{
-		ValidatorSetCap: 0,
-	})
-	require.NoError(t, err)
-	powerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, CONSUMER_ID)
-	require.NoError(t, err)
-	consumerValidators = providerKeeper.CapValidatorSet(ctx, powerShapingParameters, validators)
-	require.Equal(t, validators, consumerValidators)
+	testCases := []struct {
+		name                   string
+		powerShapingParameters providertypes.PowerShapingParameters
+		expectedValidators     []providertypes.ConsensusValidator
+		expectError            bool
+	}{
+		{
+			name:                   "ValidatorSetCap = 0 (no capping)",
+			powerShapingParameters: providertypes.PowerShapingParameters{ValidatorSetCap: 0},
+			expectedValidators:     []providertypes.ConsensusValidator{validatorD, validatorC, validatorB, validatorA},
+		},
+		{
+			name: "ValidatorSetCap = 0, with priority list",
+			powerShapingParameters: providertypes.PowerShapingParameters{
+				ValidatorSetCap: 0,
+				Prioritylist: []string{
+					valAddrA,
+					valAddrB,
+				},
+			},
+			expectedValidators: []providertypes.ConsensusValidator{validatorB, validatorA, validatorD, validatorC},
+		},
+		{
+			name:                   "ValidatorSetCap > len(validators) (no capping)",
+			powerShapingParameters: providertypes.PowerShapingParameters{ValidatorSetCap: 100},
+			expectedValidators:     []providertypes.ConsensusValidator{validatorD, validatorC, validatorB, validatorA},
+		},
+		{
+			name:                   "ValidatorSetCap = 1 (capping to highest power, no priority list)",
+			powerShapingParameters: providertypes.PowerShapingParameters{ValidatorSetCap: 1},
+			expectedValidators:     []providertypes.ConsensusValidator{validatorD},
+		},
+		{
+			name:                   "ValidatorSetCap = 2 (capping to two highest power, no priority list)",
+			powerShapingParameters: providertypes.PowerShapingParameters{ValidatorSetCap: 2},
+			expectedValidators:     []providertypes.ConsensusValidator{validatorD, validatorC},
+		},
+		{
+			name:                   "ValidatorSetCap = 3 (capping to three highest power, no priority list)",
+			powerShapingParameters: providertypes.PowerShapingParameters{ValidatorSetCap: 3},
+			expectedValidators:     []providertypes.ConsensusValidator{validatorD, validatorC, validatorB},
+		},
+		{
+			name: "ValidatorSetCap = 2, with priority list",
+			powerShapingParameters: providertypes.PowerShapingParameters{
+				ValidatorSetCap: 2,
+				Prioritylist: []string{
+					valAddrA,
+					valAddrB,
+				},
+			},
+			expectedValidators: []providertypes.ConsensusValidator{validatorB, validatorA},
+		},
+		{
+			name: "ValidatorSetCap = 3, with partial priority list",
+			powerShapingParameters: providertypes.PowerShapingParameters{
+				ValidatorSetCap: 3,
+				Prioritylist:    []string{valAddrA},
+			},
+			expectedValidators: []providertypes.ConsensusValidator{validatorA, validatorD, validatorC},
+		},
+		{
+			name: "All validators in priority list",
+			powerShapingParameters: providertypes.PowerShapingParameters{
+				ValidatorSetCap: 4,
+				Prioritylist: []string{
+					valAddrC,
+					valAddrA,
+					valAddrD,
+					valAddrB,
+				},
+			},
+			expectedValidators: []providertypes.ConsensusValidator{validatorD, validatorC, validatorB, validatorA},
+		},
+		{
+			name: "ValidatorSetCap = 1 (capping to highest power, with priority list)",
+			powerShapingParameters: providertypes.PowerShapingParameters{
+				ValidatorSetCap: 1,
+				Prioritylist:    []string{valAddrA},
+			},
+			expectedValidators: []providertypes.ConsensusValidator{validatorA},
+		},
+	}
 
-	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, CONSUMER_ID, providertypes.PowerShapingParameters{
-		ValidatorSetCap: 100,
-	})
-	require.NoError(t, err)
-	powerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, CONSUMER_ID)
-	require.NoError(t, err)
-	consumerValidators = providerKeeper.CapValidatorSet(ctx, powerShapingParameters, validators)
-	require.Equal(t, validators, consumerValidators)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := providerKeeper.SetConsumerPowerShapingParameters(ctx, CONSUMER_ID, tc.powerShapingParameters)
+			require.NoError(t, err)
 
-	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, CONSUMER_ID, providertypes.PowerShapingParameters{
-		ValidatorSetCap: 1,
-	})
-	require.NoError(t, err)
-	powerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, CONSUMER_ID)
-	require.NoError(t, err)
-	consumerValidators = providerKeeper.CapValidatorSet(ctx, powerShapingParameters, validators)
-	require.Equal(t, []providertypes.ConsensusValidator{validatorC}, consumerValidators)
+			powerShapingParameters, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, CONSUMER_ID)
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.powerShapingParameters, powerShapingParameters)
+			}
+			priorityValidators, nonPriorityValidators := providerKeeper.PartitionBasedOnPriorityList(ctx, CONSUMER_ID, validators)
+			consumerValidators := providerKeeper.CapValidatorSet(ctx, powerShapingParameters, append(priorityValidators, nonPriorityValidators...))
+			require.Equal(t, tc.expectedValidators, consumerValidators)
+		})
+	}
+}
 
-	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, CONSUMER_ID, providertypes.PowerShapingParameters{
-		ValidatorSetCap: 2,
-	})
-	require.NoError(t, err)
-	powerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, CONSUMER_ID)
-	require.NoError(t, err)
-	consumerValidators = providerKeeper.CapValidatorSet(ctx, powerShapingParameters, validators)
-	require.Equal(t, []providertypes.ConsensusValidator{validatorC, validatorB}, consumerValidators)
-
-	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, CONSUMER_ID, providertypes.PowerShapingParameters{
-		ValidatorSetCap: 3,
-	})
-	require.NoError(t, err)
-	powerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, CONSUMER_ID)
-	require.NoError(t, err)
-	consumerValidators = providerKeeper.CapValidatorSet(ctx, powerShapingParameters, validators)
-	require.Equal(t, []providertypes.ConsensusValidator{validatorC, validatorB, validatorA}, consumerValidators)
+// Helper function to handle address conversion
+func consAddressFromBech32(addr string) sdk.ConsAddress {
+	consAddr, err := sdk.ConsAddressFromBech32(addr)
+	if err != nil {
+		panic(fmt.Sprintf("invalid consensus address: %s", addr))
+	}
+	return consAddr
 }
 
 func TestCapValidatorsPower(t *testing.T) {
@@ -745,11 +805,14 @@ func TestConsumerPowerShapingParameters(t *testing.T) {
 		Denylist:           []string{consAddrs[2], consAddrs[3]},
 		MinStake:           234,
 		AllowInactiveVals:  true,
+		Prioritylist:       []string{consAddrs[1]},
 	}
 	expectedAllowlist := []providertypes.ProviderConsAddress{providerConsAddr[0], providerConsAddr[1]}
 	sortProviderConsAddr(expectedAllowlist)
 	expectedDenylist := []providertypes.ProviderConsAddress{providerConsAddr[2], providerConsAddr[3]}
 	sortProviderConsAddr(expectedDenylist)
+	expectedPrioritylist := []providertypes.ProviderConsAddress{providerConsAddr[1]}
+	sortProviderConsAddr(expectedPrioritylist)
 	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, expectedPowerShapingParameters)
 	require.NoError(t, err)
 	actualPowerShapingParameters, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, consumerId)
@@ -757,6 +820,7 @@ func TestConsumerPowerShapingParameters(t *testing.T) {
 	require.Equal(t, expectedPowerShapingParameters, actualPowerShapingParameters)
 	require.Equal(t, expectedAllowlist, providerKeeper.GetAllowList(ctx, consumerId))
 	require.Equal(t, expectedDenylist, providerKeeper.GetDenyList(ctx, consumerId))
+	require.Equal(t, expectedPrioritylist, providerKeeper.GetPriorityList(ctx, consumerId))
 
 	// assert that overwriting the current initialization record works
 	expectedPowerShapingParameters = providertypes.PowerShapingParameters{
@@ -767,11 +831,14 @@ func TestConsumerPowerShapingParameters(t *testing.T) {
 		Denylist:           []string{consAddrs[2], consAddrs[3]},
 		MinStake:           567,
 		AllowInactiveVals:  false,
+		Prioritylist:       []string{consAddrs[4], consAddrs[5]},
 	}
 	expectedAllowlist = []providertypes.ProviderConsAddress{providerConsAddr[4], providerConsAddr[5]}
 	sortProviderConsAddr(expectedAllowlist)
 	expectedDenylist = []providertypes.ProviderConsAddress{providerConsAddr[2], providerConsAddr[3]}
 	sortProviderConsAddr(expectedDenylist)
+	expectedPrioritylist = []providertypes.ProviderConsAddress{providerConsAddr[4], providerConsAddr[5]}
+	sortProviderConsAddr(expectedAllowlist)
 	err = providerKeeper.SetConsumerPowerShapingParameters(ctx, consumerId, expectedPowerShapingParameters)
 	require.NoError(t, err)
 	actualPowerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, consumerId)
@@ -779,6 +846,7 @@ func TestConsumerPowerShapingParameters(t *testing.T) {
 	require.Equal(t, expectedPowerShapingParameters, actualPowerShapingParameters)
 	require.Equal(t, expectedAllowlist, providerKeeper.GetAllowList(ctx, consumerId))
 	require.Equal(t, expectedDenylist, providerKeeper.GetDenyList(ctx, consumerId))
+	require.Equal(t, expectedPrioritylist, providerKeeper.GetPriorityList(ctx, consumerId))
 }
 
 // TestAllowlist tests the `SetAllowlist`, `IsAllowlisted`, `DeleteAllowlist`, and `IsAllowlistEmpty` methods
@@ -1005,4 +1073,51 @@ func TestUpdateMinimumPowerInTopN(t *testing.T) {
 	minimumPowerInTopN, found = providerKeeper.GetMinimumPowerInTopN(ctx, consumerId)
 	require.True(t, found)
 	require.Equal(t, int64(10), minimumPowerInTopN)
+}
+
+func TestPrioritylist(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	consumerID := CONSUMER_ID
+
+	// no validator was prioritylisted and hence the prioritylist is empty
+	require.True(t, providerKeeper.IsPrioritylistEmpty(ctx, consumerID))
+
+	providerAddr1 := providertypes.NewProviderConsAddress([]byte("providerAddr1"))
+	providerKeeper.SetPrioritylist(ctx, consumerID, providerAddr1)
+	require.True(t, providerKeeper.IsPrioritylisted(ctx, consumerID, providerAddr1))
+
+	// prioritylist is not empty anymore
+	require.False(t, providerKeeper.IsPrioritylistEmpty(ctx, consumerID))
+
+	providerAddr2 := providertypes.NewProviderConsAddress([]byte("providerAddr2"))
+	providerKeeper.SetPrioritylist(ctx, consumerID, providerAddr2)
+	require.True(t, providerKeeper.IsPrioritylisted(ctx, consumerID, providerAddr2))
+	require.False(t, providerKeeper.IsPrioritylistEmpty(ctx, consumerID))
+
+	providerKeeper.DeletePrioritylist(ctx, consumerID)
+	require.False(t, providerKeeper.IsPrioritylisted(ctx, consumerID, providerAddr1))
+	require.False(t, providerKeeper.IsPrioritylisted(ctx, consumerID, providerAddr2))
+	require.True(t, providerKeeper.IsPrioritylistEmpty(ctx, consumerID))
+}
+
+func TestUpdatePrioritylist(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	consumerId := "0"
+
+	providerConsAddr1 := "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"
+	consAddr1, _ := sdk.ConsAddressFromBech32(providerConsAddr1)
+	providerConsAddr2 := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
+	consAddr2, _ := sdk.ConsAddressFromBech32(providerConsAddr2)
+
+	providerKeeper.UpdatePrioritylist(ctx, consumerId, []string{providerConsAddr1, providerConsAddr2})
+
+	expectedPrioritylist := []providertypes.ProviderConsAddress{
+		providertypes.NewProviderConsAddress(consAddr1),
+		providertypes.NewProviderConsAddress(consAddr2),
+	}
+	require.Equal(t, expectedPrioritylist, providerKeeper.GetPriorityList(ctx, consumerId))
 }

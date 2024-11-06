@@ -394,6 +394,11 @@ message MsgUpdateConsumer {
 
   // allowlisted reward denoms of the consumer (if provided they overwrite previously set reward denoms)
   AllowlistedRewardDenoms allowlisted_reward_denoms = 7;
+
+  // (optional) If the consumer chain has NOT yet launched, the chain id can be updated. After a chain has launched
+  // the chain id CANNOT be updated.
+  // This field is optional and can remain empty (i.e., `new_chain_id = ""`) or correspond to the chain id the chain already has.
+  string new_chain_id = 8;
 }
 
 // MsgUpdateConsumerResponse defines response type for MsgUpdateConsumer messages

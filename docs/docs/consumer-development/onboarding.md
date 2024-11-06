@@ -1,7 +1,8 @@
 ---
-sidebar_position: 3
+sidebar_position: 4
 title: Onboarding Checklist
 ---
+
 # Consumer Onboarding Checklist
 
 The following checklists will aid in onboarding a new consumer chain to Interchain Security.
@@ -52,6 +53,7 @@ gather community support and accept feedback from the community, validators and 
 - [ ] if desired, decide on power-shaping parameters (see [Power Shaping](../features/power-shaping.md))
 
 Example of initialization parameters:
+
 ```js
 // ConsumerInitializationParameters provided in MsgCreateConsumer or MsgUpdateConsumer
 {
@@ -100,6 +102,7 @@ Example of initialization parameters:
 ```
 
 Example of power-shaping parameters:
+
 ```js
 // PowerShaping parameters provided in MsgCreateConsumer or MsgUpdateConsumer
 {
@@ -125,7 +128,9 @@ Example of power-shaping parameters:
     // Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
     "min_stake": 0,
     // Corresponds to whether inactive validators are allowed to validate the consumer chain.
-    "allow_inactive_vals": false
+    "allow_inactive_vals": false,
+    // Corresponds to a list of provider consensus addresses of validators that have priority
+    "prioritylist": [],
 }
 ```
 

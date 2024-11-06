@@ -6,18 +6,21 @@ import (
 	"sort"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	sdkquery "github.com/cosmos/cosmos-sdk/types/query"
+	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
+	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	cryptotestutil "github.com/cosmos/interchain-security/v6/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
@@ -451,7 +454,12 @@ func TestGetConsumerChain(t *testing.T) {
 		{types.NewProviderConsAddress([]byte("providerAddr6"))},
 		{},
 	}
-
+	prioritylists := [][]types.ProviderConsAddress{
+		{},
+		{types.NewProviderConsAddress([]byte("providerAddr1")), types.NewProviderConsAddress([]byte("providerAddr2"))},
+		{types.NewProviderConsAddress([]byte("providerAddr3"))},
+		{},
+	}
 	allowInactiveVals := []bool{true, false, true, false}
 
 	minStakes := []math.Int{
@@ -490,6 +498,9 @@ func TestGetConsumerChain(t *testing.T) {
 		for _, addr := range denylists[i] {
 			pk.SetDenylist(ctx, consumerID, addr)
 		}
+		for _, addr := range prioritylists[i] {
+			pk.SetPrioritylist(ctx, consumerID, addr)
+		}
 		strAllowlist := make([]string, len(allowlists[i]))
 		for j, addr := range allowlists[i] {
 			strAllowlist[j] = addr.String()
@@ -498,6 +509,11 @@ func TestGetConsumerChain(t *testing.T) {
 		strDenylist := make([]string, len(denylists[i]))
 		for j, addr := range denylists[i] {
 			strDenylist[j] = addr.String()
+		}
+
+		strPrioritylist := make([]string, len(prioritylists[i]))
+		for j, addr := range prioritylists[i] {
+			strPrioritylist[j] = addr.String()
 		}
 
 		metadataLists = append(metadataLists, types.ConsumerMetadata{Name: chainIDs[i]})
@@ -524,6 +540,7 @@ func TestGetConsumerChain(t *testing.T) {
 				MinStake:                minStakes[i].Uint64(),
 				ConsumerId:              consumerIDs[i],
 				AllowlistedRewardDenoms: allowlistedRewardDenoms[i],
+				Prioritylist:            strPrioritylist,
 			})
 	}
 
@@ -674,6 +691,7 @@ func TestQueryConsumerChains(t *testing.T) {
 			Metadata:                metadata,
 			ConsumerId:              consumerId,
 			AllowlistedRewardDenoms: &types.AllowlistedRewardDenoms{Denoms: []string{}},
+			Prioritylist:            []string{},
 		}
 		consumerIds[i] = consumerId
 		consumers[i] = &c
@@ -684,18 +702,21 @@ func TestQueryConsumerChains(t *testing.T) {
 		setup        func(ctx sdk.Context, pk keeper.Keeper)
 		phase_filter types.ConsumerPhase
 		limit        uint64
+		total        uint64
 		expConsumers []*types.Chain
 	}{
 		{
 			name:         "expect all consumers when phase filter isn't set",
 			setup:        func(ctx sdk.Context, pk keeper.Keeper) {},
 			expConsumers: consumers,
+			total:        4,
 		},
 		{
 			name:         "expect an amount of consumer equal to the limit",
 			setup:        func(ctx sdk.Context, pk keeper.Keeper) {},
 			expConsumers: consumers[:3],
 			limit:        3,
+			total:        4,
 		},
 		{
 			name: "expect registered consumers when phase filter is set to Registered",
@@ -705,6 +726,7 @@ func TestQueryConsumerChains(t *testing.T) {
 			},
 			phase_filter: types.CONSUMER_PHASE_REGISTERED,
 			expConsumers: consumers[0:1],
+			total:        1,
 		},
 		{
 			name: "expect initialized consumers when phase is set to Initialized",
@@ -714,6 +736,7 @@ func TestQueryConsumerChains(t *testing.T) {
 			},
 			phase_filter: types.CONSUMER_PHASE_INITIALIZED,
 			expConsumers: consumers[1:2],
+			total:        1,
 		},
 		{
 			name: "expect launched consumers when phase is set to Launched",
@@ -723,6 +746,7 @@ func TestQueryConsumerChains(t *testing.T) {
 			},
 			phase_filter: types.CONSUMER_PHASE_LAUNCHED,
 			expConsumers: consumers[2:3],
+			total:        1,
 		},
 		{
 			name: "expect stopped consumers when phase is set to Stopped",
@@ -732,6 +756,7 @@ func TestQueryConsumerChains(t *testing.T) {
 			},
 			phase_filter: types.CONSUMER_PHASE_STOPPED,
 			expConsumers: consumers[3:],
+			total:        1,
 		},
 	}
 
@@ -741,7 +766,8 @@ func TestQueryConsumerChains(t *testing.T) {
 			req := types.QueryConsumerChainsRequest{
 				Phase: tc.phase_filter,
 				Pagination: &sdkquery.PageRequest{
-					Limit: tc.limit,
+					Limit:      tc.limit,
+					CountTotal: true,
 				},
 			}
 			expectedResponse := types.QueryConsumerChainsResponse{
@@ -752,6 +778,137 @@ func TestQueryConsumerChains(t *testing.T) {
 			require.Equal(t, expectedResponse.GetChains(), res.GetChains(), tc.name)
 			if tc.limit != 0 {
 				require.Len(t, res.GetChains(), int(tc.limit), tc.name)
+			}
+			if tc.total != 0 {
+				require.Equal(t, res.Pagination.Total, tc.total, tc.name)
+			}
+		})
+	}
+}
+
+func TestQueryConsumerGenesisTime(t *testing.T) {
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	consumerId := "0"
+	chainId := "consumer-1"
+	initialHeight := clienttypes.Height{RevisionNumber: 1, RevisionHeight: 1}
+	clientId := "07-tendermint-0"
+	genesisTime := time.Now()
+	req := &types.QueryConsumerGenesisTimeRequest{
+		ConsumerId: consumerId,
+	}
+
+	testCases := []struct {
+		name           string
+		setup          func(ctx sdk.Context, pk keeper.Keeper)
+		req            *types.QueryConsumerGenesisTimeRequest
+		expErr         bool
+		expGenesisTime time.Time
+	}{
+		{
+			name:   "expect error when request is empty",
+			setup:  func(ctx sdk.Context, pk keeper.Keeper) {},
+			req:    nil,
+			expErr: true,
+		},
+		{
+			name:  "expect error when consumer Id is invalid",
+			setup: func(ctx sdk.Context, pk keeper.Keeper) {},
+			req: &types.QueryConsumerGenesisTimeRequest{
+				ConsumerId: "invalidCID",
+			},
+			expErr: true,
+		},
+		{
+			name:   "expect error when there is no consumer chain with this consumer id",
+			setup:  func(ctx sdk.Context, pk keeper.Keeper) {},
+			req:    req,
+			expErr: true,
+		},
+		{
+			name: "expect error when consumer hasn't been launched yet",
+			setup: func(ctx sdk.Context, pk keeper.Keeper) {
+				pk.SetConsumerChainId(
+					ctx,
+					consumerId,
+					chainId,
+				)
+				err := pk.SetConsumerInitializationParameters(
+					ctx,
+					consumerId,
+					types.ConsumerInitializationParameters{
+						InitialHeight: initialHeight,
+					},
+				)
+				require.NoError(t, err)
+			},
+			req:    req,
+			expErr: true,
+		},
+		{
+			name: "expect error when consensus state cannot be found for consumer initial height",
+			setup: func(ctx sdk.Context, pk keeper.Keeper) {
+				pk.SetConsumerChainId(
+					ctx,
+					consumerId,
+					chainId,
+				)
+				err := pk.SetConsumerInitializationParameters(
+					ctx,
+					consumerId,
+					types.ConsumerInitializationParameters{
+						InitialHeight: initialHeight,
+					},
+				)
+				require.NoError(t, err)
+
+				pk.SetConsumerClientId(ctx, consumerId, clientId)
+				mocks.MockClientKeeper.EXPECT().GetClientConsensusState(ctx, clientId, initialHeight).Return(
+					nil, false,
+				)
+			},
+			req:    req,
+			expErr: true,
+		},
+		{
+			name: "expect no error when there is a consensus state for the consumer initial height",
+			setup: func(ctx sdk.Context, pk keeper.Keeper) {
+				pk.SetConsumerChainId(
+					ctx,
+					consumerId,
+					chainId,
+				)
+				err := pk.SetConsumerInitializationParameters(
+					ctx,
+					consumerId,
+					types.ConsumerInitializationParameters{
+						InitialHeight: initialHeight,
+					},
+				)
+				require.NoError(t, err)
+
+				pk.SetConsumerClientId(ctx, consumerId, clientId)
+				mocks.MockClientKeeper.EXPECT().GetClientConsensusState(ctx, clientId, initialHeight).Return(
+					ibcexported.ConsensusState(&ibctm.ConsensusState{Timestamp: genesisTime}), true,
+				)
+			},
+			req:            req,
+			expErr:         false,
+			expGenesisTime: genesisTime,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.setup(ctx, providerKeeper)
+			res, err := providerKeeper.QueryConsumerGenesisTime(ctx, tc.req)
+			if !tc.expErr {
+				require.NoError(t, err)
+				require.True(t, tc.expGenesisTime.Equal(res.GenesisTime))
+			} else {
+				require.Error(t, err)
+				require.Equal(t, res, (*types.QueryConsumerGenesisTimeResponse)(nil))
 			}
 		})
 	}

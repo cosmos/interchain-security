@@ -295,20 +295,35 @@ func NewMsgCreateConsumer(submitter, chainId string, metadata ConsumerMetadata,
 	}, nil
 }
 
-// ValidateBasic implements the sdk.HasValidateBasic interface.
-func (msg MsgCreateConsumer) ValidateBasic() error {
-	if err := ValidateStringField("ChainId", msg.ChainId, cmttypes.MaxChainIDLen); err != nil {
-		return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "ChainId: %s", err.Error())
-	}
-
+// IsReservedChainId returns true if the specific chain id is reserved and cannot be used by other consumer chains
+func IsReservedChainId(chainId string) bool {
 	// With permissionless ICS, we can have multiple consumer chains with the exact same chain id.
 	// However, as we already have the Neutron and Stride Top N chains running, as a first step we would like to
 	// prevent permissionless chains from re-using the chain ids of Neutron and Stride. Note that this is just a
 	// preliminary measure that will be removed later on as part of:
 	// TODO (#2242): find a better way of ignoring past misbehaviors
-	if msg.ChainId == "neutron-1" || msg.ChainId == "stride-1" {
-		return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer,
-			"cannot reuse chain ids of existing Neutron and Stride Top N consumer chains")
+	return chainId == "neutron-1" || chainId == "stride-1"
+}
+
+// ValidateChainId validates that the chain id is valid and is not reserved.
+// Can be called for the `MsgUpdateConsumer.NewChainId` field as well, so this method takes the `field` as an argument
+// to return more appropriate error messages in case the validation fails.
+func ValidateChainId(field string, chainId string) error {
+	if err := ValidateStringField(field, chainId, cmttypes.MaxChainIDLen); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "%s: %s", field, err.Error())
+	}
+
+	if IsReservedChainId(chainId) {
+		return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "cannot use a reserved chain id")
+	}
+
+	return nil
+}
+
+// ValidateBasic implements the sdk.HasValidateBasic interface.
+func (msg MsgCreateConsumer) ValidateBasic() error {
+	if err := ValidateChainId("ChainId", msg.ChainId); err != nil {
+		return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "ChainId: %s", err.Error())
 	}
 
 	if err := ValidateConsumerMetadata(msg.Metadata); err != nil {
@@ -343,7 +358,7 @@ func (msg MsgCreateConsumer) ValidateBasic() error {
 // NewMsgUpdateConsumer creates a new MsgUpdateConsumer instance
 func NewMsgUpdateConsumer(owner, consumerId, ownerAddress string, metadata *ConsumerMetadata,
 	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters,
-	allowlistedRewardDenoms *AllowlistedRewardDenoms,
+	allowlistedRewardDenoms *AllowlistedRewardDenoms, newChainId string,
 ) (*MsgUpdateConsumer, error) {
 	return &MsgUpdateConsumer{
 		Owner:                    owner,
@@ -353,6 +368,7 @@ func NewMsgUpdateConsumer(owner, consumerId, ownerAddress string, metadata *Cons
 		InitializationParameters: initializationParameters,
 		PowerShapingParameters:   powerShapingParameters,
 		AllowlistedRewardDenoms:  allowlistedRewardDenoms,
+		NewChainId:               newChainId,
 	}, nil
 }
 
@@ -528,6 +544,9 @@ func ValidatePowerShapingParameters(powerShapingParameters PowerShapingParameter
 	}
 	if err := ValidateConsAddressList(powerShapingParameters.Denylist, MaxValidatorCount); err != nil {
 		return errorsmod.Wrapf(ErrInvalidPowerShapingParameters, "Denylist: %s", err.Error())
+	}
+	if err := ValidateConsAddressList(powerShapingParameters.Prioritylist, MaxValidatorCount); err != nil {
+		return errorsmod.Wrapf(ErrInvalidPowerShapingParameters, "Prioritylist: %s", err.Error())
 	}
 
 	return nil

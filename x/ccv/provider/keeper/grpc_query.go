@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"sort"
+	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -56,23 +57,26 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 	store := ctx.KVStore(k.storeKey)
 	storePrefix := types.ConsumerIdToPhaseKeyPrefix()
 	consumerPhaseStore := prefix.NewStore(store, []byte{storePrefix})
-	pageRes, err := query.Paginate(consumerPhaseStore, req.Pagination, func(key, value []byte) error {
+	pageRes, err := query.FilteredPaginate(consumerPhaseStore, req.Pagination, func(key, value []byte, accumulate bool) (bool, error) {
 		consumerId, err := types.ParseStringIdWithLenKey(storePrefix, append([]byte{storePrefix}, key...))
 		if err != nil {
-			return status.Error(codes.Internal, err.Error())
+			return false, status.Error(codes.Internal, err.Error())
 		}
 
 		phase := types.ConsumerPhase(binary.BigEndian.Uint32(value))
 		if req.Phase != types.CONSUMER_PHASE_UNSPECIFIED && req.Phase != phase {
-			return nil
+			return false, nil
 		}
 
 		c, err := k.GetConsumerChain(ctx, consumerId)
 		if err != nil {
-			return status.Error(codes.Internal, err.Error())
+			return false, status.Error(codes.Internal, err.Error())
 		}
-		chains = append(chains, &c)
-		return nil
+
+		if accumulate {
+			chains = append(chains, &c)
+		}
+		return true, nil
 	})
 
 	if err != nil {
@@ -114,6 +118,12 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		strDenylist[i] = addr.String()
 	}
 
+	prioritylist := k.GetPriorityList(ctx, consumerId)
+	strPrioritylist := make([]string, len(prioritylist))
+	for i, addr := range prioritylist {
+		strPrioritylist[i] = addr.String()
+	}
+
 	metadata, err := k.GetConsumerMetadata(ctx, consumerId)
 	if err != nil {
 		return types.Chain{}, fmt.Errorf("cannot find metadata (%s): %s", consumerId, err.Error())
@@ -139,6 +149,7 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		MinStake:                powerShapingParameters.MinStake,
 		ConsumerId:              consumerId,
 		AllowlistedRewardDenoms: &types.AllowlistedRewardDenoms{Denoms: allowlistedRewardDenoms},
+		Prioritylist:            strPrioritylist,
 	}, nil
 }
 
@@ -615,5 +626,61 @@ func (k Keeper) QueryConsumerChain(goCtx context.Context, req *types.QueryConsum
 		Metadata:           metadata,
 		InitParams:         &initParams,
 		PowerShapingParams: &powerParams,
+	}, nil
+}
+
+//  QueryConsumerGenesisTime returns the genesis time
+// of the consumer chain associated with the provided consumer id
+func (k Keeper) QueryConsumerGenesisTime(goCtx context.Context, req *types.QueryConsumerGenesisTimeRequest) (*types.QueryConsumerGenesisTimeResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	consumerId := req.ConsumerId
+	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Get consumer initialization params. If they aren't found,
+	// it means that there is no consumer for that consumerId.
+	params, err := k.GetConsumerInitializationParameters(ctx, consumerId)
+	if err != nil {
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			"cannot get consumer genesis time for consumer Id: %s: %s",
+			consumerId, types.ErrUnknownConsumerId,
+		)
+	}
+
+	// Get the consumer clientId. If it isn't found, it means
+	// that the consumer hasn't been launched or has been stopped and deleted.
+	clientID, ok := k.GetConsumerClientId(ctx, consumerId)
+	if !ok {
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			"cannot get consumer genesis time for consumer Id: %s: consumer hasn't been launched or has been stopped and deleted",
+			consumerId,
+		)
+	}
+
+	// Get the consensus state of the consumer client at the initial height,
+	// for which the timestamps corresponds to the consumer genesis time
+	cs, ok := k.clientKeeper.GetClientConsensusState(
+		ctx,
+		clientID,
+		params.InitialHeight,
+	)
+	if !ok {
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			"cannot get consumer genesis time for consumer Id: %s: cannot find consensus state for initial height: %s",
+			consumerId,
+			params.InitialHeight,
+		)
+	}
+
+	return &types.QueryConsumerGenesisTimeResponse{
+		GenesisTime: time.Unix(0, int64(cs.GetTimestamp())),
 	}, nil
 }

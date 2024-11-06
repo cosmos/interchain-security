@@ -225,6 +225,12 @@ Format: `byte(37) | len(consumerId) | []byte(consumerId) | addr -> []byte{}`, wi
 
 Format: `byte(40) | len(consumerId) | []byte(consumerId) -> uint64`
 
+#### Prioritylist
+
+`Prioritylist` is the list of provider validators that have priority to validate a given consumer chain.
+
+Format: `byte(56) | len(consumerId) | []byte(consumerId) | addr -> []byte{}`, with `addr` the validator's consensus address on the provider chain.
+
 ### Validator Set Updates
 
 #### ValidatorSetUpdateId
@@ -532,6 +538,9 @@ If the `power_shaping_parameters` field is set and `power_shaping_parameters.top
 
 If the `new_owner_address` field is set to a value different than the gov module account address, then `top_N` needs to be zero.
 
+We can also update the `chain_id` of a consumer chain by using the optional `new_chain_id` field. Note that the chain id of a consumer chain
+can only be updated if the chain has not yet launched. After launch, the chain id of a consumer chain cannot be updated anymore.
+
 ```proto
 message MsgUpdateConsumer {
   option (cosmos.msg.v1.signer) = "owner";
@@ -556,6 +565,9 @@ message MsgUpdateConsumer {
 
   // allowlisted reward denoms by the consumer chain
   AllowlistedRewardDenoms allowlisted_reward_denoms = 7;
+
+  // to update the chain id of the chain (can only be updated if the chain has not yet launched)
+  string new_chain_id = 8;
 }
 ```
 
@@ -1089,6 +1101,7 @@ Output:
 chains:
 - allow_inactive_vals: true
   allowlist: []
+  prioritylist: []
   chain_id: pion-1
   client_id: 07-tendermint-0
   consumer_id: "0"
@@ -1554,6 +1567,30 @@ power_shaping_params:
   top_N: 100
   validator_set_cap: 0
   validators_power_cap: 0
+  prioritylist: []
+```
+
+</details>
+
+##### Consumer Genesis Time
+
+The `consumer-genesis-time` command allows to query the genesis time of the consumer chain associated with the consumer id.
+
+```bash
+interchain-security-pd query provider consumer-genesis-time [consumer-id] [flags]
+```
+
+<details>
+  <summary>Example</summary>
+
+```bash
+interchain-security-pd query provider consumer-genesis-time 0
+```
+
+Output: 
+
+```bash
+genesis_time: "2024-10-18T08:13:23.507178095Z"
 ```
 
 </details>
@@ -1679,8 +1716,9 @@ where `update-consumer-msg.json` contains:
       "validator_set_cap": 50,
       "allowlist":["cosmosvalcons1l9qq4m300z8c5ez86ak2mp8znftewkwgjlxh88"],
       "denylist":[],
-      "min_stake": 1000,
-      "allow_inactive_vals":true
+      "min_stake": "1000",
+      "allow_inactive_vals":true,
+      "prioritylist":[]
   },
   "allowlisted_reward_denoms": {
     "denoms": ["ibc/0025F8A87464A471E66B234C4F93AEC5B4DA3D42D7986451A059273426290DD5"]
@@ -2400,7 +2438,7 @@ Output:
 
 #### Throttle State
 
-The `QueryThrottleState` queries the main on-chain state relevant to slash packet throttling.
+The `QueryThrottleState` endpoint queries the main on-chain state relevant to slash packet throttling.
 
 ```bash
 interchain_security.ccv.provider.v1.Query/QueryThrottleState
@@ -2792,7 +2830,7 @@ Output:
 
 #### Consumer Chain
 
-The `QueryConsumerChain` command allows to query the consumer chain associated with the consumer id.
+The `QueryConsumerChain` endpoint allows to query the consumer chain associated with the consumer id.
 
 ```bash
 interchain_security.ccv.provider.v1.Query/QueryConsumerChain
@@ -2836,6 +2874,29 @@ grpcurl -plaintext -d '{"consumer_id": "0"}' localhost:9090 interchain_security.
     "minStake": "1000",
     "allowInactiveVals": true
   }
+}
+```
+
+</details>
+
+#### Consumer Genesis Time
+
+The `QueryConsumerGenesisTime` endpoint allows to query the genesis time of the consumer chain associated with the consumer id.
+
+```bash
+interchain_security.ccv.provider.v1.Query/QueryConsumerGenesisTime
+```
+
+<details>
+  <summary>Example</summary>
+
+```bash
+grpcurl -plaintext -d '{"consumer_id": "0"}' localhost:9090 interchain_security.ccv.provider.v1.Query/QueryConsumerGenesisTime
+```
+
+```json
+{
+  "genesisTime": "2024-10-18T08:13:23.507178095Z"
 }
 ```
 
@@ -3511,6 +3572,31 @@ Output:
     "minStake": "1000",
     "allowInactiveVals": true
   }
+}
+```
+
+</details>
+
+#### Consumer Genesis Time
+
+The `consumer_genesis_time` endpoint allows to query the genesis time of the consumer chain associated with the consumer id.
+
+```bash
+interchain_security/ccv/provider/consumer_genesis_time/{consumer_id}
+```
+
+<details>
+  <summary>Example</summary>
+
+```bash
+curl http://localhost:1317/interchain_security/ccv/provider/consumer_genesis_time/0
+```
+
+Output:
+
+```json
+{
+  "genesis_time":"2024-10-18T08:29:46.153234Z"
 }
 ```
 
