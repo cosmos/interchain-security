@@ -24,14 +24,8 @@ func (k Keeper) QueryConsumerGenesis(c context.Context, req *types.QueryConsumer
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-<<<<<<< HEAD
 	if req.ChainId == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid request: chain id cannot be empty")
-=======
-	consumerId := req.ConsumerId
-	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
->>>>>>> 0d782959 (feat!: add memo to IBC transfers of ICS rewards (#2290))
 	}
 
 	gen, ok := k.GetConsumerGenesis(ctx, req.ChainId)
@@ -152,14 +146,6 @@ func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.Que
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-<<<<<<< HEAD
-=======
-	consumerId := req.ConsumerId
-	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
->>>>>>> 0d782959 (feat!: add memo to IBC transfers of ICS rewards (#2290))
 	providerAddrTmp, err := sdk.ConsAddressFromBech32(req.ProviderAddress)
 	if err != nil {
 		return nil, err
@@ -241,7 +227,6 @@ func (k Keeper) QueryProposedConsumerChainIDs(goCtx context.Context, req *types.
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-<<<<<<< HEAD
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	chains := k.GetAllProposedConsumerChainIDs(ctx)
@@ -258,11 +243,6 @@ func (k Keeper) QueryAllPairsValConAddrByConsumerChainID(goCtx context.Context, 
 
 	if req.ChainId == "" {
 		return nil, status.Error(codes.InvalidArgument, "empty chainId")
-=======
-	consumerId := req.ConsumerId
-	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
->>>>>>> 0d782959 (feat!: add memo to IBC transfers of ICS rewards (#2290))
 	}
 
 	// list of pairs valconsensus addr <providerValConAddrs : consumerValConAddrs>
@@ -305,15 +285,9 @@ func (k Keeper) QueryConsumerChainOptedInValidators(goCtx context.Context, req *
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-<<<<<<< HEAD
 	consumerChainID := req.ChainId
 	if consumerChainID == "" {
 		return nil, status.Error(codes.InvalidArgument, "empty chainId")
-=======
-	consumerId := req.ConsumerId
-	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
->>>>>>> 0d782959 (feat!: add memo to IBC transfers of ICS rewards (#2290))
 	}
 
 	optedInVals := []string{}
@@ -338,15 +312,9 @@ func (k Keeper) QueryConsumerValidators(goCtx context.Context, req *types.QueryC
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-<<<<<<< HEAD
 	consumerChainID := req.ChainId
 	if consumerChainID == "" {
 		return nil, status.Error(codes.InvalidArgument, "empty chainId")
-=======
-	consumerId := req.ConsumerId
-	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
->>>>>>> 0d782959 (feat!: add memo to IBC transfers of ICS rewards (#2290))
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -456,15 +424,9 @@ func (k Keeper) QueryValidatorConsumerCommissionRate(goCtx context.Context, req 
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-<<<<<<< HEAD
 	consumerChainID := req.ChainId
 	if consumerChainID == "" {
 		return nil, status.Error(codes.InvalidArgument, "empty chainId")
-=======
-	consumerId := req.ConsumerId
-	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
->>>>>>> 0d782959 (feat!: add memo to IBC transfers of ICS rewards (#2290))
 	}
 
 	consAddr, err := sdk.ConsAddressFromBech32(req.ProviderAddress)
@@ -503,20 +465,8 @@ func (k Keeper) QueryOldestUnconfirmedVsc(goCtx context.Context, req *types.Quer
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-<<<<<<< HEAD
 	if req.ChainId == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid request: chain id cannot be empty")
-=======
-	consumerId := req.ConsumerId
-	if err := ccvtypes.ValidateConsumerId(consumerId); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	chainId, err := k.GetConsumerChainId(ctx, consumerId)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "cannot retrieve chain id for consumer id: %s", consumerId)
->>>>>>> 0d782959 (feat!: add memo to IBC transfers of ICS rewards (#2290))
 	}
 
 	if _, consumerRegistered := k.GetConsumerClientId(ctx, req.ChainId); !consumerRegistered {

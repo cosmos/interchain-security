@@ -1,6 +1,10 @@
 # Upgrading Replicated Security
 
-## v5.2.x
+## v5.3.x
+
+### Provider
+
+***This release does not affect the provider chains.***
 
 ### Consumer
 
@@ -21,6 +25,8 @@ func InitializeConsumerId(ctx sdk.Context, consumerKeeper consumerkeeper.Keeper)
 	return consumerKeeper.SetParams(ctx, params)
 }
 ```
+
+## v5.2.x
 
 ### Provider
 

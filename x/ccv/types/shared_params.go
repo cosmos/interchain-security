@@ -6,12 +6,7 @@ import (
 	"strings"
 	"time"
 
-<<<<<<< HEAD
-=======
-	ibchost "github.com/cosmos/ibc-go/v8/modules/core/24-host"
-
 	errorsmod "cosmossdk.io/errors"
->>>>>>> 0d782959 (feat!: add memo to IBC transfers of ICS rewards (#2290))
 	"cosmossdk.io/math"
 	ibchost "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 
