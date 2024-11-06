@@ -4,7 +4,7 @@ sidebar_position: 4
 
 # x/ccv/democracy
 
-The democracy modules comprise `x/ccv/democracy/staking`, `x/ccv/democracy/distribution` and `x/ccv/democracy/governance` with overrides and extensions required for normal operation when participating in ICS.
+The democracy modules comprise `x/ccv/democracy/staking` and `x/ccv/democracy/distribution` with overrides and extensions required for normal operation when participating in ICS.
 
 The modules are plug-and-play and only require small wiring changes to be enabled.
 
