@@ -216,18 +216,27 @@ func transformConsumerGenesis(filePath string, version *string) ([]byte, error) 
 	return result.Bytes(), nil
 }
 
-// Check transformation of provider v6.x implementation to consumer v5.x
+// Check transformation of provider v6.2.x implementation to consumer v5.x
 func TestConsumerGenesisTransformationV6ToV5(t *testing.T) {
-	version := V6x
-	filePath := createConsumerDataGenesisFile(t, version)
+	CheckGenesisTransform(t, V6x, V5x)
+}
+
+// Check transformation of provider v6.2.x implementation to consumer v4.x
+func TestConsumerGenesisTransformationV6ToV4(t *testing.T) {
+	CheckGenesisTransform(t, V6x, V4x)
+}
+
+// CheckGenesisTransform checks that the transformation of consumer genesis data
+// from a given source version to a target version is successful
+func CheckGenesisTransform(t *testing.T, sourceVersion string, targetVersion string) {
+	filePath := createConsumerDataGenesisFile(t, sourceVersion)
 	defer os.Remove(filePath)
 
 	var srcGenesis ccvtypes.ConsumerGenesisState
 	ctx := getClientCtx()
-	err := ctx.Codec.UnmarshalJSON([]byte(consumerGenesisStates[version]), &srcGenesis)
+	err := ctx.Codec.UnmarshalJSON([]byte(consumerGenesisStates[sourceVersion]), &srcGenesis)
 	require.NoError(t, err)
 
-	targetVersion := V5x
 	result, err := transformConsumerGenesis(filePath, &targetVersion)
 	require.NoError(t, err)
 
