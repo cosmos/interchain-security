@@ -4,7 +4,7 @@ sidebar_position: 3
 
 # Consumer Chain Governance
 
-Different consumer chains can do governance in different ways. However, no matter what the governance method is, there are a few settings specifically related to consensus that consumer chain governance cannot change. 
+Different consumer chains can do governance in different ways.
 
 ## Democracy module
 
