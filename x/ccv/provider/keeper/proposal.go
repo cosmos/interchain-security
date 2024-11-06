@@ -328,6 +328,7 @@ func (k Keeper) MakeConsumerGenesis(
 		[]string{},
 		[]string{},
 		ccv.DefaultRetryDelayPeriod,
+		"0", // just to make it compatible with the consumer
 	)
 
 	gen = *ccv.NewInitialConsumerGenesisState(
