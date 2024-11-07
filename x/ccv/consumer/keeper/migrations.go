@@ -6,6 +6,7 @@ import (
 
 	v2 "github.com/cosmos/interchain-security/v6/x/ccv/consumer/migrations/v2"
 	v3 "github.com/cosmos/interchain-security/v6/x/ccv/consumer/migrations/v3"
+	v4 "github.com/cosmos/interchain-security/v6/x/ccv/consumer/migrations/v4"
 )
 
 // Migrator is a struct for handling in-place store migrations.
@@ -31,4 +32,12 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 	store := ctx.KVStore(m.keeper.storeKey)
 	cdc := m.keeper.cdc
 	return v3.MigrateLegacyParams(ctx, cdc, store, m.paramSpace)
+}
+
+// Migrate3to4 migrates x/ccvconsumer from consensus version 3 to 4.
+func (m Migrator) Migrate3to4(ctx sdk.Context) error {
+	store := ctx.KVStore(m.keeper.storeKey)
+	v4.CleanupState(store)
+
+	return nil
 }
