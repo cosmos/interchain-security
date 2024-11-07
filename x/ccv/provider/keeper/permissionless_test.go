@@ -198,3 +198,23 @@ func TestConsumerPhase(t *testing.T) {
 	phase = providerKeeper.GetConsumerPhase(ctx, CONSUMER_ID)
 	require.Equal(t, providertypes.CONSUMER_PHASE_LAUNCHED, phase)
 }
+
+func TestIsConsumerPrelaunched(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	providerKeeper.SetConsumerPhase(ctx, CONSUMER_ID, providertypes.CONSUMER_PHASE_REGISTERED)
+	require.True(t, providerKeeper.IsConsumerPrelaunched(ctx, CONSUMER_ID))
+
+	providerKeeper.SetConsumerPhase(ctx, CONSUMER_ID, providertypes.CONSUMER_PHASE_INITIALIZED)
+	require.True(t, providerKeeper.IsConsumerPrelaunched(ctx, CONSUMER_ID))
+
+	providerKeeper.SetConsumerPhase(ctx, CONSUMER_ID, providertypes.CONSUMER_PHASE_LAUNCHED)
+	require.False(t, providerKeeper.IsConsumerPrelaunched(ctx, CONSUMER_ID))
+
+	providerKeeper.SetConsumerPhase(ctx, CONSUMER_ID, providertypes.CONSUMER_PHASE_STOPPED)
+	require.False(t, providerKeeper.IsConsumerPrelaunched(ctx, CONSUMER_ID))
+
+	providerKeeper.SetConsumerPhase(ctx, CONSUMER_ID, providertypes.CONSUMER_PHASE_DELETED)
+	require.False(t, providerKeeper.IsConsumerPrelaunched(ctx, CONSUMER_ID))
+}

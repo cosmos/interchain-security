@@ -1,6 +1,7 @@
 package types_test
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -490,6 +491,7 @@ func TestMsgUpdateConsumerValidateBasic(t *testing.T) {
 	testCases := []struct {
 		name                   string
 		powerShapingParameters types.PowerShapingParameters
+		newChainId             string
 		expPass                bool
 	}{
 		{
@@ -502,7 +504,9 @@ func TestMsgUpdateConsumerValidateBasic(t *testing.T) {
 				Denylist:           nil,
 				MinStake:           0,
 				AllowInactiveVals:  false,
+				Prioritylist:       []string{consAddr1},
 			},
+			"validchainid-0",
 			true,
 		},
 		{
@@ -513,7 +517,9 @@ func TestMsgUpdateConsumerValidateBasic(t *testing.T) {
 				ValidatorSetCap:    0,
 				Allowlist:          nil,
 				Denylist:           nil,
+				Prioritylist:       nil,
 			},
+			"validchainid-0",
 			false,
 		},
 		{
@@ -526,7 +532,9 @@ func TestMsgUpdateConsumerValidateBasic(t *testing.T) {
 				Denylist:           nil,
 				MinStake:           0,
 				AllowInactiveVals:  false,
+				Prioritylist:       nil,
 			},
+			"validchainid-0",
 			false,
 		},
 		{
@@ -539,14 +547,16 @@ func TestMsgUpdateConsumerValidateBasic(t *testing.T) {
 				Denylist:           []string{consAddr2, consAddr3},
 				MinStake:           0,
 				AllowInactiveVals:  false,
+				Prioritylist:       []string{consAddr1},
 			},
+			"validchainid-0",
 			true,
 		},
 	}
 
 	for _, tc := range testCases {
 		// TODO (PERMISSIONLESS) add more tests
-		msg, _ := types.NewMsgUpdateConsumer("", "0", "cosmos1p3ucd3ptpw902fluyjzhq3ffgq4ntddac9sa3s", nil, nil, &tc.powerShapingParameters, nil)
+		msg, _ := types.NewMsgUpdateConsumer("", "0", "cosmos1p3ucd3ptpw902fluyjzhq3ffgq4ntddac9sa3s", nil, nil, &tc.powerShapingParameters, nil, tc.newChainId)
 		err := msg.ValidateBasic()
 		if tc.expPass {
 			require.NoError(t, err, "valid case: %s should not return error. got %w", tc.name, err)
@@ -703,6 +713,53 @@ func TestValidateInitialHeight(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		err := types.ValidateInitialHeight(tc.initialHeight, tc.chainId)
+		if tc.expPass {
+			require.NoError(t, err, "valid case: '%s' should not return error. got %w", tc.name, err)
+		} else {
+			require.Error(t, err, "invalid case: '%s' must return error but got none", tc.name)
+		}
+	}
+}
+
+func TestValidateChainId(t *testing.T) {
+	testCases := []struct {
+		name    string
+		chainId string
+		expPass bool
+	}{
+		{
+			name:    "valid chain id",
+			chainId: "chain-1",
+			expPass: true,
+		},
+		{
+			name:    "valid chain id with no revision",
+			chainId: "chainId",
+			expPass: true,
+		},
+		{
+			name:    "invalid (too long) chain id",
+			chainId: strings.Repeat("thisIsAnExtremelyLongChainId", 2),
+			expPass: false,
+		},
+		{
+			name:    "reserved chain id",
+			chainId: "stride-1",
+			expPass: false,
+		},
+		{
+			name:    "reserved chain id",
+			chainId: "neutron-1",
+			expPass: false,
+		},
+		{
+			name:    "empty chain id",
+			chainId: "    ",
+			expPass: false,
+		},
+	}
+	for _, tc := range testCases {
+		err := types.ValidateChainId("ChainId", tc.chainId)
 		if tc.expPass {
 			require.NoError(t, err, "valid case: '%s' should not return error. got %w", tc.name, err)
 		} else {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -16,7 +15,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
 
-	consumerTypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
@@ -33,100 +31,45 @@ type GenesisState map[string]json.RawMessage
 type IcsVersion string
 
 const (
-	v2_x   IcsVersion = "v2.x"
-	v3_0_x IcsVersion = "v3.0.x"
-	v3_1_x IcsVersion = "v3.1.x"
-	v3_2_x IcsVersion = "v3.2.x"
-	v3_3_x IcsVersion = "v3.3.x"
 	v4_x_x IcsVersion = "v4.x"
+	v5_x_x IcsVersion = "v5.x"
 )
 
 var TransformationVersions map[string]IcsVersion = map[string]IcsVersion{
-	"v2.x":   v2_x,
-	"v3.0.x": v3_0_x,
-	"v3.1.x": v3_1_x,
-	"v3.2.x": v3_2_x,
-	"v3.3.x": v3_3_x,
-	"v4.x":   v4_x_x,
+	"v4.x": v4_x_x,
+	"v5.x": v5_x_x,
 }
 
-// Transformation of consumer genesis content as it is exported from a provider version v1,2,3
-// to a format readable by current consumer implementation.
-func transformToNew(jsonRaw []byte, ctx client.Context) (json.RawMessage, error) {
-	// v1,2,3 uses deprecated fields of GenesisState type
-	oldConsumerGenesis := consumerTypes.GenesisState{}
-	err := ctx.Codec.UnmarshalJSON(jsonRaw, &oldConsumerGenesis)
-	if err != nil {
-		return nil, fmt.Errorf("reading consumer genesis data failed: %s", err)
+// Remove a parameter from a JSON object
+func removeParameterFromParams(params json.RawMessage, param string) (json.RawMessage, error) {
+	paramsMap := map[string]json.RawMessage{}
+	if err := json.Unmarshal(params, &paramsMap); err != nil {
+		return nil, fmt.Errorf("unmarshalling 'params' failed: %v", err)
 	}
-
-	initialValSet := oldConsumerGenesis.InitialValSet
-	// transformation from >= v3.3.x
-	if len(initialValSet) == 0 {
-		initialValSet = oldConsumerGenesis.Provider.InitialValSet
+	_, exists := paramsMap[param]
+	if exists {
+		delete(paramsMap, param)
 	}
-
-	clientState := oldConsumerGenesis.ProviderClientState
-	if clientState == nil {
-		clientState = oldConsumerGenesis.Provider.ClientState
-	}
-
-	consensusState := oldConsumerGenesis.ProviderConsensusState
-	if consensusState == nil {
-		consensusState = oldConsumerGenesis.Provider.ConsensusState
-	}
-
-	// Use DefaultRetryDelayPeriod if not set
-	if oldConsumerGenesis.Params.RetryDelayPeriod == 0 {
-		oldConsumerGenesis.Params.RetryDelayPeriod = types.DefaultRetryDelayPeriod
-	}
-
-	// `SoftOptOutThreshold` is deprecated in the current consumer implementation, so set to zero
-	oldConsumerGenesis.Params.SoftOptOutThreshold = "0"
-
-	// Versions before v3.3.x of provider genesis data fills up deprecated fields
-	// ProviderClientState, ConsensusState and InitialValSet in type GenesisState
-	newGenesis := types.ConsumerGenesisState{
-		Params: oldConsumerGenesis.Params,
-		Provider: types.ProviderInfo{
-			ClientState:    clientState,
-			ConsensusState: consensusState,
-			InitialValSet:  initialValSet,
-		},
-		NewChain: oldConsumerGenesis.NewChain,
-	}
-
-	newJson, err := ctx.Codec.MarshalJSON(&newGenesis)
-	if err != nil {
-		return nil, fmt.Errorf("failed marshalling data to new type: %s", err)
-	}
-	return newJson, nil
+	return json.Marshal(paramsMap)
 }
 
-// Transformation of consumer genesis content as it is exported by current provider version
-// to a format supported by consumer version v3.3.x
-func transformToV33(jsonRaw []byte, ctx client.Context) ([]byte, error) {
-	// v1,2,3 uses deprecated fields of GenesisState type
-	srcConGen := consumerTypes.GenesisState{}
+// Transformation of consumer genesis content as it is exported by provider version >= v6.2.x
+// to a format supported by consumer chains version with either SDK v0.47 and ICS < v4.5.0 or SDK v0.50 and ICS < v6.2.0
+// This transformation removes the 'consumer_id' parameter from the 'params' field introduced in ICS v6.2.x
+func transformToV5(jsonRaw []byte, ctx client.Context) (json.RawMessage, error) {
+	srcConGen := types.ConsumerGenesisState{}
 	err := ctx.Codec.UnmarshalJSON(jsonRaw, &srcConGen)
 	if err != nil {
 		return nil, fmt.Errorf("reading consumer genesis data failed: %s", err)
 	}
 
-	// Remove retry_delay_period from 'params'
+	// Remove 'consumer_id' from 'params'
 	params, err := ctx.Codec.MarshalJSON(&srcConGen.Params)
 	if err != nil {
 		return nil, err
 	}
-	tmp := map[string]json.RawMessage{}
-	if err := json.Unmarshal(params, &tmp); err != nil {
-		return nil, fmt.Errorf("unmarshalling 'params' failed: %v", err)
-	}
-	_, exists := tmp["retry_delay_period"]
-	if exists {
-		delete(tmp, "retry_delay_period")
-	}
-	params, err = json.Marshal(tmp)
+
+	params, err = removeParameterFromParams(params, "consumer_id")
 	if err != nil {
 		return nil, err
 	}
@@ -149,108 +92,6 @@ func transformToV33(jsonRaw []byte, ctx client.Context) ([]byte, error) {
 	return result, nil
 }
 
-// Transformation of consumer genesis content as it is exported from current provider version
-// to a format readable by consumer implementation of version v2.x
-// Use removePreHashKey to remove prehash_key_before_comparison from result.
-func transformToV2(jsonRaw []byte, ctx client.Context, removePreHashKey bool) (json.RawMessage, error) {
-	// populate deprecated fields of GenesisState used by version v2.x
-	srcConGen := consumerTypes.GenesisState{}
-	err := ctx.Codec.UnmarshalJSON(jsonRaw, &srcConGen)
-	if err != nil {
-		return nil, fmt.Errorf("reading consumer genesis data failed: %s", err)
-	}
-
-	// remove retry_delay_period from 'params' if present (introduced in v4.x)
-	params, err := ctx.Codec.MarshalJSON(&srcConGen.Params)
-	if err != nil {
-		return nil, err
-	}
-	paramsMap := map[string]json.RawMessage{}
-	if err := json.Unmarshal(params, &paramsMap); err != nil {
-		return nil, fmt.Errorf("unmarshalling 'params' failed: %v", err)
-	}
-	_, exists := paramsMap["retry_delay_period"]
-	if exists {
-		delete(paramsMap, "retry_delay_period")
-	}
-	params, err = json.Marshal(paramsMap)
-	if err != nil {
-		return nil, err
-	}
-
-	// marshal GenesisState and patch 'params' value
-	result, err := ctx.Codec.MarshalJSON(&srcConGen)
-	if err != nil {
-		return nil, err
-	}
-	genState := map[string]json.RawMessage{}
-	if err := json.Unmarshal(result, &genState); err != nil {
-		return nil, fmt.Errorf("unmarshalling 'GenesisState' failed: %v", err)
-	}
-	genState["params"] = params
-
-	provider, err := ctx.Codec.MarshalJSON(&srcConGen.Provider)
-	if err != nil {
-		return nil, fmt.Errorf("marshalling 'Provider' failed: %v", err)
-	}
-	providerMap := map[string]json.RawMessage{}
-	if err := json.Unmarshal(provider, &providerMap); err != nil {
-		return nil, fmt.Errorf("unmarshalling 'provider' failed: %v", err)
-	}
-
-	// patch .initial_val_set form .provider.initial_val_set if needed
-	if len(srcConGen.Provider.InitialValSet) > 0 {
-		valSet, exists := providerMap["initial_val_set"]
-		if !exists {
-			return nil, fmt.Errorf("'initial_val_set' not found in provider data")
-		}
-		_, exists = genState["initial_val_set"]
-		if exists {
-			genState["initial_val_set"] = valSet
-		}
-	}
-
-	// patch .provider_consensus_state from provider.consensus_state if needed
-	if srcConGen.Provider.ConsensusState != nil {
-		valSet, exists := providerMap["consensus_state"]
-		if !exists {
-			return nil, fmt.Errorf("'consensus_state' not found in provider data")
-		}
-		_, exists = genState["provider_consensus_state"]
-		if exists {
-			genState["provider_consensus_state"] = valSet
-		}
-	}
-
-	// patch .provider_client_state from provider.client_state if needed
-	if srcConGen.Provider.ClientState != nil {
-		clientState, exists := providerMap["client_state"]
-		if !exists {
-			return nil, fmt.Errorf("'client_state' not found in provider data")
-		}
-		_, exists = genState["provider_client_state"]
-		if exists {
-			genState["provider_client_state"] = clientState
-		}
-	}
-
-	// delete .provider entry (introduced in v3.3.x)
-	delete(genState, "provider")
-
-	// Marshall final result
-	result, err = json.Marshal(genState)
-	if err != nil {
-		return nil, fmt.Errorf("marshalling transformation result failed: %v", err)
-	}
-
-	if removePreHashKey {
-		// remove all `prehash_key_before_comparison` entries not supported in v2.x (see ics23)
-		re := regexp.MustCompile(`,\s*"prehash_key_before_comparison"\s*:\s*(false|true)`)
-		result = re.ReplaceAll(result, []byte{})
-	}
-	return result, nil
-}
-
 // transformGenesis transforms ccv consumer genesis data to the specified target version
 // Returns the transformed data or an error in case the transformation failed or the format is not supported by current implementation
 func transformGenesis(ctx client.Context, targetVersion IcsVersion, jsonRaw []byte) (json.RawMessage, error) {
@@ -258,16 +99,8 @@ func transformGenesis(ctx client.Context, targetVersion IcsVersion, jsonRaw []by
 	var err error
 
 	switch targetVersion {
-	// v2.x, v3.0-v3.2 share same consumer genesis type
-	case v2_x:
-		newConsumerGenesis, err = transformToV2(jsonRaw, ctx, true)
-	case v3_0_x, v3_1_x, v3_2_x:
-		// same as v2 replacement without need of `prehash_key_before_comparison` removal
-		newConsumerGenesis, err = transformToV2(jsonRaw, ctx, false)
-	case v3_3_x:
-		newConsumerGenesis, err = transformToV33(jsonRaw, ctx)
-	case v4_x_x:
-		newConsumerGenesis, err = transformToNew(jsonRaw, ctx)
+	case v4_x_x, v5_x_x:
+		newConsumerGenesis, err = transformToV5(jsonRaw, ctx)
 	default:
 		err = fmt.Errorf("unsupported target version '%s'. Run %s --help",
 			targetVersion, version.AppName)
@@ -280,10 +113,9 @@ func transformGenesis(ctx client.Context, targetVersion IcsVersion, jsonRaw []by
 }
 
 // Transform a consumer genesis json file exported from a given ccv provider version
-// to a consumer genesis json format supported by current ccv consumer version or v2.x
+// to a consumer genesis json format supported by current ccv consumer version
 // This allows user to patch consumer genesis of
-//   - current implementation from exports of provider of < v3.3.x
-//   - v2.x from exports of provider >= v3.2.x
+//   - v4.x, v5.x, v6.1.x from exports of provider >= v6.2.x
 //
 // Result will be written to defined output.
 func TransformConsumerGenesis(cmd *cobra.Command, args []string) error {
@@ -336,7 +168,7 @@ func GetConsumerGenesisTransformCmd() *cobra.Command {
 		Short: "Transform CCV consumer genesis data exported to a specific target format",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`
-Transform the consumer genesis data exported from a provider version v1,v2, v3, v4 to a specified consumer target version.
+Transform the consumer genesis data exported from a provider version v5.x v6.x to a specified consumer target version.
 The result is printed to STDOUT.
 
 Note: Content to be transformed is not the consumer genesis file itself but the exported content from provider chain which is used to patch the consumer genesis file!
@@ -349,7 +181,7 @@ $ %s --to v2.x transform /path/to/ccv_consumer_genesis.json
 		Args: cobra.RangeArgs(1, 2),
 		RunE: TransformConsumerGenesis,
 	}
-	cmd.Flags().String("to", string(v4_x_x),
+	cmd.Flags().String("to", string(v5_x_x),
 		fmt.Sprintf("target version for consumer genesis. Supported versions %s",
 			maps.Keys(TransformationVersions)))
 	return cmd

@@ -88,7 +88,7 @@ func (k Keeper) UpdateMinimumPowerInTopN(ctx sdk.Context, consumerId string, old
 }
 
 // CapValidatorSet caps the provided `validators` if chain with `consumerId` is an Opt In chain with a validator-set cap.
-// If cap is `k`, `CapValidatorSet` returns the first `k` validators from `validators` with the highest power.
+// If cap is `k`, `CapValidatorSet` returns the first `k` validators from `validators`.
 func (k Keeper) CapValidatorSet(
 	ctx sdk.Context,
 	powerShapingParameters types.PowerShapingParameters,
@@ -101,10 +101,7 @@ func (k Keeper) CapValidatorSet(
 
 	validatorSetCap := powerShapingParameters.ValidatorSetCap
 	if validatorSetCap != 0 && int(validatorSetCap) < len(validators) {
-		sort.Slice(validators, func(i, j int) bool {
-			return validators[i].Power > validators[j].Power
-		})
-
+		// validators are already sorted by priority and power
 		return validators[:int(validatorSetCap)]
 	} else {
 		return validators
@@ -337,12 +334,15 @@ func (k Keeper) SetConsumerPowerShapingParameters(ctx sdk.Context, consumerId st
 
 	store.Set(types.ConsumerIdToPowerShapingParametersKey(consumerId), bz)
 
-	// update allowlist and denylist indexes if needed
+	// update allowlist, denylist and prioritylist indexes if needed
 	if !equalStringSlices(oldParameters.Allowlist, parameters.Allowlist) {
 		k.UpdateAllowlist(ctx, consumerId, parameters.Allowlist)
 	}
 	if !equalStringSlices(oldParameters.Denylist, parameters.Denylist) {
 		k.UpdateDenylist(ctx, consumerId, parameters.Denylist)
+	}
+	if !equalStringSlices(oldParameters.Prioritylist, parameters.Prioritylist) {
+		k.UpdatePrioritylist(ctx, consumerId, parameters.Prioritylist)
 	}
 
 	return nil
@@ -550,4 +550,108 @@ func (k Keeper) DeleteMinimumPowerInTopN(
 ) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.MinimumPowerInTopNKey(consumerId))
+}
+
+// SetPrioritylist prioritylists validator with `providerAddr` address on chain `consumerId`
+func (k Keeper) SetPrioritylist(
+	ctx sdk.Context,
+	consumerId string,
+	providerAddr types.ProviderConsAddress,
+) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.PrioritylistKey(consumerId, providerAddr), []byte{})
+}
+
+// GetPriorityList returns all prioritylisted validators
+func (k Keeper) GetPriorityList(
+	ctx sdk.Context,
+	consumerId string,
+) (providerConsAddresses []types.ProviderConsAddress) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.StringIdWithLenKey(types.PrioritylistKeyPrefix(), consumerId)
+	iterator := storetypes.KVStorePrefixIterator(store, key)
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		providerConsAddresses = append(providerConsAddresses, types.NewProviderConsAddress(iterator.Key()[len(key):]))
+	}
+
+	return providerConsAddresses
+}
+
+// IsPrioritylisted returns `true` if validator with `providerAddr` has been prioritylisted on chain `consumerId`
+func (k Keeper) IsPrioritylisted(
+	ctx sdk.Context,
+	consumerId string,
+	providerAddr types.ProviderConsAddress,
+) bool {
+	store := ctx.KVStore(k.storeKey)
+	return store.Get(types.PrioritylistKey(consumerId, providerAddr)) != nil
+}
+
+// DeletePrioritylist deletes all prioritylisted validators
+func (k Keeper) DeletePrioritylist(ctx sdk.Context, consumerId string) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := storetypes.KVStorePrefixIterator(store, types.StringIdWithLenKey(types.PrioritylistKeyPrefix(), consumerId))
+	defer iterator.Close()
+
+	keysToDel := [][]byte{}
+	for ; iterator.Valid(); iterator.Next() {
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+
+	for _, key := range keysToDel {
+		store.Delete(key)
+	}
+}
+
+// IsPrioritylistEmpty returns `true` if no validator is prioritylisted on chain `consumerId`
+func (k Keeper) IsPrioritylistEmpty(ctx sdk.Context, consumerId string) bool {
+	store := ctx.KVStore(k.storeKey)
+	iterator := storetypes.KVStorePrefixIterator(store, types.StringIdWithLenKey(types.PrioritylistKeyPrefix(), consumerId))
+	defer iterator.Close()
+
+	return !iterator.Valid()
+}
+
+// UpdatePrioritylist populates the prioritylist store for the consumer chain with this consumer id
+func (k Keeper) UpdatePrioritylist(ctx sdk.Context, consumerId string, prioritylist []string) {
+	k.DeletePrioritylist(ctx, consumerId)
+	for _, address := range prioritylist {
+		consAddr, err := sdk.ConsAddressFromBech32(address)
+		if err != nil {
+			continue
+		}
+
+		k.SetPrioritylist(ctx, consumerId, types.NewProviderConsAddress(consAddr))
+	}
+}
+
+// PartitionBasedOnPriorityList filters the priority list to include only validators that can validate the chain
+// and splits the validators into priority and non-priority sets.
+func (k Keeper) PartitionBasedOnPriorityList(ctx sdk.Context, consumerId string, nextValidators []types.ConsensusValidator) ([]types.ConsensusValidator, []types.ConsensusValidator) {
+
+	priorityValidators := make([]types.ConsensusValidator, 0)
+	nonPriorityValidators := make([]types.ConsensusValidator, 0)
+
+	// Form priorityValidators
+	for _, validator := range nextValidators {
+		addr := types.NewProviderConsAddress(validator.ProviderConsAddr)
+		if k.IsPrioritylisted(ctx, consumerId, addr) {
+			priorityValidators = append(priorityValidators, validator)
+		} else {
+			// Add remaining validators to nonPriorityValidators
+			nonPriorityValidators = append(nonPriorityValidators, validator)
+		}
+	}
+
+	sort.Slice(priorityValidators, func(i, j int) bool {
+		return priorityValidators[i].Power > priorityValidators[j].Power
+	})
+
+	sort.Slice(nonPriorityValidators, func(i, j int) bool {
+		return nonPriorityValidators[i].Power > nonPriorityValidators[j].Power
+	})
+
+	return priorityValidators, nonPriorityValidators
 }

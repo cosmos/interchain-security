@@ -254,7 +254,8 @@ where create_consumer.json has the following structure:
     "allowlist": ["cosmosvalcons..."],
     "denylist": ["cosmosvalcons..."],
     "min_stake": 0,
-    "allow_inactive_vals": false
+    "allow_inactive_vals": false,
+    "prioritylist": ["cosmosvalcons..."]
   },
   "allowlisted_reward_denoms": {
     "denoms": ["ibc/...", "ibc/..."]
@@ -352,11 +353,13 @@ where update_consumer.json has the following structure:
     "allowlist": ["cosmosvalcons..."],
     "denylist": ["cosmosvalcons..."],
     "min_stake": 0,
-    "allow_inactive_vals": false
+    "allow_inactive_vals": false,
+    "prioritylist": ["cosmosvalcons..."]
    },
   "allowlisted_reward_denoms": {
     "denoms": ["ibc/...", "ibc/..."]
   }
+  "new_chain_id": "newConsumer-1", // is optional and can be empty (i.e., "new_chain_id": "")
 }
 
 Note that only 'consumer_id' is mandatory. The others are optional.
@@ -395,7 +398,7 @@ If one of the fields is missing, it will be set to its zero value.
 			}
 
 			msg, err := types.NewMsgUpdateConsumer(owner, consUpdate.ConsumerId, consUpdate.NewOwnerAddress, consUpdate.Metadata,
-				consUpdate.InitializationParameters, consUpdate.PowerShapingParameters, consUpdate.AllowlistedRewardDenoms)
+				consUpdate.InitializationParameters, consUpdate.PowerShapingParameters, consUpdate.AllowlistedRewardDenoms, consUpdate.NewChainId)
 			if err != nil {
 				return err
 			}

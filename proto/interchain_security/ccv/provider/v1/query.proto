@@ -144,6 +144,14 @@ service Query {
     option (google.api.http).get =
         "/interchain_security/ccv/provider/consumer_chain/{consumer_id}";
   }
+
+  // QueryConsumerGenesisTime returns the genesis time
+  // of the consumer chain associated with the provided consumer id
+  rpc QueryConsumerGenesisTime(QueryConsumerGenesisTimeRequest)
+      returns (QueryConsumerGenesisTimeResponse) {
+    option (google.api.http).get =
+        "/interchain_security/ccv/provider/consumer_genesis_time/{consumer_id}";
+  }
 }
 
 message QueryConsumerGenesisRequest {
@@ -196,6 +204,11 @@ message Chain {
   string consumer_id = 13;
   // the reward denoms allowlisted by this consumer chain
   AllowlistedRewardDenoms allowlisted_reward_denoms = 14;
+  // Corresponds to a list of provider consensus addresses of validators that should have PRIORITY to validate on the consumer chain,
+  // meaning as long as they are eligible/opted in to validate on the consumer chain, the validator set will be
+  // filled with these validators first, and other validators will be added to the validator set only if there are
+  // not enough eligible priority validators.
+  repeated string prioritylist = 15;
 }
 
 message QueryValidatorConsumerAddrRequest {
@@ -384,4 +397,13 @@ message QueryConsumerChainResponse {
   ConsumerMetadata metadata = 5 [ (gogoproto.nullable) = false ];
   ConsumerInitializationParameters init_params = 6;
   PowerShapingParameters power_shaping_params = 7;
+}
+
+message QueryConsumerGenesisTimeRequest {
+  string consumer_id = 1;
+}
+
+message QueryConsumerGenesisTimeResponse {
+  google.protobuf.Timestamp genesis_time = 1
+  [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
 }
