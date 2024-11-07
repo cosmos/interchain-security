@@ -50,6 +50,7 @@ var (
 		"path of a local sdk version to build and reference in integration tests")
 	useCometmock = flag.Bool("use-cometmock", false, "use cometmock instead of CometBFT. see https://github.com/informalsystems/CometMock")
 	useGorelayer = flag.Bool("use-gorelayer", false, "use go relayer instead of Hermes")
+	useImage     = flag.String("docker-image", "", "use existing docker image")
 )
 
 var (
@@ -444,8 +445,8 @@ func getTestCases(selectedPredefinedTests, selectedTestFiles TestSet, providerVe
 // delete all test targets
 func deleteTargets(runners []TestRunner) {
 	for _, runner := range runners {
-		if err := runner.target.Delete(); err != nil {
-			log.Println("error deleting target: ", err)
+		if err := runner.CleanUp(); err != nil {
+			log.Println("error cleaning up target: ", err)
 		}
 	}
 }
@@ -472,8 +473,12 @@ func createTestConfigs(cfgType TestConfigType, providerVersions, consumerVersion
 			config := GetTestConfig(cfgType, provider, consumer)
 			config.SetRelayerConfig(*useGorelayer)
 			config.SetCometMockConfig(*useCometmock)
-			config.transformGenesis = *transformGenesis
-			config.useGorelayer = *useGorelayer
+			config.TransformGenesis = *transformGenesis
+			config.UseGorelayer = *useGorelayer
+
+			runnerId++
+			config.ContainerConfig.ContainerName = config.ContainerConfig.ContainerName + fmt.Sprintf("-%d", runnerId)
+
 			configs = append(configs, config)
 		}
 	}
@@ -483,16 +488,16 @@ func createTestConfigs(cfgType TestConfigType, providerVersions, consumerVersion
 // createTestRunners creates test runners to run each test case on each target
 func createTestRunners(testCases []testStepsWithConfig) []TestRunner {
 	runners := []TestRunner{}
-	targetCfg := TargetConfig{useGaia: *useGaia, localSdkPath: *localSdkPath, gaiaTag: *gaiaTag}
+	targetCfg := TargetConfig{useGaia: *useGaia, localSdkPath: *localSdkPath, gaiaTag: *gaiaTag, useCometMock: *useCometmock}
 
 	for _, tc := range testCases {
 		testConfigs := createTestConfigs(tc.config, providerVersions, consumerVersions)
 		for _, cfg := range testConfigs {
-			target, err := createTarget(cfg, targetCfg)
+			target, err := createTarget(cfg, targetCfg, *useImage)
 			tr := CreateTestRunner(cfg, tc.steps, &target, *verbose)
 			if err == nil {
-				fmt.Println("Created test runner for ", cfg.name,
-					"with provVers=", cfg.providerVersion, "consVers=", cfg.consumerVersion)
+				fmt.Printf("Created test runner for '%s' with provider version=%s consumer version=%s\n",
+					cfg.Name, cfg.ProviderVersion, cfg.ConsumerVersion)
 				runners = append(runners, tr)
 			} else {
 				fmt.Println("No test runner created:", err)
@@ -517,7 +522,7 @@ func executeTests(runners []TestRunner) error {
 				defer wg.Done()
 				result := runner.Run()
 				if result != nil {
-					log.Printf("Test '%s' failed", runner.config.name)
+					log.Printf("Test '%s' failed", runner.config.Name)
 					err = result
 				}
 			}(&runners[idx])

@@ -11,7 +11,7 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
-	v4 "github.com/cosmos/interchain-security/v6/tests/e2e/v4"
+	v5 "github.com/cosmos/interchain-security/v6/tests/e2e/v5"
 )
 
 // TestCaseDriver knows how different TC can be executed
@@ -20,7 +20,8 @@ type TestCaseDriver interface {
 }
 
 func GetTestCaseDriver(testCfg TestConfig) TestCaseDriver {
-	return &DefaultDriver{testCfg: testCfg}
+	driver := DefaultDriver{testCfg: testCfg}
+	return &driver
 }
 
 type DefaultDriver struct {
@@ -36,7 +37,7 @@ func (td *DefaultDriver) Run(steps []Step, target ExecutionTarget, verbose bool)
 
 	for i, step := range steps {
 		fmt.Printf("running %s: step %d/%d == %s \n",
-			td.testCfg.name, i+1, len(steps), reflect.TypeOf(step.Action).Name())
+			td.testCfg.Name, i+1, len(steps), reflect.TypeOf(step.Action).Name())
 
 		err := td.runStep(step)
 		if err != nil {
@@ -57,7 +58,7 @@ func (td *DefaultDriver) runStep(step Step) error {
 
 	// Check state
 	if !reflect.DeepEqual(actualState, modelState) {
-		fmt.Printf("=============== %s FAILED ===============\n", td.testCfg.name)
+		fmt.Printf("=============== %s FAILED ===============\n", td.testCfg.Name)
 		fmt.Println("FAILED action", reflect.TypeOf(step.Action).Name())
 		pretty.Print("actual state", actualState)
 		pretty.Print("model state", modelState)
@@ -68,10 +69,10 @@ func (td *DefaultDriver) runStep(step Step) error {
 
 func (td *DefaultDriver) getIcsVersion(chainID ChainID) string {
 	version := ""
-	if td.testCfg.chainConfigs[chainID].BinaryName == "interchain-security-pd" {
-		version = td.testCfg.providerVersion
+	if td.testCfg.ChainConfigs[chainID].BinaryName == "interchain-security-pd" {
+		version = td.testCfg.ProviderVersion
 	} else {
-		version = td.testCfg.consumerVersion
+		version = td.testCfg.ConsumerVersion
 	}
 	ics := getIcsVersion(version)
 	if !semver.IsValid(ics) {
@@ -85,24 +86,69 @@ func (td *DefaultDriver) getTargetDriver(chainID ChainID) Chain {
 	target := Chain{
 		testConfig: &td.testCfg,
 	}
+
 	icsVersion := td.getIcsVersion(chainID)
 	switch icsVersion {
 	case "v3", "v4":
+		panic("Not supported anymore")
+	case "v5":
 		if td.verbose {
-			fmt.Println("Using 'v4' driver for chain ", chainID)
+			fmt.Println("Using 'v5' driver for chain ", chainID)
 		}
-		target.target = v4.Commands{
-			ContainerConfig:  td.testCfg.containerConfig,
-			ValidatorConfigs: td.testCfg.validatorConfigs,
-			ChainConfigs:     td.testCfg.chainConfigs,
+		target.target = v5.Commands{
+			ContainerConfig:  td.testCfg.ContainerConfig,
+			ValidatorConfigs: td.testCfg.ValidatorConfigs,
+			ChainConfigs:     td.testCfg.ChainConfigs,
 			Target:           td.target,
 		}
+
 	default:
 		target.target = Commands{
-			containerConfig:  &td.testCfg.containerConfig,
-			validatorConfigs: td.testCfg.validatorConfigs,
-			chainConfigs:     td.testCfg.chainConfigs,
-			target:           td.target,
+			ContainerConfig:  &td.testCfg.ContainerConfig,
+			ValidatorConfigs: td.testCfg.ValidatorConfigs,
+			ChainConfigs:     td.testCfg.ChainConfigs,
+			Target:           td.target,
+		}
+		if td.verbose {
+			fmt.Println("Using default driver for version", icsVersion, " for chain ", chainID)
+		}
+	}
+
+	return target
+}
+
+func (td *DefaultDriver) getChainDriver(chainID ChainID) e2e.ChainIF {
+
+	var target e2e.ChainIF
+
+	icsVersion := td.getIcsVersion(chainID)
+	switch icsVersion {
+	case "v3", "v4":
+		panic(fmt.Sprintf("Version %s not supported anymore", icsVersion))
+	case "v5":
+		if td.verbose {
+			fmt.Println("Using 'v5' driver for chain ", chainID)
+		}
+		target = &v5.Chain{
+			TestConfig: &td.testCfg,
+			Target: v5.Commands{
+				Verbose:          td.verbose,
+				ContainerConfig:  td.testCfg.ContainerConfig,
+				ValidatorConfigs: td.testCfg.ValidatorConfigs,
+				ChainConfigs:     td.testCfg.ChainConfigs,
+				Target:           td.target,
+			},
+		}
+	default:
+		target = &Chain{
+			testConfig: &td.testCfg,
+			target: Commands{
+				Verbose:          td.verbose,
+				ContainerConfig:  &td.testCfg.ContainerConfig,
+				ValidatorConfigs: td.testCfg.ValidatorConfigs,
+				ChainConfigs:     td.testCfg.ChainConfigs,
+				Target:           td.target,
+			},
 		}
 		if td.verbose {
 			fmt.Println("Using default driver for version", icsVersion, " for chain ", chainID)
@@ -125,7 +171,7 @@ func (td *DefaultDriver) getState(modelState State) State {
 }
 
 func (td *DefaultDriver) GetChainState(chain ChainID, modelState ChainState) e2e.ChainState {
-	if _, exists := td.testCfg.chainConfigs[chain]; !exists {
+	if _, exists := td.testCfg.ChainConfigs[chain]; !exists {
 		log.Fatalf("getting chain state failed. unknown chain: '%s'", chain)
 	}
 
@@ -240,7 +286,7 @@ func (td *DefaultDriver) GetChainState(chain ChainID, modelState ChainState) e2e
 	}
 
 	if *verbose {
-		log.Println("Done getting chain state:\n" + pretty.Sprint(chainState))
+		log.Printf("Chain state for '%s':\n%s\n", chain, pretty.Sprint(chainState))
 	}
 
 	return chainState
@@ -250,7 +296,7 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 	switch action := action.(type) {
 	case StartChainAction:
 		target := td.getTargetDriver(action.Chain)
-		target.startChain(action, td.verbose)
+		target.StartChain(action, td.verbose)
 	case StartSovereignChainAction:
 		target := td.getTargetDriver(action.Chain)
 		target.startSovereignChain(action, td.verbose)
@@ -260,7 +306,7 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 	case WaitUntilBlockAction:
 		target := td.getTargetDriver(action.Chain)
 		target.waitUntilBlockOnChain(action)
-	case ChangeoverChainAction:
+	case e2e.ChangeoverChainAction:
 		target := td.getTargetDriver("")
 		target.changeoverChain(action, td.verbose)
 	case SendTokensAction:
@@ -269,29 +315,19 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 	case SubmitTextProposalAction:
 		target := td.getTargetDriver(action.Chain)
 		target.submitTextProposal(action, td.verbose)
-	case SubmitConsumerAdditionProposalAction:
-		target := td.getTargetDriver(action.Chain)
-		version := target.testConfig.providerVersion
-		if semver.IsValid(version) && semver.Compare(semver.Major(version), "v5") < 0 {
-			target.submitConsumerAdditionLegacyProposal(action, td.verbose)
-		} else {
-			target.submitConsumerAdditionProposal(action, td.verbose)
-		}
+	case e2e.SubmitConsumerAdditionProposalAction:
+		// use chainDriver instead of targetDriver
+		target := td.getChainDriver(action.Chain)
+		target.SubmitConsumerAdditionProposal(action, td.verbose)
 	case SubmitConsumerRemovalProposalAction:
-		target := td.getTargetDriver(action.Chain)
-		version := target.testConfig.providerVersion
-		target = td.getTargetDriver(action.Chain)
-		if semver.IsValid(version) && semver.Compare(semver.Major(version), "v5") < 0 {
-			target.submitConsumerRemovalLegacyProposal(action, td.verbose)
-		} else {
-			target.submitConsumerRemovalProposal(action, td.verbose)
-		}
+		target := td.getChainDriver(action.Chain)
+		target.SubmitConsumerRemovalProposal(action, td.verbose)
 	case SubmitEnableTransfersProposalAction:
 		target := td.getTargetDriver(action.Chain)
 		target.submitEnableTransfersProposalAction(action, td.verbose)
 	case SubmitConsumerModificationProposalAction:
 		target := td.getTargetDriver(action.Chain)
-		version := target.testConfig.providerVersion
+		version := target.testConfig.ProviderVersion
 		if semver.IsValid(version) && semver.Compare(semver.Major(version), "v5") < 0 {
 			target.submitConsumerModificationLegacyProposal(action, td.verbose)
 		} else {
@@ -301,8 +337,9 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		target := td.getTargetDriver(action.Chain)
 		target.voteGovProposal(action, td.verbose)
 	case StartConsumerChainAction:
-		target := td.getTargetDriver(action.ProviderChain)
-		target.startConsumerChain(action, td.verbose)
+		//target := td.getTargetDriver(action.ProviderChain)
+		target := td.getChainDriver(action.ProviderChain)
+		target.StartConsumerChain(action, td.verbose)
 	case AddChainToRelayerAction:
 		target := td.getTargetDriver(action.Chain)
 		target.addChainToRelayer(action, td.verbose)
@@ -331,11 +368,13 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		target := td.getTargetDriver("")
 		target.relayRewardPacketsToProvider(action, td.verbose)
 	case DelegateTokensAction:
-		target := td.getTargetDriver(action.Chain)
-		target.delegateTokens(action, td.verbose)
+		//target := td.getTargetDriver(action.Chain)
+		target := td.getChainDriver(action.Chain)
+		target.DelegateTokens(action, td.verbose)
 	case UnbondTokensAction:
-		target := td.getTargetDriver(action.Chain)
-		target.unbondTokens(action, td.verbose)
+		// target := td.getTargetDriver(action.Chain)
+		target := td.getChainDriver(action.Chain)
+		target.UnbondTokens(action, td.verbose)
 	case CancelUnbondTokensAction:
 		target := td.getTargetDriver(action.Chain)
 		target.cancelUnbondTokens(action, td.verbose)
@@ -364,8 +403,9 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		target := td.getTargetDriver(action.Chain)
 		target.registerRepresentative(action, td.verbose)
 	case e2e.AssignConsumerPubKeyAction:
-		target := td.getTargetDriver(ChainID("provi"))
-		target.assignConsumerPubKey(action, td.verbose)
+		target := td.getChainDriver(ChainID("provi"))
+		//target := td.getTargetDriver(ChainID("provi"))
+		target.AssignConsumerPubKey(action, td.verbose)
 	case SlashMeterReplenishmentAction:
 		target := td.getTargetDriver(ChainID("provi"))
 		target.waitForSlashMeterReplenishment(action, td.verbose)
@@ -386,7 +426,7 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		target.detectConsumerEvidence(action, false, td.verbose)
 	case SubmitChangeRewardDenomsProposalAction:
 		target := td.getTargetDriver(action.Chain)
-		version := target.testConfig.providerVersion
+		version := target.testConfig.ProviderVersion
 		if semver.IsValid(version) && semver.Compare(semver.Major(version), "v5") < 0 {
 			target.submitChangeRewardDenomsLegacyProposal(action, td.verbose)
 		} else {
@@ -421,7 +461,7 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		target := td.getTargetDriver(action.Chain)
 		target.transferIbcToken(action, td.verbose)
 	default:
-		log.Fatalf("unknown action in testRun %s: %#v", td.testCfg.name, action)
+		log.Fatalf("unknown action in testRun %s: %#v", td.testCfg.Name, action)
 	}
 	return nil
 }
