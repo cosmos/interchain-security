@@ -496,7 +496,7 @@ func createTestRunners(testCases []testStepsWithConfig) []TestRunner {
 			target, err := createTarget(cfg, targetCfg, *useImage)
 			tr := CreateTestRunner(cfg, tc.steps, &target, *verbose)
 			if err == nil {
-				fmt.Printf("Created test runner for '%s' with provider version=%s consumer version=%s",
+				fmt.Printf("Created test runner for '%s' with provider version=%s consumer version=%s\n",
 					cfg.Name, cfg.ProviderVersion, cfg.ConsumerVersion)
 				runners = append(runners, tr)
 			} else {

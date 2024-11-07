@@ -44,6 +44,7 @@ type SubmitConsumerAdditionProposalAction struct {
 	Denylist            []string
 	MinStake            uint64
 	AllowInactiveVals   bool
+	Prioritylist        []string
 }
 
 type SubmitConsumerRemovalProposalAction struct {

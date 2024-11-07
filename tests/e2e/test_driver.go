@@ -124,19 +124,7 @@ func (td *DefaultDriver) getChainDriver(chainID ChainID) e2e.ChainIF {
 	icsVersion := td.getIcsVersion(chainID)
 	switch icsVersion {
 	case "v3", "v4":
-		if td.verbose {
-			fmt.Println("Using 'v5' driver for chain ", chainID)
-		}
-		/* 		targetV4 := v4.Chain{
-		   			TestConfig: &td.testCfg,
-		   		}
-		   		targetV4.Target = v4.Commands{
-		   			ContainerConfig:  td.testCfg.ContainerConfig,
-		   			ValidatorConfigs: td.testCfg.ValidatorConfigs,
-		   			ChainConfigs:     td.testCfg.ChainConfigs,
-		   			Target:           td.target,
-		   		}
-		   		return targetV4 */
+		panic(fmt.Sprintf("Version %s not supported anymore", icsVersion))
 	case "v5":
 		if td.verbose {
 			fmt.Println("Using 'v5' driver for chain ", chainID)
@@ -169,76 +157,6 @@ func (td *DefaultDriver) getChainDriver(chainID ChainID) e2e.ChainIF {
 
 	return target
 }
-
-/* func (td *DefaultDriver) getActionHandler(chainID ChainID, action interface{}) func() {
-	icsVersion := td.getIcsVersion(chainID)
-	var handler func()
-
-	target := td.getTargetDriver(chainID)
-
-	v4AH := v4.ActionHandler{}
-	defaultAH := ActionHandler{}
-
-	switch icsVersion {
-	case "v3", "v4", "v5":
-		if td.verbose {
-			fmt.Println("Using 'v4' action handler for chain ", chainID)
-		}
-
-		switch action := action.(type) {
-		case e2e.SubmitConsumerAdditionProposalAction:
-			f := v4AH.SubmitConsumerAdditionProposal
-			handler = func() { f(target, action, td.verbose) }
-		default:
-			panic(fmt.Sprintf("action %s not supported in version %s", action, icsVersion))
-		}
-	default:
-		switch action := action.(type) {
-		case e2e.SubmitConsumerAdditionProposalAction:
-			f := defaultAH.SubmitConsumerAdditionProposal
-			handler = func() { f(target, action, td.verbose) }
-		default:
-			panic(fmt.Sprintf("action %s not supported in version %s", action, icsVersion))
-		}
-		if td.verbose {
-			fmt.Println("Using default action handler for ", icsVersion, " for chain ", chainID)
-		}
-	}
-
-	return handler
-} */
-
-/* func (td *DefaultDriver) getTargetDriverNew(chainID ChainID) Chain {
-	target := Chain{
-		testConfig: &td.testCfg,
-	}
-
-	icsVersion := td.getIcsVersion(chainID)
-	switch icsVersion {
-	case "v3", "v4", "v5":
-		if td.verbose {
-			fmt.Println("Using 'v4' driver for chain ", chainID)
-		}
-		target.target = v4.Commands{
-			ContainerConfig:  td.testCfg.containerConfig,
-			ValidatorConfigs: td.testCfg.validatorConfigs,
-			ChainConfigs:     td.testCfg.chainConfigs,
-			Target:           td.target,
-		}
-	default:
-		target.target = Commands{
-			ContainerConfig:  &td.testCfg.containerConfig,
-			ValidatorConfigs: td.testCfg.validatorConfigs,
-			ChainConfigs:     td.testCfg.chainConfigs,
-			Target:           td.target,
-		}
-		if td.verbose {
-			fmt.Println("Using default driver for version", icsVersion, " for chain ", chainID)
-		}
-	}
-
-	return target
-} */
 
 func (td *DefaultDriver) getState(modelState State) State {
 	systemState := State{}
