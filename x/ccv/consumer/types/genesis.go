@@ -13,7 +13,6 @@ import (
 // NewRestartGenesisState returns a consumer GenesisState that has already been established.
 func NewRestartGenesisState(
 	clientID, channelID string,
-	maturingPackets []MaturingVSCPacket,
 	initValSet []abci.ValidatorUpdate,
 	heightToValsetUpdateIDs []HeightToValsetUpdateID,
 	pendingConsumerPackets ConsumerPacketDataList,
@@ -27,7 +26,6 @@ func NewRestartGenesisState(
 		Provider: ccv.ProviderInfo{
 			InitialValSet: initValSet,
 		},
-		MaturingPackets:             maturingPackets,
 		HeightToValsetUpdateId:      heightToValsetUpdateIDs,
 		PendingConsumerPackets:      pendingConsumerPackets,
 		OutstandingDowntimeSlashing: outstandingDowntimes,
@@ -107,9 +105,6 @@ func (gs GenesisState) Validate() error {
 		if gs.ProviderChannelId != "" {
 			return errorsmod.Wrap(ccv.ErrInvalidGenesis, "provider channel id cannot be set for new chain. It must be established on handshake")
 		}
-		if len(gs.MaturingPackets) != 0 {
-			return errorsmod.Wrap(ccv.ErrInvalidGenesis, "maturing packets must be empty for new chain")
-		}
 		if len(gs.PendingConsumerPackets.List) != 0 {
 			return errorsmod.Wrap(ccv.ErrInvalidGenesis, "pending consumer packets must be empty for new chain")
 		}
@@ -124,10 +119,6 @@ func (gs GenesisState) Validate() error {
 		// handshake is still in progress
 		handshakeInProgress := gs.ProviderChannelId == ""
 		if handshakeInProgress {
-			if len(gs.MaturingPackets) != 0 {
-				return errorsmod.Wrap(
-					ccv.ErrInvalidGenesis, "maturing packets must be empty when handshake isn't completed")
-			}
 			if len(gs.OutstandingDowntimeSlashing) != 0 {
 				return errorsmod.Wrap(
 					ccv.ErrInvalidGenesis, "outstanding downtime must be empty when handshake isn't completed")
@@ -153,21 +144,6 @@ func (gs GenesisState) Validate() error {
 		if gs.Provider.ClientState != nil || gs.Provider.ConsensusState != nil {
 			return errorsmod.Wrap(ccv.ErrInvalidGenesis, "provider client state and consensus state must be nil for a restarting genesis state")
 		}
-		for _, mat := range gs.MaturingPackets {
-			if err := mat.Validate(); err != nil {
-				return errorsmod.Wrap(err, "invalid unbonding sequences")
-			}
-		}
-	}
-	return nil
-}
-
-func (mat MaturingVSCPacket) Validate() error {
-	if mat.MaturityTime.IsZero() {
-		return errorsmod.Wrap(ccv.ErrInvalidVSCMaturedTime, "cannot have 0 maturity time")
-	}
-	if mat.VscId == 0 {
-		return errorsmod.Wrap(ccv.ErrInvalidVSCMaturedId, "cannot have 0 maturity time")
 	}
 	return nil
 }

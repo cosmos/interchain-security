@@ -150,11 +150,6 @@ func TestOnRecvVSCPacket(t *testing.T) {
 	// Set channel to provider, still in context of consumer chain
 	consumerKeeper.SetProviderChannel(ctx, consumerCCVChannelID)
 
-	// Set module params with custom unbonding period
-	moduleParams := types.DefaultParams()
-	moduleParams.UnbondingPeriod = 100 * time.Hour
-	consumerKeeper.SetParams(ctx, moduleParams)
-
 	for _, tc := range testCases {
 		var newChanges types.ValidatorSetChangePacketData
 		err := types.ModuleCdc.UnmarshalJSON(tc.packet.GetData(), &newChanges)
@@ -182,13 +177,6 @@ func TestOnRecvVSCPacket(t *testing.T) {
 			return tc.expectedPendingChanges.ValidatorUpdates[i].PubKey.Compare(tc.expectedPendingChanges.ValidatorUpdates[j].PubKey) == -1
 		})
 		require.Equal(t, tc.expectedPendingChanges, *actualPendingChanges, "pending changes not equal to expected changes after successful packet receive. case: %s", tc.name)
-
-		expectedTime := ctx.BlockTime().Add(consumerKeeper.GetUnbondingPeriod(ctx))
-		require.True(
-			t,
-			consumerKeeper.PacketMaturityTimeExists(ctx, newChanges.ValsetUpdateId, expectedTime),
-			"no packet maturity time for case: %s", tc.name,
-		)
 	}
 }
 

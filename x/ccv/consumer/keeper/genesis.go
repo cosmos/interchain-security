@@ -73,10 +73,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		if state.ProviderChannelId != "" {
 			// set provider channel ID
 			k.SetProviderChannel(ctx, state.ProviderChannelId)
-			// set all unbonding sequences
-			for _, mp := range state.MaturingPackets {
-				k.SetPacketMaturityTime(ctx, mp.VscId, mp.MaturityTime)
-			}
 			// set outstanding downtime slashing requests
 			for _, od := range state.OutstandingDowntimeSlashing {
 				consAddr, err := sdk.ConsAddressFromBech32(od.ValidatorConsensusAddress)
@@ -141,7 +137,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *types.GenesisState) {
 		genesis = types.NewRestartGenesisState(
 			clientID,
 			channelID,
-			k.GetAllPacketMaturityTimes(ctx),
 			valset,
 			k.GetAllHeightToValsetUpdateIDs(ctx),
 			pendingPacketsDepreciated,
@@ -161,7 +156,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *types.GenesisState) {
 		genesis = types.NewRestartGenesisState(
 			clientID,
 			"",
-			nil,
 			valset,
 			k.GetAllHeightToValsetUpdateIDs(ctx),
 			pendingPacketsDepreciated,

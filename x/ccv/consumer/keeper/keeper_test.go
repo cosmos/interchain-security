@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"sort"
 	"testing"
-	"time"
 
 	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	"github.com/golang/mock/gomock"
@@ -196,59 +195,6 @@ func TestGetLastSovereignValidators(t *testing.T) {
 	require.Equal(t, []stakingtypes.Validator{val}, lastSovVals)
 	require.Equal(t, "sanity check this is the correctly serialized val",
 		lastSovVals[0].Description.Moniker)
-}
-
-// TestPacketMaturityTime tests getter, setter, and iterator functionality for the packet maturity time of a received VSC packet
-func TestPacketMaturityTime(t *testing.T) {
-	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	now := time.Now().UTC()
-	packets := []types.MaturingVSCPacket{
-		{
-			VscId:        2,
-			MaturityTime: now,
-		},
-		{
-			VscId:        1,
-			MaturityTime: now.Add(-time.Hour),
-		},
-		{
-			VscId:        5,
-			MaturityTime: now.Add(-2 * time.Hour),
-		},
-		{
-			VscId:        6,
-			MaturityTime: now.Add(time.Hour),
-		},
-	}
-	// sort by MaturityTime and not by VscId
-	expectedGetAllOrder := []types.MaturingVSCPacket{packets[2], packets[1], packets[0], packets[3]}
-	// only packets with MaturityTime before or equal to now
-	expectedGetElapsedOrder := []types.MaturingVSCPacket{packets[2], packets[1], packets[0]}
-
-	// test SetPacketMaturityTime
-	for _, packet := range packets {
-		ck.SetPacketMaturityTime(ctx, packet.VscId, packet.MaturityTime)
-	}
-
-	// test PacketMaturityTimeExists
-	for _, packet := range packets {
-		require.True(t, ck.PacketMaturityTimeExists(ctx, packet.VscId, packet.MaturityTime))
-	}
-
-	// test GetAllPacketMaturityTimes
-	maturingVSCPackets := ck.GetAllPacketMaturityTimes(ctx)
-	require.Len(t, maturingVSCPackets, len(packets))
-	require.Equal(t, expectedGetAllOrder, maturingVSCPackets)
-
-	// test GetElapsedPacketMaturityTimes
-	elapsedMaturingVSCPackets := ck.GetElapsedPacketMaturityTimes(ctx.WithBlockTime(now))
-	require.Equal(t, expectedGetElapsedOrder, elapsedMaturingVSCPackets)
-
-	// test DeletePacketMaturityTimes
-	ck.DeletePacketMaturityTimes(ctx, packets[0].VscId, packets[0].MaturityTime)
-	require.False(t, ck.PacketMaturityTimeExists(ctx, packets[0].VscId, packets[0].MaturityTime))
 }
 
 // TestCrossChainValidator tests the getter, setter, and deletion method for cross chain validator records
