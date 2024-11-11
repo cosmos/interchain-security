@@ -38,14 +38,16 @@ TENDERMINT_CONFIG_TRANSFORM=$6
 echo "killing nodes"
 pkill -f "^"interchain-security-sd &> /dev/null || true
 
-mkdir -p /root/.sovereign/config
-
-# apply genesis changes to existing genesis -> this creates the changeover genesis file with initial validator set
-jq "$GENESIS_TRANSFORM" /sover/validatoralice/config/genesis.json > /root/.sovereign/config/genesis.json
-
-
 # Get number of nodes from length of validators array
 NODES=$(echo "$VALIDATORS" | jq '. | length')
+
+for i in $(seq 0 $(($NODES - 1)));
+do
+    VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
+    mkdir -p /$CHAIN_ID/validator$VAL_ID/.sovereign/config
+    # apply genesis changes to existing genesis -> this creates the changeover genesis file with initial validator set
+    jq "$GENESIS_TRANSFORM" /sover/validatoralice/config/genesis.json > /$CHAIN_ID/validator$VAL_ID/.sovereign/config/genesis.json
+done
 
 # SETUP NETWORK NAMESPACES, see: https://adil.medium.com/container-networking-under-the-hood-network-namespaces-6b2b8fe8dc2a
 
