@@ -179,7 +179,13 @@ func (k Keeper) Jail(context.Context, sdk.ConsAddress) error { return nil }
 // This method should be a no-op even during a standalone to consumer changeover.
 // Once the upgrade has happened as a part of the changeover,
 // the provider validator set will soon be in effect, and jailing is n/a.
-func (k Keeper) Unjail(context.Context, sdk.ConsAddress) error { return nil }
+func (k Keeper) Unjail(sdkCtx context.Context, addr sdk.ConsAddress) error {
+	ctx := sdk.UnwrapSDKContext(sdkCtx)
+	if k.IsPrevStandaloneChain(ctx) && k.ChangeoverIsComplete(ctx) && k.standaloneStakingKeeper != nil {
+		return k.standaloneStakingKeeper.Unjail(ctx, addr)
+	}
+	return nil
+}
 
 // Delegation - unimplemented on CCV keeper
 func (k Keeper) Delegation(ctx context.Context, addr sdk.AccAddress, valAddr sdk.ValAddress) (stakingtypes.DelegationI, error) {
