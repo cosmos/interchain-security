@@ -174,11 +174,9 @@ func (k Keeper) SlashWithInfractionReason(goCtx context.Context, addr sdk.ConsAd
 // the provider validator set will soon be in effect, and jailing is n/a.
 func (k Keeper) Jail(context.Context, sdk.ConsAddress) error { return nil }
 
-// Unjail - unimplemented on CCV keeper
+// Unjail is enabled for previously standalone chains after the changeover is complete.
 //
-// This method should be a no-op even during a standalone to consumer changeover.
-// Once the upgrade has happened as a part of the changeover,
-// the provider validator set will soon be in effect, and jailing is n/a.
+// This method should be a no-op for consumer chains that launched with the CCV module first.
 func (k Keeper) Unjail(sdkCtx context.Context, addr sdk.ConsAddress) error {
 	ctx := sdk.UnwrapSDKContext(sdkCtx)
 	if k.IsPrevStandaloneChain(ctx) && k.ChangeoverIsComplete(ctx) && k.standaloneStakingKeeper != nil {
