@@ -145,7 +145,6 @@ require (
 
 require (
 	cosmossdk.io/client/v2 v2.0.0-beta.3
-	cosmossdk.io/collections v0.4.0
 	cosmossdk.io/log v1.4.1
 	cosmossdk.io/store v1.1.0
 	cosmossdk.io/tools/confix v0.1.2
@@ -155,7 +154,7 @@ require (
 	cosmossdk.io/x/upgrade v0.1.4
 	github.com/cosmos/cosmos-db v1.0.2
 	github.com/cosmos/ibc-go/modules/capability v1.0.1
-	github.com/cosmos/ibc-go/v8 v8.5.1
+	github.com/cosmos/ibc-go/v8 v8.5.2
 	github.com/informalsystems/itf-go v0.0.1
 	github.com/spf13/viper v1.19.0
 	golang.org/x/mod v0.21.0
@@ -165,6 +164,7 @@ require (
 require (
 	cloud.google.com/go/auth v0.6.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
+	cosmossdk.io/collections v0.4.0 // indirect
 	cosmossdk.io/x/circuit v0.1.1 // indirect
 	github.com/DataDog/datadog-go v3.2.0+incompatible // indirect
 	github.com/DataDog/zstd v1.5.5 // indirect
