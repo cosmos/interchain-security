@@ -1,4 +1,4 @@
-package main
+package v5
 
 import (
 	"bufio"
@@ -9,57 +9,65 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	"github.com/tidwall/gjson"
+	"golang.org/x/mod/semver"
+
 	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/client"
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
-	"github.com/tidwall/gjson"
-	"golang.org/x/mod/semver"
 )
 
 const (
 	done = "done!!!!!!!!"
 
 	VLatest = "latest"
-	V630    = "v6.3.0"
-	V620    = "v6.2.0"
+	V400    = "v4.0.0"
+	V330    = "v3.3.0"
+	V300    = "v3.0.0"
+)
+
+type (
+	TestConfig = e2e.TestConfig
 )
 
 // type aliases
 type (
-	AssignConsumerPubKeyAction           = e2e.AssignConsumerPubKeyAction
-	StartChainAction                     = e2e.StartChainAction
-	StartChainValidator                  = e2e.StartChainValidator
-	StartConsumerChainAction             = e2e.StartConsumerChainAction
-	StartSovereignChainAction            = e2e.StartSovereignChainAction
-	SubmitConsumerAdditionProposalAction = e2e.SubmitConsumerAdditionProposalAction
-	SubmitConsumerRemovalProposalAction  = e2e.SubmitConsumerRemovalProposalAction
-	DelegateTokensAction                 = e2e.DelegateTokensAction
-	UnbondTokensAction                   = e2e.UnbondTokensAction
-	ChangeoverChainAction                = e2e.ChangeoverChainAction
+	AssignConsumerPubKeyAction          = e2e.AssignConsumerPubKeyAction
+	StartChainAction                    = e2e.StartChainAction
+	StartChainValidator                 = e2e.StartChainValidator
+	StartConsumerChainAction            = e2e.StartConsumerChainAction
+	StartSovereignChainAction           = e2e.StartSovereignChainAction
+	SubmitConsumerRemovalProposalAction = e2e.SubmitConsumerRemovalProposalAction
+	DelegateTokensAction                = e2e.DelegateTokensAction
+	ChangeoverChainAction               = e2e.ChangeoverChainAction
+	UnbondTokensAction                  = e2e.UnbondTokensAction
 )
 
 type SendTokensAction struct {
-	Chain     ChainID
-	From      ValidatorID
-	To        ValidatorID
-	Amount    uint
-	ExpectErr bool
+	Chain  ChainID
+	From   ValidatorID
+	To     ValidatorID
+	Amount uint
+}
+
+type Chain struct {
+	Target     e2e.TargetDriver
+	TestConfig *e2e.TestConfig
 }
 
 func (tr Chain) sendTokens(
 	action SendTokensAction,
 	verbose bool,
 ) {
-	fromValCfg := tr.testConfig.ValidatorConfigs[action.From]
-	toValCfg := tr.testConfig.ValidatorConfigs[action.To]
+	fromValCfg := tr.TestConfig.ValidatorConfigs[action.From]
+	toValCfg := tr.TestConfig.ValidatorConfigs[action.To]
 	fromAddress := fromValCfg.DelAddress
 	toAddress := toValCfg.DelAddress
 	if action.Chain != ChainID("provi") {
@@ -78,19 +86,18 @@ func (tr Chain) sendTokens(
 		}
 	}
 
-	binaryName := tr.testConfig.ChainConfigs[action.Chain].BinaryName
-	cmd := tr.target.ExecCommand(binaryName,
+	binaryName := tr.TestConfig.ChainConfigs[action.Chain].BinaryName
+	cmd := tr.Target.ExecCommand(binaryName,
 
 		"tx", "bank", "send",
 		fromAddress,
 		toAddress,
 		fmt.Sprint(action.Amount)+`stake`,
 
-		`--chain-id`, string(tr.testConfig.ChainConfigs[action.Chain].ChainId),
+		`--chain-id`, string(tr.TestConfig.ChainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.From),
 		`--node`, tr.getValidatorNode(action.Chain, action.From),
 		`--keyring-backend`, `test`,
-		`-o`, `json`,
 		`-y`,
 	)
 	if verbose {
@@ -101,21 +108,15 @@ func (tr Chain) sendTokens(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	if action.ExpectErr {
-		if e2e.GetTxResponse(bz).Code == 0 {
-			log.Fatalf("`tx bank send` did not fail as expected: %v", string(bz))
-		}
-	} else {
-		// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-		tr.waitForTx(action.Chain, bz, 30*time.Second)
-	}
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(action.Chain, 2, 30*time.Second)
 }
 
 func (tr *Chain) StartChain(
 	action StartChainAction,
 	verbose bool,
 ) {
-	chainConfig := tr.testConfig.ChainConfigs[action.Chain]
+	chainConfig := tr.TestConfig.ChainConfigs[action.Chain]
 	type jsonValAttrs struct {
 		Mnemonic         string `json:"mnemonic"`
 		Allocation       string `json:"allocation"`
@@ -133,18 +134,18 @@ func (tr *Chain) StartChain(
 	var validators []jsonValAttrs
 	for _, val := range action.Validators {
 		validators = append(validators, jsonValAttrs{
-			Mnemonic:         tr.testConfig.ValidatorConfigs[val.Id].Mnemonic,
-			NodeKey:          tr.testConfig.ValidatorConfigs[val.Id].NodeKey,
+			Mnemonic:         tr.TestConfig.ValidatorConfigs[val.Id].Mnemonic,
+			NodeKey:          tr.TestConfig.ValidatorConfigs[val.Id].NodeKey,
 			ValId:            fmt.Sprint(val.Id),
-			PrivValidatorKey: tr.testConfig.ValidatorConfigs[val.Id].PrivValidatorKey,
+			PrivValidatorKey: tr.TestConfig.ValidatorConfigs[val.Id].PrivValidatorKey,
 			Allocation:       fmt.Sprint(val.Allocation) + "stake",
 			Stake:            fmt.Sprint(val.Stake) + "stake",
-			IpSuffix:         tr.testConfig.ValidatorConfigs[val.Id].IpSuffix,
+			IpSuffix:         tr.TestConfig.ValidatorConfigs[val.Id].IpSuffix,
 
-			ConsumerMnemonic:         tr.testConfig.ValidatorConfigs[val.Id].ConsumerMnemonic,
-			ConsumerPrivValidatorKey: tr.testConfig.ValidatorConfigs[val.Id].ConsumerPrivValidatorKey,
+			ConsumerMnemonic:         tr.TestConfig.ValidatorConfigs[val.Id].ConsumerMnemonic,
+			ConsumerPrivValidatorKey: tr.TestConfig.ValidatorConfigs[val.Id].ConsumerPrivValidatorKey,
 			// if true node will be started with consumer key for each consumer chain
-			StartWithConsumerKey: tr.testConfig.ValidatorConfigs[val.Id].UseConsumerKey,
+			StartWithConsumerKey: tr.TestConfig.ValidatorConfigs[val.Id].UseConsumerKey,
 		})
 	}
 
@@ -162,15 +163,15 @@ func (tr *Chain) StartChain(
 	}
 
 	var cometmockArg string
-	if tr.testConfig.UseCometmock {
+	if tr.TestConfig.UseCometmock {
 		cometmockArg = "true"
 	} else {
 		cometmockArg = "false"
 	}
 
 	chainHome := string(action.Chain)
-	startChainScript := tr.target.GetTestScriptPath(action.IsConsumer, "start-chain.sh")
-	cmd := tr.target.ExecCommand("/bin/bash",
+	startChainScript := tr.Target.GetTestScriptPath(action.IsConsumer, "start-chain.sh")
+	cmd := tr.Target.ExecCommand("/bin/bash",
 		startChainScript, chainConfig.BinaryName, string(vals),
 		string(chainConfig.ChainId), chainConfig.IpPrefix, genesisChanges,
 		fmt.Sprint(action.IsConsumer),
@@ -178,7 +179,7 @@ func (tr *Chain) StartChain(
 		// usually timeout_commit and peer_gossip_sleep_duration are changed to vary the test run duration
 		// lower timeout_commit means the blocks are produced faster making the test run shorter
 		// with short timeout_commit (eg. timeout_commit = 1s) some nodes may miss blocks causing the test run to fail
-		tr.testConfig.TendermintConfigOverride,
+		tr.TestConfig.TendermintConfigOverride,
 		cometmockArg,
 		chainHome,
 	)
@@ -215,11 +216,11 @@ func (tr *Chain) StartChain(
 	}, verbose)
 
 	// store the fact that we started the chain
-	tr.testConfig.RunningChains[action.Chain] = true
+	tr.TestConfig.RunningChains[action.Chain] = true
 	fmt.Println("Started chain", action.Chain)
-	if tr.testConfig.TimeOffset != 0 {
+	if tr.TestConfig.TimeOffset != 0 {
 		// advance time for this chain so that it is in sync with the rest of the network
-		tr.AdvanceTimeForChain(action.Chain, tr.testConfig.TimeOffset)
+		tr.AdvanceTimeForChain(action.Chain, tr.TestConfig.TimeOffset)
 	}
 }
 
@@ -236,14 +237,14 @@ func (tr Chain) submitTextProposal(
 	verbose bool,
 ) {
 	// TEXT PROPOSAL
-	bz, err := tr.target.ExecCommand(
-		tr.testConfig.ChainConfigs[action.Chain].BinaryName,
+	bz, err := tr.Target.ExecCommand(
+		tr.TestConfig.ChainConfigs[action.Chain].BinaryName,
 		"tx", "gov", "submit-legacy-proposal",
 		`--title`, action.Title,
 		`--description`, action.Description,
 		`--deposit`, fmt.Sprint(action.Deposit)+`stake`,
 		`--from`, `validator`+fmt.Sprint(action.From),
-		`--chain-id`, string(tr.testConfig.ChainConfigs[action.Chain].ChainId),
+		`--chain-id`, string(tr.TestConfig.ChainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.From),
 		`--node`, tr.getValidatorNode(action.Chain, action.From),
 		`--keyring-backend`, `test`,
@@ -257,542 +258,33 @@ func (tr Chain) submitTextProposal(
 	tr.waitBlocks(action.Chain, 1, 10*time.Second)
 }
 
-type UpdateConsumerChainAction struct {
-	Chain              ChainID
-	From               ValidatorID
-	ConsumerChain      ChainID
-	NewOwner           string
-	InitParams         *InitializationParameters
-	PowerShapingParams *PowerShapingParameters
-}
-
-type InitializationParameters struct {
-	InitialHeight       clienttypes.Height
-	SpawnTime           uint
-	DistributionChannel string
-}
-
-type PowerShapingParameters struct {
-	TopN               uint32
-	ValidatorsPowerCap uint32
-	ValidatorSetCap    uint32
-	Allowlist          []string
-	Denylist           []string
-	MinStake           uint64
-	AllowInactiveVals  bool
-	Prioritylist       []string
-}
-
-func (tr Chain) updateConsumerChain(action UpdateConsumerChainAction, verbose bool) {
-
-	var initParams *types.ConsumerInitializationParameters
-	if action.InitParams != nil {
-		spawnTime := tr.testConfig.ContainerConfig.Now.Add(time.Duration(action.InitParams.SpawnTime) * time.Millisecond)
-		params := ccvtypes.DefaultParams()
-		initParams = &types.ConsumerInitializationParameters{
-			InitialHeight: action.InitParams.InitialHeight,
-			GenesisHash:   []byte("gen_hash"),
-			BinaryHash:    []byte("bin_hash"),
-			SpawnTime:     spawnTime,
-
-			UnbondingPeriod:                   params.UnbondingPeriod,
-			CcvTimeoutPeriod:                  params.CcvTimeoutPeriod,
-			TransferTimeoutPeriod:             params.TransferTimeoutPeriod,
-			ConsumerRedistributionFraction:    params.ConsumerRedistributionFraction,
-			BlocksPerDistributionTransmission: params.BlocksPerDistributionTransmission,
-			HistoricalEntries:                 params.HistoricalEntries,
-			DistributionTransmissionChannel:   action.InitParams.DistributionChannel,
-		}
-	}
-	powerShapingParams := types.PowerShapingParameters{
-		Top_N:              action.PowerShapingParams.TopN,
-		ValidatorsPowerCap: action.PowerShapingParams.ValidatorsPowerCap,
-		ValidatorSetCap:    action.PowerShapingParams.ValidatorSetCap,
-		Allowlist:          action.PowerShapingParams.Allowlist,
-		Denylist:           action.PowerShapingParams.Denylist,
-		MinStake:           action.PowerShapingParams.MinStake,
-		AllowInactiveVals:  action.PowerShapingParams.AllowInactiveVals,
-		Prioritylist:       action.PowerShapingParams.Prioritylist,
-	}
-
-	consumerId := tr.testConfig.ChainConfigs[action.ConsumerChain].ConsumerId
-	msg := types.MsgUpdateConsumer{
-		ConsumerId:               string(consumerId),
-		NewOwnerAddress:          action.NewOwner,
-		InitializationParameters: initParams,
-		PowerShapingParameters:   &powerShapingParams,
-	}
-
-	bz, err := tr.target.UpdateConsumer(action.Chain, action.From, msg, verbose)
-	if err != nil {
-		log.Fatalf("error on update consumer consumer-id=%s, err=%s", consumerId, err.Error())
-	}
-	tr.waitForTx(action.Chain, bz, 10*time.Second)
-}
-
-type CreateConsumerChainAction struct {
-	Chain              ChainID
-	From               ValidatorID
-	ConsumerChain      ChainID
-	InitParams         *InitializationParameters
-	PowerShapingParams *PowerShapingParameters
-}
-
-// createConsumerChain creates and initializes a consumer chain
-func (tr Chain) createConsumerChain(action CreateConsumerChainAction, verbose bool) {
-	consumerChainCfg := tr.testConfig.ChainConfigs[action.ConsumerChain]
-	providerChainCfg := tr.testConfig.ChainConfigs[action.Chain]
-
-	if consumerChainCfg.ConsumerId != "" {
-		log.Fatalf("consumer chain already created for '%s'", action.ConsumerChain)
-	}
-
-	var initParams *types.ConsumerInitializationParameters
-	if action.InitParams != nil {
-		spawnTime := tr.testConfig.ContainerConfig.Now.Add(time.Duration(action.InitParams.SpawnTime) * time.Millisecond)
-		params := ccvtypes.DefaultParams()
-		initParams = &types.ConsumerInitializationParameters{
-			InitialHeight: action.InitParams.InitialHeight,
-			GenesisHash:   []byte("gen_hash"),
-			BinaryHash:    []byte("bin_hash"),
-			SpawnTime:     spawnTime,
-
-			UnbondingPeriod:                   params.UnbondingPeriod,
-			CcvTimeoutPeriod:                  params.CcvTimeoutPeriod,
-			TransferTimeoutPeriod:             params.TransferTimeoutPeriod,
-			ConsumerRedistributionFraction:    params.ConsumerRedistributionFraction,
-			BlocksPerDistributionTransmission: params.BlocksPerDistributionTransmission,
-			HistoricalEntries:                 params.HistoricalEntries,
-			DistributionTransmissionChannel:   action.InitParams.DistributionChannel,
-		}
-	}
-	powerShapingParams := &types.PowerShapingParameters{
-		Top_N:              action.PowerShapingParams.TopN,
-		ValidatorsPowerCap: action.PowerShapingParams.ValidatorsPowerCap,
-		ValidatorSetCap:    action.PowerShapingParams.ValidatorSetCap,
-		Allowlist:          action.PowerShapingParams.Allowlist,
-		Denylist:           action.PowerShapingParams.Denylist,
-		MinStake:           action.PowerShapingParams.MinStake,
-		AllowInactiveVals:  action.PowerShapingParams.AllowInactiveVals,
-		Prioritylist:       action.PowerShapingParams.Prioritylist,
-	}
-
-	metadata := types.ConsumerMetadata{
-		Name:        "chain name of " + string(consumerChainCfg.ChainId),
-		Description: "no description",
-		Metadata:    "no metadata",
-	}
-
-	// create consumer to get a consumer-id
-	bz, err := tr.target.CreateConsumer(providerChainCfg.ChainId, consumerChainCfg.ChainId, action.From, metadata, initParams, powerShapingParams)
-	if err != nil {
-		log.Fatalf("create consumer failed error: '%s'\n%s", err.Error(), string(bz))
-	}
-
-	txResponse := tr.waitForTx(providerChainCfg.ChainId, bz, 10*time.Second)
-
-	consumerId := ""
-	for _, event := range txResponse.Events {
-		if event.Type != "create_consumer" {
-			continue
-		}
-		attr, exists := event.GetAttribute("consumer_id")
-		if !exists {
-			log.Fatalf("no event with consumer_id found in tx content of create_consumer: %v", event)
-		}
-		consumerId = attr.Value
-	}
-
-	if consumerId == "" {
-		log.Fatalf("no consumer-id found in consumer creation transaction events for chain '%s'. events: %v",
-			consumerChainCfg.ChainId, txResponse.Events)
-	}
-
-	if verbose {
-		fmt.Println("Created consumer chain", string(consumerChainCfg.ChainId), " with consumer-id", string(consumerId))
-	}
-
-	// Set the new created consumer-id on the chain's config
-	consumerChainCfg.ConsumerId = ConsumerID(consumerId)
-	tr.testConfig.ChainConfigs[action.ConsumerChain] = consumerChainCfg
-}
-
-type RemoveConsumerChainAction struct {
-	Chain         ChainID
-	From          ValidatorID
-	ConsumerChain ChainID
-}
-
-func (tr Chain) removeConsumerChain(action RemoveConsumerChainAction, verbose bool) {
-	consumerId := tr.testConfig.ChainConfigs[action.ConsumerChain].ConsumerId
-	if consumerId == "" {
-		log.Fatal("failed removing consumer chain. no consumer-id found for chain: ",
-			action.ConsumerChain)
-	}
-
-	// Send consumer chain removal
-	cmd := tr.target.ExecCommand(
-		tr.testConfig.ChainConfigs[action.Chain].BinaryName,
-		"tx", "provider", "remove-consumer", string(consumerId),
-		`--from`, `validator`+fmt.Sprint(action.From),
-		`--chain-id`, string(tr.testConfig.ChainConfigs[action.Chain].ChainId),
-		`--home`, tr.getValidatorHome(action.Chain, action.From),
-		`--gas`, `900000`,
-		`--node`, tr.getValidatorNode(action.Chain, action.From),
-		`--keyring-backend`, `test`,
-		"--output", "json",
-		`-y`,
-	)
-
-	bz, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Println("command failed:", cmd)
-		log.Fatalf("remove consumer failed error: %s, output: %s", err.Error(), string(bz))
-	}
-
-	// Check transaction
-	txResponse := &TxResponse{}
-	err = json.Unmarshal(bz, txResponse)
-	if err != nil {
-		log.Fatalf("unmarshalling tx response on remove-consumer: %s, json: %s", err.Error(), string(bz))
-	}
-
-	if txResponse.Code != 0 {
-		log.Fatalf("sending remove-consumer transaction failed with error code %d, Log:'%s'", txResponse.Code, txResponse.RawLog)
-	}
-
-	if verbose {
-		fmt.Println("running 'remove-consumer' returned: ", txResponse)
-	}
-
-	tr.waitBlocks(action.Chain, 2, 10*time.Second)
-
-}
-
-// submitConsumerAdditionProposal initializes a consumer chain and submits a governance proposal
 func (tr Chain) SubmitConsumerAdditionProposal(
 	action e2e.SubmitConsumerAdditionProposalAction,
 	verbose bool,
 ) {
+	spawnTime := tr.TestConfig.ContainerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
 	params := ccvtypes.DefaultParams()
-	testCfg := tr.testConfig //tr.GetTestConfig()
-	spawnTime := testCfg.ContainerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
-	consumerChainCfg := tr.testConfig.ChainConfigs[action.ConsumerChain]
-	providerChainCfg := tr.testConfig.ChainConfigs[action.Chain]
-
-	Metadata := types.ConsumerMetadata{
-		Name:        "chain " + string(action.Chain),
-		Description: "no description",
-		Metadata:    "no metadata",
-	}
-
-	initializationParameters := types.ConsumerInitializationParameters{
-		InitialHeight: action.InitialHeight,
-		GenesisHash:   []byte("gen_hash"),
-		BinaryHash:    []byte("bin_hash"),
-		SpawnTime:     spawnTime,
-
-		UnbondingPeriod:                   params.UnbondingPeriod,
-		CcvTimeoutPeriod:                  params.CcvTimeoutPeriod,
-		TransferTimeoutPeriod:             params.TransferTimeoutPeriod,
+	prop := client.ConsumerAdditionProposalJSON{
+		Title:                             "Propose the addition of a new chain",
+		Summary:                           "Gonna be a great chain",
+		ChainId:                           string(tr.TestConfig.ChainConfigs[action.ConsumerChain].ChainId),
+		InitialHeight:                     action.InitialHeight,
+		GenesisHash:                       []byte("gen_hash"),
+		BinaryHash:                        []byte("bin_hash"),
+		SpawnTime:                         spawnTime,
 		ConsumerRedistributionFraction:    params.ConsumerRedistributionFraction,
 		BlocksPerDistributionTransmission: params.BlocksPerDistributionTransmission,
 		HistoricalEntries:                 params.HistoricalEntries,
+		CcvTimeoutPeriod:                  params.CcvTimeoutPeriod,
+		TransferTimeoutPeriod:             params.TransferTimeoutPeriod,
+		UnbondingPeriod:                   params.UnbondingPeriod,
+		Deposit:                           fmt.Sprint(action.Deposit) + `stake`,
 		DistributionTransmissionChannel:   action.DistributionChannel,
-	}
-
-	bz, err := tr.target.CreateConsumer(providerChainCfg.ChainId, consumerChainCfg.ChainId, action.From, Metadata, &initializationParameters, nil)
-	if err != nil {
-		log.Fatalf("create consumer failed error: '%s'\n%s", err.Error(), string(bz))
-	}
-
-	txResponse := tr.waitForTx(providerChainCfg.ChainId, bz, 10*time.Second)
-
-	consumerId := ""
-	for _, event := range txResponse.Events {
-		if event.Type != "create_consumer" {
-			continue
-		}
-		attr, exists := event.GetAttribute("consumer_id")
-		if !exists {
-			log.Fatalf("no event with consumer_id found in tx content of create_consumer: %v", event)
-		}
-		consumerId = attr.Value
-	}
-
-	if consumerId == "" {
-		log.Fatalf("no consumer-id found in consumer creation transaction events for chain '%s'. events: %v",
-			consumerChainCfg.ChainId, txResponse.Events)
-	}
-
-	authority := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
-	// Set the new created consumer-id on the chain's config
-	consumerChainCfg.ConsumerId = ConsumerID(consumerId)
-	tr.testConfig.ChainConfigs[action.ConsumerChain] = consumerChainCfg
-
-	// Update consumer to change owner to governance before submitting the proposal
-	update := &types.MsgUpdateConsumer{
-		ConsumerId:      string(consumerId),
-		NewOwnerAddress: authority,
-	}
-	// For the MsgUpdateConsumer sent in the proposal
-	powerShapingParameters := types.PowerShapingParameters{
-		Top_N:              0,
-		ValidatorsPowerCap: action.ValidatorsPowerCap,
-		ValidatorSetCap:    action.ValidatorSetCap,
-		Allowlist:          action.Allowlist,
-		Denylist:           action.Denylist,
-		MinStake:           action.MinStake,
-		AllowInactiveVals:  action.AllowInactiveVals,
-		Prioritylist:       action.Prioritylist,
-	}
-	update.PowerShapingParameters = &powerShapingParameters
-
-	bz, err = tr.target.UpdateConsumer(action.Chain, action.From, *update, verbose)
-	if err != nil {
-		log.Fatalf("error updating consumer '%s': err=%s, out=%s", consumerId, err.Error(), string(bz))
-	}
-	tr.waitForTx(action.Chain, bz, 10*time.Second)
-
-	// - set PowerShaping params TopN > 0 for consumer chain
-	update.PowerShapingParameters.Top_N = action.TopN
-	update.Owner = authority
-	update.NewOwnerAddress = ""
-	update.InitializationParameters = &initializationParameters
-	update.InitializationParameters.SpawnTime = spawnTime
-	update.Metadata = &Metadata
-
-	// Generate proposal content
-	title := "Propose the addition of a new chain"
-	description := "description of the consumer modification proposal"
-	summary := "Gonna be a great chain"
-	expedited := false
-	metadata := "ipfs://CID"
-	deposit := fmt.Sprintf("%dstake", action.Deposit)
-	jsonStr := e2e.GenerateGovProposalContent(title, summary, metadata, deposit, description, expedited, update)
-	bz, err = tr.target.SubmitGovProposal(providerChainCfg.ChainId, action.From, "", jsonStr, verbose)
-	if err != nil {
-		log.Fatalf("gov submit consumer addition command failed with error: '%s', out:'%s'",
-			err.Error(), string(bz))
-	}
-	txResponse = e2e.GetTxResponse(bz)
-	if txResponse.Code != 0 {
-		log.Fatalf("gov submit consumer addition transaction failed with error code %d, Log:'%s'", txResponse.Code, txResponse.RawLog)
-	}
-
-	if verbose {
-		fmt.Println("submitConsumerAdditionProposal output:", string(bz))
-	}
-
-	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-	tr.waitForTx(providerChainCfg.ChainId, bz, 20*time.Second)
-}
-
-func (tr Chain) SubmitConsumerRemovalProposal(
-	action SubmitConsumerRemovalProposalAction,
-	verbose bool,
-) {
-	consumerId := string(tr.testConfig.ChainConfigs[action.ConsumerChain].ConsumerId)
-	title := fmt.Sprintf("Stop the %v chain", action.ConsumerChain)
-	description := "stop consumer chain"
-	summary := "It was a great chain"
-	expedited := false
-	metadata := "ipfs://CID"
-	deposit := fmt.Sprintf("%dstake", action.Deposit)
-	authority := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
-
-	msg := types.MsgRemoveConsumer{
-		ConsumerId: consumerId,
-		Owner:      authority,
-	}
-
-	jsonStr := e2e.GenerateGovProposalContent(title, summary, metadata, deposit, description, expedited, &msg)
-
-	// #nosec G204 -- bypass unsafe quoting warning (no production code)
-	proposalFile := "/remove-consumer-proposal.json"
-	bz, err := tr.target.ExecCommand(
-		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, proposalFile),
-	).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	// CONSUMER REMOVAL PROPOSAL
-	cmd := tr.target.ExecCommand(
-		tr.testConfig.ChainConfigs[action.Chain].BinaryName,
-		"tx", "gov", "submit-proposal", proposalFile,
-		`--from`, `validator`+fmt.Sprint(action.From),
-		`--chain-id`, string(tr.testConfig.ChainConfigs[action.Chain].ChainId),
-		`--home`, tr.getValidatorHome(action.Chain, action.From),
-		`--gas`, `900000`,
-		`--node`, tr.getValidatorNode(action.Chain, action.From),
-		`--keyring-backend`, `test`,
-		`-o`, `json`,
-		`-y`,
-	)
-
-	if verbose {
-		fmt.Println("SubmitConsumerRemovalProposal cmd:", cmd.String())
-		fmt.Println("SubmitConsumerRemovalProposal json:", jsonStr)
-	}
-	bz, err = cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal("submit consumer removal proposal failed:", err, "\n", string(bz))
-	}
-
-	if verbose {
-		fmt.Println("SubmitConsumerRemovalProposal output:", string(bz))
-	}
-
-	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-	tr.waitForTx(ChainID("provi"), bz, 30*time.Second)
-}
-
-func (tr Chain) submitConsumerRemovalLegacyProposal(
-	action SubmitConsumerRemovalProposalAction,
-	verbose bool,
-) {
-	prop := client.ConsumerRemovalProposalJSON{
-		Title:   fmt.Sprintf("Stop the %v chain", action.ConsumerChain),
-		Summary: "It was a great chain",
-		ChainId: string(tr.testConfig.ChainConfigs[action.ConsumerChain].ChainId),
-		Deposit: fmt.Sprint(action.Deposit) + `stake`,
-	}
-
-	bz, err := json.Marshal(prop)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	jsonStr := string(bz)
-	if strings.Contains(jsonStr, "'") {
-		log.Fatal("prop json contains single quote")
-	}
-
-	bz, err = tr.target.ExecCommand(
-		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json")).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	bz, err = tr.target.ExecCommand(
-		tr.testConfig.ChainConfigs[action.Chain].BinaryName,
-		"tx", "gov", "submit-legacy-proposal", "consumer-removal",
-		"/temp-proposal.json",
-		`--from`, `validator`+fmt.Sprint(action.From),
-		`--chain-id`, string(tr.testConfig.ChainConfigs[action.Chain].ChainId),
-		`--home`, tr.getValidatorHome(action.Chain, action.From),
-		`--node`, tr.getValidatorNode(action.Chain, action.From),
-		`--gas`, "900000",
-		`--keyring-backend`, `test`,
-		`-y`,
-	).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-	tr.waitBlocks(ChainID("provi"), 2, 20*time.Second)
-}
-
-type SubmitConsumerModificationProposalAction struct {
-	Chain              ChainID
-	From               ValidatorID
-	Deposit            uint
-	ConsumerChain      ChainID
-	TopN               uint32
-	ValidatorsPowerCap uint32
-	ValidatorSetCap    uint32
-	Allowlist          []string
-	Denylist           []string
-	AllowInactiveVals  bool
-	MinStake           uint64
-	NewOwner           string
-	Prioritylist       []string
-}
-
-func (tr Chain) submitConsumerModificationProposal(
-	action SubmitConsumerModificationProposalAction,
-	verbose bool,
-) {
-	consumerId := string(tr.testConfig.ChainConfigs[action.ConsumerChain].ConsumerId)
-	title := "Propose the modification of the PSS parameters of a chain"
-	description := "description of the consumer modification proposal"
-	summary := "summary of a modification proposal"
-	expedited := false
-	metadata := "ipfs://CID"
-	deposit := fmt.Sprintf("%dstake", action.Deposit)
-	authority := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
-
-	msg := types.MsgUpdateConsumer{
-		Owner:           authority,
-		ConsumerId:      consumerId,
-		NewOwnerAddress: action.NewOwner,
-		PowerShapingParameters: &types.PowerShapingParameters{
-			Top_N:              action.TopN,
-			ValidatorsPowerCap: action.ValidatorsPowerCap,
-			ValidatorSetCap:    action.ValidatorSetCap,
-			Allowlist:          action.Allowlist,
-			Denylist:           action.Denylist,
-			Prioritylist:       action.Prioritylist,
-		},
-	}
-
-	jsonStr := e2e.GenerateGovProposalContent(title, summary, metadata, deposit, description, expedited, &msg)
-	// #nosec G204 -- bypass unsafe quoting warning (no production code)
-	proposalFile := "/update-consumer-proposal.json"
-	bz, err := tr.target.ExecCommand(
-		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, proposalFile),
-	).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	// CONSUMER MODIFICATION PROPOSAL
-	cmd := tr.target.ExecCommand(
-		tr.testConfig.ChainConfigs[action.Chain].BinaryName,
-		"tx", "gov", "submit-proposal", proposalFile,
-		`--from`, `validator`+fmt.Sprint(action.From),
-		`--chain-id`, string(tr.testConfig.ChainConfigs[action.Chain].ChainId),
-		`--home`, tr.getValidatorHome(action.Chain, action.From),
-		`--gas`, `900000`,
-		`--node`, tr.getValidatorNode(action.Chain, action.From),
-		`--keyring-backend`, `test`,
-		`-y`,
-	)
-
-	if verbose {
-		fmt.Println("submitConsumerModificationProposal cmd:", cmd.String())
-		fmt.Println("submitConsumerModificationProposal json:", jsonStr)
-	}
-	bz, err = cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal("submit consumer modification proposal failed:", err, "\n", string(bz))
-	}
-
-	if verbose {
-		fmt.Println("submitConsumerModificationProposal output:", string(bz))
-	}
-
-	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-	tr.waitBlocks(ChainID("provi"), 2, 10*time.Second)
-}
-
-func (tr Chain) submitConsumerModificationLegacyProposal(
-	action SubmitConsumerModificationProposalAction,
-	verbose bool,
-) {
-	prop := client.ConsumerModificationProposalJSON{
-		Title:              "Propose the modification of the PSS parameters of a chain",
-		Summary:            "summary of a modification proposal",
-		ChainId:            string(tr.testConfig.ChainConfigs[action.ConsumerChain].ChainId),
-		Deposit:            fmt.Sprint(action.Deposit) + `stake`,
-		TopN:               action.TopN,
-		ValidatorsPowerCap: action.ValidatorsPowerCap,
-		ValidatorSetCap:    action.ValidatorSetCap,
-		Allowlist:          action.Allowlist,
-		Denylist:           action.Denylist,
-		Prioritylist:       action.Prioritylist,
+		TopN:                              action.TopN,
+		ValidatorsPowerCap:                action.ValidatorsPowerCap,
+		ValidatorSetCap:                   action.ValidatorSetCap,
+		Allowlist:                         action.Allowlist,
+		Denylist:                          action.Denylist,
 	}
 
 	bz, err := json.Marshal(prop)
@@ -806,7 +298,139 @@ func (tr Chain) submitConsumerModificationLegacyProposal(
 	}
 
 	//#nosec G204 -- bypass unsafe quoting warning (no production code)
-	bz, err = tr.target.ExecCommand(
+	cmd := tr.Target.ExecCommand(
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json"))
+	bz, err = cmd.CombinedOutput()
+	if verbose {
+		log.Println("submitConsumerAdditionProposal cmd: ", cmd.String())
+	}
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// CONSUMER ADDITION PROPOSAL
+	cmd = tr.Target.ExecCommand(
+		tr.TestConfig.ChainConfigs[action.Chain].BinaryName,
+		"tx", "gov", "submit-legacy-proposal", "consumer-addition", "/temp-proposal.json",
+		`--from`, `validator`+fmt.Sprint(action.From),
+		`--chain-id`, string(tr.TestConfig.ChainConfigs[action.Chain].ChainId),
+		`--home`, tr.getValidatorHome(action.Chain, action.From),
+		`--gas`, `900000`,
+		`--node`, tr.getValidatorNode(action.Chain, action.From),
+		`--keyring-backend`, `test`,
+		`-y`,
+	)
+
+	if verbose {
+		fmt.Println("submitConsumerAdditionProposal cmd:", cmd.String())
+		fmt.Println("submitConsumerAdditionProposal json:", jsonStr)
+	}
+	bz, err = cmd.CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	if verbose {
+		fmt.Println("submitConsumerAdditionProposal output:", string(bz))
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(ChainID("provi"), 2, 10*time.Second)
+}
+
+func (tr Chain) SubmitConsumerRemovalProposal(
+	action SubmitConsumerRemovalProposalAction,
+	verbose bool,
+) {
+	stopTime := tr.TestConfig.ContainerConfig.Now.Add(action.StopTimeOffset)
+	prop := client.ConsumerRemovalProposalJSON{
+		Title:    fmt.Sprintf("Stop the %v chain", action.ConsumerChain),
+		Summary:  "It was a great chain",
+		ChainId:  string(tr.TestConfig.ChainConfigs[action.ConsumerChain].ChainId),
+		StopTime: stopTime,
+		Deposit:  fmt.Sprint(action.Deposit) + `stake`,
+	}
+
+	bz, err := json.Marshal(prop)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	jsonStr := string(bz)
+	if strings.Contains(jsonStr, "'") {
+		log.Fatal("prop json contains single quote")
+	}
+
+	bz, err = tr.Target.ExecCommand(
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json")).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	bz, err = tr.Target.ExecCommand(
+		tr.TestConfig.ChainConfigs[action.Chain].BinaryName,
+		"tx", "gov", "submit-legacy-proposal", "consumer-removal",
+		"/temp-proposal.json",
+		`--from`, `validator`+fmt.Sprint(action.From),
+		`--chain-id`, string(tr.TestConfig.ChainConfigs[action.Chain].ChainId),
+		`--home`, tr.getValidatorHome(action.Chain, action.From),
+		`--node`, tr.getValidatorNode(action.Chain, action.From),
+		`--gas`, "900000",
+		`--keyring-backend`, `test`,
+		`-o`, `json`,
+		`-y`,
+	).CombinedOutput()
+	if err != nil {
+		log.Fatalf("error submitting consumer-removal proposal %s\n%s\n",
+			err, string(bz))
+	}
+
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitForTx(ChainID("provi"), bz, 20*time.Second)
+}
+
+type SubmitConsumerModificationProposalAction struct {
+	Chain              ChainID
+	From               ValidatorID
+	Deposit            uint
+	ConsumerChain      ChainID
+	TopN               uint32
+	ValidatorsPowerCap uint32
+	ValidatorSetCap    uint32
+	Allowlist          []string
+	Denylist           []string
+}
+
+func (tr Chain) submitConsumerModificationProposal(
+	action SubmitConsumerModificationProposalAction,
+	verbose bool,
+) {
+	prop := client.ConsumerModificationProposalJSON{
+		Title:              "Propose the modification of the PSS parameters of a chain",
+		Summary:            "summary of a modification proposal",
+		ChainId:            string(tr.TestConfig.ChainConfigs[action.ConsumerChain].ChainId),
+		Deposit:            fmt.Sprint(action.Deposit) + `stake`,
+		TopN:               action.TopN,
+		ValidatorsPowerCap: action.ValidatorsPowerCap,
+		ValidatorSetCap:    action.ValidatorSetCap,
+		Allowlist:          action.Allowlist,
+		Denylist:           action.Denylist,
+	}
+
+	bz, err := json.Marshal(prop)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	jsonStr := string(bz)
+	if strings.Contains(jsonStr, "'") {
+		log.Fatal("prop json contains single quote")
+	}
+
+	//#nosec G204 -- bypass unsafe quoting warning (no production code)
+	bz, err = tr.Target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json"),
 	).CombinedOutput()
 	if err != nil {
@@ -814,11 +438,11 @@ func (tr Chain) submitConsumerModificationLegacyProposal(
 	}
 
 	// CONSUMER MODIFICATION PROPOSAL
-	cmd := tr.target.ExecCommand(
-		tr.testConfig.ChainConfigs[action.Chain].BinaryName,
+	cmd := tr.Target.ExecCommand(
+		tr.TestConfig.ChainConfigs[action.Chain].BinaryName,
 		"tx", "gov", "submit-legacy-proposal", "consumer-modification", "/temp-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.From),
-		`--chain-id`, string(tr.testConfig.ChainConfigs[action.Chain].ChainId),
+		`--chain-id`, string(tr.TestConfig.ChainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.From),
 		`--gas`, `900000`,
 		`--node`, tr.getValidatorNode(action.Chain, action.From),
@@ -856,35 +480,40 @@ func (tr Chain) submitEnableTransfersProposalAction(
 ) {
 	// gov signed address got by checking the gov module acc address in the test container
 	// interchain-security-cdd q auth module-account gov --node tcp://7.7.9.253:26658
-
-	msgUpdateParams := ibctransfertypes.MsgUpdateParams{
-		Signer: "consumer10d07y265gmmuvt4z0w9aw880jnsr700jlh7295",
-		Params: ibctransfertypes.Params{
-			SendEnabled:    true,
-			ReceiveEnabled: true,
-		},
-	}
-	// Generate proposal content
-	description := "update IBC params"
-	summary := "Enable transfer send/receive"
-	expedited := false
-	metadata := "ipfs://CID"
-	deposit := fmt.Sprintf("%dstake", action.Deposit)
-	jsonStr := e2e.GenerateGovProposalContent(action.Title, summary, metadata, deposit, description, expedited, &msgUpdateParams)
+	template := `
+	{
+		"messages": [
+		 {
+		  "@type": "/ibc.applications.transfer.v1.MsgUpdateParams",
+		  "signer": "consumer10d07y265gmmuvt4z0w9aw880jnsr700jlh7295",
+		  "params": {
+		   "send_enabled": true,
+		   "receive_enabled": true
+		  }
+		 }
+		],
+		"metadata": "ipfs://CID",
+		"deposit": "%dstake",
+		"title": "%s",
+		"summary": "Enable transfer send",
+		"expedited": false
+	   }
+	`
+	jsonStr := fmt.Sprintf(template, action.Deposit, action.Title)
 
 	//#nosec G204 -- bypass unsafe quoting warning (no production code)
-	bz, err := tr.target.ExecCommand(
+	bz, err := tr.Target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/params-proposal.json"),
 	).CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	cmd := tr.target.ExecCommand(
-		tr.testConfig.ChainConfigs[action.Chain].BinaryName,
+	cmd := tr.Target.ExecCommand(
+		tr.TestConfig.ChainConfigs[action.Chain].BinaryName,
 		"tx", "gov", "submit-proposal", "/params-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.From),
-		`--chain-id`, string(tr.testConfig.ChainConfigs[action.Chain].ChainId),
+		`--chain-id`, string(tr.TestConfig.ChainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.From),
 		`--node`, tr.getValidatorNode(action.Chain, action.From),
 		`--gas`, "900000",
@@ -918,14 +547,14 @@ func (tr *Chain) voteGovProposal(
 		vote := action.Vote[i]
 		go func(val ValidatorID, vote string) {
 			defer wg.Done()
-			bz, err := tr.target.ExecCommand(
-				tr.testConfig.ChainConfigs[action.Chain].BinaryName,
+			bz, err := tr.Target.ExecCommand(
+				tr.TestConfig.ChainConfigs[action.Chain].BinaryName,
 
 				"tx", "gov", "vote",
 				fmt.Sprint(action.PropNumber), vote,
 
 				`--from`, `validator`+fmt.Sprint(val),
-				`--chain-id`, string(tr.testConfig.ChainConfigs[action.Chain].ChainId),
+				`--chain-id`, string(tr.TestConfig.ChainConfigs[action.Chain].ChainId),
 				`--home`, tr.getValidatorHome(action.Chain, val),
 				`--node`, tr.getValidatorNode(action.Chain, val),
 				`--keyring-backend`, `test`,
@@ -941,7 +570,7 @@ func (tr *Chain) voteGovProposal(
 	wg.Wait()
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 	tr.waitBlocks(action.Chain, 1, 10*time.Second)
-	tr.WaitTime(time.Duration(tr.testConfig.ChainConfigs[action.Chain].VotingWaitTime) * time.Second)
+	tr.WaitTime(time.Duration(tr.TestConfig.ChainConfigs[action.Chain].VotingWaitTime) * time.Second)
 }
 
 func (tr *Chain) StartConsumerChain(
@@ -950,7 +579,7 @@ func (tr *Chain) StartConsumerChain(
 ) {
 	fmt.Println("Starting consumer chain ", action.ConsumerChain)
 	consumerGenesis := ".app_state.ccvconsumer = " + tr.getConsumerGenesis(action.ProviderChain, action.ConsumerChain)
-	consumerGenesisChanges := tr.testConfig.ChainConfigs[action.ConsumerChain].GenesisChanges
+	consumerGenesisChanges := tr.TestConfig.ChainConfigs[action.ConsumerChain].GenesisChanges
 	if consumerGenesisChanges != "" {
 		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges
 	}
@@ -958,7 +587,7 @@ func (tr *Chain) StartConsumerChain(
 		consumerGenesis = consumerGenesis + " | " + action.GenesisChanges
 	}
 
-	tr.StartChain(e2e.StartChainAction{
+	tr.StartChain(StartChainAction{
 		Chain:          action.ConsumerChain,
 		Validators:     action.Validators,
 		GenesisChanges: consumerGenesis,
@@ -969,38 +598,25 @@ func (tr *Chain) StartConsumerChain(
 // Get consumer genesis from provider
 func (tr *Chain) getConsumerGenesis(providerChain, consumerChain ChainID) string {
 	fmt.Println("Exporting consumer genesis from provider")
-	providerBinaryName := tr.testConfig.ChainConfigs[providerChain].BinaryName
-	consumerId := string(tr.testConfig.ChainConfigs[consumerChain].ConsumerId)
+	providerBinaryName := tr.TestConfig.ChainConfigs[providerChain].BinaryName
 
-	now := time.Now()
-	timeout := now.Add(30 * time.Second)
-	var bz []byte
-	var err error
-	for {
-		cmd := tr.target.ExecCommand(
-			providerBinaryName,
+	cmd := tr.Target.ExecCommand(
+		providerBinaryName,
 
-			"query", "provider", "consumer-genesis", consumerId,
+		"query", "provider", "consumer-genesis",
+		string(tr.TestConfig.ChainConfigs[consumerChain].ChainId),
 
-			`--node`, tr.target.GetQueryNode(providerChain),
-			`-o`, `json`,
-		)
-		bz, err = cmd.CombinedOutput()
-		if err == nil {
-			break
-		}
+		`--node`, tr.Target.GetQueryNode(providerChain),
+		`-o`, `json`,
+	)
 
-		if time.Now().After(timeout) {
-			log.Print("Failed running command: ", cmd)
-			log.Fatal(err, "\n", string(bz))
-		}
-		time.Sleep(2 * time.Second)
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
 	}
 
-	targetVersion := "v5.x" // default to v5.x in case transformation is required
-	needsTransform, targetVersion := needsGenesisTransform(*tr.testConfig)
-	if tr.testConfig.TransformGenesis || needsTransform {
-		return string(tr.transformConsumerGenesis(targetVersion, bz))
+	if tr.TestConfig.TransformGenesis || needsGenesisTransform(*tr.TestConfig) {
+		return string(tr.transformConsumerGenesis(consumerChain, bz))
 	} else {
 		fmt.Println("No genesis transformation performed")
 	}
@@ -1008,52 +624,112 @@ func (tr *Chain) getConsumerGenesis(providerChain, consumerChain ChainID) string
 }
 
 // needsGenesisTransform tries to identify if a genesis transformation should be performed
-func needsGenesisTransform(cfg TestConfig) (bool, string) {
+func needsGenesisTransform(cfg TestConfig) bool {
 	// no genesis transformation needed for same versions
 	if cfg.ConsumerVersion == cfg.ProviderVersion {
-		return false, ""
+		return false
 	}
 
-	// use v6.3.0 as reference for latest versions
+	// use v4.0.0 (after genesis transform breakages) for the checks if 'latest' is used
 	consumerVersion := cfg.ConsumerVersion
 	if cfg.ConsumerVersion == VLatest {
-		consumerVersion = V630
+		consumerVersion = V400
 	}
 	providerVersion := cfg.ProviderVersion
 	if cfg.ProviderVersion == VLatest {
-		providerVersion = V630
+		providerVersion = V400
 	}
 
-	if !semver.IsValid(consumerVersion) {
-		fmt.Printf("unable to identify the need for genesis transformation: invalid sem-version: consumer='%s'\n",
-			consumerVersion)
-		return false, ""
-	}
-	if !semver.IsValid(providerVersion) {
-		fmt.Printf("unable to identify the need for genesis transformation: invalid sem-version:  provider='%s'\n",
-			providerVersion)
-		return false, ""
+	if !semver.IsValid(consumerVersion) || !semver.IsValid(providerVersion) {
+		fmt.Printf("unable to identify the need for genesis transformation: invalid sem-version: consumer='%s', provider='%s'",
+			consumerVersion, providerVersion)
+		return false
 	}
 
-	if semver.Compare(providerVersion, "v6.2") < 0 {
-		return false, ""
+	breakages := []string{V300, V330, V400}
+	for _, breakage := range breakages {
+		if (semver.Compare(consumerVersion, breakage) < 0 && semver.Compare(providerVersion, breakage) >= 0) ||
+			(semver.Compare(providerVersion, breakage) < 0 && semver.Compare(consumerVersion, breakage) >= 0) {
+			fmt.Println("genesis transformation needed for versions:", providerVersion, consumerVersion)
+			return true
+		}
 	}
-	// genesis transformation needed for provider >= v6.2.0 and consumer < v4.5.0 or >= v5.0.0 and < v6.2.0
-	if semver.Compare(consumerVersion, "v4.5.0") < 0 {
-		return true, "v4.x"
-	}
-
-	if semver.Compare(consumerVersion, "v5.0.0") >= 0 && semver.Compare(consumerVersion, "v6.2.0") < 0 {
-		fmt.Println("genesis transformation needed for versions:", providerVersion, consumerVersion)
-		return true, "v5.x"
-	}
-
 	fmt.Println("NO genesis transformation needed for versions:", providerVersion, consumerVersion)
-	return false, ""
+	return false
+}
+
+// getTransformParameter identifies the needed transformation parameter for current `transformGenesis` implementation
+// based on consumer and provider versions.
+func getTransformParameter(consumerVersion string) (string, error) {
+	switch consumerVersion {
+	case "":
+		// For "" (default: local workspace) use HEAD as reference point
+		consumerVersion = "HEAD"
+	case VLatest:
+		// For 'latest' originated from latest-image use "origin/main" as ref point
+		consumerVersion = "origin/main"
+	}
+
+	// Hash of breakage due to preHashKey release in version 2.x
+	// ics23/go v.0.10.0 adding 'prehash_key_before_comparison' in ProofSpec
+	breakage_prehash := "d4dde74b062c2fded0d3b3dbef4b3b0229e317f3" // first released in v3.2.0-consumer
+
+	// breakage 2: split of genesis
+	breakage_splitgenesisMain := "946f6ec626d3de3fe2e00cbb386ccf9c2f05d94d"
+	breakage_splitgenesisV33x := "1d2641a3b2ba706ae0a307d9019b48c62d86133b"
+
+	// breakage 3: split of genesis + delay_period
+	breakage_retry_delay := "88499b7c650ea0fb2c448af2b182ad5fee94d795"
+
+	// mapping of the accepted parameter values of the `genesis transform` command
+	// to the related git refs introducing a breakage
+	transformParams := map[string][]string{
+		"v2.x":   {breakage_prehash},
+		"v3.3.x": {breakage_splitgenesisMain, breakage_splitgenesisV33x},
+		"v4.x":   {breakage_retry_delay},
+	}
+
+	// set default consumer target version to "v4.x"
+	// and iterate in order of breakage history [oldest first] to identify
+	// the "--to" target for consumer version used
+	targetVersion := "v4.x"
+	keys := make([]string, 0, len(transformParams))
+	for k := range transformParams {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(k, l int) bool { return keys[k] < keys[l] })
+
+	for _, version := range keys {
+		for _, breakageHash := range transformParams[version] {
+			// Check if the 'breakage' is an ancestor of the 'consumerVersion'
+			//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments
+			cmd := exec.Command("git", "merge-base", "--is-ancestor", breakageHash, consumerVersion)
+			fmt.Println("running ", cmd)
+			out, err := cmd.CombinedOutput()
+			if err == nil {
+				// breakage is already part of the consumer version -> goto next breakage
+				fmt.Println(" consumer >= breakage ", transformParams[version], " ... going to next one")
+				targetVersion = version
+				break
+			}
+
+			if rc, ok := err.(*exec.ExitError); ok {
+				if rc.ExitCode() != 1 {
+					return "", fmt.Errorf("error identifying transform parameter '%v': %s", err, string(out))
+				}
+				// not an ancestor -- ignore this breakage
+				fmt.Println("breakage :", transformParams[version], " is not an ancestor of version ", version)
+				continue
+			}
+			return "", fmt.Errorf("unexpected error when running '%v': %v", cmd, err) // unable to get return code
+		}
+	}
+	// consumer > latest known breakage (use default target version 'v4.x')
+	return fmt.Sprintf("--to=%s", targetVersion), nil
 }
 
 // Transform consumer genesis content from older version
-func (tr *Chain) transformConsumerGenesis(targetVersion string, genesis []byte) []byte {
+func (tr *Chain) transformConsumerGenesis(consumerChain ChainID, genesis []byte) []byte {
 	fmt.Println("Transforming consumer genesis")
 
 	fileName := "consumer_genesis.json"
@@ -1067,7 +743,7 @@ func (tr *Chain) transformConsumerGenesis(targetVersion string, genesis []byte) 
 		log.Panicf("Failed writing consumer genesis to file: %v", err)
 	}
 
-	containerInstance := tr.testConfig.ContainerConfig.ContainerName
+	containerInstance := tr.TestConfig.ContainerConfig.ContainerName
 	targetFile := fmt.Sprintf("/tmp/%s", fileName)
 	sourceFile := file.Name()
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -1079,16 +755,19 @@ func (tr *Chain) transformConsumerGenesis(targetVersion string, genesis []byte) 
 	}
 
 	// check if genesis transform supports --to target
-	targetVersion = fmt.Sprintf("--to=%s", targetVersion)
-	bz, err := tr.target.ExecCommand(
+	bz, err := tr.Target.ExecCommand(
 		"interchain-security-transformer",
 		"genesis", "transform", "--to").CombinedOutput()
 	if err != nil && !strings.Contains(string(bz), "unknown flag: --to") {
-		cmd = tr.target.ExecCommand(
+		targetVersion, err := getTransformParameter(tr.TestConfig.ConsumerVersion)
+		if err != nil {
+			log.Panic("Failed getting genesis transformation parameter: ", err)
+		}
+		cmd = tr.Target.ExecCommand(
 			"interchain-security-transformer",
 			"genesis", "transform", targetVersion, targetFile)
 	} else {
-		cmd = tr.target.ExecCommand(
+		cmd = tr.Target.ExecCommand(
 			"interchain-security-transformer",
 			"genesis", "transform", targetFile)
 	}
@@ -1101,12 +780,32 @@ func (tr *Chain) transformConsumerGenesis(targetVersion string, genesis []byte) 
 }
 
 func (tr Chain) changeoverChain(
-	action e2e.ChangeoverChainAction,
+	action ChangeoverChainAction,
 	verbose bool,
 ) {
-	consumerGenesis := ".app_state.ccvconsumer = " + tr.getConsumerGenesis(action.ProviderChain, action.SovereignChain)
+	// sleep until the consumer chain genesis is ready on consumer
+	time.Sleep(5 * time.Second)
+	cmd := tr.Target.ExecCommand(
+		tr.TestConfig.ChainConfigs[action.ProviderChain].BinaryName,
 
-	consumerGenesisChanges := tr.testConfig.ChainConfigs[action.SovereignChain].GenesisChanges
+		"query", "provider", "consumer-genesis",
+		string(tr.TestConfig.ChainConfigs[action.SovereignChain].ChainId),
+
+		`--node`, tr.Target.GetQueryNode(action.ProviderChain),
+		`-o`, `json`,
+	)
+
+	if verbose {
+		log.Println("changeoverChain cmd: ", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	consumerGenesis := ".app_state.ccvconsumer = " + string(bz)
+	consumerGenesisChanges := tr.TestConfig.ChainConfigs[action.SovereignChain].GenesisChanges
 	if consumerGenesisChanges != "" {
 		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges
 	}
@@ -1114,17 +813,17 @@ func (tr Chain) changeoverChain(
 		consumerGenesis = consumerGenesis + " | " + action.GenesisChanges
 	}
 
-	tr.startChangeover(e2e.ChangeoverChainAction{
+	tr.startChangeover(ChangeoverChainAction{
 		Validators:     action.Validators,
 		GenesisChanges: consumerGenesis,
 	}, verbose)
 }
 
 func (tr Chain) startChangeover(
-	action e2e.ChangeoverChainAction,
+	action ChangeoverChainAction,
 	verbose bool,
 ) {
-	chainConfig := tr.testConfig.ChainConfigs[ChainID("sover")]
+	chainConfig := tr.TestConfig.ChainConfigs[ChainID("sover")]
 	type jsonValAttrs struct {
 		Mnemonic         string `json:"mnemonic"`
 		Allocation       string `json:"allocation"`
@@ -1142,18 +841,18 @@ func (tr Chain) startChangeover(
 	var validators []jsonValAttrs
 	for _, val := range action.Validators {
 		validators = append(validators, jsonValAttrs{
-			Mnemonic:         tr.testConfig.ValidatorConfigs[val.Id].Mnemonic,
-			NodeKey:          tr.testConfig.ValidatorConfigs[val.Id].NodeKey,
+			Mnemonic:         tr.TestConfig.ValidatorConfigs[val.Id].Mnemonic,
+			NodeKey:          tr.TestConfig.ValidatorConfigs[val.Id].NodeKey,
 			ValId:            fmt.Sprint(val.Id),
-			PrivValidatorKey: tr.testConfig.ValidatorConfigs[val.Id].PrivValidatorKey,
+			PrivValidatorKey: tr.TestConfig.ValidatorConfigs[val.Id].PrivValidatorKey,
 			Allocation:       fmt.Sprint(val.Allocation) + "stake",
 			Stake:            fmt.Sprint(val.Stake) + "stake",
-			IpSuffix:         tr.testConfig.ValidatorConfigs[val.Id].IpSuffix,
+			IpSuffix:         tr.TestConfig.ValidatorConfigs[val.Id].IpSuffix,
 
-			ConsumerMnemonic:         tr.testConfig.ValidatorConfigs[val.Id].ConsumerMnemonic,
-			ConsumerPrivValidatorKey: tr.testConfig.ValidatorConfigs[val.Id].ConsumerPrivValidatorKey,
+			ConsumerMnemonic:         tr.TestConfig.ValidatorConfigs[val.Id].ConsumerMnemonic,
+			ConsumerPrivValidatorKey: tr.TestConfig.ValidatorConfigs[val.Id].ConsumerPrivValidatorKey,
 			// if true node will be started with consumer key for each consumer chain
-			StartWithConsumerKey: tr.testConfig.ValidatorConfigs[val.Id].UseConsumerKey,
+			StartWithConsumerKey: tr.TestConfig.ValidatorConfigs[val.Id].UseConsumerKey,
 		})
 	}
 
@@ -1171,12 +870,12 @@ func (tr Chain) startChangeover(
 	}
 
 	isConsumer := true
-	changeoverScript := tr.target.GetTestScriptPath(isConsumer, "start-changeover.sh")
-	cmd := tr.target.ExecCommand(
+	changeoverScript := tr.Target.GetTestScriptPath(isConsumer, "start-changeover.sh")
+	cmd := tr.Target.ExecCommand(
 		"/bin/bash",
 		changeoverScript, chainConfig.UpgradeBinary, string(vals),
 		"sover", chainConfig.IpPrefix, genesisChanges,
-		tr.testConfig.TendermintConfigOverride,
+		tr.TestConfig.TendermintConfigOverride,
 	)
 
 	cmdReader, err := cmd.StdoutPipe()
@@ -1237,7 +936,7 @@ func (tr Chain) addChainToRelayer(
 	action AddChainToRelayerAction,
 	verbose bool,
 ) {
-	if !tr.testConfig.UseGorelayer {
+	if !tr.TestConfig.UseGorelayer {
 		tr.addChainToHermes(action, verbose)
 	} else {
 		tr.addChainToGorelayer(action, verbose)
@@ -1248,17 +947,17 @@ func (tr Chain) addChainToGorelayer(
 	action AddChainToRelayerAction,
 	verbose bool,
 ) {
-	queryNodeIP := tr.target.GetQueryNodeIP(action.Chain)
-	ChainId := tr.testConfig.ChainConfigs[action.Chain].ChainId
+	queryNodeIP := tr.Target.GetQueryNodeIP(action.Chain)
+	ChainId := tr.TestConfig.ChainConfigs[action.Chain].ChainId
 	rpcAddr := "http://" + queryNodeIP + ":26658"
 
 	chainConfig := fmt.Sprintf(gorelayerChainConfigTemplate,
 		ChainId,
 		rpcAddr,
-		tr.testConfig.ChainConfigs[action.Chain].AccountPrefix,
+		tr.TestConfig.ChainConfigs[action.Chain].AccountPrefix,
 	)
 
-	bz, err := tr.target.ExecCommand(
+	bz, err := tr.Target.ExecCommand(
 		"rly", "config", "init").CombinedOutput()
 	if err != nil && !strings.Contains(string(bz), "config already exists") {
 		log.Fatal(err, "\n", string(bz))
@@ -1267,16 +966,16 @@ func (tr Chain) addChainToGorelayer(
 	chainConfigFileName := fmt.Sprintf("/root/%s_config.json", ChainId)
 
 	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, chainConfig, chainConfigFileName)
-	bz, err = tr.target.ExecCommand("bash", "-c",
+	bz, err = tr.Target.ExecCommand("bash", "-c",
 		bashCommand).CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	addChainCommand := tr.target.ExecCommand("rly", "chains", "add", "--file", chainConfigFileName, string(ChainId))
+	addChainCommand := tr.Target.ExecCommand("rly", "chains", "add", "--file", chainConfigFileName, string(ChainId))
 	e2e.ExecuteCommand(addChainCommand, "add chain", verbose)
 
-	keyRestoreCommand := tr.target.ExecCommand("rly", "keys", "restore", string(ChainId), "default", tr.testConfig.ValidatorConfigs[action.Validator].Mnemonic)
+	keyRestoreCommand := tr.Target.ExecCommand("rly", "keys", "restore", string(ChainId), "default", tr.TestConfig.ValidatorConfigs[action.Validator].Mnemonic)
 	e2e.ExecuteCommand(keyRestoreCommand, "restore keys", verbose)
 }
 
@@ -1284,7 +983,8 @@ func (tr Chain) addChainToHermes(
 	action AddChainToRelayerAction,
 	verbose bool,
 ) {
-	bz, err := tr.target.ExecCommand("bash", "-c", "hermes", "version").CombinedOutput()
+
+	bz, err := tr.Target.ExecCommand("bash", "-c", "hermes", "version").CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n error getting hermes version", string(bz))
 	}
@@ -1295,34 +995,34 @@ func (tr Chain) addChainToHermes(
 	}
 
 	hermesVersion := match[1]
-	queryNodeIP := tr.target.GetQueryNodeIP(action.Chain)
-	hermesConfig := e2e.GetHermesConfig(hermesVersion, queryNodeIP, tr.testConfig.ChainConfigs[action.Chain], action.IsConsumer)
+	queryNodeIP := tr.Target.GetQueryNodeIP(action.Chain)
+	hermesConfig := e2e.GetHermesConfig(hermesVersion, queryNodeIP, tr.TestConfig.ChainConfigs[action.Chain], action.IsConsumer)
 
 	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, hermesConfig, "/root/.hermes/config.toml")
 
-	bz, err = tr.target.ExecCommand("bash", "-c", bashCommand).CombinedOutput()
+	bz, err = tr.Target.ExecCommand("bash", "-c", bashCommand).CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
 	// Save mnemonic to file within container
 	var mnemonic string
-	if tr.testConfig.ValidatorConfigs[action.Validator].UseConsumerKey && action.IsConsumer {
-		mnemonic = tr.testConfig.ValidatorConfigs[action.Validator].ConsumerMnemonic
+	if tr.TestConfig.ValidatorConfigs[action.Validator].UseConsumerKey && action.IsConsumer {
+		mnemonic = tr.TestConfig.ValidatorConfigs[action.Validator].ConsumerMnemonic
 	} else {
-		mnemonic = tr.testConfig.ValidatorConfigs[action.Validator].Mnemonic
+		mnemonic = tr.TestConfig.ValidatorConfigs[action.Validator].Mnemonic
 	}
 
 	saveMnemonicCommand := fmt.Sprintf(`echo '%s' > %s`, mnemonic, "/root/.hermes/mnemonic.txt")
 	fmt.Println("Add to hermes", action.Validator)
-	bz, err = tr.target.ExecCommand("bash", "-c", saveMnemonicCommand).CombinedOutput()
+	bz, err = tr.Target.ExecCommand("bash", "-c", saveMnemonicCommand).CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	bz, err = tr.target.ExecCommand("hermes",
+	bz, err = tr.Target.ExecCommand("hermes",
 		"keys", "add",
-		"--chain", string(tr.testConfig.ChainConfigs[action.Chain].ChainId),
+		"--chain", string(tr.TestConfig.ChainConfigs[action.Chain].ChainId),
 		"--mnemonic-file", "/root/.hermes/mnemonic.txt",
 	).CombinedOutput()
 	if err != nil {
@@ -1361,7 +1061,7 @@ func (tr Chain) addIbcConnection(
 	action AddIbcConnectionAction,
 	verbose bool,
 ) {
-	if !tr.testConfig.UseGorelayer {
+	if !tr.TestConfig.UseGorelayer {
 		tr.addIbcConnectionHermes(action, verbose)
 	} else {
 		tr.addIbcConnectionGorelayer(action, verbose)
@@ -1381,14 +1081,14 @@ func (tr Chain) addIbcConnectionGorelayer(
 	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, pathConfig, pathConfigFileName)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	pathConfigCommand := tr.target.ExecCommand("bash", "-c", bashCommand)
+	pathConfigCommand := tr.Target.ExecCommand("bash", "-c", bashCommand)
 	e2e.ExecuteCommand(pathConfigCommand, "add path config", verbose)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	newPathCommand := tr.target.ExecCommand("rly",
+	newPathCommand := tr.Target.ExecCommand("rly",
 		"paths", "add",
-		string(tr.testConfig.ChainConfigs[action.ChainA].ChainId),
-		string(tr.testConfig.ChainConfigs[action.ChainB].ChainId),
+		string(tr.TestConfig.ChainConfigs[action.ChainA].ChainId),
+		string(tr.TestConfig.ChainConfigs[action.ChainB].ChainId),
 		pathName,
 		"--file", pathConfigFileName,
 	)
@@ -1396,7 +1096,7 @@ func (tr Chain) addIbcConnectionGorelayer(
 	e2e.ExecuteCommand(newPathCommand, "new path", verbose)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	newClientsCommand := tr.target.ExecCommand("rly", "transact", "clients", pathName)
+	newClientsCommand := tr.Target.ExecCommand("rly", "transact", "clients", pathName)
 
 	e2e.ExecuteCommand(newClientsCommand, "new clients", verbose)
 
@@ -1404,7 +1104,7 @@ func (tr Chain) addIbcConnectionGorelayer(
 	tr.waitBlocks(action.ChainB, 1, 10*time.Second)
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	newConnectionCommand := tr.target.ExecCommand("rly", "transact", "connection", pathName)
+	newConnectionCommand := tr.Target.ExecCommand("rly", "transact", "connection", pathName)
 
 	e2e.ExecuteCommand(newConnectionCommand, "new connection", verbose)
 
@@ -1424,10 +1124,10 @@ func (tr Chain) createIbcClientsHermes(
 	action CreateIbcClientsAction,
 	verbose bool,
 ) {
-	cmd := tr.target.ExecCommand("hermes",
+	cmd := tr.Target.ExecCommand("hermes",
 		"create", "connection",
-		"--a-chain", string(tr.testConfig.ChainConfigs[action.ChainA].ChainId),
-		"--b-chain", string(tr.testConfig.ChainConfigs[action.ChainB].ChainId),
+		"--a-chain", string(tr.TestConfig.ChainConfigs[action.ChainA].ChainId),
+		"--b-chain", string(tr.TestConfig.ChainConfigs[action.ChainB].ChainId),
 	)
 
 	cmdReader, err := cmd.StdoutPipe()
@@ -1460,9 +1160,9 @@ func (tr Chain) addIbcConnectionHermes(
 	action AddIbcConnectionAction,
 	verbose bool,
 ) {
-	cmd := tr.target.ExecCommand("hermes",
+	cmd := tr.Target.ExecCommand("hermes",
 		"create", "connection",
-		"--a-chain", string(tr.testConfig.ChainConfigs[action.ChainA].ChainId),
+		"--a-chain", string(tr.TestConfig.ChainConfigs[action.ChainA].ChainId),
 		"--a-client", "07-tendermint-"+fmt.Sprint(action.ClientA),
 		"--b-client", "07-tendermint-"+fmt.Sprint(action.ClientB),
 	)
@@ -1509,7 +1209,7 @@ func (tr Chain) startRelayer(
 	action StartRelayerAction,
 	verbose bool,
 ) {
-	if tr.testConfig.UseGorelayer {
+	if tr.TestConfig.UseGorelayer {
 		tr.startGorelayer(action, verbose)
 	} else {
 		tr.startHermes(action, verbose)
@@ -1521,7 +1221,7 @@ func (tr Chain) startGorelayer(
 	verbose bool,
 ) {
 	// gorelayer start is running in detached mode
-	cmd := tr.target.ExecDetachedCommand("rly", "start")
+	cmd := tr.Target.ExecDetachedCommand("rly", "start")
 
 	if err := cmd.Start(); err != nil {
 		log.Fatal(err)
@@ -1537,7 +1237,7 @@ func (tr Chain) startHermes(
 	verbose bool,
 ) {
 	// hermes start is running in detached mode
-	cmd := tr.target.ExecDetachedCommand("hermes", "start")
+	cmd := tr.Target.ExecDetachedCommand("hermes", "start")
 
 	if err := cmd.Start(); err != nil {
 		log.Fatal(err)
@@ -1552,7 +1252,7 @@ func (tr Chain) addIbcChannel(
 	action AddIbcChannelAction,
 	verbose bool,
 ) {
-	if tr.testConfig.UseGorelayer {
+	if tr.TestConfig.UseGorelayer {
 		tr.addIbcChannelGorelayer(action, verbose)
 	} else {
 		tr.addIbcChannelHermes(action, verbose)
@@ -1564,12 +1264,12 @@ func (tr Chain) addIbcChannelGorelayer(
 	verbose bool,
 ) {
 	pathName := tr.GetPathNameForGorelayer(action.ChainA, action.ChainB)
-	cmd := tr.target.ExecCommand("rly",
+	cmd := tr.Target.ExecCommand("rly",
 		"transact", "channel",
 		pathName,
 		"--src-port", action.PortA,
 		"--dst-port", action.PortB,
-		"--version", tr.testConfig.ContainerConfig.CcvVersion,
+		"--version", tr.TestConfig.ContainerConfig.CcvVersion,
 		"--order", action.Order,
 		"--debug",
 	)
@@ -1584,12 +1284,12 @@ func (tr Chain) addIbcChannelHermes(
 	// otherwise, use the provided version schema (usually it is ICS20-1 for IBC transfer)
 	chanVersion := action.Version
 	if chanVersion == "" {
-		chanVersion = tr.testConfig.ContainerConfig.CcvVersion
+		chanVersion = tr.TestConfig.ContainerConfig.CcvVersion
 	}
 
-	cmd := tr.target.ExecCommand("hermes",
+	cmd := tr.Target.ExecCommand("hermes",
 		"create", "channel",
-		"--a-chain", string(tr.testConfig.ChainConfigs[action.ChainA].ChainId),
+		"--a-chain", string(tr.TestConfig.ChainConfigs[action.ChainA].ChainId),
 		"--a-connection", "connection-"+fmt.Sprint(action.ConnectionA),
 		"--a-port", action.PortA,
 		"--b-port", action.PortB,
@@ -1642,25 +1342,25 @@ func (tr Chain) transferChannelComplete(
 	action TransferChannelCompleteAction,
 	verbose bool,
 ) {
-	if tr.testConfig.UseGorelayer {
+	if tr.TestConfig.UseGorelayer {
 		log.Fatal("transferChannelComplete is not implemented for rly")
 	}
 
-	chanOpenTryCmd := tr.target.ExecCommand("hermes", "tx", "chan-open-try",
-		"--dst-chain", string(tr.testConfig.ChainConfigs[action.ChainB].ChainId),
-		"--src-chain", string(tr.testConfig.ChainConfigs[action.ChainA].ChainId),
+	chanOpenTryCmd := tr.Target.ExecCommand("hermes",
+		"tx", "chan-open-try",
+		"--dst-chain", string(tr.TestConfig.ChainConfigs[action.ChainB].ChainId),
+		"--src-chain", string(tr.TestConfig.ChainConfigs[action.ChainA].ChainId),
 		"--dst-connection", "connection-"+fmt.Sprint(action.ConnectionA),
 		"--dst-port", action.PortB,
 		"--src-port", action.PortA,
 		"--src-channel", "channel-"+fmt.Sprint(action.ChannelA),
 	)
-
 	e2e.ExecuteCommand(chanOpenTryCmd, "transferChanOpenTry", verbose)
 
-	chanOpenAckCmd := tr.target.ExecCommand("hermes",
+	chanOpenAckCmd := tr.Target.ExecCommand("hermes",
 		"tx", "chan-open-ack",
-		"--dst-chain", string(tr.testConfig.ChainConfigs[action.ChainA].ChainId),
-		"--src-chain", string(tr.testConfig.ChainConfigs[action.ChainB].ChainId),
+		"--dst-chain", string(tr.TestConfig.ChainConfigs[action.ChainA].ChainId),
+		"--src-chain", string(tr.TestConfig.ChainConfigs[action.ChainB].ChainId),
 		"--dst-connection", "connection-"+fmt.Sprint(action.ConnectionA),
 		"--dst-port", action.PortA,
 		"--src-port", action.PortB,
@@ -1670,10 +1370,10 @@ func (tr Chain) transferChannelComplete(
 
 	e2e.ExecuteCommand(chanOpenAckCmd, "transferChanOpenAck", verbose)
 
-	chanOpenConfirmCmd := tr.target.ExecCommand("hermes",
+	chanOpenConfirmCmd := tr.Target.ExecCommand("hermes",
 		"tx", "chan-open-confirm",
-		"--dst-chain", string(tr.testConfig.ChainConfigs[action.ChainB].ChainId),
-		"--src-chain", string(tr.testConfig.ChainConfigs[action.ChainA].ChainId),
+		"--dst-chain", string(tr.TestConfig.ChainConfigs[action.ChainB].ChainId),
+		"--src-chain", string(tr.TestConfig.ChainConfigs[action.ChainA].ChainId),
 		"--dst-connection", "connection-"+fmt.Sprint(action.ConnectionA),
 		"--dst-port", action.PortB,
 		"--src-port", action.PortA,
@@ -1694,7 +1394,7 @@ func (tr Chain) relayPackets(
 	action RelayPacketsAction,
 	verbose bool,
 ) {
-	if tr.testConfig.UseGorelayer {
+	if tr.TestConfig.UseGorelayer {
 		tr.relayPacketsGorelayer(action, verbose)
 	} else {
 		tr.relayPacketsHermes(action, verbose)
@@ -1714,7 +1414,7 @@ func (tr Chain) relayPacketsGorelayer(
 	pathName := tr.GetPathNameForGorelayer(action.ChainA, action.ChainB)
 
 	// rly transact relay-packets [path-name] --channel [channel-id]
-	cmd := tr.target.ExecCommand("rly", "transact", "flush",
+	cmd := tr.Target.ExecCommand("rly", "transact", "flush",
 		pathName,
 		"channel-"+fmt.Sprint(action.Channel),
 	)
@@ -1739,9 +1439,10 @@ func (tr Chain) relayPacketsHermes(
 	// queued and are subsequently relayed.
 	tr.waitBlocks(action.ChainA, 3, 90*time.Second)
 	tr.waitBlocks(action.ChainB, 3, 90*time.Second)
+
 	// hermes clear packets ibc0 transfer channel-13
-	cmd := tr.target.ExecCommand("hermes", "clear", "packets",
-		"--chain", string(tr.testConfig.ChainConfigs[action.ChainA].ChainId),
+	cmd := tr.Target.ExecCommand("hermes", "clear", "packets",
+		"--chain", string(tr.TestConfig.ChainConfigs[action.ChainA].ChainId),
 		"--port", action.Port,
 		"--channel", "channel-"+fmt.Sprint(action.Channel),
 	)
@@ -1754,8 +1455,8 @@ func (tr Chain) relayPacketsHermes(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	tr.waitBlocks(action.ChainA, 2, 30*time.Second)
-	tr.waitBlocks(action.ChainB, 2, 30*time.Second)
+	tr.waitBlocks(action.ChainA, 1, 30*time.Second)
+	tr.waitBlocks(action.ChainB, 1, 30*time.Second)
 }
 
 type RelayRewardPacketsToProviderAction struct {
@@ -1769,8 +1470,8 @@ func (tr Chain) relayRewardPacketsToProvider(
 	action RelayRewardPacketsToProviderAction,
 	verbose bool,
 ) {
-	blockPerDistribution, _ := strconv.ParseUint(strings.Trim(tr.target.GetParam(action.ConsumerChain, Param{Subspace: "ccvconsumer", Key: "BlocksPerDistributionTransmission"}), "\""), 10, 64)
-	currentBlock := uint64(tr.target.GetBlockHeight(action.ConsumerChain))
+	blockPerDistribution, _ := strconv.ParseUint(strings.Trim(tr.Target.GetParam(action.ConsumerChain, Param{Subspace: "ccvconsumer", Key: "BlocksPerDistributionTransmission"}), "\""), 10, 64)
+	currentBlock := uint64(tr.Target.GetBlockHeight(action.ConsumerChain))
 	if currentBlock <= blockPerDistribution {
 		tr.waitBlocks(action.ConsumerChain, uint(blockPerDistribution-currentBlock+1), 60*time.Second)
 	}
@@ -1783,7 +1484,7 @@ func (tr Chain) DelegateTokens(
 	action DelegateTokensAction,
 	verbose bool,
 ) {
-	toValCfg := tr.testConfig.ValidatorConfigs[action.To]
+	toValCfg := tr.TestConfig.ValidatorConfigs[action.To]
 	validatorAddress := toValCfg.ValoperAddress
 	if action.Chain != ChainID("provi") {
 		// use binary with Bech32Prefix set to ConsumerAccountPrefix
@@ -1795,13 +1496,13 @@ func (tr Chain) DelegateTokens(
 		}
 	}
 
-	cmd := tr.target.ExecCommand(tr.testConfig.ChainConfigs[action.Chain].BinaryName,
+	cmd := tr.Target.ExecCommand(tr.TestConfig.ChainConfigs[action.Chain].BinaryName,
 
 		"tx", "staking", "delegate",
 		validatorAddress,
 		fmt.Sprint(action.Amount)+`stake`,
 		`--from`, `validator`+fmt.Sprint(action.From),
-		`--chain-id`, string(tr.testConfig.ChainConfigs[action.Chain].ChainId),
+		`--chain-id`, string(tr.TestConfig.ChainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.From),
 		`--node`, tr.getValidatorNode(action.Chain, action.From),
 		`--keyring-backend`, `test`,
@@ -1825,7 +1526,7 @@ func (tr Chain) UnbondTokens(
 	action UnbondTokensAction,
 	verbose bool,
 ) {
-	unbondFromValCfg := tr.testConfig.ValidatorConfigs[action.UnbondFrom]
+	unbondFromValCfg := tr.TestConfig.ValidatorConfigs[action.UnbondFrom]
 	validatorAddress := unbondFromValCfg.ValoperAddress
 	if action.Chain != ChainID("provi") {
 		// use binary with Bech32Prefix set to ConsumerAccountPrefix
@@ -1837,33 +1538,32 @@ func (tr Chain) UnbondTokens(
 		}
 	}
 
-	cmd := tr.target.ExecCommand(tr.testConfig.ChainConfigs[action.Chain].BinaryName,
+	cmd := tr.Target.ExecCommand(tr.TestConfig.ChainConfigs[action.Chain].BinaryName,
 
 		"tx", "staking", "unbond",
 		validatorAddress,
 		fmt.Sprint(action.Amount)+`stake`,
 
 		`--from`, `validator`+fmt.Sprint(action.Sender),
-		`--chain-id`, string(tr.testConfig.ChainConfigs[action.Chain].ChainId),
+		`--chain-id`, string(tr.TestConfig.ChainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.Sender),
 		`--node`, tr.getValidatorNode(action.Chain, action.Sender),
 		`--gas`, "900000",
 		`--keyring-backend`, `test`,
-		`-o`, `json`,
 		`-y`,
 	)
 
+	if verbose {
+		fmt.Println("unbond cmd:", cmd.String())
+	}
+
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal(err, "cmd '%s' failed with:\n", string(bz))
-	}
-	if verbose {
-		fmt.Printf("unbond cmd: '%s' returned:\n'%s'", cmd.String(), string(bz))
+		log.Fatal(err, "\n", string(bz))
 	}
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-	tr.waitForTx(action.Chain, bz, 20*time.Second)
-	//tr.waitBlocks(action.Chain, 2, 20*time.Second)
+	tr.waitBlocks(action.Chain, 2, 20*time.Second)
 }
 
 type CancelUnbondTokensAction struct {
@@ -1877,8 +1577,8 @@ func (tr Chain) cancelUnbondTokens(
 	action CancelUnbondTokensAction,
 	verbose bool,
 ) {
-	valCfg := tr.testConfig.ValidatorConfigs[action.Validator]
-	delCfg := tr.testConfig.ValidatorConfigs[action.Delegator]
+	valCfg := tr.TestConfig.ValidatorConfigs[action.Validator]
+	delCfg := tr.TestConfig.ValidatorConfigs[action.Delegator]
 	validatorAddress := valCfg.ValoperAddress
 	delegatorAddress := delCfg.DelAddress
 	if action.Chain != ChainID("provi") {
@@ -1898,7 +1598,7 @@ func (tr Chain) cancelUnbondTokens(
 	}
 
 	// get creation-height from state
-	cmd := tr.target.ExecCommand(tr.testConfig.ChainConfigs[action.Chain].BinaryName,
+	cmd := tr.Target.ExecCommand(tr.TestConfig.ChainConfigs[action.Chain].BinaryName,
 		"q", "staking", "unbonding-delegation",
 		delegatorAddress,
 		validatorAddress,
@@ -1919,13 +1619,13 @@ func (tr Chain) cancelUnbondTokens(
 		log.Fatal("invalid creation height")
 	}
 
-	cmd = tr.target.ExecCommand(tr.testConfig.ChainConfigs[action.Chain].BinaryName,
+	cmd = tr.Target.ExecCommand(tr.TestConfig.ChainConfigs[action.Chain].BinaryName,
 		"tx", "staking", "cancel-unbond",
 		validatorAddress,
 		fmt.Sprint(action.Amount)+`stake`,
 		fmt.Sprint(creationHeight),
 		`--from`, `validator`+fmt.Sprint(action.Delegator),
-		`--chain-id`, string(tr.testConfig.ChainConfigs[action.Chain].ChainId),
+		`--chain-id`, string(tr.TestConfig.ChainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.Delegator),
 		`--node`, tr.getValidatorNode(action.Chain, action.Delegator),
 		`--gas`, "900000",
@@ -1956,8 +1656,8 @@ type RedelegateTokensAction struct {
 }
 
 func (tr Chain) redelegateTokens(action RedelegateTokensAction, verbose bool) {
-	srcCfg := tr.testConfig.ValidatorConfigs[action.Src]
-	dstCfg := tr.testConfig.ValidatorConfigs[action.Dst]
+	srcCfg := tr.TestConfig.ValidatorConfigs[action.Src]
+	dstCfg := tr.TestConfig.ValidatorConfigs[action.Dst]
 	redelegateSrc := srcCfg.ValoperAddress
 	redelegateDst := dstCfg.ValoperAddress
 	if action.Chain != ChainID("provi") {
@@ -1976,15 +1676,15 @@ func (tr Chain) redelegateTokens(action RedelegateTokensAction, verbose bool) {
 		}
 	}
 
-	cmd := tr.target.ExecCommand(
-		tr.testConfig.ChainConfigs[action.Chain].BinaryName,
+	cmd := tr.Target.ExecCommand(
+		tr.TestConfig.ChainConfigs[action.Chain].BinaryName,
 
 		"tx", "staking", "redelegate",
 		redelegateSrc,
 		redelegateDst,
 		fmt.Sprint(action.Amount)+`stake`,
 		`--from`, `validator`+fmt.Sprint(action.TxSender),
-		`--chain-id`, string(tr.testConfig.ChainConfigs[action.Chain].ChainId),
+		`--chain-id`, string(tr.TestConfig.ChainConfigs[action.Chain].ChainId),
 		`--home`, tr.getValidatorHome(action.Chain, action.TxSender),
 		`--node`, tr.getValidatorNode(action.Chain, action.TxSender),
 		// Need to manually set gas limit past default (200000), since redelegate has a lot of operations
@@ -2029,13 +1729,13 @@ func (tr Chain) invokeDowntimeSlash(action DowntimeSlashAction, verbose bool) {
 	// Bring validator down
 	tr.setValidatorDowntime(action.Chain, action.Validator, true, verbose)
 	// Wait appropriate amount of blocks for validator to be slashed
-	tr.waitBlocks(action.Chain, 16, 3*time.Minute)
+	tr.waitBlocks(action.Chain, 11, 3*time.Minute)
 	// Bring validator back up
 	tr.setValidatorDowntime(action.Chain, action.Validator, false, verbose)
 }
 
 // Sets validator downtime by setting the virtual ethernet interface of a node to "up" or "down"
-func (tr Chain) setValidatorDowntime(chain ChainID, validator ValidatorID, down, verbose bool) {
+func (tr Chain) setValidatorDowntime(chain ChainID, validator ValidatorID, down bool, verbose bool) {
 	var lastArg string
 	if down {
 		lastArg = "down"
@@ -2043,20 +1743,20 @@ func (tr Chain) setValidatorDowntime(chain ChainID, validator ValidatorID, down,
 		lastArg = "up"
 	}
 
-	if tr.testConfig.UseCometmock {
+	if tr.TestConfig.UseCometmock {
 		// send set_signing_status either to down or up for validator
 		validatorPrivateKeyAddress := tr.GetValidatorPrivateKeyAddress(chain, validator)
 
 		method := "set_signing_status"
 		params := fmt.Sprintf(`{"private_key_address":"%s","status":"%s"}`, validatorPrivateKeyAddress, lastArg)
-		address := tr.target.GetQueryNodeRPCAddress(chain)
+		address := tr.Target.GetQueryNodeRPCAddress(chain)
 
 		tr.curlJsonRPCRequest(method, params, address)
 		tr.waitBlocks(chain, 1, 10*time.Second)
 		return
 	}
 
-	cmd := tr.target.ExecCommand(
+	cmd := tr.Target.ExecCommand(
 		"ip",
 		"link",
 		"set",
@@ -2077,13 +1777,13 @@ func (tr Chain) setValidatorDowntime(chain ChainID, validator ValidatorID, down,
 func (tr Chain) GetValidatorPrivateKeyAddress(chain ChainID, validator ValidatorID) string {
 	var validatorPrivateKeyAddress string
 	if chain == ChainID("provi") {
-		validatorPrivateKeyAddress = tr.getValidatorKeyAddressFromString(tr.testConfig.ValidatorConfigs[validator].PrivValidatorKey)
+		validatorPrivateKeyAddress = tr.getValidatorKeyAddressFromString(tr.TestConfig.ValidatorConfigs[validator].PrivValidatorKey)
 	} else {
 		var valAddressString string
-		if tr.testConfig.ValidatorConfigs[validator].UseConsumerKey {
-			valAddressString = tr.testConfig.ValidatorConfigs[validator].ConsumerPrivValidatorKey
+		if tr.TestConfig.ValidatorConfigs[validator].UseConsumerKey {
+			valAddressString = tr.TestConfig.ValidatorConfigs[validator].ConsumerPrivValidatorKey
 		} else {
-			valAddressString = tr.testConfig.ValidatorConfigs[validator].PrivValidatorKey
+			valAddressString = tr.TestConfig.ValidatorConfigs[validator].PrivValidatorKey
 		}
 		validatorPrivateKeyAddress = tr.getValidatorKeyAddressFromString(valAddressString)
 	}
@@ -2098,14 +1798,14 @@ type UnjailValidatorAction struct {
 // Sends an unjail transaction to the provider chain
 func (tr Chain) unjailValidator(action UnjailValidatorAction, verbose bool) {
 	// wait until downtime_jail_duration has elapsed, to make sure the validator can be unjailed
-	tr.WaitTime(65 * time.Second)
+	tr.WaitTime(61 * time.Second)
 
-	cmd := tr.target.ExecCommand(
-		tr.testConfig.ChainConfigs[action.Provider].BinaryName,
+	cmd := tr.Target.ExecCommand(
+		tr.TestConfig.ChainConfigs[action.Provider].BinaryName,
 		"tx", "slashing", "unjail",
 		// Validator is sender here
 		`--from`, `validator`+fmt.Sprint(action.Validator),
-		`--chain-id`, string(tr.testConfig.ChainConfigs[action.Provider].ChainId),
+		`--chain-id`, string(tr.TestConfig.ChainConfigs[action.Provider].ChainId),
 		`--home`, tr.getValidatorHome(action.Provider, action.Validator),
 		`--node`, tr.getValidatorNode(action.Provider, action.Validator),
 		`--gas`, "900000",
@@ -2160,7 +1860,7 @@ func (tr Chain) registerRepresentative(
 		go func(val ValidatorID, stake uint) {
 			defer wg.Done()
 
-			pubKeycmd := tr.target.ExecCommand(tr.testConfig.ChainConfigs[action.Chain].BinaryName,
+			pubKeycmd := tr.Target.ExecCommand(tr.TestConfig.ChainConfigs[action.Chain].BinaryName,
 				"tendermint", "show-validator",
 				`--home`, tr.getValidatorHome(action.Chain, val),
 			)
@@ -2177,12 +1877,12 @@ func (tr Chain) registerRepresentative(
 				panic(fmt.Sprintf("failed writing ccv consumer file : %v", err))
 			}
 			defer file.Close()
-			err = os.WriteFile(file.Name(), []byte(fileContent), 0o600)
+			err = os.WriteFile(file.Name(), []byte(fileContent), 0600)
 			if err != nil {
 				log.Fatalf("Failed writing consumer genesis to file: %v", err)
 			}
 
-			containerInstance := tr.testConfig.ContainerConfig.ContainerName
+			containerInstance := tr.TestConfig.ContainerConfig.ContainerName
 			targetFile := fmt.Sprintf("/tmp/%s", fileName)
 			sourceFile := file.Name()
 			//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -2193,11 +1893,11 @@ func (tr Chain) registerRepresentative(
 				log.Fatal(err, "\n", string(writeResult))
 			}
 
-			cmd := tr.target.ExecCommand(tr.testConfig.ChainConfigs[action.Chain].BinaryName,
+			cmd := tr.Target.ExecCommand(tr.TestConfig.ChainConfigs[action.Chain].BinaryName,
 				"tx", "staking", "create-validator",
 				targetFile,
 				`--from`, `validator`+fmt.Sprint(val),
-				`--chain-id`, string(tr.testConfig.ChainConfigs[action.Chain].ChainId),
+				`--chain-id`, string(tr.TestConfig.ChainConfigs[action.Chain].ChainId),
 				`--home`, tr.getValidatorHome(action.Chain, val),
 				`--node`, tr.getValidatorNode(action.Chain, val),
 				`--keyring-backend`, `test`,
@@ -2223,76 +1923,20 @@ func (tr Chain) registerRepresentative(
 }
 
 type SubmitChangeRewardDenomsProposalAction struct {
-	Chain   ChainID
-	Denoms  []string
+	Denom   string
 	Deposit uint
 	From    ValidatorID
 }
 
 func (tr Chain) submitChangeRewardDenomsProposal(action SubmitChangeRewardDenomsProposalAction, verbose bool) {
-	changeRewMsg := types.MsgChangeRewardDenoms{
-		DenomsToAdd:    action.Denoms,
-		DenomsToRemove: []string{"stake"},
-		Authority:      "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
-	}
-
-	// Generate proposal content
-	title := "change reward denoms"
-	description := "change reward denoms"
-	summary := "Proposal to change reward denoms"
-	expedited := false
-	metadata := "ipfs://CID"
-	deposit := fmt.Sprintf("%dstake", action.Deposit)
-	jsonStr := e2e.GenerateGovProposalContent(title, summary, metadata, deposit, description, expedited, &changeRewMsg)
-
-	//#nosec G204 -- bypass unsafe quoting warning (no production code)
-	proposalFile := "/change-rewards-proposal.json"
-	bz, err := tr.target.ExecCommand(
-		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, proposalFile),
-	).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	// CHANGE REWARDS DENOM PROPOSAL
-	cmd := tr.target.ExecCommand(
-		tr.testConfig.ChainConfigs[action.Chain].BinaryName,
-		"tx", "gov", "submit-proposal", proposalFile,
-		`--from`, `validator`+fmt.Sprint(action.From),
-		`--chain-id`, string(tr.testConfig.ChainConfigs[action.Chain].ChainId),
-		`--home`, tr.getValidatorHome(action.Chain, action.From),
-		`--gas`, `900000`,
-		`--node`, tr.getValidatorNode(action.Chain, action.From),
-		`--keyring-backend`, `test`,
-		`-y`,
-	)
-
-	if verbose {
-		fmt.Println("change rewards denom props cmd:", cmd.String())
-		fmt.Println("change rewards denom props json:", jsonStr)
-	}
-	bz, err = cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal("submit-proposal failed:", err, "\n", string(bz))
-	}
-
-	if verbose {
-		fmt.Println("change rewards denom props output:", string(bz))
-	}
-
-	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-	tr.waitBlocks(ChainID("provi"), 2, 30*time.Second)
-}
-
-func (tr Chain) submitChangeRewardDenomsLegacyProposal(action SubmitChangeRewardDenomsProposalAction, verbose bool) {
-	providerChain := tr.testConfig.ChainConfigs[action.Chain]
+	providerChain := tr.TestConfig.ChainConfigs[ChainID("provi")]
 
 	prop := client.ChangeRewardDenomsProposalJSON{
 		Summary: "Change reward denoms",
 		ChangeRewardDenomsProposal: types.ChangeRewardDenomsProposal{
 			Title:          "Change reward denoms",
 			Description:    "Change reward denoms",
-			DenomsToAdd:    action.Denoms,
+			DenomsToAdd:    []string{action.Denom},
 			DenomsToRemove: []string{"stake"},
 		},
 		Deposit: fmt.Sprint(action.Deposit) + `stake`,
@@ -2308,14 +1952,14 @@ func (tr Chain) submitChangeRewardDenomsLegacyProposal(action SubmitChangeReward
 		log.Fatal("prop json contains single quote")
 	}
 
-	bz, err = tr.target.ExecCommand(
+	bz, err = tr.Target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/change-reward-denoms-proposal.json")).CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
 	// CHANGE REWARDS DENOM PROPOSAL
-	bz, err = tr.target.ExecCommand(providerChain.BinaryName,
+	bz, err = tr.Target.ExecCommand(providerChain.BinaryName,
 		"tx", "gov", "submit-legacy-proposal", "change-reward-denoms", "/change-reward-denoms-proposal.json",
 		`--from`, `validator`+fmt.Sprint(action.From),
 		`--chain-id`, string(providerChain.ChainId),
@@ -2353,23 +1997,23 @@ func (tr Chain) invokeDoublesignSlash(
 	action DoublesignSlashAction,
 	verbose bool,
 ) {
-	if !tr.testConfig.UseCometmock {
-		chainConfig := tr.testConfig.ChainConfigs[action.Chain]
-		doubleSignScript := tr.target.GetTestScriptPath(false, "cause-doublesign.sh")
-		bz, err := tr.target.ExecCommand("/bin/bash",
+	if !tr.TestConfig.UseCometmock {
+		chainConfig := tr.TestConfig.ChainConfigs[action.Chain]
+		doubleSignScript := tr.Target.GetTestScriptPath(false, "cause-doublesign.sh")
+		bz, err := tr.Target.ExecCommand("/bin/bash",
 			doubleSignScript, chainConfig.BinaryName, string(action.Validator),
 			string(chainConfig.ChainId), chainConfig.IpPrefix).CombinedOutput()
 		if err != nil {
 			log.Fatal(err, "\n", string(bz))
 		}
-		tr.waitBlocks("provi", 25, 4*time.Minute)
-	} else { // tr.useCometMock
+		tr.waitBlocks("provi", 20, 4*time.Minute)
+	} else { // tr.UseCometmock
 		validatorPrivateKeyAddress := tr.GetValidatorPrivateKeyAddress(action.Chain, action.Validator)
 
 		method := "cause_double_sign"
 		params := fmt.Sprintf(`{"private_key_address":"%s"}`, validatorPrivateKeyAddress)
 
-		address := tr.target.GetQueryNodeRPCAddress(action.Chain)
+		address := tr.Target.GetQueryNodeRPCAddress(action.Chain)
 
 		tr.curlJsonRPCRequest(method, params, address)
 		tr.waitBlocks(action.Chain, 1, 10*time.Second)
@@ -2438,7 +2082,7 @@ func (tr Chain) lightClientAttack(
 	chain ChainID,
 	attackType LightClientAttackType,
 ) {
-	if !tr.testConfig.UseCometmock {
+	if !tr.TestConfig.UseCometmock {
 		log.Fatal("light client attack is only supported with CometMock")
 	}
 	validatorPrivateKeyAddress := tr.GetValidatorPrivateKeyAddress(chain, validator)
@@ -2446,42 +2090,48 @@ func (tr Chain) lightClientAttack(
 	method := "cause_light_client_attack"
 	params := fmt.Sprintf(`{"private_key_address":"%s", "misbehaviour_type": "%s"}`, validatorPrivateKeyAddress, attackType)
 
-	address := tr.target.GetQueryNodeRPCAddress(chain)
+	address := tr.Target.GetQueryNodeRPCAddress(chain)
 
 	tr.curlJsonRPCRequest(method, params, address)
 	tr.waitBlocks(chain, 1, 10*time.Second)
 }
 
 func (tr Chain) AssignConsumerPubKey(action e2e.AssignConsumerPubKeyAction, verbose bool) {
-	valCfg := tr.testConfig.ValidatorConfigs[action.Validator]
-	chainCfg := tr.testConfig.ChainConfigs
+	valCfg := tr.TestConfig.ValidatorConfigs[action.Validator]
 
 	// Note: to get error response reported back from this command '--gas auto' needs to be set.
 	gas := "auto"
 	// Unfortunately, --gas auto does not work with CometMock. so when using CometMock, just use --gas 9000000 then
-	if tr.testConfig.UseCometmock {
+	if tr.TestConfig.UseCometmock {
 		gas = "9000000"
 	}
-
-	consumerId := string(chainCfg[action.Chain].ConsumerId)
-
-	bz, err := tr.target.AssignConsumerPubKey(
-		consumerId,
+	assignKey := fmt.Sprintf(
+		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
+		tr.TestConfig.ChainConfigs[ChainID("provi")].BinaryName,
+		string(tr.TestConfig.ChainConfigs[action.Chain].ChainId),
 		action.ConsumerPubkey,
 		action.Validator,
-		gas,
+		tr.TestConfig.ChainConfigs[ChainID("provi")].ChainId,
 		tr.getValidatorHome(ChainID("provi"), action.Validator),
 		tr.getValidatorNode(ChainID("provi"), action.Validator),
-		verbose,
+		gas,
 	)
 
-	if err == nil {
-		tr.waitForTx(tr.testConfig.ChainConfigs[ChainID("provi")].ChainId, bz, 30*time.Second)
-	} else if !action.ExpectError {
+	cmd := tr.Target.ExecCommand(
+		"/bin/bash", "-c",
+		assignKey,
+	)
+
+	if verbose {
+		fmt.Println("assignConsumerPubKey cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil && !action.ExpectError {
 		log.Fatalf("unexpected error during key assignment - output: %s, err: %s", string(bz), err)
 	}
 
-	if action.ExpectError && !tr.testConfig.UseCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
+	if action.ExpectError && !tr.TestConfig.UseCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
 		if err == nil || !strings.Contains(string(bz), action.ExpectedError) {
 			log.Fatalf("expected error not raised: expected: '%s', got '%s'", action.ExpectedError, (bz))
 		}
@@ -2494,12 +2144,12 @@ func (tr Chain) AssignConsumerPubKey(action e2e.AssignConsumerPubKeyAction, verb
 	// node was started with provider key
 	// we swap the nodes's keys for consumer keys and restart it
 	if action.ReconfigureNode {
-		isConsumer := tr.testConfig.ChainConfigs[action.Chain].BinaryName != "interchain-security-pd"
-		reconfigureScript := tr.target.GetTestScriptPath(isConsumer, "reconfigure-node.sh")
-		configureNodeCmd := tr.target.ExecCommand("/bin/bash",
-			reconfigureScript, tr.testConfig.ChainConfigs[action.Chain].BinaryName,
+		isConsumer := tr.TestConfig.ChainConfigs[action.Chain].BinaryName != "interchain-security-pd"
+		reconfigureScript := tr.Target.GetTestScriptPath(isConsumer, "reconfigure-node.sh")
+		configureNodeCmd := tr.Target.ExecCommand("/bin/bash",
+			reconfigureScript, tr.TestConfig.ChainConfigs[action.Chain].BinaryName,
 			string(action.Validator), string(action.Chain),
-			tr.testConfig.ChainConfigs[action.Chain].IpPrefix, valCfg.IpSuffix,
+			tr.TestConfig.ChainConfigs[action.Chain].IpPrefix, valCfg.IpSuffix,
 			valCfg.ConsumerMnemonic, valCfg.ConsumerPrivValidatorKey,
 			valCfg.ConsumerNodeKey,
 		)
@@ -2538,13 +2188,11 @@ func (tr Chain) AssignConsumerPubKey(action e2e.AssignConsumerPubKeyAction, verb
 		// @POfftermatt I am currently using this for downtime slashing with cometmock
 		// (I need to find the currently used validator key address)Í
 		valCfg.UseConsumerKey = true
-		tr.testConfig.ValidatorConfigs[action.Validator] = valCfg
+		tr.TestConfig.ValidatorConfigs[action.Validator] = valCfg
 	}
 
-	if !action.ExpectError {
-		// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-		tr.waitForTx(e2e.ChainID("provi"), bz, 30*time.Second)
-	}
+	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
+	tr.waitBlocks(ChainID("provi"), 2, 30*time.Second)
 }
 
 // SlashMeterReplenishmentAction polls the slash meter on provider until value is achieved
@@ -2559,14 +2207,14 @@ func (tr Chain) waitForSlashMeterReplenishment(
 	verbose bool,
 ) {
 	timeout := time.Now().Add(action.Timeout)
-	initialSlashMeter := tr.target.GetSlashMeter()
+	initialSlashMeter := tr.Target.GetSlashMeter()
 
 	if initialSlashMeter >= 0 {
 		panic(fmt.Sprintf("No need to wait for slash meter replenishment, current value: %d", initialSlashMeter))
 	}
 
 	for {
-		slashMeter := tr.target.GetSlashMeter()
+		slashMeter := tr.Target.GetSlashMeter()
 		if verbose {
 			fmt.Printf("waiting for slash meter to be replenished, current value: %d\n", slashMeter)
 		}
@@ -2609,192 +2257,54 @@ func (tr Chain) GetPathNameForGorelayer(chainA, chainB ChainID) string {
 	return pathName
 }
 
-// detect evidences committed to the blocks of a consumer chain
-// either by running an instance of the Hermes relayer using the "evidence" command,
-// or by queyring manually the consumer chain.
+// Run an instance of the Hermes relayer using the "evidence" command,
+// which detects evidences committed to the blocks of a consumer chain.
 // Each infraction detected is reported to the provider chain using
 // either a SubmitConsumerDoubleVoting or a SubmitConsumerMisbehaviour message.
-type DetectConsumerEvidenceAction struct {
-	Chain     ChainID
-	Submitter ValidatorID
+type StartConsumerEvidenceDetectorAction struct {
+	Chain ChainID
 }
 
-func (tr Chain) detectConsumerEvidence(
-	action DetectConsumerEvidenceAction,
-	useRelayer bool,
+func (tr Chain) startConsumerEvidenceDetector(
+	action StartConsumerEvidenceDetectorAction,
 	verbose bool,
 ) {
-	chainConfig := tr.testConfig.ChainConfigs[action.Chain]
-	// the Hermes relayer doesn't support evidence handling for Permissionless ICS yet
-	// TODO: @Simon refactor once https://github.com/informalsystems/hermes/pull/4182 is merged.
-	if useRelayer {
-		// run in detached mode so it will keep running in the background
-		bz, err := tr.target.ExecDetachedCommand(
-			"hermes", "evidence", "--chain", string(chainConfig.ChainId)).CombinedOutput()
-		if err != nil {
-			log.Fatal(err, "\n", string(bz))
-		}
-		tr.waitBlocks("provi", 10, 2*time.Minute)
-	} else {
-		// detect the evidence on the consumer chain
-		consumerBinaryName := tr.testConfig.ChainConfigs[action.Chain].BinaryName
-
-		// get the infraction height by querying the SDK evidence module of the consumer
-		timeout := time.Now().Add(30 * time.Second)
-		infractionHeight := int64(0)
-		for {
-			cmd := tr.target.ExecCommand(
-				consumerBinaryName,
-				"query", "evidence", "list",
-				`--node`, tr.target.GetQueryNode(action.Chain),
-				`-o`, `json`,
-			)
-
-			if verbose {
-				fmt.Println("query evidence cmd:", cmd.String())
-			}
-
-			bz, err := cmd.CombinedOutput()
-			if err == nil {
-				evidence := gjson.Get(string(bz), "evidence")
-				// we only expect only one evidence
-				if len(evidence.Array()) == 1 {
-					infractionHeight = evidence.Array()[0].Get("value.height").Int()
-					break
-				}
-			}
-
-			if err != nil || time.Now().After(timeout) {
-				log.Print("Failed running command: ", cmd)
-				log.Fatal(err, "\n", string(bz))
-			}
-			time.Sleep(2 * time.Second)
-		}
-
-		// get the evidence data from the block
-		// note that the evidence is added to the next block after the infraction height
-		cmd := tr.target.ExecCommand(
-			consumerBinaryName,
-			"query", "block", "--type=height", strconv.Itoa(int(infractionHeight+1)),
-			`--node`, tr.target.GetQueryNode(action.Chain),
-			`-o`, `json`,
-		)
-
-		if verbose {
-			fmt.Println("query block for evidence cmd:", cmd.String())
-		}
-
-		bz, err := cmd.CombinedOutput()
-		if err != nil {
-			log.Fatal(err, "\n", string(bz))
-		}
-
-		evidence := gjson.Get(string(bz), "evidence.evidence").Array()
-		if len(evidence) == 0 {
-			log.Fatal("expected at least one evidence in block but found zero")
-		}
-
-		if equivocation := evidence[0].Get("duplicate_vote_evidence"); equivocation.String() != "" {
-			// persist evidence in the json format
-			evidenceJson := equivocation.Raw
-			evidencePath := "/temp-evidence.json"
-			bz, err = tr.target.ExecCommand(
-				"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, evidenceJson, evidencePath),
-			).CombinedOutput()
-			if err != nil {
-				log.Fatal(err, "\n", string(bz))
-			}
-
-			// query IBC header at the infraction height
-			cmd = tr.target.ExecCommand(
-				consumerBinaryName,
-				"query", "ibc", "client", "header", "--height", strconv.Itoa(int(infractionHeight)),
-				`--node`, tr.target.GetQueryNode(action.Chain),
-				`-o`, `json`,
-			)
-
-			if verbose {
-				fmt.Println("query IBC header cmd:", cmd.String())
-			}
-
-			bz, err = cmd.CombinedOutput()
-			if err != nil {
-				log.Fatal(err, "\n", string(bz))
-			}
-
-			// persist IBC header in json format
-			headerPath := "/temp-header.json"
-			bz, err = tr.target.ExecCommand(
-				"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, string(bz), headerPath),
-			).CombinedOutput()
-			if err != nil {
-				log.Fatal(err, "\n", string(bz))
-			}
-
-			// submit consumer equivocation to provider
-			gas := "auto"
-			submitEquivocation := fmt.Sprintf(
-				`%s tx provider submit-consumer-double-voting %s %s %s --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
-				tr.testConfig.ChainConfigs[ChainID("provi")].BinaryName,
-				string(tr.testConfig.ChainConfigs[action.Chain].ConsumerId),
-				evidencePath,
-				headerPath,
-				action.Submitter,
-				tr.testConfig.ChainConfigs[ChainID("provi")].ChainId,
-				tr.getValidatorHome(ChainID("provi"), action.Submitter),
-				tr.getValidatorNode(ChainID("provi"), action.Submitter),
-				gas,
-			)
-
-			cmd = tr.target.ExecCommand(
-				"/bin/bash", "-c",
-				submitEquivocation,
-			)
-
-			if verbose {
-				fmt.Println("submit consumer equivocation cmd:", cmd.String())
-			}
-
-			bz, err = cmd.CombinedOutput()
-			if err != nil {
-				log.Fatal(err, "\n", string(bz))
-			}
-		} else {
-			log.Fatal("invalid evidence type", evidence[0].String())
-		}
-
-		tr.waitBlocks("provi", 3, 1*time.Minute)
+	chainConfig := tr.TestConfig.ChainConfigs[action.Chain]
+	// run in detached mode so it will keep running in the background
+	bz, err := tr.Target.ExecDetachedCommand(
+		"hermes", "evidence", "--chain", string(chainConfig.ChainId)).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
 	}
+	tr.waitBlocks("provi", 10, 2*time.Minute)
 }
 
 type OptInAction struct {
-	Chain         ChainID
-	Validator     ValidatorID
-	ExpectError   bool
-	ExpectedError string
+	Chain     ChainID
+	Validator ValidatorID
 }
 
 func (tr Chain) optIn(action OptInAction, verbose bool) {
 	// Note: to get error response reported back from this command '--gas auto' needs to be set.
 	gas := "auto"
 	// Unfortunately, --gas auto does not work with CometMock. so when using CometMock, just use --gas 9000000 then
-	if tr.testConfig.UseCometmock {
+	if tr.TestConfig.UseCometmock {
 		gas = "9000000"
 	}
 
 	// Use: "opt-in [consumer-chain-id] [consumer-pubkey]",
 	optIn := fmt.Sprintf(
 		`%s tx provider opt-in %s --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
-		tr.testConfig.ChainConfigs[ChainID("provi")].BinaryName,
-		string(tr.testConfig.ChainConfigs[action.Chain].ConsumerId),
+		tr.TestConfig.ChainConfigs[ChainID("provi")].BinaryName,
+		string(tr.TestConfig.ChainConfigs[action.Chain].ChainId),
 		action.Validator,
-		tr.testConfig.ChainConfigs[ChainID("provi")].ChainId,
+		tr.TestConfig.ChainConfigs[ChainID("provi")].ChainId,
 		tr.getValidatorHome(ChainID("provi"), action.Validator),
 		tr.getValidatorNode(ChainID("provi"), action.Validator),
 		gas,
 	)
 
-	cmd := tr.target.ExecCommand(
+	cmd := tr.Target.ExecCommand(
 		"/bin/bash", "-c",
 		optIn,
 	)
@@ -2804,20 +2314,13 @@ func (tr Chain) optIn(action OptInAction, verbose bool) {
 	}
 
 	bz, err := cmd.CombinedOutput()
-	if err != nil && !action.ExpectError {
+	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	if action.ExpectError && !tr.testConfig.UseCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
+	if !tr.TestConfig.UseCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
 		if err != nil && verbose {
 			fmt.Printf("got error during opt in | err: %s | output: %s \n", err, string(bz))
-		}
-		if err == nil || !strings.Contains(string(bz), action.ExpectedError) {
-			log.Fatalf("expected error not raised: expected: '%s', got '%s'", action.ExpectedError, (bz))
-		}
-
-		if verbose {
-			fmt.Printf("got expected error during key assignment | err: %s | output: %s \n", err, string(bz))
 		}
 	}
 
@@ -2835,23 +2338,23 @@ func (tr Chain) optOut(action OptOutAction, verbose bool) {
 	// Note: to get error response reported back from this command '--gas auto' needs to be set.
 	gas := "auto"
 	// Unfortunately, --gas auto does not work with CometMock. so when using CometMock, just use --gas 9000000 then
-	if tr.testConfig.UseCometmock {
+	if tr.TestConfig.UseCometmock {
 		gas = "9000000"
 	}
 
 	// Use: "opt-out [consumer-chain-id]",
 	optOut := fmt.Sprintf(
 		`%s tx provider opt-out %s --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
-		tr.testConfig.ChainConfigs[ChainID("provi")].BinaryName,
-		string(tr.testConfig.ChainConfigs[action.Chain].ConsumerId),
+		tr.TestConfig.ChainConfigs[ChainID("provi")].BinaryName,
+		string(tr.TestConfig.ChainConfigs[action.Chain].ChainId),
 		action.Validator,
-		tr.testConfig.ChainConfigs[ChainID("provi")].ChainId,
+		tr.TestConfig.ChainConfigs[ChainID("provi")].ChainId,
 		tr.getValidatorHome(ChainID("provi"), action.Validator),
 		tr.getValidatorNode(ChainID("provi"), action.Validator),
 		gas,
 	)
 
-	cmd := tr.target.ExecCommand(
+	cmd := tr.Target.ExecCommand(
 		"/bin/bash", "-c",
 		optOut,
 	)
@@ -2881,7 +2384,6 @@ func (tr Chain) optOut(action OptOutAction, verbose bool) {
 
 type SetConsumerCommissionRateAction struct {
 	Chain          ChainID
-	ConsumerID     ConsumerID
 	Validator      ValidatorID
 	CommissionRate float64
 
@@ -2894,29 +2396,24 @@ func (tr Chain) setConsumerCommissionRate(action SetConsumerCommissionRateAction
 	// Note: to get error response reported back from this command '--gas auto' needs to be set.
 	gas := "auto"
 	// Unfortunately, --gas auto does not work with CometMock. so when using CometMock, just use --gas 9000000 then
-	if tr.testConfig.UseCometmock {
+	if tr.TestConfig.UseCometmock {
 		gas = "9000000"
-	}
-
-	consumerId := string(tr.testConfig.ChainConfigs[action.Chain].ConsumerId)
-	if action.ConsumerID != "" {
-		consumerId = string(action.ConsumerID)
 	}
 
 	// Use: "set-consumer-commission-rate [consumer-chain-id] [commission-rate]"
 	setCommissionRate := fmt.Sprintf(
 		`%s tx provider set-consumer-commission-rate %s %f --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
-		tr.testConfig.ChainConfigs[ChainID("provi")].BinaryName,
-		consumerId,
+		tr.TestConfig.ChainConfigs[ChainID("provi")].BinaryName,
+		string(tr.TestConfig.ChainConfigs[action.Chain].ChainId),
 		action.CommissionRate,
 		action.Validator,
-		tr.testConfig.ChainConfigs[ChainID("provi")].ChainId,
+		tr.TestConfig.ChainConfigs[ChainID("provi")].ChainId,
 		tr.getValidatorHome(ChainID("provi"), action.Validator),
 		tr.getValidatorNode(ChainID("provi"), action.Validator),
 		gas,
 	)
 
-	cmd := tr.target.ExecCommand(
+	cmd := tr.Target.ExecCommand(
 		"/bin/bash", "-c",
 		setCommissionRate,
 	)
@@ -2930,7 +2427,7 @@ func (tr Chain) setConsumerCommissionRate(action SetConsumerCommissionRateAction
 		log.Fatalf("unexpected error during commssion rate set - output: %s, err: %s", string(bz), err)
 	}
 
-	if action.ExpectError && !tr.testConfig.UseCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
+	if action.ExpectError && !tr.TestConfig.UseCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
 		if err == nil || !strings.Contains(string(bz), action.ExpectedError) {
 			log.Fatalf("expected error not raised: expected: '%s', got '%s'", action.ExpectedError, (bz))
 		}
@@ -2940,7 +2437,7 @@ func (tr Chain) setConsumerCommissionRate(action SetConsumerCommissionRateAction
 		}
 	}
 
-	if !tr.testConfig.UseCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
+	if !tr.TestConfig.UseCometmock { // error report only works with --gas auto, which does not work with CometMock, so ignore
 		if err != nil && verbose {
 			fmt.Printf("got error during commssion rate set | err: %s | output: %s \n", err, string(bz))
 		}
@@ -2957,11 +2454,11 @@ func (tr Chain) setConsumerCommissionRate(action SetConsumerCommissionRateAction
 // information in the testrun that stores how much each chain has waited, to keep times in sync.
 // Be careful that all functions calling WaitTime should therefore also take a pointer to the TestConfig.
 func (tr *Chain) WaitTime(duration time.Duration) {
-	if !tr.testConfig.UseCometmock {
+	if !tr.TestConfig.UseCometmock {
 		time.Sleep(duration)
 	} else {
-		tr.testConfig.TimeOffset += duration
-		for chain, running := range tr.testConfig.RunningChains {
+		tr.TestConfig.TimeOffset += duration
+		for chain, running := range tr.TestConfig.RunningChains {
 			if !running {
 				continue
 			}
@@ -2976,7 +2473,7 @@ func (tr Chain) AdvanceTimeForChain(chain ChainID, duration time.Duration) {
 	method := "advance_time"
 	params := fmt.Sprintf(`{"duration_in_seconds": "%d"}`, int(math.Ceil(duration.Seconds())))
 
-	address := tr.target.GetQueryNodeRPCAddress(chain)
+	address := tr.Target.GetQueryNodeRPCAddress(chain)
 
 	tr.curlJsonRPCRequest(method, params, address)
 
@@ -2984,94 +2481,97 @@ func (tr Chain) AdvanceTimeForChain(chain ChainID, duration time.Duration) {
 	tr.waitBlocks(chain, 1, time.Minute)
 }
 
-type CreateIbcClientAction struct {
-	ChainA ChainID
-	ChainB ChainID
+func (tr Chain) getValidatorNode(chain ChainID, validator ValidatorID) string {
+	// for CometMock, validatorNodes are all the same address as the query node (which is CometMocks address)
+	if tr.TestConfig.UseCometmock {
+		return tr.Target.GetQueryNode(chain)
+	}
+
+	return "tcp://" + tr.getValidatorIP(chain, validator) + ":26658"
 }
 
-func (tr Chain) createIbcClientHermes(
-	action CreateIbcClientAction,
-	verbose bool,
-) {
-	cmd := tr.target.ExecCommand("hermes",
-		"create", "client",
-		"--host-chain", string(tr.testConfig.ChainConfigs[action.ChainA].ChainId),
-		"--reference-chain", string(tr.testConfig.ChainConfigs[action.ChainB].ChainId),
-		"--trusting-period", "1200000s",
-	)
+func (tr Chain) getValidatorIP(chain ChainID, validator ValidatorID) string {
+	return tr.TestConfig.ChainConfigs[chain].IpPrefix + "." + tr.TestConfig.ValidatorConfigs[validator].IpSuffix
+}
 
-	cmdReader, err := cmd.StdoutPipe()
+func (tr Chain) getValidatorHome(chain ChainID, validator ValidatorID) string {
+	return `/` + string(chain) + `/validator` + fmt.Sprint(validator)
+}
+
+func (tr Chain) curlJsonRPCRequest(method, params, address string) {
+	cmd_template := `curl -H 'Content-Type: application/json' -H 'Accept:application/json' --data '{"jsonrpc":"2.0","method":"%s","params":%s,"id":1}' %s`
+
+	cmd := tr.Target.ExecCommand("bash", "-c", fmt.Sprintf(cmd_template, method, params, address))
+
+	verbosity := false
+	e2e.ExecuteCommand(cmd, "curlJsonRPCRequest", verbosity)
+}
+
+// waitForTx waits until a transaction is seen in a block or panics if a timeout occurs
+func (tr Chain) waitForTx(chain ChainID, txResponse []byte, timeout time.Duration) e2e.TxResponse {
+	// remove any gas estimate as when command is run with gas=auto the output contains gas estimation mixed with json output
+	re, err := regexp.Compile("gas estimate: [0-9]+")
 	if err != nil {
-		log.Fatal(err)
+		panic(fmt.Sprintf("error compiling regexp: %s", err.Error()))
 	}
-	cmd.Stderr = cmd.Stdout
+	txResponse = re.ReplaceAll(txResponse, []byte{})
 
-	if err := cmd.Start(); err != nil {
-		log.Fatal(err)
+	// check transaction
+	response := e2e.GetTxResponse(txResponse)
+	if response.Code != 0 {
+		log.Fatalf("sending transaction failed with error code %d, Log:'%s'", response.Code, response.RawLog)
 	}
 
-	scanner := bufio.NewScanner(cmdReader)
-
-	for scanner.Scan() {
-		out := scanner.Text()
-		if verbose {
-			fmt.Println("createIbcClientHermes: " + out)
+	// wait for the transaction
+	start := time.Now()
+	for {
+		res, err := tr.Target.QueryTransaction(chain, response.TxHash)
+		if err == nil {
+			return e2e.GetTxResponse(res)
 		}
-		if out == done {
-			break
+		if time.Since(start) > timeout {
+			log.Printf("query transaction failed with err=%s, resp=%s", err.Error(), res)
+			panic(fmt.Sprintf("\n\nwaitForTx on chain '%s' has timed out after: %s\n\n", chain, timeout))
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
 	}
 }
 
-type TransferIbcTokenAction struct {
-	Chain   ChainID
-	DstAddr string
-	From    ValidatorID
-	Amount  uint
-	Channel uint
-	Memo    string
+func (tr Chain) waitBlocks(chain ChainID, blocks uint, timeout time.Duration) {
+	if tr.TestConfig.UseCometmock {
+		// call advance_blocks method on cometmock
+		// curl -H 'Content-Type: application/json' -H 'Accept:application/json' --data '{"jsonrpc":"2.0","method":"advance_blocks","params":{"num_blocks": "36000000"},"id":1}' 127.0.0.1:22331
+		tcpAddress := tr.Target.GetQueryNodeRPCAddress(chain)
+		method := "advance_blocks"
+		params := fmt.Sprintf(`{"num_blocks": "%d"}`, blocks)
+
+		tr.curlJsonRPCRequest(method, params, tcpAddress)
+		return
+	}
+	startBlock := tr.Target.GetBlockHeight(chain)
+
+	start := time.Now()
+	for {
+		thisBlock := tr.Target.GetBlockHeight(chain)
+		if thisBlock >= startBlock+blocks {
+			return
+		}
+		if time.Since(start) > timeout {
+			panic(fmt.Sprintf("\n\n\nwaitBlocks method on chain '%s' has timed out after: %s\n\n", chain, timeout))
+		}
+		time.Sleep(time.Second)
+	}
 }
 
-func (tr Chain) transferIbcToken(
-	action TransferIbcTokenAction,
-	verbose bool,
-) {
-	// Note: to get error response reported back from this command '--gas auto' needs to be set.
-	gas := "auto"
-
-	transferCmd := fmt.Sprintf(
-		`%s tx ibc-transfer transfer transfer \
-%s %s %s --memo %q --from validator%s --chain-id %s \
---home %s --node %s --gas %s --keyring-backend test -y -o json`,
-		tr.testConfig.ChainConfigs[action.Chain].BinaryName,
-		"channel-"+fmt.Sprint(action.Channel),
-		action.DstAddr,
-		fmt.Sprint(action.Amount)+`stake`,
-		action.Memo,
-		action.From,
-		string(tr.testConfig.ChainConfigs[action.Chain].ChainId),
-		tr.getValidatorHome(action.Chain, action.From),
-		tr.getValidatorNode(action.Chain, action.From),
-		gas,
-	)
-
-	cmd := tr.target.ExecCommand(
-		"/bin/bash", "-c",
-		transferCmd,
-	)
-
-	if verbose {
-		fmt.Println("transferIbcToken cmd:", cmd.String())
+func (tr Chain) waitUntilBlock(chain ChainID, block uint, timeout time.Duration) {
+	start := time.Now()
+	for {
+		thisBlock := tr.Target.GetBlockHeight(chain)
+		if thisBlock >= block {
+			return
+		}
+		if time.Since(start) > timeout {
+			panic(fmt.Sprintf("\n\n\nwaitBlocks method has timed out after: %s\n\n", timeout))
+		}
+		time.Sleep(500 * time.Millisecond)
 	}
-
-	bz, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatalf("unexpected error during IBC token transfer: %s: %s", string(bz), err)
-	}
-
-	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-	tr.waitBlocks(action.Chain, 2, 30*time.Second)
 }

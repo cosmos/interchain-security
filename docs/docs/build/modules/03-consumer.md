@@ -12,7 +12,7 @@ The ICS consumer module enables consumer chains to use stake locked on a provide
 as collateral for their own proof-of-stake based block production. 
 
 The consumer module established a IBC ordered channel to the provider chain. 
-This channel is used by the provider chain to regularly sent validator updates the the consumer chain. 
+This channel is used by the provider chain to regularly send validator updates to the consumer chain. 
 The consumer sends these updates to its own consensus engine. 
 This means that the consumer module acts as a staking module of the consumer chain. 
 
@@ -25,7 +25,7 @@ As a result, the misbehaving validator is punished on the provider chain.
 
 ## State 
 
-For clarity, the description of the the consumer module state is split into features.
+For clarity, the description of the consumer module state is split into features.
 For a more accurate description, check out the `x/ccv/consumer/types/keys.go` file, which contains the definitions of all the keys. 
 
 ### Provider Connection
@@ -119,7 +119,7 @@ message CrossChainValidator {
 `HistoricalInfo` is the header and validator information for a given block. 
 For more details, see the [Cosmos SDK docs](https://docs.cosmos.network/v0.50/build/modules/staking#historicalinfo).
 
-Format: `byte(11) | height -> HistoricalInfo`, where `HistoricalInfo` is define in the staking module as 
+Format: `byte(11) | height -> HistoricalInfo`, where `HistoricalInfo` is defined in the staking module as 
 
 ```proto
 message HistoricalInfo {
@@ -213,7 +213,7 @@ The consumer module is an IBC application that implements the [IBC module callba
 `OnChanOpenInit` first verifies that the CCV channel was not already created. 
 Then, it validates the channel parameters -- an ordered IBC channel connected on the `consumer` port 
 and with the counterparty port set to `provider` -- and asserts that the version matches the expected version 
-(only verions `1` is supported).
+(only version `1` is supported).
 
 Finally, it verifies that the underlying client is the expected client of the provider chain 
 (i.e., provided in the consumer module genesis state). 
@@ -226,12 +226,12 @@ Finally, it verifies that the underlying client is the expected client of the pr
 
 `OnChanOpenAck` first verifies that the CCV channel was not already created. 
 Then it verifies that the counterparty version matches the expected version 
-(only verions `1` is supported).
+(only version `1` is supported).
 
 If the verification passes, it stores the [ProviderFeePoolAddr](#providerfeepooladdrstr) in the state.
 
 Finally, if the [DistributionTransmissionChannel](#distributiontransmissionchannel) parameter is not set,
-it initiate the opening handshake for a token transfer channel over the same connection as the CCV channel
+it initiates the opening handshake for a token transfer channel over the same connection as the CCV channel
 by calling the `ChannelOpenInit` method of the IBC module.
 
 ### OnChanOpenConfirm
@@ -240,7 +240,7 @@ by calling the `ChannelOpenInit` method of the IBC module.
 
 ### OnChanCloseInit
 
-`OnChanCloseInit` allow relayers to close duplicate OPEN channels, if the channel handshake is completed.
+`OnChanCloseInit` allows relayers to close duplicate OPEN channels, if the channel handshake is completed.
 
 ### OnChanCloseConfirm
 
@@ -303,7 +303,7 @@ message MsgUpdateParams {
 In the `BeginBlock` of the consumer module the following actions are performed:
 
 - Store in state the block height to VSC id mapping needed for sending to the provider the height of infractions committed on the consumer chain.
-- Track historical entries. This is the same lofic as in the `x/staking` module.
+- Track historical entries. This is the same logic as in the `x/staking` module.
 
 ## EndBlock
 
@@ -313,7 +313,7 @@ In the `EndBlock` of the consumer module the following actions are performed:
   that was just upgraded to include the consumer module, then execute the [changeover logic](../../consumer-development/changeover-procedure.md).
 - Otherwise, distribute block rewards internally and once every [BlocksPerDistributionTransmission](#blocksperdistributiontransmission) send 
   ICS rewards to the provider chain.
-- Send slash packets to the provider chain reporting infractions validators commited on the consumer chain.
+- Send slash packets to the provider chain reporting infractions validators committed on the consumer chain.
 - Send to the consensus engine validator updates reveived from the provider chain.
 
 ## Hooks
@@ -328,7 +328,7 @@ In the `EndBlock` of the consumer module the following actions are performed:
 
 :::warning
 The consumer module parameters are set by the provider when creating the consumer genesis (i.e., when launching the consumer chain). 
-As a result, changes of these parameters might results in incompatibilities between different versions of consumers and providers. 
+As a result, changes of these parameters might result in incompatibilities between different versions of consumers and providers. 
 :::
 
 The consumer module contains the following parameters.

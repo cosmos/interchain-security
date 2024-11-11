@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 	"time"
 )
 
@@ -14,6 +16,8 @@ const (
 	TEST_STATUS_FINISHED = "FINISHED"
 	TEST_STATUS_NOTRUN   = "NO RUN"
 )
+
+var runnerId uint = 0
 
 // A test runner drives the execution of test cases
 // It sets up the test environment and the test driver to run the tests
@@ -90,7 +94,7 @@ func (tr *TestRunner) Run() error {
 	if err != nil {
 		tr.result.Failed()
 		// not tearing down environment for troubleshooting reasons on container
-		return fmt.Errorf("test run '%s' failed: %v", tr.config.name, err)
+		return fmt.Errorf("test run '%s' failed: %v", tr.config.Name, err)
 	}
 
 	tr.result.Passed()
@@ -100,7 +104,7 @@ func (tr *TestRunner) Run() error {
 }
 
 func (tr *TestRunner) checkConfig() error {
-	tr.config.validateStringLiterals()
+	tr.config.ValidateStringLiterals()
 	return nil
 }
 
@@ -110,7 +114,23 @@ func (tr *TestRunner) setupEnvironment(target ExecutionTarget) error {
 }
 
 func (tr *TestRunner) teardownEnvironment() error {
+	if tr.skipCleanUp() {
+		fmt.Println("Skip tear down !")
+		return nil
+	}
 	return tr.target.Stop()
+}
+
+func (tr *TestRunner) skipCleanUp() bool {
+	if value, present := os.LookupEnv("ICS_E2E_SKIP_CLEANUP"); present {
+		if len(value) > 0 {
+			if skipCleanup, err := strconv.ParseBool(value); err == nil {
+				return skipCleanup
+			}
+		}
+		return true
+	}
+	return false
 }
 
 func (tr *TestRunner) Setup(testCfg TestConfig) error {
@@ -118,7 +138,15 @@ func (tr *TestRunner) Setup(testCfg TestConfig) error {
 	return nil
 }
 
+func (tr *TestRunner) CleanUp() error {
+	if tr.skipCleanUp() {
+		return nil
+	}
+	return tr.target.Delete()
+}
+
 func CreateTestRunner(config TestConfig, stepChoice StepChoice, target ExecutionTarget, verbose bool) TestRunner {
+
 	return TestRunner{
 		target:     target,
 		stepChoice: stepChoice,
@@ -137,7 +165,7 @@ Config: %s
 Target: %s
 -------------------------------------------------`,
 		tr.stepChoice.name,
-		tr.config.name,
+		tr.config.Name,
 		tr.target.Info(),
 	)
 }
@@ -154,7 +182,7 @@ Target: %s
 - StartTime: %s
 -------------------------------------------------`,
 		tr.stepChoice.name,
-		tr.config.name,
+		tr.config.Name,
 		tr.target.Info(),
 		tr.result.Status,
 		tr.result.Result,

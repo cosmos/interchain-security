@@ -23,6 +23,13 @@ type GovernanceProposal struct {
 	Expedited bool              `json:"expedited"`
 }
 
+type TxResponse struct {
+	TxHash string      `json:"txhash"`
+	Code   int         `json:"code"`
+	RawLog string      `json:"raw_log"`
+	Events []sdk.Event `json:"events"`
+}
+
 // GenerateGovProposalContent creates proposal content ready to be used by `gov submit-proposal` command
 func GenerateGovProposalContent(title, summary, metadata, deposit, description string, expedited bool, msgs ...sdk.Msg) string {
 	// Register the messages. Needed for correct type annotation in the resulting json
@@ -55,6 +62,16 @@ func GenerateGovProposalContent(title, summary, metadata, deposit, description s
 	return string(raw)
 }
 
+func GetTxResponse(rawResponse []byte) TxResponse {
+	txResponse := &TxResponse{}
+	err := json.Unmarshal(rawResponse, txResponse)
+	if err != nil {
+		log.Fatalf("failed unmarshalling tx response: %s, json: %s",
+			err.Error(), string(rawResponse))
+	}
+	return *txResponse
+}
+
 func ExecuteCommand(cmd *exec.Cmd, cmdName string, verbose bool) {
 	if verbose {
 		fmt.Println(cmdName+" cmd:", cmd.String())
@@ -81,4 +98,12 @@ func ExecuteCommand(cmd *exec.Cmd, cmdName string, verbose bool) {
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func UintPtr(i uint) *uint {
+	return &i
+}
+
+func IntPtr(i int) *int {
+	return &i
 }

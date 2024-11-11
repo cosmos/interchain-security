@@ -121,7 +121,7 @@ func stepsPermissionlessICS() []Step {
 					Chain:         ChainID("provi"),
 					From:          ValidatorID("bob"),
 					ConsumerChain: ChainID("cons1"),
-					NewOwner:      getDefaultValidators()[ValidatorID("carol")].ValconsAddress,
+					NewOwner:      getDefaultValidators()[ValidatorID("carol")].ValoperAddress,
 					InitParams: &InitializationParameters{
 						InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 						SpawnTime:     0, // launch now
