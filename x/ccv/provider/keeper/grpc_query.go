@@ -618,6 +618,10 @@ func (k Keeper) QueryConsumerChain(goCtx context.Context, req *types.QueryConsum
 	initParams, _ := k.GetConsumerInitializationParameters(ctx, consumerId)
 	powerParams, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 
+	// The client id might not exist in case the consumer chain has not yet launched or in case the chain has been deleted.
+	// That's why we do not check if the client id is found.
+	clientId, _ := k.GetConsumerClientId(ctx, consumerId)
+
 	return &types.QueryConsumerChainResponse{
 		ChainId:            chainId,
 		ConsumerId:         consumerId,
@@ -626,10 +630,11 @@ func (k Keeper) QueryConsumerChain(goCtx context.Context, req *types.QueryConsum
 		Metadata:           metadata,
 		InitParams:         &initParams,
 		PowerShapingParams: &powerParams,
+		ClientId:           clientId,
 	}, nil
 }
 
-//  QueryConsumerGenesisTime returns the genesis time
+// QueryConsumerGenesisTime returns the genesis time
 // of the consumer chain associated with the provided consumer id
 func (k Keeper) QueryConsumerGenesisTime(goCtx context.Context, req *types.QueryConsumerGenesisTimeRequest) (*types.QueryConsumerGenesisTimeResponse, error) {
 	if req == nil {
