@@ -677,6 +677,7 @@ func New(
 				}
 			}
 
+			// TODO: remove this code
 			// For a new consumer chain, this code (together with the entire SetUpgradeHandler) is not needed at all,
 			// upgrade handler code is application specific. However, as an example, standalone to consumer
 			// changeover chains should utilize customized upgrade handler code similar to below.
