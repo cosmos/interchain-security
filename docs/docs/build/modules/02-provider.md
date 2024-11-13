@@ -1553,6 +1553,7 @@ init_params:
   spawn_time: "2024-09-26T06:55:14.616054Z"
   transfer_timeout_period: 3600s
   unbonding_period: 1209600s
+  connection_id: ""
 metadata:
     description: description of your chain and all other relevant information
     metadata: some metadata about your chain
@@ -1708,7 +1709,8 @@ where `update-consumer-msg.json` contains:
       "consumer_redistribution_fraction": "0.75",
       "blocks_per_distribution_transmission": "1500",
       "historical_entries": "1000",
-      "distribution_transmission_channel": ""
+      "distribution_transmission_channel": "",
+      "connection_id": ""
   },
   "power_shaping_parameters":{
       "top_N": 0,
