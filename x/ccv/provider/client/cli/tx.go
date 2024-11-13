@@ -246,7 +246,7 @@ where create_consumer.json has the following structure:
     "blocks_per_distribution_transmission": 1000,
     "historical_entries": 10000,
     "distribution_transmission_channel": "",
-	"connection_id": ""
+    "connection_id": ""
   },
   "power_shaping_parameters": {
     "top_N": 0,
