@@ -6,6 +6,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
@@ -89,6 +90,26 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 
 		// set default value for valset update ID
 		k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight()), uint64(0))
+
+		if state.ConnectionId != "" {
+			// initiate CCV channel handshake
+			ccvChannelOpenInitMsg := channeltypes.NewMsgChannelOpenInit(
+				ccv.ConsumerPortID,
+				ccv.Version,
+				channeltypes.ORDERED,
+				[]string{state.ConnectionId},
+				ccv.ProviderPortID,
+				"", // signer unused
+			)
+			_, err := k.ChannelOpenInit(ctx, ccvChannelOpenInitMsg)
+			if err != nil {
+				panic(err)
+			}
+
+			// Note that if the connection ID is not provider, we cannot initiate
+			// the connection handshake as the counterparty client ID is unknown
+			// at this point. The connection handshake must be initiated by a relayer.
+		}
 
 	} else {
 		// chain restarts with the CCV channel established
