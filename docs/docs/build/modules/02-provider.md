@@ -2336,7 +2336,7 @@ Output:
 
 #### List Consumer Chains
 
-The `QueryConsumerChains` endpoint queries consumer chains supported by the provider chain.
+The `QueryConsumerChains` endpoint queries consumer chains supported by the provider chain and supports pagination for managing a large number of chains.
 An optional integer parameter can be passed for phase filtering of consumer chains, (Registered=1|Initialized=2|Launched=3|Stopped=4|Deleted=5).`
 
 ```bash
@@ -2873,7 +2873,8 @@ grpcurl -plaintext -d '{"consumer_id": "0"}' localhost:9090 interchain_security.
     "validatorSetCap": 50,
     "minStake": "1000",
     "allowInactiveVals": true
-  }
+  },
+  "clientId": "07-tendermint-28"
 }
 ```
 
