@@ -403,6 +403,28 @@ func (k msgServer) CreateConsumer(goCtx context.Context, msg *types.MsgCreateCon
 			"cannot set power shaping parameters")
 	}
 
+	// infraction parameters are optional and hence could be nil;
+	// in that case, all slashing and jailing parameters are the same as on the provider
+	infractionParameters, err := types.DefaultConsumerInfractionParameters(ctx, k.slashingKeeper)
+	if err != nil {
+		return &resp, errorsmod.Wrapf(types.ErrInvalidConsumerInfractionParameters,
+			"cannot get default consumer infraction parameters: %s", err.Error())
+	}
+
+	if msg.InfractionParameters != nil {
+		if msg.InfractionParameters.DoubleSign != nil {
+			infractionParameters.DoubleSign = msg.InfractionParameters.DoubleSign
+		}
+		if msg.InfractionParameters.Downtime != nil {
+			infractionParameters.Downtime = msg.InfractionParameters.Downtime
+		}
+	}
+
+	if err := k.Keeper.SetInfractionParameters(ctx, consumerId, infractionParameters); err != nil {
+		return &resp, errorsmod.Wrapf(types.ErrInvalidConsumerInfractionParameters,
+			"cannot set consumer infraction parameters: %s", err.Error())
+	}
+
 	if spawnTime, initialized := k.Keeper.InitializeConsumer(ctx, consumerId); initialized {
 		if err := k.Keeper.PrepareConsumerForLaunch(ctx, consumerId, time.Time{}, spawnTime); err != nil {
 			return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState,
@@ -585,6 +607,39 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 		// add TopN event attribute
 		eventAttributes = append(eventAttributes,
 			sdk.NewAttribute(types.AttributeConsumerTopN, fmt.Sprintf("%v", msg.PowerShapingParameters.Top_N)))
+	}
+
+	if msg.InfractionParameters != nil {
+		// get the current infraction parameters for the given consumer id
+		currentInfractionParams, err := k.GetInfractionParameters(ctx, consumerId)
+		if err != nil {
+			return &resp, errorsmod.Wrapf(ccvtypes.ErrInvalidConsumerState,
+				"cannot get consumer previous infraction parameters")
+		}
+
+		// if the double sign or downtime slashing parameters are not set in the MsgUpdateConsumer,
+		// retain the current values by assigning them to the new infraction parameters
+		newInfractionParams := *msg.InfractionParameters
+		if msg.InfractionParameters.DoubleSign == nil {
+			newInfractionParams.DoubleSign = currentInfractionParams.DoubleSign
+		}
+		if msg.InfractionParameters.Downtime == nil {
+			newInfractionParams.Downtime = currentInfractionParams.Downtime
+		}
+
+		// depending on the consumer phase, set the new infraction parameters either immediately
+		// or add them to the time queue to be updated after the unbonding period
+		if k.IsConsumerPrelaunched(ctx, consumerId) {
+			if err = k.Keeper.SetInfractionParameters(ctx, consumerId, newInfractionParams); err != nil {
+				return &resp, errorsmod.Wrapf(types.ErrInvalidConsumerInfractionParameters,
+					"cannot set infraction parameters")
+			}
+		}
+		if err = k.Keeper.UpdateQueuedInfractionParams(ctx, consumerId, newInfractionParams); err != nil {
+			return &resp, errorsmod.Wrapf(types.ErrInvalidConsumerInfractionParameters,
+				"cannot update consumer infraction time queue")
+		}
+
 	}
 
 	// A Top N cannot change its owner address to something different from the gov module if the chain

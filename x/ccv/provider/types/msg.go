@@ -283,7 +283,7 @@ func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
 // NewMsgCreateConsumer creates a new MsgCreateConsumer instance
 func NewMsgCreateConsumer(submitter, chainId string, metadata ConsumerMetadata,
 	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters,
-	allowlistedRewardDenoms *AllowlistedRewardDenoms,
+	allowlistedRewardDenoms *AllowlistedRewardDenoms, infractionParameters *InfractionParameters,
 ) (*MsgCreateConsumer, error) {
 	return &MsgCreateConsumer{
 		Submitter:                submitter,
@@ -292,6 +292,7 @@ func NewMsgCreateConsumer(submitter, chainId string, metadata ConsumerMetadata,
 		InitializationParameters: initializationParameters,
 		PowerShapingParameters:   powerShapingParameters,
 		AllowlistedRewardDenoms:  allowlistedRewardDenoms,
+		InfractionParameters:     infractionParameters,
 	}, nil
 }
 
@@ -346,6 +347,12 @@ func (msg MsgCreateConsumer) ValidateBasic() error {
 		}
 	}
 
+	if msg.InfractionParameters != nil {
+		if err := ValidateInfractionParameters(*msg.InfractionParameters); err != nil {
+			return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "InfractionParameters: %s", err.Error())
+		}
+	}
+
 	if msg.AllowlistedRewardDenoms != nil {
 		if err := ValidateAllowlistedRewardDenoms(*msg.AllowlistedRewardDenoms); err != nil {
 			return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "AllowlistedRewardDenoms: %s", err.Error())
@@ -358,7 +365,7 @@ func (msg MsgCreateConsumer) ValidateBasic() error {
 // NewMsgUpdateConsumer creates a new MsgUpdateConsumer instance
 func NewMsgUpdateConsumer(owner, consumerId, ownerAddress string, metadata *ConsumerMetadata,
 	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters,
-	allowlistedRewardDenoms *AllowlistedRewardDenoms, newChainId string,
+	allowlistedRewardDenoms *AllowlistedRewardDenoms, newChainId string, infractionParameters *InfractionParameters,
 ) (*MsgUpdateConsumer, error) {
 	return &MsgUpdateConsumer{
 		Owner:                    owner,
@@ -369,6 +376,7 @@ func NewMsgUpdateConsumer(owner, consumerId, ownerAddress string, metadata *Cons
 		PowerShapingParameters:   powerShapingParameters,
 		AllowlistedRewardDenoms:  allowlistedRewardDenoms,
 		NewChainId:               newChainId,
+		InfractionParameters:     infractionParameters,
 	}, nil
 }
 
@@ -395,6 +403,12 @@ func (msg MsgUpdateConsumer) ValidateBasic() error {
 	if msg.PowerShapingParameters != nil {
 		if err := ValidatePowerShapingParameters(*msg.PowerShapingParameters); err != nil {
 			return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "PowerShapingParameters: %s", err.Error())
+		}
+	}
+
+	if msg.InfractionParameters != nil {
+		if err := ValidateInfractionParameters(*msg.InfractionParameters); err != nil {
+			return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "InfractionParameters: %s", err.Error())
 		}
 	}
 
@@ -606,6 +620,29 @@ func ValidateInitializationParameters(initializationParameters ConsumerInitializ
 
 	if err := ccvtypes.ValidateDuration(initializationParameters.UnbondingPeriod); err != nil {
 		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "UnbondingPeriod: %s", err.Error())
+	}
+
+	return nil
+}
+
+// ValidateInfractionParameters validates that all the provided infraction parameters are in the expected range
+func ValidateInfractionParameters(initializationParameters InfractionParameters) error {
+	if initializationParameters.DoubleSign != nil {
+		if initializationParameters.DoubleSign.JailDuration < 0 {
+			return errorsmod.Wrap(ErrInvalidConsumerInfractionParameters, "DoubleSign.JailDuration cannot be negative")
+		}
+		if err := ccvtypes.ValidateFraction(initializationParameters.DoubleSign.SlashFraction); err != nil {
+			return errorsmod.Wrapf(ErrInvalidConsumerInfractionParameters, "DoubleSign.SlashFraction: %s", err.Error())
+		}
+	}
+
+	if initializationParameters.Downtime != nil {
+		if initializationParameters.Downtime.JailDuration < 0 {
+			return errorsmod.Wrap(ErrInvalidConsumerInfractionParameters, "Downtime.JailDuration cannot be negative")
+		}
+		if err := ccvtypes.ValidateFraction(initializationParameters.Downtime.SlashFraction); err != nil {
+			return errorsmod.Wrapf(ErrInvalidConsumerInfractionParameters, "Downtime.SlashFraction: %s", err.Error())
+		}
 	}
 
 	return nil

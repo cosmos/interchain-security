@@ -478,6 +478,18 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, consumerId string, data ccv.S
 	// TODO: consumer cons address should be accepted here
 	k.AppendSlashAck(ctx, consumerId, consumerConsAddr.String())
 
+	infractionParams, err := k.GetInfractionParameters(ctx, consumerId)
+	if err != nil {
+		k.Logger(ctx).Error("failed to get infraction parameters", "err", err.Error())
+		return
+	}
+
+	// slash validator
+	if err = k.SlashValidator(ctx, providerConsAddr, infractionParams.Downtime, stakingtypes.Infraction_INFRACTION_DOWNTIME); err != nil {
+		k.Logger(ctx).Error("failed to slash vaidator", providerConsAddr.ToSdkConsAddr().String(), "err", err.Error())
+		return
+	}
+
 	// jail validator
 	if !validator.IsJailed() {
 		err := k.stakingKeeper.Jail(ctx, providerConsAddr.ToSdkConsAddr())
@@ -486,12 +498,8 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, consumerId string, data ccv.S
 			return
 		}
 		k.Logger(ctx).Info("HandleSlashPacket - validator jailed", "provider cons addr", providerConsAddr.String())
-		jailDuration, err := k.slashingKeeper.DowntimeJailDuration(ctx)
-		if err != nil {
-			k.Logger(ctx).Error("failed to get jail duration", "err", err.Error())
-			return
-		}
-		jailEndTime := ctx.BlockTime().Add(jailDuration)
+
+		jailEndTime := ctx.BlockTime().Add(infractionParams.Downtime.JailDuration)
 		err = k.slashingKeeper.JailUntil(ctx, providerConsAddr.ToSdkConsAddr(), jailEndTime)
 		if err != nil {
 			k.Logger(ctx).Error("failed to set jail duration", "err", err.Error())

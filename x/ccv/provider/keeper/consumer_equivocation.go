@@ -11,7 +11,6 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
-	evidencetypes "cosmossdk.io/x/evidence/types"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -75,10 +74,16 @@ func (k Keeper) HandleConsumerDoubleVoting(
 		types.NewConsumerConsAddress(sdk.ConsAddress(evidence.VoteA.ValidatorAddress.Bytes())),
 	)
 
-	if err = k.SlashValidator(ctx, providerAddr); err != nil {
+	// get the consumer's infraction parameters
+	infractionParams, err := k.GetInfractionParameters(ctx, consumerId)
+	if err != nil {
 		return err
 	}
-	if err = k.JailAndTombstoneValidator(ctx, providerAddr); err != nil {
+
+	if err = k.SlashValidator(ctx, providerAddr, infractionParams.DoubleSign, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN); err != nil {
+		return err
+	}
+	if err = k.JailAndTombstoneValidator(ctx, providerAddr, infractionParams.DoubleSign); err != nil {
 		return err
 	}
 
@@ -186,6 +191,11 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, consumerId string, m
 
 	provAddrs := make([]types.ProviderConsAddress, 0, len(byzantineValidators))
 
+	infractionParams, err := k.GetInfractionParameters(ctx, consumerId)
+	if err != nil {
+		return err
+	}
+
 	// slash, jail, and tombstone the Byzantine validators
 	for _, v := range byzantineValidators {
 		providerAddr := k.GetProviderAddrFromConsumerAddr(
@@ -193,12 +203,12 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, consumerId string, m
 			consumerId,
 			types.NewConsumerConsAddress(sdk.ConsAddress(v.Address.Bytes())),
 		)
-		err := k.SlashValidator(ctx, providerAddr)
+		err := k.SlashValidator(ctx, providerAddr, infractionParams.DoubleSign, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
 		if err != nil {
 			logger.Error("failed to slash validator: %s", err)
 			continue
 		}
-		err = k.JailAndTombstoneValidator(ctx, providerAddr)
+		err = k.JailAndTombstoneValidator(ctx, providerAddr, infractionParams.DoubleSign)
 		// JailAndTombstoneValidator should never return an error if
 		// SlashValidator succeeded because both methods fail if the malicious
 		// validator is either or both !found, unbonded and tombstoned.
@@ -411,7 +421,7 @@ func verifyLightBlockCommitSig(lightBlock tmtypes.LightBlock, sigIdx int) error 
 //
 
 // JailAndTombstoneValidator jails and tombstones the validator with the given provider consensus address
-func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) error {
+func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress, jailingParams *types.SlashJailParameters) error {
 	validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
 	if err != nil && errors.Is(err, stakingtypes.ErrNoValidatorFound) {
 		return errorsmod.Wrapf(slashingtypes.ErrNoValidatorForAddress, "provider consensus address: %s", providerAddr.String())
@@ -435,7 +445,8 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 		}
 	}
 
-	err = k.slashingKeeper.JailUntil(ctx, providerAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime)
+	jailEndTime := ctx.BlockTime().Add(jailingParams.JailDuration)
+	err = k.slashingKeeper.JailUntil(ctx, providerAddr.ToSdkConsAddr(), jailEndTime)
 	if err != nil {
 		return fmt.Errorf("fail to set jail duration for validator: %s: %s", providerAddr.String(), err)
 	}
@@ -481,7 +492,7 @@ func (k Keeper) ComputePowerToSlash(ctx sdk.Context, validator stakingtypes.Vali
 }
 
 // SlashValidator slashes validator with given provider Address
-func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress) error {
+func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress, slashingParams *types.SlashJailParameters, slashingReason stakingtypes.Infraction) error {
 	validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
 	if err != nil && errors.Is(err, stakingtypes.ErrNoValidatorFound) {
 		return errorsmod.Wrapf(slashingtypes.ErrNoValidatorForAddress, "provider consensus address: %s", providerAddr.String())
@@ -518,16 +529,12 @@ func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsA
 	powerReduction := k.stakingKeeper.PowerReduction(ctx)
 	totalPower := k.ComputePowerToSlash(ctx, validator, undelegations, redelegations, lastPower, powerReduction)
 
-	slashFraction, err := k.slashingKeeper.SlashFractionDoubleSign(ctx)
-	if err != nil {
-		return err
-	}
 	consAdrr, err := validator.GetConsAddr()
 	if err != nil {
 		return err
 	}
 
-	_, err = k.stakingKeeper.SlashWithInfractionReason(ctx, consAdrr, 0, totalPower, slashFraction, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
+	_, err = k.stakingKeeper.SlashWithInfractionReason(ctx, consAdrr, 0, totalPower, slashingParams.SlashFraction, slashingReason)
 	return err
 }
 

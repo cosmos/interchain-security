@@ -303,6 +303,8 @@ func TestQueryConsumerChainsValidatorHasToValidate(t *testing.T) {
 	providerAddr := types.NewProviderConsAddress(valConsAddr)
 	mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, valConsAddr).Return(val, nil).AnyTimes()
 	testkeeper.SetupMocksForLastBondedValidatorsExpectation(mocks.MockStakingKeeper, 1, []stakingtypes.Validator{val}, -1) // -1 to allow the calls "AnyTimes"
+	mocks.MockSlashingKeeper.EXPECT().DowntimeJailDuration(ctx).Return(time.Second*600, nil).AnyTimes()
+	mocks.MockSlashingKeeper.EXPECT().SlashFractionDoubleSign(ctx).Return(math.LegacyNewDec(0), nil).AnyTimes()
 
 	req := types.QueryConsumerChainsValidatorHasToValidateRequest{
 		ProviderAddress: providerAddr.String(),
@@ -491,6 +493,8 @@ func TestGetConsumerChain(t *testing.T) {
 			AllowInactiveVals:  allowInactiveVals[i],
 		})
 		require.NoError(t, err)
+		err = pk.SetInfractionParameters(ctx, consumerID, *getTestInfractionParameters())
+		require.NoError(t, err)
 		pk.SetMinimumPowerInTopN(ctx, consumerID, expectedMinPowerInTopNs[i])
 		for _, addr := range allowlists[i] {
 			pk.SetAllowlist(ctx, consumerID, addr)
@@ -541,6 +545,7 @@ func TestGetConsumerChain(t *testing.T) {
 				ConsumerId:              consumerIDs[i],
 				AllowlistedRewardDenoms: allowlistedRewardDenoms[i],
 				Prioritylist:            strPrioritylist,
+				InfractionParameters:    getTestInfractionParameters(),
 			})
 	}
 
@@ -587,14 +592,18 @@ func TestQueryConsumerChain(t *testing.T) {
 	err = providerKeeper.SetConsumerMetadata(ctx, consumerId, types.ConsumerMetadata{Name: chainId})
 	require.NoError(t, err)
 
+	err = providerKeeper.SetInfractionParameters(ctx, consumerId, *getTestInfractionParameters())
+	require.NoError(t, err)
+
 	expRes := types.QueryConsumerChainResponse{
-		ChainId:            chainId,
-		ConsumerId:         consumerId,
-		OwnerAddress:       providerKeeper.GetAuthority(),
-		Metadata:           types.ConsumerMetadata{Name: chainId},
-		Phase:              types.CONSUMER_PHASE_REGISTERED.String(),
-		InitParams:         &types.ConsumerInitializationParameters{},
-		PowerShapingParams: &types.PowerShapingParameters{},
+		ChainId:              chainId,
+		ConsumerId:           consumerId,
+		OwnerAddress:         providerKeeper.GetAuthority(),
+		Metadata:             types.ConsumerMetadata{Name: chainId},
+		Phase:                types.CONSUMER_PHASE_REGISTERED.String(),
+		InitParams:           &types.ConsumerInitializationParameters{},
+		PowerShapingParams:   &types.PowerShapingParameters{},
+		InfractionParameters: getTestInfractionParameters(),
 	}
 
 	// expect no error when neither the consumer init and power shaping params are set
@@ -642,8 +651,10 @@ func TestQueryConsumerIdFromClientId(t *testing.T) {
 }
 
 func TestQueryConsumerChains(t *testing.T) {
-	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
+	mocks.MockSlashingKeeper.EXPECT().DowntimeJailDuration(ctx).Return(time.Second*600, nil).AnyTimes()
+	mocks.MockSlashingKeeper.EXPECT().SlashFractionDoubleSign(ctx).Return(math.LegacyNewDec(0), nil).AnyTimes()
 
 	consumerNum := 4
 	consumerIds := make([]string, consumerNum)
@@ -674,6 +685,7 @@ func TestQueryConsumerChains(t *testing.T) {
 			ChainId:                  chainID,
 			Metadata:                 metadata,
 			InitializationParameters: &initializationParameters,
+			InfractionParameters:     getTestInfractionParameters(),
 		}
 		resp, err := msgServer.CreateConsumer(ctx, &msg)
 		require.NoError(t, err)
@@ -692,6 +704,7 @@ func TestQueryConsumerChains(t *testing.T) {
 			ConsumerId:              consumerId,
 			AllowlistedRewardDenoms: &types.AllowlistedRewardDenoms{Denoms: []string{}},
 			Prioritylist:            []string{},
+			InfractionParameters:    getTestInfractionParameters(),
 		}
 		consumerIds[i] = consumerId
 		consumers[i] = &c

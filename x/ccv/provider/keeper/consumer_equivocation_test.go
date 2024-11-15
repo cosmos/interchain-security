@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
-	evidencetypes "cosmossdk.io/x/evidence/types"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -383,6 +382,7 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				provAddr types.ProviderConsAddress,
 			) []*gomock.Call {
+				jailEndTime := ctx.BlockTime().Add(getTestInfractionParameters().DoubleSign.JailDuration)
 				return []*gomock.Call{
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
@@ -393,7 +393,7 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 						false,
 					).Times(1),
 					mocks.MockSlashingKeeper.EXPECT().JailUntil(
-						ctx, providerConsAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime).
+						ctx, providerConsAddr.ToSdkConsAddr(), jailEndTime).
 						Times(1),
 					mocks.MockSlashingKeeper.EXPECT().Tombstone(
 						ctx, providerConsAddr.ToSdkConsAddr()).
@@ -407,6 +407,7 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				provAddr types.ProviderConsAddress,
 			) []*gomock.Call {
+				jailEndTime := ctx.BlockTime().Add(getTestInfractionParameters().DoubleSign.JailDuration)
 				return []*gomock.Call{
 					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
 						ctx, providerConsAddr.ToSdkConsAddr()).Return(
@@ -420,7 +421,7 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 						ctx, providerConsAddr.ToSdkConsAddr()).
 						Times(1),
 					mocks.MockSlashingKeeper.EXPECT().JailUntil(
-						ctx, providerConsAddr.ToSdkConsAddr(), evidencetypes.DoubleSignJailEndTime).
+						ctx, providerConsAddr.ToSdkConsAddr(), jailEndTime).
 						Times(1),
 					mocks.MockSlashingKeeper.EXPECT().Tombstone(
 						ctx, providerConsAddr.ToSdkConsAddr()).
@@ -438,7 +439,7 @@ func TestJailAndTombstoneValidator(t *testing.T) {
 		gomock.InOrder(tc.expectedCalls(ctx, mocks, tc.provAddr)...)
 
 		// Execute method and assert expected mock calls
-		providerKeeper.JailAndTombstoneValidator(ctx, tc.provAddr)
+		providerKeeper.JailAndTombstoneValidator(ctx, tc.provAddr, getTestInfractionParameters().DoubleSign)
 
 		ctrl.Finish()
 	}
@@ -677,7 +678,7 @@ func TestSlashValidator(t *testing.T) {
 	currentPower := int64(3000)
 
 	powerReduction := math.NewInt(2)
-	slashFraction, _ := math.LegacyNewDecFromStr("0.5")
+	slashFraction := getTestInfractionParameters().DoubleSign.SlashFraction
 
 	// the call to `Slash` should provide an `infractionHeight` of 0 and an expected power of
 	// (750 (undelegations) + 750 (redelegations)) / 2 (= powerReduction) + 3000 (currentPower) = 3750
@@ -732,16 +733,13 @@ func TestSlashValidator(t *testing.T) {
 					}
 					return sum, nil
 				}).AnyTimes(),
-		mocks.MockSlashingKeeper.EXPECT().
-			SlashFractionDoubleSign(ctx).
-			Return(slashFraction, nil),
 		mocks.MockStakingKeeper.EXPECT().
 			SlashWithInfractionReason(ctx, consAddr, expectedInfractionHeight, expectedSlashPower, slashFraction, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN).Return(math.NewInt(expectedSlashPower), nil).
 			Times(1),
 	}
 
 	gomock.InOrder(expectedCalls...)
-	keeper.SlashValidator(ctx, providerAddr)
+	keeper.SlashValidator(ctx, providerAddr, getTestInfractionParameters().DoubleSign, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
 }
 
 // TestSlashValidatorDoesNotSlashIfValidatorIsUnbonded asserts that `SlashValidator` does not call
@@ -768,7 +766,7 @@ func TestSlashValidatorDoesNotSlashIfValidatorIsUnbonded(t *testing.T) {
 	}
 
 	gomock.InOrder(expectedCalls...)
-	keeper.SlashValidator(ctx, providerAddr)
+	keeper.SlashValidator(ctx, providerAddr, getTestInfractionParameters().DoubleSign, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
 }
 
 func TestEquivocationEvidenceMinHeightCRUD(t *testing.T) {
@@ -787,4 +785,17 @@ func TestEquivocationEvidenceMinHeightCRUD(t *testing.T) {
 	keeper.DeleteEquivocationEvidenceMinHeight(ctx, chainID)
 	height = keeper.GetEquivocationEvidenceMinHeight(ctx, chainID)
 	require.Zero(t, height, "equivocation evidence min height should be 0")
+}
+
+func getTestInfractionParameters() *types.InfractionParameters {
+	return &types.InfractionParameters{
+		DoubleSign: &types.SlashJailParameters{
+			JailDuration:  1200 * time.Second,
+			SlashFraction: math.LegacyNewDecWithPrec(5, 1), // 0.5
+		},
+		Downtime: &types.SlashJailParameters{
+			JailDuration:  600 * time.Second,
+			SlashFraction: math.LegacyNewDec(0),
+		},
+	}
 }

@@ -556,3 +556,22 @@ enum ConsumerPhase {
 message AllowlistedRewardDenoms {
   repeated string denoms = 1;
 }
+
+//
+message InfractionParameters {
+  SlashJailParameters double_sign = 1;
+  SlashJailParameters downtime = 2;
+}
+
+//
+message SlashJailParameters {
+  bytes slash_fraction = 1 [
+    (cosmos_proto.scalar) = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+  // for permanent jailing use 9223372036854775807 which is the largest value a time.Duration can hold (approximately 292 years)
+  google.protobuf.Duration jail_duration = 8
+      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+}

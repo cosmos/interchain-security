@@ -40,4 +40,5 @@ var (
 	ErrInvalidMsgSetConsumerCommissionRate     = errorsmod.Register(ModuleName, 51, "invalid set consumer commission rate message")
 	ErrInvalidMsgChangeRewardDenoms            = errorsmod.Register(ModuleName, 52, "invalid change reward denoms message")
 	ErrInvalidAllowlistedRewardDenoms          = errorsmod.Register(ModuleName, 53, "invalid allowlisted reward denoms")
+	ErrInvalidConsumerInfractionParameters     = errorsmod.Register(ModuleName, 54, "invalid consumer infraction parameters")
 )
