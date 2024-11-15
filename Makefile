@@ -52,6 +52,10 @@ test-integration:
 test-integration-cov:
 	go test ./tests/integration/... -timeout 30m -coverpkg=./... -coverprofile=integration-profile.out -covermode=atomic
 
+# run interchain tests
+test-interchain:
+	cd tests/interchain && go test ./... -timeout 30m
+
 # run mbt tests
 test-mbt:
 	cd tests/mbt/driver;\
