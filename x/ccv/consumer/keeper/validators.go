@@ -85,7 +85,12 @@ func (k Keeper) IterateValidators(context.Context, func(index int64, validator s
 }
 
 // Validator - unimplemented on CCV keeper
-func (k Keeper) Validator(ctx context.Context, addr sdk.ValAddress) (stakingtypes.ValidatorI, error) {
+func (k Keeper) Validator(sdkCtx context.Context, addr sdk.ValAddress) (stakingtypes.ValidatorI, error) {
+	ctx := sdk.UnwrapSDKContext(sdkCtx)
+	if k.IsPrevStandaloneChain(ctx) && k.ChangeoverIsComplete(ctx) && k.standaloneStakingKeeper != nil {
+		return k.standaloneStakingKeeper.Validator(ctx, addr)
+	}
+
 	panic("unimplemented on CCV keeper")
 }
 
@@ -186,7 +191,11 @@ func (k Keeper) Unjail(sdkCtx context.Context, addr sdk.ConsAddress) error {
 }
 
 // Delegation - unimplemented on CCV keeper
-func (k Keeper) Delegation(ctx context.Context, addr sdk.AccAddress, valAddr sdk.ValAddress) (stakingtypes.DelegationI, error) {
+func (k Keeper) Delegation(sdkCtx context.Context, addr sdk.AccAddress, valAddr sdk.ValAddress) (stakingtypes.DelegationI, error) {
+	ctx := sdk.UnwrapSDKContext(sdkCtx)
+	if k.IsPrevStandaloneChain(ctx) && k.ChangeoverIsComplete(ctx) && k.standaloneStakingKeeper != nil {
+		return k.standaloneStakingKeeper.Delegation(ctx, addr, valAddr)
+	}
 	panic("unimplemented on CCV keeper")
 }
 
