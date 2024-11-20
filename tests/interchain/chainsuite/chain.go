@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"path"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	sdkmath "cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -16,6 +19,7 @@ import (
 	"github.com/strangelove-ventures/interchaintest/v8"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 	"github.com/strangelove-ventures/interchaintest/v8/ibc"
+	"github.com/tidwall/gjson"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -439,6 +443,96 @@ func (c *Chain) GetValidatorKey(ctx context.Context, validatorIndex int) (string
 	return address, nil
 }
 
+// UpdateAndVerifyStakeChange updates the staking amount on the provider chain and verifies that the change is reflected on the consumer side
+func (p *Chain) UpdateAndVerifyStakeChange(ctx context.Context, consumer *Chain, relayer *Relayer, amount, valIdx int) error {
+	providerAddress := p.ValidatorWallets[valIdx]
+
+	providerHex, err := p.GetValidatorHexAddress(ctx, valIdx)
+	if err != nil {
+		return err
+	}
+	consumerHex, err := consumer.GetValidatorHexAddress(ctx, valIdx)
+	if err != nil {
+		return err
+	}
+
+	providerPowerBefore, err := p.GetValidatorPower(ctx, providerHex)
+	if err != nil {
+		return err
+	}
+
+	// increase the stake for the given validator
+	_, err = p.Validators[valIdx].ExecTx(ctx, providerAddress.Moniker,
+		"staking", "delegate",
+		providerAddress.ValoperAddress, fmt.Sprintf("%d%s", amount, p.Config().Denom),
+	)
+	if err != nil {
+		return err
+	}
+
+	// check that the validator power is updated on both, provider and consumer chains
+	tCtx, tCancel := context.WithTimeout(ctx, 15*time.Minute)
+	defer tCancel()
+	var retErr error
+	for tCtx.Err() == nil {
+		retErr = nil
+		providerPower, err := p.GetValidatorPower(ctx, providerHex)
+		if err != nil {
+			return err
+		}
+		consumerPower, err := consumer.GetValidatorPower(ctx, consumerHex)
+		if err != nil {
+			return err
+		}
+		if providerPowerBefore >= providerPower {
+			retErr = fmt.Errorf("provider power did not increase after delegation")
+		} else if providerPower != consumerPower {
+			retErr = fmt.Errorf("consumer power did not update after provider delegation")
+		}
+		if retErr == nil {
+			break
+		}
+		time.Sleep(CommitTimeout)
+	}
+	return retErr
+}
+
+func (p *Chain) GetValidatorHexAddress(ctx context.Context, valIdx int) (string, error) {
+	json, err := p.Validators[valIdx].ReadFile(ctx, "config/priv_validator_key.json")
+	if err != nil {
+		return "", err
+	}
+	return gjson.GetBytes(json, "address").String(), nil
+}
+
+func (c *Chain) GetValidatorPower(ctx context.Context, hexaddr string) (int64, error) {
+	var power int64
+	err := checkEndpoint(c.GetHostRPCAddress()+"/validators", func(b []byte) error {
+		power = gjson.GetBytes(b, fmt.Sprintf("result.validators.#(address==\"%s\").voting_power", hexaddr)).Int()
+		if power == 0 {
+			return fmt.Errorf("validator %s power not found; validators are: %s", hexaddr, string(b))
+		}
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+	return power, nil
+}
+
+func checkEndpoint(url string, f func([]byte) error) error {
+	resp, err := http.Get(url) //nolint:gosec
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	bts, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	return f(bts)
+}
+
 func getEvtAttribute(events []abci.Event, evtType string, key string) (string, bool) {
 	for _, evt := range events {
 		if evt.GetType() == evtType {
@@ -451,4 +545,160 @@ func getEvtAttribute(events []abci.Event, evtType string, key string) (string, b
 	}
 
 	return "", false
+}
+func (p *Chain) AddConsumerChain(ctx context.Context, relayer *Relayer, chainId string, spec *interchaintest.ChainSpec) (*Chain, error) {
+	dockerClient, dockerNetwork := GetDockerContext(ctx)
+
+	cf := interchaintest.NewBuiltinChainFactory(
+		GetLogger(ctx),
+		[]*interchaintest.ChainSpec{spec},
+	)
+
+	chains, err := cf.Chains(p.GetNode().TestName)
+	if err != nil {
+		return nil, err
+	}
+	consumer := chains[0].(*cosmos.CosmosChain)
+
+	// We can't use AddProviderConsumerLink here because the provider chain is already built; we'll have to do everything by hand.
+	p.Consumers = append(p.Consumers, consumer)
+	consumer.Provider = p.CosmosChain
+
+	relayerWallet, err := consumer.BuildRelayerWallet(ctx, "relayer-"+consumer.Config().ChainID)
+	if err != nil {
+		return nil, err
+	}
+	wallets := make([]ibc.Wallet, len(p.Validators)+1)
+	wallets[0] = relayerWallet
+	// This is a hack, but we need to create wallets for the validators that have the right moniker.
+	for i := 1; i <= len(p.Validators); i++ {
+		wallets[i], err = consumer.BuildRelayerWallet(ctx, ValidatorMoniker)
+		if err != nil {
+			return nil, err
+		}
+	}
+	walletAmounts := make([]ibc.WalletAmount, len(wallets)+1)
+	for i, wallet := range wallets {
+		walletAmounts[i] = ibc.WalletAmount{
+			Address: wallet.FormattedAddress(),
+			Denom:   consumer.Config().Denom,
+			Amount:  sdkmath.NewInt(TotalValidatorFunds),
+		}
+	}
+
+	ic := interchaintest.NewInterchain().
+		AddChain(consumer, walletAmounts...).
+		AddRelayer(relayer, "relayer")
+
+	if err := ic.Build(ctx, GetRelayerExecReporter(ctx), interchaintest.InterchainBuildOptions{
+		Client:    dockerClient,
+		NetworkID: dockerNetwork,
+		TestName:  p.GetNode().TestName,
+	}); err != nil {
+		return nil, err
+	}
+
+	for i, val := range consumer.Validators {
+		if err := val.RecoverKey(ctx, ValidatorMoniker, wallets[i+1].Mnemonic()); err != nil {
+			return nil, err
+		}
+	}
+	consumerChain, err := chainFromCosmosChain(consumer, relayerWallet, p.TestWallets)
+	if err != nil {
+		return nil, err
+	}
+
+	err = relayer.SetupChainKeys(ctx, consumerChain)
+	if err != nil {
+		return nil, err
+	}
+	rep := GetRelayerExecReporter(ctx)
+	if err := relayer.StopRelayer(ctx, rep); err != nil {
+		return nil, err
+	}
+	if err := relayer.StartRelayer(ctx, rep); err != nil {
+		return nil, err
+	}
+
+	return consumerChain, nil
+}
+
+func connectProviderConsumer(ctx context.Context, provider *Chain, consumer *Chain, relayer *Relayer) error {
+	icsPath := relayerICSPathFor(provider, consumer)
+	rep := GetRelayerExecReporter(ctx)
+	if err := relayer.GeneratePath(ctx, rep, consumer.Config().ChainID, provider.Config().ChainID, icsPath); err != nil {
+		return err
+	}
+
+	consumerClients, err := relayer.GetClients(ctx, rep, consumer.Config().ChainID)
+	if err != nil {
+		return err
+	}
+
+	var consumerClient *ibc.ClientOutput
+	for _, client := range consumerClients {
+		if client.ClientState.ChainID == provider.Config().ChainID {
+			consumerClient = client
+			break
+		}
+	}
+	if consumerClient == nil {
+		return fmt.Errorf("consumer chain %s does not have a client tracking the provider chain %s", consumer.Config().ChainID, provider.Config().ChainID)
+	}
+	consumerClientID := consumerClient.ClientID
+
+	providerClients, err := relayer.GetClients(ctx, rep, provider.Config().ChainID)
+	if err != nil {
+		return err
+	}
+
+	var providerClient *ibc.ClientOutput
+	for _, client := range providerClients {
+		if client.ClientState.ChainID == consumer.Config().ChainID {
+			providerClient = client
+			break
+		}
+	}
+	if providerClient == nil {
+		return fmt.Errorf("provider chain %s does not have a client tracking the consumer chain %s for path %s on relayer %s",
+			provider.Config().ChainID, consumer.Config().ChainID, icsPath, relayer)
+	}
+	providerClientID := providerClient.ClientID
+
+	if err := relayer.UpdatePath(ctx, rep, icsPath, ibc.PathUpdateOptions{
+		SrcClientID: &consumerClientID,
+		DstClientID: &providerClientID,
+	}); err != nil {
+		return err
+	}
+
+	if err := relayer.CreateConnections(ctx, rep, icsPath); err != nil {
+		return err
+	}
+
+	if err := relayer.CreateChannel(ctx, rep, icsPath, ibc.CreateChannelOptions{
+		SourcePortName: "consumer",
+		DestPortName:   "provider",
+		Order:          ibc.Ordered,
+		Version:        "1",
+	}); err != nil {
+		return err
+	}
+
+	tCtx, tCancel := context.WithTimeout(ctx, 30*CommitTimeout)
+	defer tCancel()
+	for tCtx.Err() == nil {
+		var ch *ibc.ChannelOutput
+		ch, err = relayer.GetTransferChannel(ctx, provider, consumer)
+		if err == nil && ch != nil {
+			break
+		} else if err == nil {
+			err = fmt.Errorf("channel not found")
+		}
+		time.Sleep(CommitTimeout)
+	}
+	return err
+}
+func relayerICSPathFor(chainA, chainB *Chain) string {
+	return fmt.Sprintf("ics-%s-%s", chainA.Config().ChainID, chainB.Config().ChainID)
 }

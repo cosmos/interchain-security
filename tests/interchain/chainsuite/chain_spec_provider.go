@@ -17,11 +17,11 @@ func GetProviderSpec() *interchaintest.ChainSpec {
 		Name:          ProviderChainID,
 		NumFullNodes:  &fullNodes,
 		NumValidators: &validators,
-		Version:       ProviderImageVersion,
+		Version:       ImageVersion,
 		ChainConfig: ibc.ChainConfig{
 			Type:           CosmosChainType,
 			Bin:            ProviderBin,
-			Bech32Prefix:   ProviderBech32Prefix,
+			Bech32Prefix:   Bech32Prefix,
 			Denom:          Stake,
 			GasPrices:      GasPrices + Stake,
 			GasAdjustment:  2.0,
@@ -30,7 +30,7 @@ func GetProviderSpec() *interchaintest.ChainSpec {
 				"config/config.toml": DefaultConfigToml(),
 			},
 			Images: []ibc.DockerImage{{
-				Repository: ProviderImageName,
+				Repository: ImageName,
 				UIDGID:     "1025:1025",
 			}},
 			ModifyGenesis:        cosmos.ModifyGenesis(providerModifiedGenesis()),
