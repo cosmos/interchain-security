@@ -6,7 +6,7 @@ toolchain go1.22.9
 
 require (
 	cosmossdk.io/errors v1.0.1
-	cosmossdk.io/math v1.3.0
+	cosmossdk.io/math v1.4.0
 	github.com/cometbft/cometbft v0.38.15
 	github.com/cometbft/cometbft-db v0.14.1 // indirect
 	github.com/cosmos/cosmos-sdk v0.50.10
