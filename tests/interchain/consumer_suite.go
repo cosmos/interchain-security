@@ -3,7 +3,6 @@ package interchain
 import (
 	"context"
 	"cosmos/interchain-security/tests/interchain/chainsuite"
-	"fmt"
 	"time"
 
 	"github.com/strangelove-ventures/interchaintest/v8"
@@ -52,56 +51,3 @@ func (s *ConsumerSuite) GetConsumerSpec(ctx context.Context) *interchaintest.Cha
 	return chainsuite.GetConsumerSpec(ctx, s.Provider, proposalMsg, []int{0})
 }
 
-// UpdateAndVerifyStakeChange updates the staking amount on the provider chain and verifies that the change is reflected on the consumer side
-func (p *Chain) UpdateAndVerifyStakeChange(ctx context.Context, consumer *Chain, relayer *Relayer, amount, valIdx int) error {
-	providerAddress := p.ValidatorWallets[valIdx]
-
-	providerHex, err := p.GetValidatorHexAddress(ctx, valIdx)
-	if err != nil {
-		return err
-	}
-	consumerHex, err := consumer.GetValidatorHexAddress(ctx, valIdx)
-	if err != nil {
-		return err
-	}
-
-	providerPowerBefore, err := p.GetValidatorPower(ctx, providerHex)
-	if err != nil {
-		return err
-	}
-
-	// increase the stake for the given validator
-	_, err = p.Validators[valIdx].ExecTx(ctx, providerAddress.Moniker,
-		"staking", "delegate",
-		providerAddress.ValoperAddress, fmt.Sprintf("%d%s", amount, p.Config().Denom),
-	)
-	if err != nil {
-		return err
-	}
-
-	// check that the validator power is updated on both, provider and consumer chains
-	tCtx, tCancel := context.WithTimeout(ctx, 15*time.Minute)
-	defer tCancel()
-	var retErr error
-	for tCtx.Err() == nil {
-		retErr = nil
-		providerPower, err := p.GetValidatorPower(ctx, providerHex)
-		if err != nil {
-			return err
-		}
-		consumerPower, err := consumer.GetValidatorPower(ctx, consumerHex)
-		if err != nil {
-			return err
-		}
-		if providerPowerBefore >= providerPower {
-			retErr = fmt.Errorf("provider power did not increase after delegation")
-		} else if providerPower != consumerPower {
-			retErr = fmt.Errorf("consumer power did not update after provider delegation")
-		}
-		if retErr == nil {
-			break
-		}
-		time.Sleep(CommitTimeout)
-	}
-	return retErr
-}

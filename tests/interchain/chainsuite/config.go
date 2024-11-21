@@ -40,7 +40,6 @@ const (
 	CosmosChainType           = "cosmos"
 	GovModuleAddress          = "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
 	TestWalletsNumber         = 15 // Ensure that test accounts are used in a way that maintains the mutual independence of tests
-	// relayer params
 	RelayerImageName    = "ghcr.io/informalsystems/hermes"
 	RelayerImageVersion = "v1.8.0"
 )
