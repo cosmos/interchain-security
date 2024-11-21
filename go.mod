@@ -4,6 +4,7 @@ go 1.21.1
 
 require (
 	cosmossdk.io/errors v1.0.1
+<<<<<<< HEAD
 	cosmossdk.io/math v1.3.0
 	github.com/cometbft/cometbft v0.37.6
 	github.com/cometbft/cometbft-db v0.11.0
@@ -11,6 +12,14 @@ require (
 	github.com/cosmos/gogoproto v1.4.10
 	github.com/cosmos/ibc-go/v7 v7.6.0
 	github.com/cosmos/ics23/go v0.10.0
+=======
+	cosmossdk.io/math v1.4.0
+	github.com/cometbft/cometbft v0.38.15
+	github.com/cometbft/cometbft-db v0.14.1 // indirect
+	github.com/cosmos/cosmos-sdk v0.50.10
+	github.com/cosmos/gogoproto v1.7.0
+	github.com/cosmos/ics23/go v0.11.0
+>>>>>>> fb598fcb (build(deps): bump cosmossdk.io/math from 1.3.0 to 1.4.0 (#2408))
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.4
 	github.com/gorilla/mux v1.8.0 // indirect
