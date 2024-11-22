@@ -739,7 +739,7 @@ func TestSlashValidator(t *testing.T) {
 	}
 
 	gomock.InOrder(expectedCalls...)
-	keeper.SlashValidator(ctx, providerAddr, getTestInfractionParameters().DoubleSign, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
+	keeper.SlashValidator(ctx, providerAddr, getTestInfractionParameters().DoubleSign, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN, 0)
 }
 
 // TestSlashValidatorDoesNotSlashIfValidatorIsUnbonded asserts that `SlashValidator` does not call
@@ -766,7 +766,7 @@ func TestSlashValidatorDoesNotSlashIfValidatorIsUnbonded(t *testing.T) {
 	}
 
 	gomock.InOrder(expectedCalls...)
-	keeper.SlashValidator(ctx, providerAddr, getTestInfractionParameters().DoubleSign, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
+	keeper.SlashValidator(ctx, providerAddr, getTestInfractionParameters().DoubleSign, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN, 0)
 }
 
 func TestEquivocationEvidenceMinHeightCRUD(t *testing.T) {

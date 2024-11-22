@@ -91,7 +91,7 @@ func GetMocksForDeleteConsumerChain(ctx sdk.Context, mocks *MockedKeepers) []*go
 
 func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
 	expectedProviderValConsAddr providertypes.ProviderConsAddress,
-	valToReturn stakingtypes.Validator, expectJailing bool,
+	valToReturn stakingtypes.Validator, expectJailing bool, valAddr []byte,
 ) []*gomock.Call {
 	// These first two calls are always made.
 	calls := []*gomock.Call{
@@ -102,16 +102,33 @@ func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
 
 		mocks.MockSlashingKeeper.EXPECT().IsTombstoned(ctx,
 			expectedProviderValConsAddr.ToSdkConsAddr()).Return(false).Times(1),
+
+		// called in slash fn
+		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
+			ctx, expectedProviderValConsAddr.ToSdkConsAddr()).Return(
+			valToReturn, nil,
+		).Times(1),
+		mocks.MockSlashingKeeper.EXPECT().IsTombstoned(ctx,
+			expectedProviderValConsAddr.ToSdkConsAddr()).Return(false).Times(1),
+		mocks.MockStakingKeeper.EXPECT().GetUnbondingDelegationsFromValidator(ctx,
+			valAddr).Return([]stakingtypes.UnbondingDelegation{}, nil).Times(1),
+		mocks.MockStakingKeeper.EXPECT().GetRedelegationsFromSrcValidator(ctx,
+			valAddr).Return([]stakingtypes.Redelegation{}, nil).Times(1),
+		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(ctx,
+			valAddr).Return(int64(100), nil).Times(1),
+		mocks.MockStakingKeeper.EXPECT().PowerReduction(ctx).Return(sdk.DefaultPowerReduction).Times(1),
+		mocks.MockStakingKeeper.EXPECT().SlashWithInfractionReason(ctx, expectedProviderValConsAddr.ToSdkConsAddr(), gomock.Any(),
+			gomock.Any(), gomock.Any(), gomock.Any()).Return(math.NewInt(0), nil).Times(1),
 	}
 
 	if expectJailing {
+		// jail
 		calls = append(calls, mocks.MockStakingKeeper.EXPECT().Jail(
 			gomock.Eq(ctx),
 			gomock.Eq(expectedProviderValConsAddr.ToSdkConsAddr()),
 		).Return(nil))
 
 		// JailUntil is set in this code path.
-		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().DowntimeJailDuration(ctx).Return(time.Hour, nil).Times(1))
 		calls = append(calls, mocks.MockSlashingKeeper.EXPECT().JailUntil(ctx,
 			expectedProviderValConsAddr.ToSdkConsAddr(), gomock.Any()).Return(nil).Times(1))
 	}
