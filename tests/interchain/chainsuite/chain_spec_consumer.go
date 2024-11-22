@@ -13,12 +13,12 @@ import (
 	"github.com/strangelove-ventures/interchaintest/v8/testutil"
 )
 
-func GetConsumerSpec(ctx context.Context, providerChain *Chain, proposalMsg *providertypes.MsgCreateConsumer, optInValIndexes []int) *interchaintest.ChainSpec {
+func GetConsumerSpec(ctx context.Context, providerChain *Chain, proposalMsg *providertypes.MsgCreateConsumer, optInValIndexes []int, chainId string) *interchaintest.ChainSpec {
 	fullNodes := FullNodeCount
 	validators := ValidatorCount
 
 	return &interchaintest.ChainSpec{
-		ChainName:     ConsumerChainID,
+		ChainName:     chainId,
 		NumFullNodes:  &fullNodes,
 		NumValidators: &validators,
 		ChainConfig: ibc.ChainConfig{
@@ -67,7 +67,7 @@ func GetConsumerSpec(ctx context.Context, providerChain *Chain, proposalMsg *pro
 
 				return nil
 			},
-			Bech32Prefix:         Bech32Prefix,
+			Bech32Prefix:         Bech32PrefixConsumer,
 			ModifyGenesisAmounts: DefaultGenesisAmounts(Stake),
 			ModifyGenesis:        cosmos.ModifyGenesis(consumerModifiedGenesis()),
 			InterchainSecurityConfig: ibc.ICSConfig{
@@ -83,14 +83,5 @@ func consumerModifiedGenesis() []cosmos.GenesisKV {
 		cosmos.NewGenesisKV("app_state.slashing.params.signed_blocks_window", strconv.Itoa(SlashingWindowConsumer)),
 		cosmos.NewGenesisKV("consensus.params.block.max_gas", "50000000"),
 		cosmos.NewGenesisKV("app_state.ccvconsumer.params.soft_opt_out_threshold", "0.0"),
-		cosmos.NewGenesisKV("app_state.globalfee.params.minimum_gas_prices", []interface{}{
-			map[string]interface{}{
-				"amount": GasPrices,
-				"denom":  Stake,
-			},
-		}),
-		cosmos.NewGenesisKV("app_state.feemarket.params.min_base_gas_price", GasPrices),
-		cosmos.NewGenesisKV("app_state.feemarket.state.base_gas_price", GasPrices),
-		cosmos.NewGenesisKV("app_state.feemarket.params.fee_denom", Stake),
 	}
 }

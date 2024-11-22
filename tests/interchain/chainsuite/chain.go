@@ -445,6 +445,7 @@ func (c *Chain) GetValidatorKey(ctx context.Context, validatorIndex int) (string
 
 // UpdateAndVerifyStakeChange updates the staking amount on the provider chain and verifies that the change is reflected on the consumer side
 func (p *Chain) UpdateAndVerifyStakeChange(ctx context.Context, consumer *Chain, relayer *Relayer, amount, valIdx int) error {
+
 	providerAddress := p.ValidatorWallets[valIdx]
 
 	providerHex, err := p.GetValidatorHexAddress(ctx, valIdx)
@@ -563,7 +564,6 @@ func (p *Chain) AddConsumerChain(ctx context.Context, relayer *Relayer, chainId 
 	// We can't use AddProviderConsumerLink here because the provider chain is already built; we'll have to do everything by hand.
 	p.Consumers = append(p.Consumers, consumer)
 	consumer.Provider = p.CosmosChain
-
 	relayerWallet, err := consumer.BuildRelayerWallet(ctx, "relayer-"+consumer.Config().ChainID)
 	if err != nil {
 		return nil, err
@@ -577,7 +577,7 @@ func (p *Chain) AddConsumerChain(ctx context.Context, relayer *Relayer, chainId 
 			return nil, err
 		}
 	}
-	walletAmounts := make([]ibc.WalletAmount, len(wallets)+1)
+	walletAmounts := make([]ibc.WalletAmount, len(wallets))
 	for i, wallet := range wallets {
 		walletAmounts[i] = ibc.WalletAmount{
 			Address: wallet.FormattedAddress(),
@@ -623,7 +623,7 @@ func (p *Chain) AddConsumerChain(ctx context.Context, relayer *Relayer, chainId 
 	return consumerChain, nil
 }
 
-func connectProviderConsumer(ctx context.Context, provider *Chain, consumer *Chain, relayer *Relayer) error {
+func ConnectProviderConsumer(ctx context.Context, provider *Chain, consumer *Chain, relayer *Relayer) error {
 	icsPath := relayerICSPathFor(provider, consumer)
 	rep := GetRelayerExecReporter(ctx)
 	if err := relayer.GeneratePath(ctx, rep, consumer.Config().ChainID, provider.Config().ChainID, icsPath); err != nil {

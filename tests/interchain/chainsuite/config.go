@@ -13,6 +13,7 @@ const (
 	ImageName                 = "ghcr.io/cosmos/interchain-security"
 	ImageVersion              = "v6.1.0"
 	Bech32Prefix              = "cosmos"
+	Bech32PrefixConsumer      = "consumer"
 	ValOperPrefix             = "cosmosvaloper"
 	ProviderBin               = "interchain-security-pd"
 	ProviderChainID           = "ics-provider"
@@ -40,8 +41,8 @@ const (
 	CosmosChainType           = "cosmos"
 	GovModuleAddress          = "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
 	TestWalletsNumber         = 15 // Ensure that test accounts are used in a way that maintains the mutual independence of tests
-	RelayerImageName    = "ghcr.io/informalsystems/hermes"
-	RelayerImageVersion = "v1.8.0"
+	RelayerImageName          = "ghcr.io/informalsystems/hermes"
+	RelayerImageVersion       = "v1.8.0"
 )
 
 func DefaultConfigToml() testutil.Toml {

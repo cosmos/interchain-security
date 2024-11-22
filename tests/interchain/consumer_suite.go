@@ -33,11 +33,6 @@ func (s *ConsumerSuite) SetupSuite() {
 	err = relayer.SetupChainKeys(s.GetContext(), s.Provider)
 	s.Require().NoError(err)
 
-	// create and start consumer chain
-	s.Consumer, err = s.Provider.AddConsumerChain(s.GetContext(), relayer, chainsuite.ConsumerChainID, s.GetConsumerSpec(ctx))
-	s.Require().NoError(err)
-	//s.Require().NoError(s.Provider.UpdateAndVerifyStakeChange(s.GetContext(), s.Consumer, relayer, 1_000_000, 0))
-
 }
 
 func (s *ConsumerSuite) GetContext() context.Context {
@@ -48,6 +43,5 @@ func (s *ConsumerSuite) GetContext() context.Context {
 func (s *ConsumerSuite) GetConsumerSpec(ctx context.Context) *interchaintest.ChainSpec {
 	spawnTime := time.Now().Add(time.Second * 30)
 	proposalMsg := msgCreateConsumer(chainsuite.ConsumerChainID, consumerInitParamsTemplate(&spawnTime), powerShapingParamsTemplate(), chainsuite.GovModuleAddress)
-	return chainsuite.GetConsumerSpec(ctx, s.Provider, proposalMsg, []int{0})
+	return chainsuite.GetConsumerSpec(ctx, s.Provider, proposalMsg, []int{0}, chainsuite.ConsumerChainID)
 }
-

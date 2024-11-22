@@ -6,12 +6,14 @@ toolchain go1.22.6
 
 require (
 	cosmossdk.io/math v1.3.0
+	github.com/cometbft/cometbft v0.38.11
 	github.com/cosmos/cosmos-sdk v0.50.9
 	github.com/cosmos/ibc-go/v8 v8.5.0
 	github.com/cosmos/interchain-security/v6 v6.1.0
 	github.com/docker/docker v24.0.9+incompatible
 	github.com/strangelove-ventures/interchaintest/v8 v8.7.1
 	github.com/stretchr/testify v1.9.0
+	github.com/tidwall/gjson v1.17.3
 	go.uber.org/zap v1.27.0
 	golang.org/x/sync v0.8.0
 )
@@ -64,7 +66,6 @@ require (
 	github.com/cockroachdb/pebble v1.1.1 // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
 	github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06 // indirect
-	github.com/cometbft/cometbft v0.38.11 // indirect
 	github.com/cometbft/cometbft-db v0.14.0 // indirect
 	github.com/consensys/bavard v0.1.13 // indirect
 	github.com/consensys/gnark-crypto v0.12.1 // indirect
@@ -219,7 +220,6 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect
 	github.com/tidwall/btree v1.7.0 // indirect
-	github.com/tidwall/gjson v1.17.3 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
@@ -277,6 +277,6 @@ replace (
 	github.com/ChainSafe/go-schnorrkel/1 => github.com/ChainSafe/go-schnorrkel v1.0.0
 	github.com/btcsuite/btcd/btcec/v2 => github.com/btcsuite/btcd/btcec/v2 v2.3.3
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
-	github.com/strangelove-ventures/interchaintest/v8 => github.com/stana-miric/interchaintest/v8 v8.0.0-20241022073631-60f2480aacd4
+	github.com/strangelove-ventures/interchaintest/v8 => github.com/stana-miric/interchaintest/v8 v8.0.0-20241122130421-4411264a59e8
 	github.com/vedhavyas/go-subkey => github.com/strangelove-ventures/go-subkey v1.0.7
 )
