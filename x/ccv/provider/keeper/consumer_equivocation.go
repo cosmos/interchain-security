@@ -80,7 +80,7 @@ func (k Keeper) HandleConsumerDoubleVoting(
 		return err
 	}
 
-	if err = k.SlashValidator(ctx, providerAddr, infractionParams.DoubleSign, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN, evidence.VoteA.Height); err != nil {
+	if err = k.SlashValidator(ctx, providerAddr, infractionParams.DoubleSign); err != nil {
 		return err
 	}
 	if err = k.JailAndTombstoneValidator(ctx, providerAddr, infractionParams.DoubleSign); err != nil {
@@ -203,7 +203,7 @@ func (k Keeper) HandleConsumerMisbehaviour(ctx sdk.Context, consumerId string, m
 			consumerId,
 			types.NewConsumerConsAddress(sdk.ConsAddress(v.Address.Bytes())),
 		)
-		err := k.SlashValidator(ctx, providerAddr, infractionParams.DoubleSign, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN, 0)
+		err := k.SlashValidator(ctx, providerAddr, infractionParams.DoubleSign)
 		if err != nil {
 			logger.Error("failed to slash validator: %s", err)
 			continue
@@ -492,12 +492,7 @@ func (k Keeper) ComputePowerToSlash(ctx sdk.Context, validator stakingtypes.Vali
 }
 
 // SlashValidator slashes validator with given provider Address
-func (k Keeper) SlashValidator(
-	ctx sdk.Context,
-	providerAddr types.ProviderConsAddress,
-	slashingParams *types.SlashJailParameters,
-	slashingReason stakingtypes.Infraction,
-	infractionHeight int64) error {
+func (k Keeper) SlashValidator(ctx sdk.Context, providerAddr types.ProviderConsAddress, slashingParams *types.SlashJailParameters) error {
 	validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr())
 	if err != nil && errors.Is(err, stakingtypes.ErrNoValidatorFound) {
 		return errorsmod.Wrapf(slashingtypes.ErrNoValidatorForAddress, "provider consensus address: %s", providerAddr.String())
@@ -534,7 +529,12 @@ func (k Keeper) SlashValidator(
 	powerReduction := k.stakingKeeper.PowerReduction(ctx)
 	totalPower := k.ComputePowerToSlash(ctx, validator, undelegations, redelegations, lastPower, powerReduction)
 
-	_, err = k.stakingKeeper.SlashWithInfractionReason(ctx, providerAddr.ToSdkConsAddr(), infractionHeight, totalPower, slashingParams.SlashFraction, slashingReason)
+	consAdrr, err := validator.GetConsAddr()
+	if err != nil {
+		return err
+	}
+
+	_, err = k.stakingKeeper.SlashWithInfractionReason(ctx, consAdrr, 0, totalPower, slashingParams.SlashFraction, stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN)
 	return err
 }
 
