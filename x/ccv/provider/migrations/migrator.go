@@ -11,6 +11,7 @@ import (
 	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
 	v7 "github.com/cosmos/interchain-security/v6/x/ccv/provider/migrations/v7"
 	v8 "github.com/cosmos/interchain-security/v6/x/ccv/provider/migrations/v8"
+	v9 "github.com/cosmos/interchain-security/v6/x/ccv/provider/migrations/v9"
 )
 
 // Migrator is a struct for handling in-place store migrations.
@@ -93,6 +94,18 @@ func (m Migrator) Migrate7to8(ctx sdktypes.Context) error {
 		return err
 	}
 	v8.CleanupState(store)
+
+	return nil
+}
+
+// Migrate8to9 migrates x/ccvprovider state from consensus version 8 to 9.
+// The migration consists of the following actions:
+// - insert infraction parameters for each consumer
+func (m Migrator) Migrate8to9(ctx sdktypes.Context) error {
+	store := ctx.KVStore(m.storeKey)
+	if err := v9.MigrateConsumerInfractionParams(ctx, store, m.providerKeeper); err != nil {
+		return err
+	}
 
 	return nil
 }
