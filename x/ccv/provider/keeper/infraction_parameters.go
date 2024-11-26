@@ -162,8 +162,8 @@ func (k Keeper) RemoveConsumerInfractionQueuedData(ctx sdk.Context, consumerId s
 
 // UpdateQueuedInfractionParams updates the infraction parameters in the time queue.
 // Parameters for the specific consumer already exist in the queue:
-//   - If the new parameters are the same as the current queued parameters, the existing entry is removed to cancel the update.
-//   - If the new parameters are different, the existing entry is removed and new entry is added to the queue to schedule the update.
+//   - If the new parameters are the same as the current infraction parameters, the existing queued entry is removed to cancel the update.
+//   - If the new parameters are different from both queued and current parameters, the existing entry is removed and new entry is added to the queue to schedule the update.
 //
 // Parameters for the specific consumer do not exist in the update queue and the new parameters differ from the consumer current infraction parameters,
 // a new entry is added to the queue to schedule the update.

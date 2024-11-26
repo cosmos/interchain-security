@@ -91,7 +91,7 @@ func GetMocksForDeleteConsumerChain(ctx sdk.Context, mocks *MockedKeepers) []*go
 
 func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
 	expectedProviderValConsAddr providertypes.ProviderConsAddress,
-	valToReturn stakingtypes.Validator, expectJailing bool, valAddr []byte,
+	valToReturn stakingtypes.Validator, expectJailing bool,
 ) []*gomock.Call {
 	// These first two calls are always made.
 	calls := []*gomock.Call{

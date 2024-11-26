@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
@@ -208,8 +207,6 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	// Mock call to GetEffectiveValPower, so that it returns 2.
 	providerAddr := providertypes.NewProviderConsAddress(packetData.Validator.Address)
 	valAddr := sdk.ValAddress(packetData.Validator.Address).String()
-	valOper, err := providerKeeper.ValidatorAddressCodec().StringToBytes(valAddr)
-	require.NoError(t, err)
 	calls := []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr()).
 			Return(stakingtypes.Validator{
@@ -224,7 +221,7 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	// Add mocks for slash packet handling
 	calls = append(calls,
 		testkeeper.GetMocksForHandleSlashPacket(
-			ctx, mocks, providerAddr, stakingtypes.Validator{Jailed: false, OperatorAddress: valAddr}, true, valOper)...,
+			ctx, mocks, providerAddr, stakingtypes.Validator{Jailed: false, OperatorAddress: valAddr}, true)...,
 	)
 	gomock.InOrder(calls...)
 
@@ -354,9 +351,6 @@ func TestHandleSlashPacket(t *testing.T) {
 	consumerConsAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(784987634).ConsumerConsAddress()
 
 	valOperAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(7842334).SDKValOpAddressString()
-	valAddrCodec := authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix())
-	valOperAddrBytes, err := valAddrCodec.StringToBytes(valOperAddr)
-	require.NoError(t, err)
 
 	testCases := []struct {
 		name       string
@@ -449,7 +443,7 @@ func TestHandleSlashPacket(t *testing.T) {
 					providerConsAddr, // expected provider cons addr returned from GetProviderAddrFromConsumerAddr
 					stakingtypes.Validator{Jailed: false, OperatorAddress: valOperAddr}, // staking keeper val to return
 					true, // expectJailing = true
-					valOperAddrBytes)
+				)
 			},
 			1,
 			consumerConsAddr,
@@ -468,7 +462,7 @@ func TestHandleSlashPacket(t *testing.T) {
 					providerConsAddr, // expected provider cons addr returned from GetProviderAddrFromConsumerAddr
 					stakingtypes.Validator{Jailed: true, OperatorAddress: valOperAddr}, // staking keeper val to return
 					false, // expectJailing = false, validator is already jailed.
-					valOperAddrBytes)
+				)
 			},
 			1,
 			consumerConsAddr,
