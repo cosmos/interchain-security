@@ -1,0 +1,2 @@
+- Allow consumer chains to customize the slashing and jailing conditions. Every consumer chain can decide the punishment for every type of infraction.
+  ([\#2403](https://github.com/cosmos/interchain-security/pull/2403))
