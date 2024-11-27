@@ -147,10 +147,6 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	if err := cfg.RegisterMigration(providertypes.ModuleName, 7, migrator.Migrate7to8); err != nil {
 		panic(fmt.Sprintf("failed to register migrator for %s: %s -- from 7 -> 8", providertypes.ModuleName, err))
 	}
-	if err := cfg.RegisterMigration(providertypes.ModuleName, 8, migrator.Migrate8to9); err != nil {
-		panic(fmt.Sprintf("failed to register migrator for %s: %s -- from 8 -> 9", providertypes.ModuleName, err))
-	}
-
 }
 
 // InitGenesis performs genesis initialization for the provider module. It returns validator updates
@@ -172,7 +168,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 9 }
+func (AppModule) ConsensusVersion() uint64 { return 8 }
 
 // BeginBlock implements the AppModule interface
 func (am AppModule) BeginBlock(ctx context.Context) error {
