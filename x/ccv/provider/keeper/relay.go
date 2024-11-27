@@ -484,16 +484,16 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, consumerId string, data ccv.S
 		return
 	}
 
-	// slash validator
-	_, err = k.stakingKeeper.SlashWithInfractionReason(ctx, providerConsAddr.ToSdkConsAddr(), int64(infractionHeight),
-		data.Validator.Power, infractionParams.Downtime.SlashFraction, stakingtypes.Infraction_INFRACTION_DOWNTIME)
-	if err != nil {
-		k.Logger(ctx).Error("failed to slash vaidator", providerConsAddr.ToSdkConsAddr().String(), "err", err.Error())
-		return
-	}
-
-	// jail validator
 	if !validator.IsJailed() {
+		// slash validator
+		_, err = k.stakingKeeper.SlashWithInfractionReason(ctx, providerConsAddr.ToSdkConsAddr(), int64(infractionHeight),
+			data.Validator.Power, infractionParams.Downtime.SlashFraction, stakingtypes.Infraction_INFRACTION_DOWNTIME)
+		if err != nil {
+			k.Logger(ctx).Error("failed to slash vaidator", providerConsAddr.ToSdkConsAddr().String(), "err", err.Error())
+			return
+		}
+
+		// jail validator
 		err := k.stakingKeeper.Jail(ctx, providerConsAddr.ToSdkConsAddr())
 		if err != nil {
 			k.Logger(ctx).Error("failed to jail vaidator", providerConsAddr.ToSdkConsAddr().String(), "err", err.Error())

@@ -572,6 +572,6 @@ message SlashJailParameters {
     (amino.dont_omitempty) = true
   ];
   // for permanent jailing use 9223372036854775807 which is the largest value a time.Duration can hold (approximately 292 years)
-  google.protobuf.Duration jail_duration = 8
+  google.protobuf.Duration jail_duration = 2
       [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 }

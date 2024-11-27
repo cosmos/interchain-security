@@ -15,7 +15,7 @@ The ICS protocol differentiates between downtime and equivocation infractions.
 
 Downtime infractions are reported by consumer chains and are acted upon on the provider as soon as they are received. 
 The provider will jail and slash the offending validator. The jailing duration and slashing fraction are determined by the consumer's downtime infraction parameters on the provider chain.
-Note that validators are only slashed and jailed for downtime on consumer chains that they opted in to validate on,
+By default, validators are **_only jailed_** for downtime on consumer chains that they opted in to validate on,
 or in the case of Top N chains, where they are automatically opted in by being in the Top N% of the validator set on the provider.
 
 For preventing malicious consumer chains from harming the provider, [slash throttling](../adrs/adr-002-throttle.md) (also known as _jail throttling_) ensures that only a fraction of the provider validator set can be jailed at any given time.

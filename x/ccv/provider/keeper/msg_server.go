@@ -634,10 +634,11 @@ func (k msgServer) UpdateConsumer(goCtx context.Context, msg *types.MsgUpdateCon
 				return &resp, errorsmod.Wrapf(types.ErrInvalidConsumerInfractionParameters,
 					"cannot set infraction parameters")
 			}
-		}
-		if err = k.Keeper.UpdateQueuedInfractionParams(ctx, consumerId, newInfractionParams); err != nil {
-			return &resp, errorsmod.Wrapf(types.ErrInvalidConsumerInfractionParameters,
-				"cannot update consumer infraction time queue")
+		} else {
+			if err = k.Keeper.UpdateQueuedInfractionParams(ctx, consumerId, newInfractionParams); err != nil {
+				return &resp, errorsmod.Wrapf(types.ErrInvalidConsumerInfractionParameters,
+					"cannot update consumer infraction time queue")
+			}
 		}
 
 	}
