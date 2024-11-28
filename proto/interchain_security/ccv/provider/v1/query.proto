@@ -397,6 +397,9 @@ message QueryConsumerChainResponse {
   ConsumerMetadata metadata = 5 [ (gogoproto.nullable) = false ];
   ConsumerInitializationParameters init_params = 6;
   PowerShapingParameters power_shaping_params = 7;
+
+  // corresponds to the id of the client that is created during launch
+  string client_id = 8;
 }
 
 message QueryConsumerGenesisTimeRequest {
