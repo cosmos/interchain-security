@@ -194,14 +194,14 @@ func (k Keeper) ConsumeIdsFromTimeQueue(
 func (k Keeper) HasActiveConsumerValidator(ctx sdk.Context, consumerId string, activeValidators []stakingtypes.Validator) (bool, error) {
 	currentValidatorSet, err := k.GetConsumerValSet(ctx, consumerId)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("getting consumer validator set of chain with consumerId (%s): %w", consumerId, err)
 	}
 
 	isActiveValidator := make(map[string]bool)
 	for _, val := range activeValidators {
 		consAddr, err := val.GetConsAddr()
 		if err != nil {
-			return false, fmt.Errorf("creating consumer genesis state, consumerId(%s): %w", consumerId, err)
+			return false, fmt.Errorf("getting consensus address of validator (%+v), consumerId (%s): %w", val, consumerId, err)
 		}
 		providerConsAddr := types.NewProviderConsAddress(consAddr)
 		isActiveValidator[providerConsAddr.String()] = true
