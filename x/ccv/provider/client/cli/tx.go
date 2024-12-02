@@ -257,15 +257,15 @@ where create_consumer.json has the following structure:
     "allow_inactive_vals": false,
     "prioritylist": ["cosmosvalcons..."]
   },
-  "infraction_parameters": {
-  	"double_sign": {
-   		"slash_fraction": "0.05",
-    	"jail_duration": "9223372036854775807"
-  	},
-  	"downtime": {
-    	"slash_fraction": "0.0001",
-    	"jail_duration": "600000000000"
-  	}
+  "infraction_parameters":{
+   "double_sign":{
+      "slash_fraction":"0.05",
+      "jail_duration":"9223372036854775807"
+   },
+   "downtime":{
+      "slash_fraction":"0.0001",
+      "jail_duration":"600000000000"
+   }
   },
   "allowlisted_reward_denoms": {
     "denoms": ["ibc/...", "ibc/..."]
@@ -366,16 +366,16 @@ where update_consumer.json has the following structure:
     "allow_inactive_vals": false,
     "prioritylist": ["cosmosvalcons..."]
    },
-   "infraction_parameters": {
-  	"double_sign": {
-   		"slash_fraction": "0.05",
-    	"jail_duration": "9223372036854775807"
-  	},
-  	"downtime": {
-    	"slash_fraction": "0.0001",
-    	"jail_duration": "600000000000"
-  	}
+  "infraction_parameters":{
+   "double_sign":{
+      "slash_fraction":"0.05",
+      "jail_duration":"9223372036854775807"
    },
+   "downtime":{
+      "slash_fraction":"0.0001",
+      "jail_duration":"600000000000"
+   }
+  },
   "allowlisted_reward_denoms": {
     "denoms": ["ibc/...", "ibc/..."]
   }

@@ -4,7 +4,10 @@
 
 ### Provider
 
+Upgrading a provider from v6.2.0 requires state migrations. The following migrators should be added to the upgrade handler of the provider chain:
+
 ```golang
+// Initializes infraction parameters for each active consumer. During slashing and jailing of validators for misbehavior on the consumer chain, the parameters defined for that specific consumer will be used. Initially, default values are set, which can later be customized for each consumer as needed.
 func SetConsumerInfractionParams(ctx sdk.Context, pk providerkeeper.Keeper) error {
 	infractionParameters := DefaultInfractionParams()
 
