@@ -363,6 +363,9 @@ message MsgCreateConsumer {
 
   // allowlisted reward denoms of the consumer
   AllowlistedRewardDenoms allowlisted_reward_denoms = 6;
+
+  // infraction parameters for slashing and jailing
+  InfractionParameters infraction_parameters = 7;
 }
 
 // MsgCreateConsumerResponse defines response type for MsgCreateConsumer
@@ -399,6 +402,9 @@ message MsgUpdateConsumer {
   // the chain id CANNOT be updated.
   // This field is optional and can remain empty (i.e., `new_chain_id = ""`) or correspond to the chain id the chain already has.
   string new_chain_id = 8;
+
+  // infraction parameters for slashing and jailing
+  InfractionParameters infraction_parameters = 9;
 }
 
 // MsgUpdateConsumerResponse defines response type for MsgUpdateConsumer messages

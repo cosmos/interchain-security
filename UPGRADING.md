@@ -1,6 +1,45 @@
-# Upgrading Replicated Security
+# Upgrading Interchain Security
 
 ## Unreleased
+
+### Provider
+
+Upgrading a provider from v6.2.0 requires state migrations. The following migrators should be added to the upgrade handler of the provider chain:
+
+```golang
+// Initializes infraction parameters for each active consumer. During slashing and jailing of validators for misbehavior on the consumer chain, the parameters defined for that specific consumer will be used. Initially, default values are set, which can later be customized for each consumer as needed.
+func SetConsumerInfractionParams(ctx sdk.Context, pk providerkeeper.Keeper) error {
+	infractionParameters := DefaultInfractionParams()
+
+	activeConsumerIds := pk.GetAllActiveConsumerIds(ctx)
+	for _, consumerId := range activeConsumerIds {
+		if err := pk.SetInfractionParameters(ctx, consumerId, infractionParameters); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func DefaultInfractionParams() providertypes.InfractionParameters {
+	return providertypes.InfractionParameters{
+		DoubleSign: &providertypes.SlashJailParameters{
+			JailDuration:  time.Duration(1<<63 - 1),        // the largest value a time.Duration can hold 9223372036854775807 (approximately 292 years)
+			SlashFraction: math.LegacyNewDecWithPrec(5, 2), // 0.05
+		},
+		Downtime: &providertypes.SlashJailParameters{
+			JailDuration:  600 * time.Second,
+			SlashFraction: math.LegacyNewDec(0), // no slashing for downtime on the consumer
+		},
+	}
+}
+```
+
+## v6.3.x
+
+Upgrading from `v6.2.0` will not require state migration. To upgrade from lower versions, please check the sections below.
+
+## v6.2.x
 
 ### Consumer
 
@@ -21,6 +60,13 @@ func InitializeConsumerId(ctx sdk.Context, consumerKeeper consumerkeeper.Keeper)
 	return consumerKeeper.SetParams(ctx, params)
 }
 ```
+
+## [v6.1.x](https://github.com/cosmos/interchain-security/releases/tag/v6.1.0)
+
+Upgrading from `v6.0.0` will not require state migration.
+
+
+## [v6.0.x](https://github.com/cosmos/interchain-security/releases/tag/v6.0.0)
 
 ### Provider
 

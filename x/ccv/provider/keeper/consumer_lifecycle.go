@@ -526,6 +526,8 @@ func (k Keeper) DeleteConsumerChain(ctx sdk.Context, consumerId string) (err err
 
 	k.DeleteConsumerRemovalTime(ctx, consumerId)
 
+	k.RemoveConsumerInfractionQueuedData(ctx, consumerId)
+
 	// TODO (PERMISSIONLESS) add newly-added state to be deleted
 
 	// Note that we do not delete ConsumerIdToChainIdKey and ConsumerIdToPhase, as well

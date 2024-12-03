@@ -100,6 +100,11 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		return types.Chain{}, fmt.Errorf("cannot find power shaping parameters for consumer (%s): %s", consumerId, err.Error())
 	}
 
+	infractionParameters, err := k.GetInfractionParameters(ctx, consumerId)
+	if err != nil {
+		return types.Chain{}, fmt.Errorf("cannot find infraction parameters for consumer (%s): %s", consumerId, err.Error())
+	}
+
 	// Get the minimal power in the top N for the consumer chain
 	minPowerInTopN, found := k.GetMinimumPowerInTopN(ctx, consumerId)
 	if !found {
@@ -150,6 +155,7 @@ func (k Keeper) GetConsumerChain(ctx sdk.Context, consumerId string) (types.Chai
 		ConsumerId:              consumerId,
 		AllowlistedRewardDenoms: &types.AllowlistedRewardDenoms{Denoms: allowlistedRewardDenoms},
 		Prioritylist:            strPrioritylist,
+		InfractionParameters:    &infractionParameters,
 	}, nil
 }
 
@@ -618,23 +624,30 @@ func (k Keeper) QueryConsumerChain(goCtx context.Context, req *types.QueryConsum
 	initParams, _ := k.GetConsumerInitializationParameters(ctx, consumerId)
 	powerParams, _ := k.GetConsumerPowerShapingParameters(ctx, consumerId)
 
+	infractionParams, err := k.GetInfractionParameters(ctx, consumerId)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "cannot retrieve infraction parameters for consumer id: %s", consumerId)
+	}
+
 	// The client id might not exist in case the consumer chain has not yet launched or in case the chain has been deleted.
 	// That's why we do not check if the client id is found.
 	clientId, _ := k.GetConsumerClientId(ctx, consumerId)
 
 	return &types.QueryConsumerChainResponse{
-		ChainId:            chainId,
-		ConsumerId:         consumerId,
-		OwnerAddress:       ownerAddress,
-		Phase:              phase.String(),
-		Metadata:           metadata,
-		InitParams:         &initParams,
-		PowerShapingParams: &powerParams,
-		ClientId:           clientId,
+		ChainId:              chainId,
+		ConsumerId:           consumerId,
+		OwnerAddress:         ownerAddress,
+		Phase:                phase.String(),
+		Metadata:             metadata,
+		InitParams:           &initParams,
+		PowerShapingParams:   &powerParams,
+		InfractionParameters: &infractionParams,
+		ClientId:             clientId,
 	}, nil
 }
 
-// QueryConsumerGenesisTime returns the genesis time
+//	QueryConsumerGenesisTime returns the genesis time
+//
 // of the consumer chain associated with the provided consumer id
 func (k Keeper) QueryConsumerGenesisTime(goCtx context.Context, req *types.QueryConsumerGenesisTimeRequest) (*types.QueryConsumerGenesisTimeResponse, error) {
 	if req == nil {

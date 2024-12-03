@@ -156,6 +156,8 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	powerShapingParameters := testkeeper.GetTestPowerShapingParameters()
 	powerShapingParameters.Top_N = consumerTopNParams[index] // isn't used in CreateConsumerClient
 
+	infractionPrameters := testkeeper.GetTestInfractionParameters()
+
 	consumerId := providerKeeper.FetchAndIncrementConsumerId(providerChain.GetContext())
 	providerKeeper.SetConsumerChainId(providerChain.GetContext(), consumerId, chainID)
 	err := providerKeeper.SetConsumerMetadata(providerChain.GetContext(), consumerId, consumerMetadata)
@@ -163,6 +165,8 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	err = providerKeeper.SetConsumerInitializationParameters(providerChain.GetContext(), consumerId, initializationParameters)
 	s.Require().NoError(err)
 	err = providerKeeper.SetConsumerPowerShapingParameters(providerChain.GetContext(), consumerId, powerShapingParameters)
+	s.Require().NoError(err)
+	err = providerKeeper.SetInfractionParameters(providerChain.GetContext(), consumerId, infractionPrameters)
 	s.Require().NoError(err)
 	providerKeeper.SetConsumerPhase(providerChain.GetContext(), consumerId, providertypes.CONSUMER_PHASE_INITIALIZED)
 	if chainID == firstConsumerChainID {

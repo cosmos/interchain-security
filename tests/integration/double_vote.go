@@ -257,10 +257,10 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 
 				// verifies that the val gets slashed and has fewer tokens after the slashing
 				val, _ := s.providerApp.GetTestStakingKeeper().GetValidator(provCtx, provAddr.ToSdkConsAddr().Bytes())
-				slashFraction, err := s.providerApp.GetTestSlashingKeeper().SlashFractionDoubleSign(provCtx)
+				infractionParam, err := s.providerApp.GetProviderKeeper().GetInfractionParameters(provCtx, tc.consumerId)
 				s.Require().NoError(err)
 				actualTokens := math.LegacyNewDecFromInt(val.GetTokens())
-				s.Require().True(initialTokens.Sub(initialTokens.Mul(slashFraction)).Equal(actualTokens))
+				s.Require().True(initialTokens.Sub(initialTokens.Mul(infractionParam.DoubleSign.SlashFraction)).Equal(actualTokens))
 			} else {
 				s.Require().Error(err)
 
@@ -409,8 +409,9 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 		)
 		s.Require().NoError(err)
 
-		slashFraction, err := s.providerApp.GetTestSlashingKeeper().SlashFractionDoubleSign(s.providerCtx())
+		infractionParam, err := s.providerApp.GetProviderKeeper().GetInfractionParameters(s.providerCtx(), s.getFirstBundle().ConsumerId)
 		s.Require().NoError(err)
+		slashFraction := infractionParam.DoubleSign.SlashFraction
 
 		// check undelegations are slashed
 		ubds, _ = s.providerApp.GetTestStakingKeeper().GetUnbondingDelegation(s.providerCtx(), delAddr, valAddr)
