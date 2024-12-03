@@ -32,12 +32,14 @@ const (
 	CommitTimeout             = 2 * time.Second
 	TotalValidatorFunds       = 11_000_000_000
 	ValidatorFunds            = 30_000_000
-	ValidatorCount            = 1
-	FullNodeCount             = 0
-	ChainSpawnWait            = 155 * time.Second
-	CosmosChainType           = "cosmos"
-	GovModuleAddress          = "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
-	TestWalletsNumber         = 15 // Ensure that test accounts are used in a way that maintains the mutual independence of tests
+	// ValidatorCount is set to 2, so we have one active and one inactive (i.e., outside the active set) validator.
+	// Note that the provider has at most 1 validator (see `chain_spec_provider.go`).
+	ValidatorCount    = 2
+	FullNodeCount     = 0
+	ChainSpawnWait    = 155 * time.Second
+	CosmosChainType   = "cosmos"
+	GovModuleAddress  = "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
+	TestWalletsNumber = 15 // Ensure that test accounts are used in a way that maintains the mutual independence of tests
 )
 
 func DefaultConfigToml() testutil.Toml {
@@ -51,13 +53,14 @@ func DefaultConfigToml() testutil.Toml {
 }
 
 func DefaultGenesisAmounts(denom string) func(i int) (sdktypes.Coin, sdktypes.Coin) {
+	// Returns an amount of funds per validator, so validator with val index 0 has the most funds, then validator 1, then validator 2, etc.
 	return func(i int) (sdktypes.Coin, sdktypes.Coin) {
 		return sdktypes.Coin{
 				Denom:  denom,
-				Amount: sdkmath.NewInt(TotalValidatorFunds),
+				Amount: sdkmath.NewInt(TotalValidatorFunds / int64(i+1)),
 			}, sdktypes.Coin{
 				Denom:  denom,
-				Amount: sdkmath.NewInt(ValidatorFunds),
+				Amount: sdkmath.NewInt(ValidatorFunds / int64(i+1)),
 			}
 	}
 }

@@ -33,7 +33,7 @@ func (s *ProviderSuite) TestProviderCreateConsumer() {
 	testAcc := s.Provider.TestWallets[0].FormattedAddress()
 	testAccKey := s.Provider.TestWallets[0].KeyName()
 
-	// Confirm that a chain can be create with the minimum params (metadata)
+	// Confirm that a chain can be created with the minimum params (metadata)
 	chainName := "minParamAddConsumer"
 	createConsumerMsg := msgCreateConsumer(chainName, nil, nil, testAcc)
 	consumerId, err := s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
@@ -99,6 +99,52 @@ func (s *ProviderSuite) TestProviderCreateConsumerRejection() {
 	createConsumerMsg.Metadata = providertypes.ConsumerMetadata{}
 	_, err = s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
 	s.Require().Error(err)
+}
+
+// TestOptInChainCanOnlyStartIfActiveValidatorOptedIn tests that only if an active validator opts in to an Opt-In chain, the chain can launch.
+// Scenario 1: Inactive validators opts in, the chain does not launch.
+// Scenario 2: Active validator opts in, the chain launches.
+func (s *ProviderSuite) TestOptInChainCanOnlyStartIfActiveValidatorOptedIn() {
+	testAcc := s.Provider.TestWallets[2].FormattedAddress()
+	testAccKey := s.Provider.TestWallets[2].KeyName()
+
+	activeValIndex := 0
+	inactiveValIndex := 1
+
+	// Scenario 1: Inactive validators opts in, the chain does not launch.
+	chainName := "optInScenario1"
+	spawnTime := time.Now().Add(time.Hour)
+	consumerInitParams := consumerInitParamsTemplate(&spawnTime)
+	createConsumerMsg := msgCreateConsumer(chainName, consumerInitParams, powerShapingParamsTemplate(), testAcc)
+	consumerId, err := s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
+	s.Require().NoError(err)
+	consumerChain, err := s.Provider.GetConsumerChain(s.GetContext(), consumerId)
+	s.Require().NoError(err)
+	// inactive validator opts in
+	s.Require().NoError(s.Provider.OptIn(s.GetContext(), consumerChain.ConsumerID, inactiveValIndex))
+	consumerInitParams.SpawnTime = time.Now()
+	upgradeMsg := &providertypes.MsgUpdateConsumer{
+		Owner:                    testAcc,
+		ConsumerId:               consumerChain.ConsumerID,
+		NewOwnerAddress:          testAcc,
+		InitializationParameters: consumerInitParams,
+		PowerShapingParameters:   powerShapingParamsTemplate(),
+	}
+	s.Require().NoError(s.Provider.UpdateConsumer(s.GetContext(), upgradeMsg, testAccKey))
+	s.Require().NoError(testutil.WaitForBlocks(s.GetContext(), 1, s.Provider))
+	consumerChain, err = s.Provider.GetConsumerChain(s.GetContext(), consumerId)
+	s.Require().NoError(err)
+	s.Require().Equal(providertypes.CONSUMER_PHASE_REGISTERED.String(), consumerChain.Phase)
+
+	// Scenario 2: Active validator opts in, the chain launches.
+	// active validator opts in
+	s.Require().NoError(s.Provider.OptIn(s.GetContext(), consumerChain.ConsumerID, activeValIndex))
+
+	s.Require().NoError(s.Provider.UpdateConsumer(s.GetContext(), upgradeMsg, testAccKey))
+	s.Require().NoError(testutil.WaitForBlocks(s.GetContext(), 1, s.Provider))
+	consumerChain, err = s.Provider.GetConsumerChain(s.GetContext(), consumerId)
+	s.Require().NoError(err)
+	s.Require().Equal(providertypes.CONSUMER_PHASE_LAUNCHED.String(), consumerChain.Phase)
 }
 
 // Test Opting in validators to a chain (MsgOptIn)
@@ -403,12 +449,12 @@ func (s *ProviderSuite) TestProviderTransformTopNtoOptIn() {
 	s.Require().Equal(testAcc, optInChain.OwnerAddress)
 }
 
-// TestOptOut tests removin validator from consumer-opted-in-validators
+// TestOptOut tests removing validator from consumer-opted-in-validators
 func (s *ProviderSuite) TestOptOut() {
 	testAcc := s.Provider.TestWallets[7].FormattedAddress()
 	testAccKey := s.Provider.TestWallets[7].KeyName()
 
-	// Add consume chain
+	// Add consumer chain
 	chainName := "TestOptOut"
 	spawnTime := time.Now().Add(time.Hour)
 	consumerInitParams := consumerInitParamsTemplate(&spawnTime)

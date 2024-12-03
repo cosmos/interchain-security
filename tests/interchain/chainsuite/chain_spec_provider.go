@@ -51,5 +51,6 @@ func providerModifiedGenesis() []cosmos.GenesisKV {
 		cosmos.NewGenesisKV("app_state.provider.params.slash_meter_replenish_period", ProviderReplenishPeriod),
 		cosmos.NewGenesisKV("app_state.provider.params.slash_meter_replenish_fraction", ProviderReplenishFraction),
 		cosmos.NewGenesisKV("app_state.provider.params.blocks_per_epoch", "1"),
+		cosmos.NewGenesisKV("app_state.staking.params.max_validators", "1"),
 	}
 }
