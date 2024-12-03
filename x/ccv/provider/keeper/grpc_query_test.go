@@ -562,6 +562,7 @@ func TestQueryConsumerChain(t *testing.T) {
 
 	consumerId := "0"
 	chainId := "consumer"
+	clientId := "client-0"
 
 	req := types.QueryConsumerChainRequest{
 		ConsumerId: consumerId,
@@ -594,6 +595,7 @@ func TestQueryConsumerChain(t *testing.T) {
 
 	err = providerKeeper.SetInfractionParameters(ctx, consumerId, *getTestInfractionParameters())
 	require.NoError(t, err)
+	providerKeeper.SetConsumerClientId(ctx, consumerId, clientId)
 
 	expRes := types.QueryConsumerChainResponse{
 		ChainId:              chainId,
@@ -604,6 +606,7 @@ func TestQueryConsumerChain(t *testing.T) {
 		InitParams:           &types.ConsumerInitializationParameters{},
 		PowerShapingParams:   &types.PowerShapingParameters{},
 		InfractionParameters: getTestInfractionParameters(),
+		ClientId:             clientId,
 	}
 
 	// expect no error when neither the consumer init and power shaping params are set

@@ -3,7 +3,6 @@ package types_test
 import (
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -49,7 +48,7 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	require.Equal(t, byte(11), consumertypes.HistoricalInfoKeyPrefix()[0])
 	i++
-	require.Equal(t, byte(12), consumertypes.PacketMaturityTimeKeyPrefix()[0])
+	// reserve 12 as deprecated
 	i++
 	require.Equal(t, byte(13), consumertypes.HeightValsetUpdateIDKeyPrefix()[0])
 	i++
@@ -108,7 +107,6 @@ func getAllFullyDefinedKeys() [][]byte {
 		consumertypes.ProviderChannelIDKey(),
 		consumertypes.PendingChangesKey(),
 		consumertypes.HistoricalInfoKey(0),
-		consumertypes.PacketMaturityTimeKey(0, time.Time{}),
 		consumertypes.HeightValsetUpdateIDKey(0),
 		consumertypes.OutstandingDowntimeKey(sdk.ConsAddress([]byte{0x05})),
 		consumertypes.CrossChainValidatorKey([]byte{0x05}),

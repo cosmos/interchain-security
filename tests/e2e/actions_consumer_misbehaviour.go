@@ -19,12 +19,12 @@ type ForkConsumerChainAction struct {
 }
 
 func (tc Chain) forkConsumerChain(action ForkConsumerChainAction, verbose bool) {
-	valCfg := tc.testConfig.validatorConfigs[action.Validator]
+	valCfg := tc.testConfig.ValidatorConfigs[action.Validator]
 	configureNodeCmd := tc.target.ExecCommand("/bin/bash",
-		"/testnet-scripts/fork-consumer.sh", tc.testConfig.chainConfigs[action.ConsumerChain].BinaryName,
+		"/testnet-scripts/fork-consumer.sh", tc.testConfig.ChainConfigs[action.ConsumerChain].BinaryName,
 		string(action.Validator), string(action.ConsumerChain),
-		tc.testConfig.chainConfigs[action.ConsumerChain].IpPrefix,
-		tc.testConfig.chainConfigs[action.ProviderChain].IpPrefix,
+		tc.testConfig.ChainConfigs[action.ConsumerChain].IpPrefix,
+		tc.testConfig.ChainConfigs[action.ProviderChain].IpPrefix,
 		valCfg.Mnemonic,
 		action.RelayerConfig,
 	)
@@ -103,7 +103,7 @@ type SubmitConsumerMisbehaviourAction struct {
 }
 
 func (tr Chain) submitConsumerMisbehaviour(action SubmitConsumerMisbehaviourAction, verbose bool) {
-	consumerBinaryName := tr.testConfig.chainConfigs[action.FromChain].BinaryName
+	consumerBinaryName := tr.testConfig.ChainConfigs[action.FromChain].BinaryName
 
 	// retrieve a trusted height of the consumer client from the provider
 	trustedHeight, _ := tr.target.GetTrustedHeight(action.ToChain, action.ClientID, 2)
@@ -134,7 +134,7 @@ func (tr Chain) submitConsumerMisbehaviour(action SubmitConsumerMisbehaviourActi
 	cmd = tr.target.ExecCommand(
 		consumerBinaryName,
 		"query", "ibc", "client", "header", "--height", strconv.Itoa(int(currHeight)),
-		`--node`, fmt.Sprintf("tcp://%s.252:26658", tr.testConfig.chainConfigs[action.FromChain].IpPrefix),
+		`--node`, fmt.Sprintf("tcp://%s.252:26658", tr.testConfig.ChainConfigs[action.FromChain].IpPrefix),
 		`-o`, `json`,
 	)
 
@@ -148,7 +148,7 @@ func (tr Chain) submitConsumerMisbehaviour(action SubmitConsumerMisbehaviourActi
 	cmd = tr.target.ExecCommand(
 		consumerBinaryName,
 		"query", "ibc", "client", "header", "--height", strconv.Itoa(int(trustedHeight+1)),
-		`--node`, fmt.Sprintf("tcp://%s.252:26658", tr.testConfig.chainConfigs[action.FromChain].IpPrefix),
+		`--node`, fmt.Sprintf("tcp://%s.252:26658", tr.testConfig.ChainConfigs[action.FromChain].IpPrefix),
 		`-o`, `json`,
 	)
 
@@ -178,11 +178,11 @@ func (tr Chain) submitConsumerMisbehaviour(action SubmitConsumerMisbehaviourActi
 	gas := "auto"
 	submitMisb := fmt.Sprintf(
 		`%s tx provider submit-consumer-misbehaviour %s %s --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y`,
-		tr.testConfig.chainConfigs[ChainID("provi")].BinaryName,
-		string(tr.testConfig.chainConfigs[action.FromChain].ConsumerId),
+		tr.testConfig.ChainConfigs[ChainID("provi")].BinaryName,
+		string(tr.testConfig.ChainConfigs[action.FromChain].ConsumerId),
 		misbPath,
 		action.Submitter,
-		tr.testConfig.chainConfigs[ChainID("provi")].ChainId,
+		tr.testConfig.ChainConfigs[ChainID("provi")].ChainId,
 		tr.getValidatorHome(ChainID("provi"), action.Submitter),
 		tr.getValidatorNode(ChainID("provi"), action.Submitter),
 		gas,

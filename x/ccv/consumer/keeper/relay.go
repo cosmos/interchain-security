@@ -67,15 +67,6 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 		ValidatorUpdates: pendingChanges,
 	})
 
-	// Save maturity time and packet
-	maturityTime := ctx.BlockTime().Add(k.GetUnbondingPeriod(ctx))
-	k.SetPacketMaturityTime(ctx, newChanges.ValsetUpdateId, maturityTime)
-	k.Logger(ctx).Debug("packet maturity time was set",
-		"vscID", newChanges.ValsetUpdateId,
-		"maturity time (utc)", maturityTime.UTC(),
-		"maturity time (nano)", uint64(maturityTime.UnixNano()),
-	)
-
 	// set height to VSC id mapping
 	blockHeight := uint64(ctx.BlockHeight()) + 1
 	k.SetHeightValsetUpdateID(ctx, blockHeight, newChanges.ValsetUpdateId)
@@ -104,41 +95,6 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 		"len slash acks", len(newChanges.SlashAcks),
 	)
 	return nil
-}
-
-// QueueVSCMaturedPackets appends matured VSCs to an internal queue.
-//
-// Note: Per spec, a VSC reaching maturity on a consumer chain means that all the unbonding
-// operations that resulted in validator updates included in that VSC have matured on
-// the consumer chain.
-func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
-	for _, maturityTime := range k.GetElapsedPacketMaturityTimes(ctx) {
-		// construct validator set change packet data
-		vscPacket := ccv.NewVSCMaturedPacketData(maturityTime.VscId)
-
-		// Append VSCMatured packet to pending packets.
-		// Sending packets is attempted each EndBlock.
-		// Unsent packets remain in the queue until sent.
-		k.AppendPendingPacket(ctx,
-			ccv.VscMaturedPacket,
-			&ccv.ConsumerPacketData_VscMaturedPacketData{VscMaturedPacketData: vscPacket},
-		)
-
-		k.DeletePacketMaturityTimes(ctx, maturityTime.VscId, maturityTime.MaturityTime)
-
-		k.Logger(ctx).Info("VSCMaturedPacket enqueued", "vscID", vscPacket.ValsetUpdateId)
-
-		ctx.EventManager().EmitEvent(
-			sdk.NewEvent(
-				types.EventTypeVSCMatured,
-				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-				sdk.NewAttribute(ccv.AttributeChainID, ctx.ChainID()),
-				sdk.NewAttribute(types.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
-				sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(maturityTime.VscId))),
-				sdk.NewAttribute(types.AttributeTimestamp, ctx.BlockTime().String()),
-			),
-		)
-	}
 }
 
 // QueueSlashPacket appends a slash packet containing the given validator data and slashing info to queue.

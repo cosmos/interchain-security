@@ -629,6 +629,10 @@ func (k Keeper) QueryConsumerChain(goCtx context.Context, req *types.QueryConsum
 		return nil, status.Errorf(codes.InvalidArgument, "cannot retrieve infraction parameters for consumer id: %s", consumerId)
 	}
 
+	// The client id might not exist in case the consumer chain has not yet launched or in case the chain has been deleted.
+	// That's why we do not check if the client id is found.
+	clientId, _ := k.GetConsumerClientId(ctx, consumerId)
+
 	return &types.QueryConsumerChainResponse{
 		ChainId:              chainId,
 		ConsumerId:           consumerId,
@@ -638,6 +642,7 @@ func (k Keeper) QueryConsumerChain(goCtx context.Context, req *types.QueryConsum
 		InitParams:           &initParams,
 		PowerShapingParams:   &powerParams,
 		InfractionParameters: &infractionParams,
+		ClientId:             clientId,
 	}, nil
 }
 

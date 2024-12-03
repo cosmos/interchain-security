@@ -6,22 +6,17 @@ import (
 	"fmt"
 	"log"
 	"time"
-)
 
-type StartSovereignChainAction struct {
-	Chain      ChainID
-	Validators []StartChainValidator
-	// Genesis changes specific to this action, appended to genesis changes defined in chain config
-	GenesisChanges string
-}
+	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
+)
 
 // calls a simplified startup script (start-sovereign.sh) and runs a validator node
 // upgrades are simpler with a single validator node since only one node needs to be upgraded
 func (tr Chain) startSovereignChain(
-	action StartSovereignChainAction,
+	action e2e.StartSovereignChainAction,
 	verbose bool,
 ) {
-	chainConfig := tr.testConfig.chainConfigs["sover"]
+	chainConfig := tr.testConfig.ChainConfigs["sover"]
 	type jsonValAttrs struct {
 		Mnemonic         string `json:"mnemonic"`
 		Allocation       string `json:"allocation"`
@@ -39,18 +34,18 @@ func (tr Chain) startSovereignChain(
 	var validators []jsonValAttrs
 	for _, val := range action.Validators {
 		validators = append(validators, jsonValAttrs{
-			Mnemonic:         tr.testConfig.validatorConfigs[val.Id].Mnemonic,
-			NodeKey:          tr.testConfig.validatorConfigs[val.Id].NodeKey,
+			Mnemonic:         tr.testConfig.ValidatorConfigs[val.Id].Mnemonic,
+			NodeKey:          tr.testConfig.ValidatorConfigs[val.Id].NodeKey,
 			ValId:            fmt.Sprint(val.Id),
-			PrivValidatorKey: tr.testConfig.validatorConfigs[val.Id].PrivValidatorKey,
+			PrivValidatorKey: tr.testConfig.ValidatorConfigs[val.Id].PrivValidatorKey,
 			Allocation:       fmt.Sprint(val.Allocation) + "stake",
 			Stake:            fmt.Sprint(val.Stake) + "stake",
-			IpSuffix:         tr.testConfig.validatorConfigs[val.Id].IpSuffix,
+			IpSuffix:         tr.testConfig.ValidatorConfigs[val.Id].IpSuffix,
 
-			ConsumerMnemonic:         tr.testConfig.validatorConfigs[val.Id].ConsumerMnemonic,
-			ConsumerPrivValidatorKey: tr.testConfig.validatorConfigs[val.Id].ConsumerPrivValidatorKey,
+			ConsumerMnemonic:         tr.testConfig.ValidatorConfigs[val.Id].ConsumerMnemonic,
+			ConsumerPrivValidatorKey: tr.testConfig.ValidatorConfigs[val.Id].ConsumerPrivValidatorKey,
 			// if true node will be started with consumer key for each consumer chain
-			StartWithConsumerKey: tr.testConfig.validatorConfigs[val.Id].UseConsumerKey,
+			StartWithConsumerKey: tr.testConfig.ValidatorConfigs[val.Id].UseConsumerKey,
 		})
 	}
 
@@ -71,7 +66,7 @@ func (tr Chain) startSovereignChain(
 	testScriptPath := tr.target.GetTestScriptPath(isConsumer, "start-sovereign.sh")
 	cmd := tr.target.ExecCommand("/bin/bash", testScriptPath, chainConfig.BinaryName, string(vals),
 		string(chainConfig.ChainId), chainConfig.IpPrefix, genesisChanges,
-		tr.testConfig.tendermintConfigOverride)
+		tr.testConfig.TendermintConfigOverride)
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
@@ -113,7 +108,7 @@ type UpgradeProposalAction struct {
 
 func (tr *Chain) submitUpgradeProposal(action UpgradeProposalAction, verbose bool) {
 	// Get authority address
-	binary := tr.testConfig.chainConfigs[ChainID("sover")].BinaryName
+	binary := tr.testConfig.ChainConfigs[ChainID("sover")].BinaryName
 	cmd := tr.target.ExecCommand(binary,
 		"query", "upgrade", "authority",
 		"--node", tr.getValidatorNode(ChainID("sover"), action.Proposer),
@@ -171,7 +166,7 @@ func (tr *Chain) submitUpgradeProposal(action UpgradeProposalAction, verbose boo
 		"--gas", "900000",
 		"--from", "validator"+string(action.Proposer),
 		"--keyring-backend", "test",
-		"--chain-id", string(tr.testConfig.chainConfigs[ChainID("sover")].ChainId),
+		"--chain-id", string(tr.testConfig.ChainConfigs[ChainID("sover")].ChainId),
 		"--home", tr.getValidatorHome(ChainID("sover"), action.Proposer),
 		"--node", tr.getValidatorNode(ChainID("sover"), action.Proposer),
 		"-y")

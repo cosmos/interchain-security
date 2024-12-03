@@ -400,6 +400,9 @@ message QueryConsumerChainResponse {
   ConsumerInitializationParameters init_params = 6;
   PowerShapingParameters power_shaping_params = 7;
   InfractionParameters infraction_parameters = 8;
+
+  // corresponds to the id of the client that is created during launch
+  string client_id = 9;
 }
 
 message QueryConsumerGenesisTimeRequest {

@@ -73,7 +73,6 @@ func stepsDemocracy(consumerName string, expectRegisteredRewardDistribution bool
 			},
 		},
 		{
-			// whitelisted legacy proposal can only handle ibctransfer.SendEnabled/ReceiveEnabled
 			Action: SubmitEnableTransfersProposalAction{
 				Chain:   ChainID(consumerName),
 				From:    ValidatorID("alice"),

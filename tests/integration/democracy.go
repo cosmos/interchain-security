@@ -14,7 +14,6 @@ import (
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 
 	icstestingutils "github.com/cosmos/interchain-security/v6/testutil/ibc_testing"
 	testutil "github.com/cosmos/interchain-security/v6/testutil/integration"
@@ -178,112 +177,6 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 		powerFraction := math.LegacyNewDecFromInt(representativeTokens).QuoTruncate(math.LegacyNewDecFromInt(totalRepresentativePower))
 		s.Require().Equal(powerFraction, representativeDifference[key].Quo(previousConsumerRedistributeBalance.Sub(communityPoolDifference)))
 	}
-}
-
-// TestDemocracyGovernanceWhitelisting checks that only whitelisted governance proposals
-// can be executed on democracy consumer chains.
-// @Long Description@
-// For context, see the whitelist for proposals in app/consumer-democracy/proposals_whitelisting.go.
-// * Set up a democracy consumer chain.
-// * Submit a proposal containing changes to the auth and mint module parameters.
-// * Check that the proposal is not executed, since the change to the auth module is not whitelisted.
-// * Submit a proposal containing changes *only* to the mint module parameters.
-// * Check that the proposal is executed, since the change to the mint module is whitelisted.
-// * Submit a proposal containing changes *only* to the auth module parameters.
-// * Check that again, the proposal is not executed, since the change to the auth module is not whitelisted.
-func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
-	govKeeper := s.consumerApp.GetTestGovKeeper()
-	params, err := govKeeper.Params.Get(s.consumerCtx())
-	s.Require().NoError(err)
-
-	stakingKeeper := s.consumerApp.GetTestStakingKeeper()
-	bankKeeper := s.consumerApp.GetTestBankKeeper()
-	accountKeeper := s.consumerApp.GetTestAccountKeeper()
-	mintKeeper := s.consumerApp.GetTestMintKeeper()
-	newAuthParamValue := uint64(128)
-	newMintParamValue := math.LegacyNewDecWithPrec(1, 1) // "0.100000000000000000"
-	votingAccounts := s.consumerChain.SenderAccounts
-	bondDenom, err := stakingKeeper.BondDenom(s.consumerCtx())
-	s.Require().NoError(err)
-	depositAmount := params.MinDeposit
-	duration := (3 * time.Second)
-	params.VotingPeriod = &duration
-	err = govKeeper.Params.Set(s.consumerCtx(), params)
-	s.Assert().NoError(err)
-	proposer := s.consumerChain.SenderAccount
-	s.consumerChain.NextBlock()
-	votersOldBalances := getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts)
-
-	// submit proposal with forbidden and allowed changes
-	mintParams, err := mintKeeper.Params.Get(s.consumerCtx())
-	s.Require().NoError(err)
-	mintParams.InflationMax = newMintParamValue
-	msg_1 := &minttypes.MsgUpdateParams{
-		Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		Params:    mintParams,
-	}
-	authParams := accountKeeper.GetParams(s.consumerCtx())
-	authParams.MaxMemoCharacters = newAuthParamValue
-	msg_2 := &authtypes.MsgUpdateParams{
-		Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		Params:    authParams,
-	}
-	err = submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), []sdk.Msg{msg_1, msg_2}, votingAccounts, proposer.GetAddress(), depositAmount)
-	s.Assert().NoError(err)
-	// set current header time to be equal or later than voting end time in order to process proposal from active queue,
-	// once the proposal is added to the chain
-	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(*params.VotingPeriod)
-	// at this moment, proposal is added, but not yet executed. we are saving old param values for comparison
-	oldAuthParamValue := accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
-	oldMintParams, err := mintKeeper.Params.Get(s.consumerCtx())
-	s.Require().NoError(err)
-	oldMintParamValue := oldMintParams.InflationMax
-	s.consumerChain.NextBlock()
-	// at this moment, proposal is executed or deleted if forbidden
-	currentAuthParamValue := accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
-	currentMintParam, err := mintKeeper.Params.Get(s.consumerCtx())
-	s.Require().NoError(err)
-	currentMintParamValue := currentMintParam.InflationMax
-	// check that parameters are not changed, since the proposal contained both forbidden and allowed changes
-	s.Assert().Equal(oldAuthParamValue, currentAuthParamValue)
-	s.Assert().NotEqual(newAuthParamValue, currentAuthParamValue)
-	s.Assert().Equal(oldMintParamValue, currentMintParamValue)
-	s.Assert().NotEqual(newMintParamValue, currentMintParamValue)
-	// deposit is refunded
-	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
-
-	// submit proposal with allowed changes
-	err = submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), []sdk.Msg{msg_1}, votingAccounts, proposer.GetAddress(), depositAmount)
-	s.Assert().NoError(err)
-	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(*params.VotingPeriod)
-	oldMintParam, err := mintKeeper.Params.Get(s.consumerCtx())
-	s.Require().NoError(err)
-	oldMintParamValue = oldMintParam.InflationMax
-	s.consumerChain.NextBlock()
-	currentMintParam, err = mintKeeper.Params.Get(s.consumerCtx())
-	s.Require().NoError(err)
-
-	currentMintParamValue = currentMintParam.InflationMax
-	// check that parameters are changed, since the proposal contained only allowed changes
-	s.Assert().Equal(newMintParamValue, currentMintParamValue)
-	s.Assert().NotEqual(oldMintParamValue, currentMintParamValue)
-	// deposit is refunded
-	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
-
-	// submit proposal with forbidden changes
-
-	err = submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), []sdk.Msg{msg_2}, votingAccounts, proposer.GetAddress(), depositAmount)
-	s.Assert().NoError(err)
-	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(*params.VotingPeriod)
-	s.consumerChain.NextBlock()
-	oldAuthParamValue = accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
-	s.consumerChain.NextBlock()
-	currentAuthParamValue = accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
-	// check that parameters are not changed, since the proposal contained forbidden changes
-	s.Assert().Equal(oldAuthParamValue, currentAuthParamValue)
-	s.Assert().NotEqual(newAuthParamValue, currentAuthParamValue)
-	// deposit is refunded
-	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 }
 
 // TestDemocracyMsgUpdateParams checks that the consumer parameters can be updated through a governance proposal.

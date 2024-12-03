@@ -1,0 +1,2 @@
+- `[x/consumer]` Updated `genesis transform` CLI to transform `consumer-genesis` content exported by v6.2 providers for consumer chains at version v5. Removed transformation for older consumer versions.
+  ([\#2373](https://github.com/cosmos/interchain-security/pull/2373))

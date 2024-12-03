@@ -10,7 +10,7 @@ toc_max_heading_level: 5
 
 The ICS provider module enables a proof-of-stake chain (known as the provider chain) 
 to share (parts of) its security with other chains (known as consumer chains).
-This basically mean that consumer chains can run as proof-of-stake chains using 
+This basically means that consumer chains can run as proof-of-stake chains using 
 (parts of) the stake locked on the provider as collateral.  
 
 The provider module has the following functionalities:
@@ -19,11 +19,11 @@ The provider module has the following functionalities:
 - The customization of the consumer chains validator sets. 
 - The option for validators to opt in to validate the consumer chains they want.
 - The distribution of rewards from consumer chains to the opted in validators.
-- The slashing and jailing of validators commiting infractions on consumer chains based on cryptographic evidence.
+- The slashing and jailing of validators committing infractions on consumer chains based on cryptographic evidence.
 
 ## State 
 
-For clarity, the description of the the provider module state is split into features.
+For clarity, the description of the provider module state is split into features.
 For a more accurate description, check out the `x/ccv/provider/types/keys.go` file, which contains the definitions of all the keys. 
 
 ### Consumer Lifecycle
@@ -144,7 +144,7 @@ Format: `byte(53) | len(clientId) | []byte(clientId) -> string`
 Format: `byte(14) | []byte(consumerId) -> ConsumerGenesisState`
 
 
-### Key Assingment
+### Key Assignment
 
 #### ConsumerValidators
 
@@ -162,7 +162,7 @@ Format: `byte(23) | len(consumerId) | []byte(consumerId) | addr -> sdk.ConsAddre
 
 #### ConsumerAddrsToPruneV2
 
-`ConsumerAddrsToPruneV2` stores the list of consumer consensus addresses that can be prunned at a timestamp `ts` as they are no longer needed.
+`ConsumerAddrsToPruneV2` stores the list of consumer consensus addresses that can be pruned at a timestamp `ts` as they are no longer needed.
 
 Format: `byte(40) | len(consumerId) | []byte(consumerId) | ts -> AddressList`, where `AddressList` is defined as 
 
@@ -215,7 +215,7 @@ Format: `byte(36) | len(consumerId) | []byte(consumerId) | addr -> []byte{}`, wi
 #### Denylist
 
 `Denylist` is the list of provider validators that are not eligible to validate a given consumer chain. 
-Note that validator can opt in regardless of whether they are eligible or not.
+Note that validators can opt in regardless of whether they are eligible or not.
 
 Format: `byte(37) | len(consumerId) | []byte(consumerId) | addr -> []byte{}`, with `addr` the validator's consensus address on the provider chain.
 
@@ -277,7 +277,7 @@ message ConsensusValidator {
 #### ConsumerRewardDenoms
 
 `ConsumerRewardDenoms` is storing the list of whitelisted denoms that are accepted as ICS rewards. 
-Note that denoms that are not whitelisted can still be transfer to the `consumer_rewards_pool` account on the provider module, but they will not be distributed to validators and their delegators. 
+Note that denoms that are not whitelisted can still be transferred to the `consumer_rewards_pool` account on the provider module, but they will not be distributed to validators and their delegators. 
 
 Format: `byte(27) | []byte(denom) -> []byte{}`
 
@@ -375,7 +375,7 @@ The consumer module is an IBC application that implements the [IBC module callba
 
 `OnChanOpenTry` validates the parameters of the _CCV channel_ -- an ordered IBC channel connected on the `provider` port 
 and with the counterparty port set to `consumer` -- and asserts that the counterparty version matches the expected version 
-(only verions `1` is supported).
+(only version `1` is supported).
 
 If the validation passes, the provider module verifies that the underlying client is the expected client of the consumer chain 
 (i.e., the client created during the consumer chain launch) and that no other CCV channel exists for this consumer chain.
@@ -489,11 +489,11 @@ The owner of the created consumer chain is the submitter of the message.
 This message cannot be submitted as part of a governance proposal, i.e., the submitter cannot be the gov module account address.
 As a result, if the `power_shaping_parameters` are provided, then `power_shaping_parameters.top_N` must be set to zero (i.e., opt-in consumer chain).
 
-To create a top-n consumer chain, the following steps are require:
+To create a top-n consumer chain, the following steps are required:
 
-- Create a opt-in consumer chain (via `MsgCreateConsumer`).
-- Change the ownership of the consuemr chain to the gov module account address (via `MsgUpdateConsumer`).
-- Change `power_shaping_parameters.top_N` to a value in `[50, 100]` trough a governance proposal with a `MsgUpdateConsumer` message.
+- Create an opt-in consumer chain (via `MsgCreateConsumer`).
+- Change the ownership of the consumer chain to the gov module account address (via `MsgUpdateConsumer`).
+- Change `power_shaping_parameters.top_N` to a value in `[50, 100]` through a governance proposal with a `MsgUpdateConsumer` message.
 
 If the `initialization_parameters` field is set and `initialization_parameters.spawn_time > 0`, then the consumer chain will be scheduled to launch at `spawn_time`.
 
@@ -527,8 +527,8 @@ message MsgCreateConsumer {
 `MsgUpdateConsumer` enables the owner of a consumer chain to update its parameters (e.g., set a new owner). 
 
 Note that only the `owner` (i.e., signer) and `consumer_id` fields are mandatory. 
-The others field are optional. Not providing one of them will leave the existing values unchanged. For `infraction_parameters` it is possible to update separately `downtime` and `double_sign` parameters by providing just desired one.
-Providing one of `metadata`, `initialization_parameters`, `power_shaping_parameters`, `infraction_parameters.double_sign`, `infraction_parameters.downtime` or `allowlisted_reward_denoms`
+The others fields are optional. Not providing one of them will leave the existing values unchanged. 
+Providing one of `metadata`, `initialization_parameters`, `power_shaping_parameters`, or `allowlisted_reward_denoms`
 will update all the containing fields. 
 If one of the containing fields is missing, it will be set to its zero value.
 For example, updating the `initialization_parameters` without specifying the `spawn_time`, will set the `spawn_time` to zero. 
@@ -612,7 +612,7 @@ You can use the `list-consumer-chains` query to get the list of all consumer cha
 
 The `consumer_key` field is optional. 
 It enables the validator to set the consensus public key to use on the consumer chain.
-The validator can assing (or re-assing) this key also later via [MsgAssignConsumerKey](#msgassignconsumerkey).
+The validator can assign (or re-assign) this key also later via [MsgAssignConsumerKey](#msgassignconsumerkey).
 
 :::warning
 Validators are strongly recommended to assign a separate key for each consumer chain
@@ -764,7 +764,7 @@ message MsgSetConsumerCommissionRate {
 
 ### MsgSubmitConsumerMisbehaviour
 
-`MsgSubmitConsumerMisbehaviour` enables users to submit to the provider evidence of a light client attack that occured on a consumer chain. 
+`MsgSubmitConsumerMisbehaviour` enables users to submit to the provider evidence of a light client attack that occurred on a consumer chain. 
 This message can be submitted directly by users, e.g., via the CLI command `tx provider submit-consumer-misbehaviour`, 
 or by a relayer that can be set to automatically detect consumer chain misbehaviors, e.g., [Hermes](https://github.com/informalsystems/hermes).
 
@@ -774,7 +774,7 @@ the `chain_id` field is deprecated.
 Users should use `consumer_id` instead. 
 You can use the `list-consumer-chains` query to get the list of all consumer chains and their consumer IDs.
 
-For more details on reporting light client attacks that occured on consumer chains, check out the [guide on equivocation infractions](../../features/slashing.md#equivocation-infractions).
+For more details on reporting light client attacks that occurred on consumer chains, check out the [guide on equivocation infractions](../../features/slashing.md#equivocation-infractions).
 
 ```proto
 message MsgSubmitConsumerMisbehaviour {
@@ -793,7 +793,7 @@ message MsgSubmitConsumerMisbehaviour {
 
 ### MsgSubmitConsumerDoubleVoting
 
-`MsgSubmitConsumerDoubleVoting` enables users to submit to the provider evidence of a double signing infraction that occured on a consumer chain. 
+`MsgSubmitConsumerDoubleVoting` enables users to submit to the provider evidence of a double signing infraction that occurred on a consumer chain. 
 This message can be submitted directly by users, e.g., via the CLI command `tx provider submit-consumer-double-voting`, 
 or by a relayer that can be set to automatically detect consumer chain misbehaviors, e.g., [Hermes](https://github.com/informalsystems/hermes).
 
@@ -803,7 +803,7 @@ the `chain_id` field is deprecated.
 Users should use `consumer_id` instead. 
 You can use the `list-consumer-chains` query to get the list of all consumer chains and their consumer IDs.
 
-For more details on reporting double signing infractions that occured on consumer chains, check out the [guide on equivocation infractions](../../features/slashing.md#equivocation-infractions).
+For more details on reporting double signing infractions that occurred on consumer chains, check out the [guide on equivocation infractions](../../features/slashing.md#equivocation-infractions).
 
 ```proto
 message MsgSubmitConsumerDoubleVoting {
@@ -848,7 +848,7 @@ In the `EndBlock` of the provider module the following actions are performed:
 - Prune the no-longer needed public keys assigned by validators to use when validating on consumer chains.
 - Send validator updates to the consensus engine. 
   The maximum number of validators is set through the [MaxProviderConsensusValidators](#maxproviderconsensusvalidators) param.
-- At the begining of every epoch, 
+- At the beginning of every epoch, 
   - for every launched consumer chain, compute the next consumer validator set and send it to the consumer chain via an IBC packet;
   - increment the VSC id.
 
@@ -879,7 +879,7 @@ The provider module contains the following parameters.
 
 `TrustingPeriodFraction` is used to used to compute the trusting period of IBC clients 
 (for both provider and consumer chains) as `UnbondingPeriod / TrustingPeriodFraction`.
-Note that a light clients must be updated within the trusting period in order to avoid being frozen.
+Note that a light client must be updated within the trusting period in order to avoid being frozen.
 
 The param is set as a string, and converted to a `sdk.Dec` when used.
 
@@ -945,7 +945,7 @@ which might impact the security of the consumer chains.
 | int64 | 24            |
 
 `NumberOfEpochsToStartReceivingRewards` is the number of ICS epochs that a validator 
-needs to wait after opting in on a consumer chain before being eligible to ICS reawards 
+needs to wait after opting in on a consumer chain before being eligible to ICS rewards 
 from that consumer.
 
 ### MaxProviderConsensusValidators
@@ -955,7 +955,7 @@ from that consumer.
 | int64 | 180           |
 
 `MaxProviderConsensusValidators` is the maximum number of validators sent to 
-the provider consensus enginer. 
+the provider consensus engine. 
 This was introduced with the [Inactive Provider Validators feature](https://cosmos.github.io/interchain-security/adrs/adr-017-allowing-inactive-validators) 
 and it replaces the `MaxValidators` staking module parameter.  
 As a result, the provider chain can differentiate between 
@@ -2343,7 +2343,7 @@ Output:
 
 #### List Consumer Chains
 
-The `QueryConsumerChains` endpoint queries consumer chains supported by the provider chain.
+The `QueryConsumerChains` endpoint queries consumer chains supported by the provider chain and supports pagination for managing a large number of chains.
 An optional integer parameter can be passed for phase filtering of consumer chains, (Registered=1|Initialized=2|Launched=3|Stopped=4|Deleted=5).`
 
 ```bash
@@ -2890,7 +2890,8 @@ grpcurl -plaintext -d '{"consumer_id": "0"}' localhost:9090 interchain_security.
          "slash_fraction":"0.000000000000000000",
          "jail_duration":"600s"
       }
-   }
+   },
+  "clientId": "07-tendermint-28"
 }
 ```
 

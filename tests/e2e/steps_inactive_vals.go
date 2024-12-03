@@ -3,6 +3,7 @@ package main
 import (
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
 )
 
 // stepsInactiveValidatorsOnConsumer tests situations where validators that are *not* in the active set on the
@@ -901,7 +902,7 @@ func stepsInactiveValsMint() []Step {
 						ValidatorID("bob"):   0,
 						ValidatorID("carol"): 29, // other validators are not in power since only 1 can be active
 					},
-					InflationRateChange: intPtr(1), // inflation rate goes up because less than the goal is bonded, since only carol is active
+					InflationRateChange: e2e.IntPtr(1), // inflation rate goes up because less than the goal is bonded, since only carol is active
 				},
 			},
 		},
@@ -919,7 +920,7 @@ func stepsInactiveValsMint() []Step {
 						ValidatorID("bob"):   0,
 						ValidatorID("carol"): 79,
 					},
-					InflationRateChange: intPtr(-1), // inflation rate goes down now, because carol has more bonded than the goal
+					InflationRateChange: e2e.IntPtr(-1), // inflation rate goes down now, because carol has more bonded than the goal
 				},
 			},
 		},
@@ -947,7 +948,7 @@ func stepsMintBasecase() []Step {
 						ValidatorID("bob"):   28,
 						ValidatorID("carol"): 29,
 					},
-					InflationRateChange: intPtr(-1), // inflation rate goes down because more than the goal is bonded
+					InflationRateChange: e2e.IntPtr(-1), // inflation rate goes down because more than the goal is bonded
 				},
 			},
 		},
@@ -965,7 +966,7 @@ func stepsMintBasecase() []Step {
 						ValidatorID("bob"):   28,
 						ValidatorID("carol"): 79,
 					},
-					InflationRateChange: intPtr(-1), // inflation rate *still* goes down
+					InflationRateChange: e2e.IntPtr(-1), // inflation rate *still* goes down
 				},
 			},
 		},
