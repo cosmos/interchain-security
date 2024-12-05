@@ -87,11 +87,11 @@ func (k Keeper) IterateValidators(context.Context, func(index int64, validator s
 // Validator - unimplemented on CCV keeper but implemented on standalone keeper
 func (k Keeper) Validator(sdkCtx context.Context, addr sdk.ValAddress) (stakingtypes.ValidatorI, error) {
 	ctx := sdk.UnwrapSDKContext(sdkCtx)
-	if k.IsPrevStandaloneChain(ctx) && k.ChangeoverIsComplete(ctx) && k.standaloneStakingKeeper != nil {
+	if k.ChangeoverIsComplete(ctx) && k.standaloneStakingKeeper != nil {
 		return k.standaloneStakingKeeper.Validator(ctx, addr)
 	}
 
-	panic("unimplemented on CCV keeper")
+	return stakingtypes.Validator{}, errors.New("unimplemented on CCV keeper")
 }
 
 // IsJailed returns the outstanding slashing flag for the given validator address
@@ -184,7 +184,7 @@ func (k Keeper) Jail(context.Context, sdk.ConsAddress) error { return nil }
 // This method should be a no-op for consumer chains that launched with the CCV module first.
 func (k Keeper) Unjail(sdkCtx context.Context, addr sdk.ConsAddress) error {
 	ctx := sdk.UnwrapSDKContext(sdkCtx)
-	if k.IsPrevStandaloneChain(ctx) && k.ChangeoverIsComplete(ctx) && k.standaloneStakingKeeper != nil {
+	if k.ChangeoverIsComplete(ctx) && k.standaloneStakingKeeper != nil {
 		return k.standaloneStakingKeeper.Unjail(ctx, addr)
 	}
 	return nil
@@ -193,10 +193,10 @@ func (k Keeper) Unjail(sdkCtx context.Context, addr sdk.ConsAddress) error {
 // Delegation - unimplemented on CCV keeper but implemented on standalone keeper
 func (k Keeper) Delegation(sdkCtx context.Context, addr sdk.AccAddress, valAddr sdk.ValAddress) (stakingtypes.DelegationI, error) {
 	ctx := sdk.UnwrapSDKContext(sdkCtx)
-	if k.IsPrevStandaloneChain(ctx) && k.ChangeoverIsComplete(ctx) && k.standaloneStakingKeeper != nil {
+	if k.ChangeoverIsComplete(ctx) && k.standaloneStakingKeeper != nil {
 		return k.standaloneStakingKeeper.Delegation(ctx, addr, valAddr)
 	}
-	panic("unimplemented on CCV keeper")
+	return stakingtypes.Delegation{}, errors.New("unimplemented on CCV keeper")
 }
 
 // MaxValidators - unimplemented on CCV keeper
