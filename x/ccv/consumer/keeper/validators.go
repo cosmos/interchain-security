@@ -84,9 +84,14 @@ func (k Keeper) IterateValidators(context.Context, func(index int64, validator s
 	return nil
 }
 
-// Validator - unimplemented on CCV keeper
-func (k Keeper) Validator(ctx context.Context, addr sdk.ValAddress) (stakingtypes.ValidatorI, error) {
-	panic("unimplemented on CCV keeper")
+// Validator - unimplemented on CCV keeper but implemented on standalone keeper
+func (k Keeper) Validator(sdkCtx context.Context, addr sdk.ValAddress) (stakingtypes.ValidatorI, error) {
+	ctx := sdk.UnwrapSDKContext(sdkCtx)
+	if k.ChangeoverIsComplete(ctx) && k.standaloneStakingKeeper != nil {
+		return k.standaloneStakingKeeper.Validator(ctx, addr)
+	}
+
+	return stakingtypes.Validator{}, errors.New("unimplemented on CCV keeper")
 }
 
 // IsJailed returns the outstanding slashing flag for the given validator address
@@ -174,16 +179,24 @@ func (k Keeper) SlashWithInfractionReason(goCtx context.Context, addr sdk.ConsAd
 // the provider validator set will soon be in effect, and jailing is n/a.
 func (k Keeper) Jail(context.Context, sdk.ConsAddress) error { return nil }
 
-// Unjail - unimplemented on CCV keeper
+// Unjail is enabled for previously standalone chains and chains implementing democracy staking.
 //
-// This method should be a no-op even during a standalone to consumer changeover.
-// Once the upgrade has happened as a part of the changeover,
-// the provider validator set will soon be in effect, and jailing is n/a.
-func (k Keeper) Unjail(context.Context, sdk.ConsAddress) error { return nil }
+// This method should be a no-op for consumer chains that launched with the CCV module first.
+func (k Keeper) Unjail(sdkCtx context.Context, addr sdk.ConsAddress) error {
+	ctx := sdk.UnwrapSDKContext(sdkCtx)
+	if k.ChangeoverIsComplete(ctx) && k.standaloneStakingKeeper != nil {
+		return k.standaloneStakingKeeper.Unjail(ctx, addr)
+	}
+	return nil
+}
 
-// Delegation - unimplemented on CCV keeper
-func (k Keeper) Delegation(ctx context.Context, addr sdk.AccAddress, valAddr sdk.ValAddress) (stakingtypes.DelegationI, error) {
-	panic("unimplemented on CCV keeper")
+// Delegation - unimplemented on CCV keeper but implemented on standalone keeper
+func (k Keeper) Delegation(sdkCtx context.Context, addr sdk.AccAddress, valAddr sdk.ValAddress) (stakingtypes.DelegationI, error) {
+	ctx := sdk.UnwrapSDKContext(sdkCtx)
+	if k.ChangeoverIsComplete(ctx) && k.standaloneStakingKeeper != nil {
+		return k.standaloneStakingKeeper.Delegation(ctx, addr, valAddr)
+	}
+	return stakingtypes.Delegation{}, errors.New("unimplemented on CCV keeper")
 }
 
 // MaxValidators - unimplemented on CCV keeper
