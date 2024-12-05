@@ -17,7 +17,7 @@ func GetProviderSpec() *interchaintest.ChainSpec {
 		Name:          ProviderChainID,
 		NumFullNodes:  &fullNodes,
 		NumValidators: &validators,
-		Version:       ProviderImageVersion,
+		Version:       ProviderImageVersion(),
 		ChainConfig: ibc.ChainConfig{
 			Type:           CosmosChainType,
 			Bin:            ProviderBin,

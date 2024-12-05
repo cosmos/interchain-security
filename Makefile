@@ -53,8 +53,11 @@ test-integration-cov:
 	go test ./tests/integration/... -timeout 30m -coverpkg=./... -coverprofile=integration-profile.out -covermode=atomic
 
 # run interchain tests
+# we can use PROVIDER_IMAGE_VERSION to run tests with a desired version of the Docker image,
+# including a locally built version that, for example, contains some of our changes that are not yet on the main branch.
+# if PROVIDER_IMAGE_VERSION is not set, the latest tag will be used.
 test-interchain:
-	cd tests/interchain && go test ./... -timeout 30m
+	cd tests/interchain && PROVIDER_IMAGE_VERSION=$(PROVIDER_IMAGE_VERSION) go test ./... -timeout 30m
 
 # run mbt tests
 test-mbt:

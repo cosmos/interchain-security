@@ -1,6 +1,7 @@
 package chainsuite
 
 import (
+	"os"
 	"time"
 
 	"github.com/strangelove-ventures/interchaintest/v8/testutil"
@@ -11,7 +12,6 @@ import (
 
 const (
 	ProviderImageName         = "ghcr.io/cosmos/interchain-security"
-	ProviderImageVersion      = "v6.1.0" //todo: update image version
 	ProviderBin               = "interchain-security-pd"
 	ProviderBech32Prefix      = "cosmos"
 	ProviderValOperPrefix     = "cosmosvaloper"
@@ -61,4 +61,13 @@ func DefaultGenesisAmounts(denom string) func(i int) (sdktypes.Coin, sdktypes.Co
 				Amount: sdkmath.NewInt(ValidatorFunds),
 			}
 	}
+}
+
+func ProviderImageVersion() string {
+	providerImageVersion := os.Getenv("PROVIDER_IMAGE_VERSION")
+	if providerImageVersion == "" {
+		providerImageVersion = "latest"
+	}
+
+	return providerImageVersion
 }
