@@ -30,8 +30,8 @@ func TestProviderSuite(t *testing.T) {
 // Confirm that a chain can be created with initialization parameters that do not contain a spawn time
 // Confirm that if there are no opted-in validators at spawn time, the chain fails to launch and moves back to its Registered phase having reset its spawn time
 func (s *ProviderSuite) TestProviderCreateConsumer() {
-	testAcc := s.Provider.TestWallets[0].FormattedAddress()
-	testAccKey := s.Provider.TestWallets[0].KeyName()
+	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 
 	// Confirm that a chain can be create with the minimum params (metadata)
 	chainName := "minParamAddConsumer-1"
@@ -84,14 +84,14 @@ func (s *ProviderSuite) TestProviderCreateConsumer() {
 // Confirm that a chain without the minimum params (metadata) is rejected
 // Confirm that a chain voted 'no' is rejected
 func (s *ProviderSuite) TestProviderCreateConsumerRejection() {
-	testAcc := s.Provider.TestWallets[1].FormattedAddress()
-	testAccKey := s.Provider.TestWallets[1].KeyName()
+	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 
 	chainName := "rejectConsumer-1"
 	// Confirm that a chain with TopN > 0 is rejected
 	createConsumerMsg := msgCreateConsumer(chainName, nil, powerShapingParamsTemplate(), nil, testAcc)
 	createConsumerMsg.PowerShapingParameters.Top_N = 100
-	_, err := s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
+	_, err = s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
 	s.Require().Error(err)
 
 	// Confirm that a chain without the minimum params (metadata) is rejected
@@ -106,8 +106,8 @@ func (s *ProviderSuite) TestProviderCreateConsumerRejection() {
 // Scenario 1: Validators opted in, MsgUpdateConsumer called to set spawn time in the past -> chain should start.
 // Scenario 2: Validators opted in, spawn time is in the future, the chain starts after the spawn time.
 func (s *ProviderSuite) TestProviderValidatorOptIn() {
-	testAcc := s.Provider.TestWallets[2].FormattedAddress()
-	testAccKey := s.Provider.TestWallets[2].KeyName()
+	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 
 	// Scenario 1: Validators opted in, MsgUpdateConsumer called to set spawn time in the past -> chain should start.
 	chainName := "optInScenario1-1"
@@ -160,8 +160,8 @@ func (s *ProviderSuite) TestProviderValidatorOptIn() {
 // -> Check that consumer chain genesis is available and contains the correct validator key
 // If possible, confirm that a validator can change their key assignment (from hub key to consumer chain key and/or vice versa)
 func (s *ProviderSuite) TestProviderValidatorOptInWithKeyAssignment() {
-	testAcc := s.Provider.TestWallets[3].FormattedAddress()
-	testAccKey := s.Provider.TestWallets[3].KeyName()
+	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 
 	valConsumerKeyVal := "Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="
 	valConsumerKey := fmt.Sprintf(`{"@type":"/cosmos.crypto.ed25519.PubKey","key":"%s"}`, valConsumerKeyVal)
@@ -227,8 +227,8 @@ func (s *ProviderSuite) TestProviderValidatorOptInWithKeyAssignment() {
 // If there are no opted-in validators and the spawn time is in the past, the chain should not start.
 // Confirm that a chain remains in the Registered phase unless all the initialization parameters are set for it
 func (s *ProviderSuite) TestProviderUpdateConsumer() {
-	testAcc := s.Provider.TestWallets[4].FormattedAddress()
-	testAccKey := s.Provider.TestWallets[4].KeyName()
+	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 
 	chainName := "updateConsumer-1"
 	spawnTime := time.Now().Add(-time.Hour)
@@ -289,8 +289,8 @@ func (s *ProviderSuite) TestProviderUpdateConsumer() {
 // Confirm that the chain can be updated to a higher TopN
 // Confirm that the owner of the chain cannot change as long as it remains a Top N chain
 func (s *ProviderSuite) TestProviderTransformOptInToTopN() {
-	testAcc := s.Provider.TestWallets[5].FormattedAddress()
-	testAccKey := s.Provider.TestWallets[5].KeyName()
+	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 
 	// Create an opt-in chain, owner is testAcc1
 	chainName := "transformOptinToTopNConsumer-1"
@@ -362,7 +362,8 @@ func (s *ProviderSuite) TestProviderTransformOptInToTopN() {
 // Create a Top N chain, and transform it to an opt-in via `tx gov submit-proposal` using MsgUpdateConsumer
 // Confirm that the chain is now not owned by governance
 func (s *ProviderSuite) TestProviderTransformTopNtoOptIn() {
-	testAcc := s.Provider.TestWallets[6].FormattedAddress()
+	testAcc, _, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 
 	chainName := "transformTopNtoOptIn-1"
 	// create top N chain
@@ -405,8 +406,8 @@ func (s *ProviderSuite) TestProviderTransformTopNtoOptIn() {
 
 // TestOptOut tests removin validator from consumer-opted-in-validators
 func (s *ProviderSuite) TestOptOut() {
-	testAcc := s.Provider.TestWallets[7].FormattedAddress()
-	testAccKey := s.Provider.TestWallets[7].KeyName()
+	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 
 	// Add consume chain
 	chainName := "TestOptOut-1"
@@ -454,8 +455,8 @@ func (s *ProviderSuite) TestOptOut() {
 // Confirm that after unbonding period, the chain moves to the Deleted phase and things like consumer id to client id
 // associations are deleted, but the chain metadata and the chain id are not deleted
 func (s *ProviderSuite) TestProviderRemoveConsumer() {
-	testAcc := s.Provider.TestWallets[8].FormattedAddress()
-	testAccKey := s.Provider.TestWallets[8].KeyName()
+	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 
 	// Test removing a chain
 	chainName := "removeConsumer-1"
@@ -510,10 +511,10 @@ func (s *ProviderSuite) TestProviderRemoveConsumer() {
 // Confirm that only the owner can send MsgUpdateConsumer, MsgRemoveConsumer
 // Confirm that ownership can be transferred to a different address -> results in the "old" owner losing ownership
 func (s *ProviderSuite) TestProviderOwnerChecks() {
-	testAcc1 := s.Provider.TestWallets[9].FormattedAddress()
-	testAcc2 := s.Provider.TestWallets[10].FormattedAddress()
-	testAccKey1 := s.Provider.TestWallets[9].KeyName()
-	testAccKey2 := s.Provider.TestWallets[10].KeyName()
+	testAcc1, testAccKey1, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
+	testAcc2, testAccKey2, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 	// Create an opt-in chain
 	chainName := "providerOwnerChecks-1"
 	createMsg := msgCreateConsumer(chainName, nil, nil, nil, testAcc1)
@@ -615,8 +616,8 @@ func (s *ProviderSuite) TestProviderOwnerChecks() {
 
 // Tests adding  and updating infraction parameters with MsgCreateConsumer, MsgUpdateConsumer
 func (s *ProviderSuite) TestInfractionParameters() {
-	testAcc := s.Provider.TestWallets[11].FormattedAddress()
-	testAccKey := s.Provider.TestWallets[11].KeyName()
+	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 	defaultInfractionParams := defaultInfractionParams()
 
 	// Confirm that a default params are used if infraction params are not set (taken from provider)
