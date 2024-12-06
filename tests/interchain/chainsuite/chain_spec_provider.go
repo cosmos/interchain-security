@@ -30,7 +30,7 @@ func GetProviderSpec(validatorCount int) *interchaintest.ChainSpec {
 				"config/config.toml": DefaultConfigToml(),
 			},
 			Images: []ibc.DockerImage{{
-				Repository: ProviderImageName,
+				Repository: ProviderImageName(),
 				UIDGID:     "1025:1025",
 			}},
 			ModifyGenesis:        cosmos.ModifyGenesis(providerModifiedGenesis()),

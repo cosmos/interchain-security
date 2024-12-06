@@ -11,7 +11,6 @@ import (
 )
 
 const (
-	ProviderImageName         = "ghcr.io/cosmos/interchain-security"
 	ProviderBin               = "interchain-security-pd"
 	ProviderBech32Prefix      = "cosmos"
 	ProviderValOperPrefix     = "cosmosvaloper"
@@ -64,10 +63,19 @@ func DefaultGenesisAmounts(denom string) func(i int) (sdktypes.Coin, sdktypes.Co
 }
 
 func ProviderImageVersion() string {
-	providerImageVersion := os.Getenv("PROVIDER_IMAGE_VERSION")
+	providerImageVersion := os.Getenv("PROVIDER_IMAGE_TAG")
 	if providerImageVersion == "" {
 		providerImageVersion = "latest"
 	}
 
 	return providerImageVersion
+}
+
+func ProviderImageName() string {
+	providerImageName := os.Getenv("PROVIDER_IMAGE_NAME")
+	if providerImageName == "" {
+		providerImageName = "ghcr.io/cosmos/interchain-security"
+	}
+
+	return providerImageName
 }
