@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/log"
+	math "cosmossdk.io/math"
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
@@ -297,6 +298,19 @@ func GetTestInitializationParameters() providertypes.ConsumerInitializationParam
 		CcvTimeoutPeriod:                  types.DefaultCCVTimeoutPeriod,
 		TransferTimeoutPeriod:             types.DefaultTransferTimeoutPeriod,
 		UnbondingPeriod:                   types.DefaultConsumerUnbondingPeriod,
+	}
+}
+
+func GetTestInfractionParameters() providertypes.InfractionParameters {
+	return providertypes.InfractionParameters{
+		DoubleSign: &providertypes.SlashJailParameters{
+			JailDuration:  1200 * time.Second,
+			SlashFraction: math.LegacyNewDecWithPrec(5, 1), // 0.5
+		},
+		Downtime: &providertypes.SlashJailParameters{
+			JailDuration:  600 * time.Second,
+			SlashFraction: math.LegacyNewDec(0),
+		},
 	}
 }
 

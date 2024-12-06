@@ -190,6 +190,33 @@ func (k Keeper) ConsumeIdsFromTimeQueue(
 	return result, nil
 }
 
+// HasActiveConsumerValidator checks whether at least one active validator is opted in to chain with `consumerId`
+func (k Keeper) HasActiveConsumerValidator(ctx sdk.Context, consumerId string, activeValidators []stakingtypes.Validator) (bool, error) {
+	currentValidatorSet, err := k.GetConsumerValSet(ctx, consumerId)
+	if err != nil {
+		return false, fmt.Errorf("getting consumer validator set of chain with consumerId (%s): %w", consumerId, err)
+	}
+
+	isActiveValidator := make(map[string]bool)
+	for _, val := range activeValidators {
+		consAddr, err := val.GetConsAddr()
+		if err != nil {
+			return false, fmt.Errorf("getting consensus address of validator (%+v), consumerId (%s): %w", val, consumerId, err)
+		}
+		providerConsAddr := types.NewProviderConsAddress(consAddr)
+		isActiveValidator[providerConsAddr.String()] = true
+	}
+
+	for _, val := range currentValidatorSet {
+		providerConsAddr := types.NewProviderConsAddress(val.ProviderConsAddr)
+		if isActiveValidator[providerConsAddr.String()] {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
 // LaunchConsumer launches the chain with the provided consumer id by creating the consumer client and the respective
 // consumer genesis file
 //
@@ -205,8 +232,17 @@ func (k Keeper) LaunchConsumer(
 	if err != nil {
 		return fmt.Errorf("computing consumer next validator set, consumerId(%s): %w", consumerId, err)
 	}
+
 	if len(initialValUpdates) == 0 {
-		return fmt.Errorf("cannot launch consumer with no validator opted in, consumerId(%s)", consumerId)
+		return fmt.Errorf("cannot launch consumer with no consumer validator, consumerId(%s)", consumerId)
+	}
+
+	hasActiveConsumerValidator, err := k.HasActiveConsumerValidator(ctx, consumerId, activeValidators)
+	if err != nil {
+		return fmt.Errorf("cannot check if chain has an active consumer validator, consumerId(%s): %w", consumerId, err)
+	}
+	if !hasActiveConsumerValidator {
+		return fmt.Errorf("cannot launch consumer with no active consumer validator, consumerId(%s)", consumerId)
 	}
 
 	// create consumer genesis
@@ -489,6 +525,8 @@ func (k Keeper) DeleteConsumerChain(ctx sdk.Context, consumerId string) (err err
 	k.DeletePrioritylist(ctx, consumerId)
 
 	k.DeleteConsumerRemovalTime(ctx, consumerId)
+
+	k.RemoveConsumerInfractionQueuedData(ctx, consumerId)
 
 	// TODO (PERMISSIONLESS) add newly-added state to be deleted
 

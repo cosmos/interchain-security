@@ -182,6 +182,10 @@ func (am AppModule) BeginBlock(ctx context.Context) error {
 	if err := am.keeper.BeginBlockRemoveConsumers(sdkCtx); err != nil {
 		return err
 	}
+	// Update the infraction parameters for consumer chains that are scheduled for an update
+	if err := am.keeper.BeginBlockUpdateInfractionParameters(sdkCtx); err != nil {
+		return err
+	}
 	// Check for replenishing slash meter before any slash packets are processed for this block
 	am.keeper.BeginBlockCIS(sdkCtx)
 	// BeginBlock logic needed for the  Reward Distribution sub-protocol

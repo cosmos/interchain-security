@@ -10,7 +10,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/cosmos/cosmos-sdk/version"
 
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
@@ -76,12 +75,12 @@ func CmdConsumerGenesis() *cobra.Command {
 
 func CmdConsumerChains() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "list-consumer-chains [phase] [limit]",
+		Use:   "list-consumer-chains [phase]",
 		Short: "Query consumer chains for provider chain.",
 		Long: `Query consumer chains for provider chain. An optional
 		integer parameter can be passed for phase filtering of consumer chains,
 		(Registered=1|Initialized=2|Launched=3|Stopped=4|Deleted=5).`,
-		Args: cobra.MaximumNArgs(2),
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -99,14 +98,14 @@ func CmdConsumerChains() *cobra.Command {
 				req.Phase = types.ConsumerPhase(phase)
 			}
 
-			if len(args) == 2 && args[1] != "" {
-				limit, err := strconv.ParseInt(args[1], 10, 32)
-				if err != nil {
-					return err
-				}
-				req.Pagination = &query.PageRequest{
-					Limit: uint64(limit),
-				}
+			fs, err := client.FlagSetWithPageKeyDecoded(cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			req.Pagination, err = client.ReadPageRequest(fs)
+			if err != nil {
+				return err
 			}
 
 			res, err := queryClient.QueryConsumerChains(cmd.Context(), req)
@@ -119,6 +118,7 @@ func CmdConsumerChains() *cobra.Command {
 	}
 
 	flags.AddQueryFlagsToCmd(cmd)
+	flags.AddPaginationFlagsToCmd(cmd, "consumer chains")
 
 	return cmd
 }

@@ -108,6 +108,16 @@ func ValidateStringFraction(i interface{}) error {
 	return nil
 }
 
+func ValidateFraction(dec math.LegacyDec) error {
+	if dec.IsNegative() {
+		return fmt.Errorf("param cannot be negative, got %s", dec)
+	}
+	if dec.Sub(math.LegacyNewDec(1)).IsPositive() {
+		return fmt.Errorf("param cannot be greater than 1, got %s", dec)
+	}
+	return nil
+}
+
 func CalculateTrustPeriod(unbondingPeriod time.Duration, defaultTrustPeriodFraction string) (time.Duration, error) {
 	trustDec, err := math.LegacyNewDecFromStr(defaultTrustPeriodFraction)
 	if err != nil {

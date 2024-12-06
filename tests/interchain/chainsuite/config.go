@@ -51,13 +51,14 @@ func DefaultConfigToml() testutil.Toml {
 }
 
 func DefaultGenesisAmounts(denom string) func(i int) (sdktypes.Coin, sdktypes.Coin) {
+	// Returns an amount of funds per validator, so validator with val index 0 has the most funds, then validator 1, then validator 2, etc.
 	return func(i int) (sdktypes.Coin, sdktypes.Coin) {
 		return sdktypes.Coin{
 				Denom:  denom,
-				Amount: sdkmath.NewInt(TotalValidatorFunds),
+				Amount: sdkmath.NewInt(TotalValidatorFunds / int64(i+1)),
 			}, sdktypes.Coin{
 				Denom:  denom,
-				Amount: sdkmath.NewInt(ValidatorFunds),
+				Amount: sdkmath.NewInt(ValidatorFunds / int64(i+1)),
 			}
 	}
 }
