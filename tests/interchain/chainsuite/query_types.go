@@ -44,6 +44,7 @@ type ConsumerResponse struct {
 	OwnerAddress       string             `json:"owner_address"`
 	Phase              string             `json:"phase"`
 	PowerShapingParams PowerShapingParams `json:"power_shaping_params"`
+	InfractionParams   InfractionParams   `json:"infraction_parameters"`
 }
 
 type InitParams struct {
@@ -73,6 +74,16 @@ type PowerShapingParams struct {
 	TopN               int      `json:"top_N"`
 	ValidatorSetCap    int      `json:"validator_set_cap"`
 	ValidatorsPowerCap int      `json:"validators_power_cap"`
+}
+
+type InfractionParams struct {
+	DoubleSign SlashJailParams `json:"double_sign"`
+	Downtime   SlashJailParams `json:"downtime"`
+}
+
+type SlashJailParams struct {
+	SlashFraction string `json:"slash_fraction"`
+	JailDuration  string `json:"jail_duration"`
 }
 
 type Params struct {
