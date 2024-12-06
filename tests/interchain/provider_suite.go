@@ -11,10 +11,11 @@ import (
 
 type ProviderSuite struct {
 	suite.Suite
-	Provider     *chainsuite.Chain
-	ctx          context.Context
-	walletMtx    sync.Mutex
-	walletsInUse map[int]bool
+	Provider       *chainsuite.Chain
+	ValidatorNodes int
+	ctx            context.Context
+	walletMtx      sync.Mutex
+	walletsInUse   map[int]bool
 }
 
 func (s *ProviderSuite) SetupSuite() {
@@ -24,7 +25,7 @@ func (s *ProviderSuite) SetupSuite() {
 	s.ctx = ctx
 
 	// create and start provider chain
-	s.Provider, err = chainsuite.CreateProviderChain(s.GetContext(), s.T(), chainsuite.GetProviderSpec())
+	s.Provider, err = chainsuite.CreateProviderChain(s.GetContext(), s.T(), chainsuite.GetProviderSpec(s.ValidatorNodes))
 	s.Require().NoError(err)
 }
 
