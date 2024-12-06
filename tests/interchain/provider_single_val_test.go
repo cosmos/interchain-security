@@ -38,7 +38,7 @@ func (s *SingleValidatorProviderSuite) TestProviderCreateConsumer() {
 	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
 	s.Require().NoError(err)
 
-	// Confirm that a chain can be create with the minimum params (metadata)
+	// Confirm that a chain can be created with the minimum params (metadata)
 	chainName := "minParamAddConsumer-1"
 	createConsumerMsg := msgCreateConsumer(chainName, nil, nil, nil, testAcc)
 	consumerId, err := s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
@@ -409,12 +409,12 @@ func (s *SingleValidatorProviderSuite) TestProviderTransformTopNtoOptIn() {
 	s.Require().Equal(testAcc, optInChain.OwnerAddress)
 }
 
-// TestOptOut tests removin validator from consumer-opted-in-validators
+// TestOptOut tests removing validator from consumer-opted-in-validators
 func (s *SingleValidatorProviderSuite) TestOptOut() {
 	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
 	s.Require().NoError(err)
 
-	// Add consume chain
+	// Add consumer chain
 	chainName := "TestOptOut-1"
 	spawnTime := time.Now().Add(time.Hour)
 	consumerInitParams := consumerInitParamsTemplate(&spawnTime)
