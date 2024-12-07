@@ -230,7 +230,7 @@ func (s *ProviderSuite) TestProviderValidatorOptInWithKeyAssignment() {
 	s.Require().Equal(1, len(optInVals.ValidatorsProviderAddresses))
 	s.Require().Equal(valProviderAddress, optInVals.ValidatorsProviderAddresses[0])
 
-	// assgin custom consumer consensus key
+	// assign custom consumer consensus key
 	s.Require().NoError(s.Provider.AssignKey(s.GetContext(), consumerChain.ConsumerID, 0, valConsumerKey))
 	consumerKeyAddr, err := s.Provider.ValidatorConsumerAddress(s.GetContext(), consumerChain.ConsumerID, valProviderAddress)
 	s.Require().NoError(err)
@@ -290,7 +290,7 @@ func (s *ProviderSuite) TestProviderUpdateConsumer() {
 	s.Require().NoError(s.Provider.OptIn(s.GetContext(), consumerChain.ConsumerID, 0))
 	s.Require().Equal(providertypes.CONSUMER_PHASE_REGISTERED.String(), consumerChain.Phase)
 
-	// updated consumer with the minimum params (metadata) - regeistered phase
+	// updated consumer with the minimum params (metadata) - registered phase
 	upgradeMsg := &providertypes.MsgUpdateConsumer{
 		Owner:                    testAcc,
 		ConsumerId:               consumerChain.ConsumerID,
@@ -641,7 +641,7 @@ func (s *ProviderSuite) TestProviderOwnerChecks() {
 	s.Require().Error(err)
 	s.Require().Contains(err.Error(), "expected gov account")
 
-	// update owner using msg submited by the current owner
+	// update owner using msg submitted by the current owner
 	s.Require().NoError(s.Provider.UpdateConsumer(s.GetContext(), upgradeMsg, testAccKey2))
 
 	// update to top N using proposal
