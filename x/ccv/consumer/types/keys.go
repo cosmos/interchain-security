@@ -192,7 +192,7 @@ func GetAllKeyPrefixes() []byte {
 	return prefixList
 }
 
-// GetAllKeys returns the names of all the keys.
+// GetAllKeyNames returns the names of all the keys.
 // Only used for testing
 func GetAllKeyNames() []string {
 	prefixMap := getKeyPrefixes()

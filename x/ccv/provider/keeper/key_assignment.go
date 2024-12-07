@@ -388,7 +388,7 @@ func (k Keeper) GetAllConsumerAddrsToPrune(ctx sdk.Context, consumerId string) (
 	return consumerAddrsToPrune
 }
 
-// DeleteConsumerAddrsToPruneV2 deletes the list of consumer addresses mapped to a timestamp
+// DeleteConsumerAddrsToPrune deletes the list of consumer addresses mapped to a timestamp
 func (k Keeper) DeleteConsumerAddrsToPrune(ctx sdk.Context, consumerId string, pruneTs time.Time) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ConsumerAddrsToPruneV2Key(consumerId, pruneTs))
