@@ -1,6 +1,7 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
@@ -83,7 +84,7 @@ func (cs ConsumerState) Validate() error {
 	}
 	// consumer genesis should be for a new chain only
 	if !cs.ConsumerGenesis.NewChain {
-		return fmt.Errorf("consumer genesis must be for a new chain")
+		return errors.New("consumer genesis must be for a new chain")
 	}
 	// validate a new chain genesis
 	if err := cs.ConsumerGenesis.Validate(); err != nil {
@@ -98,7 +99,7 @@ func (cs ConsumerState) Validate() error {
 
 	for _, pVSC := range cs.PendingValsetChanges {
 		if pVSC.ValsetUpdateId == 0 {
-			return fmt.Errorf("valset update ID cannot be equal to zero")
+			return errors.New("valset update ID cannot be equal to zero")
 		}
 		if err := validateSlashAcksAddress(pVSC.SlashAcks); err != nil {
 			return err

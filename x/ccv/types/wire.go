@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
@@ -109,14 +110,14 @@ func (cp ConsumerPacketData) Validate() (err error) {
 		// validate VSCMaturedPacket
 		vscMaturedPacket := cp.GetVscMaturedPacketData()
 		if vscMaturedPacket == nil {
-			return fmt.Errorf("invalid consumer packet data: VscMaturePacketData data cannot be empty")
+			return errors.New("invalid consumer packet data: VscMaturePacketData data cannot be empty")
 		}
 		err = vscMaturedPacket.Validate()
 	case SlashPacket:
 		// validate SlashPacket
 		slashPacket := cp.GetSlashPacketData()
 		if slashPacket == nil {
-			return fmt.Errorf("invalid consumer packet data: SlashPacketData data cannot be empty")
+			return errors.New("invalid consumer packet data: SlashPacketData data cannot be empty")
 		}
 		err = slashPacket.Validate()
 	default:
