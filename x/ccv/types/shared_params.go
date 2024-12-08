@@ -1,6 +1,7 @@
 package types
 
 import (
+	"errors"
 	fmt "fmt"
 	"strconv"
 	"strings"
@@ -27,7 +28,7 @@ func ValidateDuration(i interface{}) error {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
 	if period <= time.Duration(0) {
-		return fmt.Errorf("duration must be positive")
+		return errors.New("duration must be positive")
 	}
 	return nil
 }
@@ -51,7 +52,7 @@ func ValidatePositiveInt64(i interface{}) error {
 		return err
 	}
 	if i.(int64) <= int64(0) {
-		return fmt.Errorf("int must be positive")
+		return errors.New("int must be positive")
 	}
 	return nil
 }

@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -252,7 +253,7 @@ func UnmarshalConsumerPacketData(packetData []byte) (consumerPacket ccv.Consumer
 
 		// VSC matured packets should not be unmarshaled as v1 packets
 		if v1Packet.Type == ccv.VscMaturedPacket {
-			return ccv.ConsumerPacketData{}, fmt.Errorf("VSC matured packets should be correctly unmarshaled")
+			return ccv.ConsumerPacketData{}, errors.New("VSC matured packets should be correctly unmarshaled")
 		}
 
 		// Convert from v1 packet type

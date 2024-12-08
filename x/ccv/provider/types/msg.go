@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -339,7 +340,7 @@ func (msg MsgCreateConsumer) ValidateBasic() error {
 
 	if msg.PowerShapingParameters != nil {
 		if msg.PowerShapingParameters.Top_N != 0 {
-			return fmt.Errorf("cannot create a Top N chain through `MsgCreateConsumer`; " +
+			return errors.New("cannot create a Top N chain through `MsgCreateConsumer`; " +
 				"first create the chain and then use `MsgUpdateConsumer` to make the chain Top N")
 		}
 		if err := ValidatePowerShapingParameters(*msg.PowerShapingParameters); err != nil {
@@ -462,19 +463,19 @@ func ParseConsumerKeyFromJson(jsonStr string) (pkType, key string, err error) {
 // TODO create unit test
 func ValidateHeaderForConsumerDoubleVoting(header *ibctmtypes.Header) error {
 	if header == nil {
-		return fmt.Errorf("infraction block header cannot be nil")
+		return errors.New("infraction block header cannot be nil")
 	}
 
 	if header.SignedHeader == nil {
-		return fmt.Errorf("signed header in infraction block header cannot be nil")
+		return errors.New("signed header in infraction block header cannot be nil")
 	}
 
 	if header.SignedHeader.Header == nil {
-		return fmt.Errorf("invalid signed header in infraction block header, 'SignedHeader.Header' is nil")
+		return errors.New("invalid signed header in infraction block header, 'SignedHeader.Header' is nil")
 	}
 
 	if header.ValidatorSet == nil {
-		return fmt.Errorf("invalid infraction block header, validator set is nil")
+		return errors.New("invalid infraction block header, validator set is nil")
 	}
 
 	return nil
