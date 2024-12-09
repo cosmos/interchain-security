@@ -44,6 +44,7 @@ To suggest an ADR, please make use of the [ADR template](https://github.com/cosm
 - [ADR 017: ICS with Inactive Provider Validators](./adr-017-allowing-inactive-validators.md)
 - [ADR 018: Remove VSCMatured Packets](./adr-018-remove-vscmatured.md)
 - [ADR 019: Permissionless Interchain Security](./adr-019-permissionless-ics.md)
+- [ADR 020: Customizable Slashing and Jailing](./adr-020-cutomizable_slashing_and_jailing.md)
 
 ### Proposed
 
