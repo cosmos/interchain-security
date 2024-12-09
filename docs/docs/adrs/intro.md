@@ -52,7 +52,7 @@ To suggest an ADR, please make use of the [ADR template](https://github.com/cosm
 - [ADR 017: ICS with Inactive Provider Validators](./adr-017-allowing-inactive-validators.md)
 - [ADR 018: Fault Resolutions](./adr-018-fault-resolutions.md)
 - [ADR 021: Consumer Chain Clients](./adr-021-consumer-chain-clients.md)
-- [ADR 021: Fault Resolutions](./adr-021-fault-resolutions.md)
+- [ADR 022: Fault Resolutions](./adr-022-fault-resolutions.md)
 
 ### Rejected
 
