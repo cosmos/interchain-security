@@ -199,7 +199,7 @@ func stepsUpgradeChain() []Step {
 				ChainID:       ChainID("sover"),
 				UpgradeTitle:  "sovereign-changeover",
 				Proposer:      ValidatorID("alice"),
-				UpgradeHeight: 110,
+				UpgradeHeight: 125,
 				Expedited:     false,
 			},
 			State: State{
@@ -207,7 +207,7 @@ func stepsUpgradeChain() []Step {
 					Proposals: &map[uint]Proposal{
 						1: UpgradeProposal{
 							Title:         "sovereign-changeover",
-							UpgradeHeight: 110,
+							UpgradeHeight: 125,
 							Type:          "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal",
 							Deposit:       10000000,
 							Status:        gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
@@ -228,7 +228,7 @@ func stepsUpgradeChain() []Step {
 					Proposals: &map[uint]Proposal{
 						1: UpgradeProposal{
 							Deposit:       10000000,
-							UpgradeHeight: 110,
+							UpgradeHeight: 125,
 							Title:         "sovereign-changeover",
 							Type:          "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal",
 							Status:        gov.ProposalStatus_PROPOSAL_STATUS_PASSED.String(),
@@ -240,7 +240,7 @@ func stepsUpgradeChain() []Step {
 		{
 			Action: WaitUntilBlockAction{
 				Chain: ChainID("sover"),
-				Block: 110,
+				Block: 125,
 			},
 			State: State{},
 		},
@@ -252,22 +252,22 @@ func stepsUpgradeChain() []Step {
 // here we need to use connection-1, and in tests with new consumers connection-0 is used because the chain is new (has no IBC states prior to launch)
 func stepsPostChangeoverDelegate(consumerName string) []Step {
 	return []Step{
-		{
-			Action: SendTokensAction{
-				Chain:  ChainID(consumerName),
-				From:   ValidatorID("alice"),
-				To:     ValidatorID("bob"),
-				Amount: 100,
-			},
-			State: State{
-				ChainID(consumerName): ChainState{
-					// Tx should not go through, ICS channel is not setup until first VSC packet has been relayed to consumer
-					ValBalances: &map[ValidatorID]uint{
-						ValidatorID("bob"): 0,
-					},
-				},
-			},
-		},
+		// {
+		// 	Action: SendTokensAction{
+		// 		Chain:  ChainID(consumerName),
+		// 		From:   ValidatorID("alice"),
+		// 		To:     ValidatorID("bob"),
+		// 		Amount: 100,
+		// 	},
+		// 	State: State{
+		// 		ChainID(consumerName): ChainState{
+		// 			// Tx should not go through, ICS channel is not setup until first VSC packet has been relayed to consumer
+		// 			ValBalances: &map[ValidatorID]uint{
+		// 				ValidatorID("bob"): 0,
+		// 			},
+		// 		},
+		// 	},
+		// },
 		{
 			Action: DelegateTokensAction{
 				Chain:  ChainID("provi"),

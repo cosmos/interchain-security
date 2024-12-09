@@ -328,7 +328,9 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 				RevisionHeight: rawContent.Get("initial_height.revision_height").Uint(),
 			},
 		}
-	case "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal":
+	case "/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade",
+		"/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal":
+		fmt.Println("############# e2e/v5/commands.go COMMANDS", rawContent)
 		height := rawContent.Get("plan.height").Uint()
 		title := rawContent.Get("plan.name").String()
 		return UpgradeProposal{
