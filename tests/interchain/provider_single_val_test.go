@@ -14,8 +14,13 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func TestProviderSuite(t *testing.T) {
-	s := &ProviderSuite{}
+type SingleValidatorProviderSuite struct {
+	ProviderSuite
+}
+
+func TestSingleProviderSuite(t *testing.T) {
+	s := &SingleValidatorProviderSuite{}
+	s.ValidatorNodes = 1
 
 	suite.Run(t, s)
 }
@@ -29,13 +34,13 @@ func TestProviderSuite(t *testing.T) {
 // Confirm that a chain can be created with all params
 // Confirm that a chain can be created with initialization parameters that do not contain a spawn time
 // Confirm that if there are no opted-in validators at spawn time, the chain fails to launch and moves back to its Registered phase having reset its spawn time
-func (s *ProviderSuite) TestProviderCreateConsumer() {
-	testAcc := s.Provider.TestWallets[0].FormattedAddress()
-	testAccKey := s.Provider.TestWallets[0].KeyName()
+func (s *SingleValidatorProviderSuite) TestProviderCreateConsumer() {
+	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 
 	// Confirm that a chain can be created with the minimum params (metadata)
-	chainName := "minParamAddConsumer"
-	createConsumerMsg := msgCreateConsumer(chainName, nil, nil, testAcc)
+	chainName := "minParamAddConsumer-1"
+	createConsumerMsg := msgCreateConsumer(chainName, nil, nil, nil, testAcc)
 	consumerId, err := s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
 	s.Require().NoError(err)
 	consumerChain, err := s.Provider.GetConsumerChain(s.GetContext(), consumerId)
@@ -43,9 +48,9 @@ func (s *ProviderSuite) TestProviderCreateConsumer() {
 	s.Require().Equal(providertypes.CONSUMER_PHASE_REGISTERED.String(), consumerChain.Phase)
 
 	// Confirm that a chain can be created with initialization parameters that do not contain a spawn time
-	chainName = "noSpawnTimeAddConsumer"
+	chainName = "noSpawnTimeAddConsumer-1"
 	powerShapingParams := powerShapingParamsTemplate()
-	createConsumerMsg = msgCreateConsumer(chainName, consumerInitParamsTemplate(nil), powerShapingParams, testAcc)
+	createConsumerMsg = msgCreateConsumer(chainName, consumerInitParamsTemplate(nil), powerShapingParams, nil, testAcc)
 	consumerId, err = s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
 	s.Require().NoError(err)
 	consumerChain, err = s.Provider.GetConsumerChain(s.GetContext(), consumerId)
@@ -58,9 +63,9 @@ func (s *ProviderSuite) TestProviderCreateConsumer() {
 	powerShapingParams.Allowlist = []string{valConsAddr}
 	powerShapingParams.Denylist = []string{"cosmosvalcons1l9qq4m300z8c5ez86ak2mp8znftewkwgjlxh88"}
 
-	chainName = "allParamsFutureSpawnTimeAddConsumer"
+	chainName = "allParamsFutureSpawnTimeAddConsumer-1"
 	spawnTimeFromNow := time.Now().Add(time.Hour)
-	createConsumerMsg = msgCreateConsumer(chainName, consumerInitParamsTemplate(&spawnTimeFromNow), powerShapingParams, testAcc)
+	createConsumerMsg = msgCreateConsumer(chainName, consumerInitParamsTemplate(&spawnTimeFromNow), powerShapingParams, infractionParamsTemplate(), testAcc)
 	consumerId, err = s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
 	s.Require().NoError(err)
 	consumerChain, err = s.Provider.GetConsumerChain(s.GetContext(), consumerId)
@@ -68,9 +73,9 @@ func (s *ProviderSuite) TestProviderCreateConsumer() {
 	s.Require().Equal(providertypes.CONSUMER_PHASE_INITIALIZED.String(), consumerChain.Phase)
 
 	// Confirm that a chain can be created with all params(past spawn time)
-	chainName = "allParamsPastSpawnTimeAddConsumer"
+	chainName = "allParamsPastSpawnTimeAddConsumer-1"
 	spawnTimeFromNow = time.Now().Add(-time.Hour)
-	createConsumerMsg = msgCreateConsumer(chainName, consumerInitParamsTemplate(&spawnTimeFromNow), powerShapingParams, testAcc)
+	createConsumerMsg = msgCreateConsumer(chainName, consumerInitParamsTemplate(&spawnTimeFromNow), powerShapingParams, infractionParamsTemplate(), testAcc)
 	consumerId, err = s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
 	s.Require().NoError(err)
 	consumerChain, err = s.Provider.GetConsumerChain(s.GetContext(), consumerId)
@@ -83,83 +88,37 @@ func (s *ProviderSuite) TestProviderCreateConsumer() {
 // Confirm that a chain with TopN > 0 is rejected
 // Confirm that a chain without the minimum params (metadata) is rejected
 // Confirm that a chain voted 'no' is rejected
-func (s *ProviderSuite) TestProviderCreateConsumerRejection() {
-	testAcc := s.Provider.TestWallets[1].FormattedAddress()
-	testAccKey := s.Provider.TestWallets[1].KeyName()
+func (s *SingleValidatorProviderSuite) TestProviderCreateConsumerRejection() {
+	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 
-	chainName := "rejectConsumer"
+	chainName := "rejectConsumer-1"
 	// Confirm that a chain with TopN > 0 is rejected
-	createConsumerMsg := msgCreateConsumer(chainName, nil, powerShapingParamsTemplate(), testAcc)
+	createConsumerMsg := msgCreateConsumer(chainName, nil, powerShapingParamsTemplate(), nil, testAcc)
 	createConsumerMsg.PowerShapingParameters.Top_N = 100
-	_, err := s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
+	_, err = s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
 	s.Require().Error(err)
 
 	// Confirm that a chain without the minimum params (metadata) is rejected
-	createConsumerMsg = msgCreateConsumer(chainName, nil, nil, testAcc)
+	createConsumerMsg = msgCreateConsumer(chainName, nil, nil, nil, testAcc)
 	createConsumerMsg.Metadata = providertypes.ConsumerMetadata{}
 	_, err = s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
 	s.Require().Error(err)
-}
-
-// TestOptInChainCanOnlyStartIfActiveValidatorOptedIn tests that only if an active validator opts in to an Opt-In chain, the chain can launch.
-// Scenario 1: Inactive validators opts in, the chain does not launch.
-// Scenario 2: Active validator opts in, the chain launches.
-func (s *ProviderSuite) TestOptInChainCanOnlyStartIfActiveValidatorOptedIn() {
-	testAcc := s.Provider.TestWallets[2].FormattedAddress()
-	testAccKey := s.Provider.TestWallets[2].KeyName()
-
-	activeValIndex := 0
-	inactiveValIndex := 1
-
-	// Scenario 1: Inactive validators opts in, the chain does not launch.
-	chainName := "optInScenario1"
-	spawnTime := time.Now().Add(time.Hour)
-	consumerInitParams := consumerInitParamsTemplate(&spawnTime)
-	createConsumerMsg := msgCreateConsumer(chainName, consumerInitParams, powerShapingParamsTemplate(), testAcc)
-	consumerId, err := s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
-	s.Require().NoError(err)
-	consumerChain, err := s.Provider.GetConsumerChain(s.GetContext(), consumerId)
-	s.Require().NoError(err)
-	// inactive validator opts in
-	s.Require().NoError(s.Provider.OptIn(s.GetContext(), consumerChain.ConsumerID, inactiveValIndex))
-	consumerInitParams.SpawnTime = time.Now()
-	upgradeMsg := &providertypes.MsgUpdateConsumer{
-		Owner:                    testAcc,
-		ConsumerId:               consumerChain.ConsumerID,
-		NewOwnerAddress:          testAcc,
-		InitializationParameters: consumerInitParams,
-		PowerShapingParameters:   powerShapingParamsTemplate(),
-	}
-	s.Require().NoError(s.Provider.UpdateConsumer(s.GetContext(), upgradeMsg, testAccKey))
-	s.Require().NoError(testutil.WaitForBlocks(s.GetContext(), 1, s.Provider))
-	consumerChain, err = s.Provider.GetConsumerChain(s.GetContext(), consumerId)
-	s.Require().NoError(err)
-	s.Require().Equal(providertypes.CONSUMER_PHASE_REGISTERED.String(), consumerChain.Phase)
-
-	// Scenario 2: Active validator opts in, the chain launches.
-	// active validator opts in
-	s.Require().NoError(s.Provider.OptIn(s.GetContext(), consumerChain.ConsumerID, activeValIndex))
-
-	s.Require().NoError(s.Provider.UpdateConsumer(s.GetContext(), upgradeMsg, testAccKey))
-	s.Require().NoError(testutil.WaitForBlocks(s.GetContext(), 1, s.Provider))
-	consumerChain, err = s.Provider.GetConsumerChain(s.GetContext(), consumerId)
-	s.Require().NoError(err)
-	s.Require().Equal(providertypes.CONSUMER_PHASE_LAUNCHED.String(), consumerChain.Phase)
 }
 
 // Test Opting in validators to a chain (MsgOptIn)
 // Confirm that a chain can be created and validators can be opted in
 // Scenario 1: Validators opted in, MsgUpdateConsumer called to set spawn time in the past -> chain should start.
 // Scenario 2: Validators opted in, spawn time is in the future, the chain starts after the spawn time.
-func (s *ProviderSuite) TestProviderValidatorOptIn() {
-	testAcc := s.Provider.TestWallets[2].FormattedAddress()
-	testAccKey := s.Provider.TestWallets[2].KeyName()
+func (s *SingleValidatorProviderSuite) TestProviderValidatorOptIn() {
+	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 
 	// Scenario 1: Validators opted in, MsgUpdateConsumer called to set spawn time in the past -> chain should start.
-	chainName := "optInScenario1"
+	chainName := "optInScenario1-1"
 	spawnTime := time.Now().Add(time.Hour)
 	consumerInitParams := consumerInitParamsTemplate(&spawnTime)
-	createConsumerMsg := msgCreateConsumer(chainName, consumerInitParams, powerShapingParamsTemplate(), testAcc)
+	createConsumerMsg := msgCreateConsumer(chainName, consumerInitParams, powerShapingParamsTemplate(), nil, testAcc)
 	consumerId, err := s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
 	s.Require().NoError(err)
 	consumerChain, err := s.Provider.GetConsumerChain(s.GetContext(), consumerId)
@@ -181,10 +140,10 @@ func (s *ProviderSuite) TestProviderValidatorOptIn() {
 	s.Require().Equal(providertypes.CONSUMER_PHASE_LAUNCHED.String(), consumerChain.Phase)
 
 	// Scenario 2: Validators opted in, spawn time is in the future, the chain should not start before the spawn time.
-	chainName = "optInScenario2"
+	chainName = "optInScenario2-1"
 	spawnTime = time.Now().Add(30 * time.Second)
 	consumerInitParams = consumerInitParamsTemplate(&spawnTime)
-	createConsumerMsg = msgCreateConsumer(chainName, consumerInitParams, powerShapingParamsTemplate(), testAcc)
+	createConsumerMsg = msgCreateConsumer(chainName, consumerInitParams, powerShapingParamsTemplate(), nil, testAcc)
 	consumerId, err = s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
 	s.Require().NoError(err)
 	consumerChain, err = s.Provider.GetConsumerChain(s.GetContext(), consumerId)
@@ -205,9 +164,9 @@ func (s *ProviderSuite) TestProviderValidatorOptIn() {
 // Events: MsgCreateConsumer (spawn time unset), MsgOptIn with KeyAssignment, MsgUpdateConsumer (set spawn time in the past)
 // -> Check that consumer chain genesis is available and contains the correct validator key
 // If possible, confirm that a validator can change their key assignment (from hub key to consumer chain key and/or vice versa)
-func (s *ProviderSuite) TestProviderValidatorOptInWithKeyAssignment() {
-	testAcc := s.Provider.TestWallets[3].FormattedAddress()
-	testAccKey := s.Provider.TestWallets[3].KeyName()
+func (s *SingleValidatorProviderSuite) TestProviderValidatorOptInWithKeyAssignment() {
+	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 
 	valConsumerKeyVal := "Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="
 	valConsumerKey := fmt.Sprintf(`{"@type":"/cosmos.crypto.ed25519.PubKey","key":"%s"}`, valConsumerKeyVal)
@@ -218,8 +177,8 @@ func (s *ProviderSuite) TestProviderValidatorOptInWithKeyAssignment() {
 	s.Require().NoError(err)
 
 	// create chain and opt-in
-	chainName := "keyAssignment"
-	createConsumerMsg := msgCreateConsumer(chainName, nil, powerShapingParamsTemplate(), testAcc)
+	chainName := "keyAssignment-1"
+	createConsumerMsg := msgCreateConsumer(chainName, nil, powerShapingParamsTemplate(), nil, testAcc)
 	consumerId, err := s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
 	s.Require().NoError(err)
 	consumerChain, err := s.Provider.GetConsumerChain(s.GetContext(), consumerId)
@@ -272,17 +231,17 @@ func (s *ProviderSuite) TestProviderValidatorOptInWithKeyAssignment() {
 // Confirm that a chain can update a combination of the metadata, initialization, and power-shaping parameters
 // If there are no opted-in validators and the spawn time is in the past, the chain should not start.
 // Confirm that a chain remains in the Registered phase unless all the initialization parameters are set for it
-func (s *ProviderSuite) TestProviderUpdateConsumer() {
-	testAcc := s.Provider.TestWallets[4].FormattedAddress()
-	testAccKey := s.Provider.TestWallets[4].KeyName()
+func (s *SingleValidatorProviderSuite) TestProviderUpdateConsumer() {
+	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 
-	chainName := "updateConsumer"
+	chainName := "updateConsumer-1"
 	spawnTime := time.Now().Add(-time.Hour)
 	initParams := consumerInitParamsTemplate(&spawnTime)
 	powerShapingParams := powerShapingParamsTemplate()
 
 	// create consumer
-	createConsumerMsg := msgCreateConsumer(chainName, initParams, powerShapingParams, testAcc)
+	createConsumerMsg := msgCreateConsumer(chainName, initParams, powerShapingParams, nil, testAcc)
 	consumerId, err := s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
 	s.Require().NoError(err)
 	consumerChain, err := s.Provider.GetConsumerChain(s.GetContext(), consumerId)
@@ -334,16 +293,16 @@ func (s *ProviderSuite) TestProviderUpdateConsumer() {
 // Confirm that the chain can be updated to a lower TopN
 // Confirm that the chain can be updated to a higher TopN
 // Confirm that the owner of the chain cannot change as long as it remains a Top N chain
-func (s *ProviderSuite) TestProviderTransformOptInToTopN() {
-	testAcc := s.Provider.TestWallets[5].FormattedAddress()
-	testAccKey := s.Provider.TestWallets[5].KeyName()
+func (s *SingleValidatorProviderSuite) TestProviderTransformOptInToTopN() {
+	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 
 	// Create an opt-in chain, owner is testAcc1
-	chainName := "transformOptinToTopNConsumer"
+	chainName := "transformOptinToTopNConsumer-1"
 	spawnTime := time.Now().Add(time.Hour)
 	initParams := consumerInitParamsTemplate(&spawnTime)
 	powerShapingParams := powerShapingParamsTemplate()
-	createConsumerMsg := msgCreateConsumer(chainName, initParams, powerShapingParams, testAcc)
+	createConsumerMsg := msgCreateConsumer(chainName, initParams, powerShapingParams, nil, testAcc)
 	consumerId, err := s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
 	s.Require().NoError(err)
 	consumerChain, err := s.Provider.GetConsumerChain(s.GetContext(), consumerId)
@@ -407,15 +366,16 @@ func (s *ProviderSuite) TestProviderTransformOptInToTopN() {
 
 // Create a Top N chain, and transform it to an opt-in via `tx gov submit-proposal` using MsgUpdateConsumer
 // Confirm that the chain is now not owned by governance
-func (s *ProviderSuite) TestProviderTransformTopNtoOptIn() {
-	testAcc := s.Provider.TestWallets[6].FormattedAddress()
+func (s *SingleValidatorProviderSuite) TestProviderTransformTopNtoOptIn() {
+	testAcc, _, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 
-	chainName := "transformTopNtoOptIn"
+	chainName := "transformTopNtoOptIn-1"
 	// create top N chain
 	spawnTimeFromNow := time.Now().Add(time.Hour)
 	powerShapingParams := powerShapingParamsTemplate()
 	initParams := consumerInitParamsTemplate(&spawnTimeFromNow)
-	proposalMsg := msgCreateConsumer(chainName, initParams, powerShapingParams, chainsuite.GovModuleAddress)
+	proposalMsg := msgCreateConsumer(chainName, initParams, powerShapingParams, nil, chainsuite.GovModuleAddress)
 	s.Require().NoError(s.Provider.ExecuteProposalMsg(s.GetContext(), proposalMsg, chainsuite.GovModuleAddress, chainName, cosmos.ProposalVoteYes, govv1.StatusPassed, false))
 	consumerChain, err := s.Provider.GetConsumerChainByChainId(s.GetContext(), chainName)
 	s.Require().NoError(err)
@@ -450,16 +410,16 @@ func (s *ProviderSuite) TestProviderTransformTopNtoOptIn() {
 }
 
 // TestOptOut tests removing validator from consumer-opted-in-validators
-func (s *ProviderSuite) TestOptOut() {
-	testAcc := s.Provider.TestWallets[7].FormattedAddress()
-	testAccKey := s.Provider.TestWallets[7].KeyName()
+func (s *SingleValidatorProviderSuite) TestOptOut() {
+	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 
 	// Add consumer chain
-	chainName := "TestOptOut"
+	chainName := "TestOptOut-1"
 	spawnTime := time.Now().Add(time.Hour)
 	consumerInitParams := consumerInitParamsTemplate(&spawnTime)
 	powerShapingParams := powerShapingParamsTemplate()
-	createConsumerMsg := msgCreateConsumer(chainName, consumerInitParams, powerShapingParams, testAcc)
+	createConsumerMsg := msgCreateConsumer(chainName, consumerInitParams, powerShapingParams, nil, testAcc)
 	consumerId, err := s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
 	s.Require().NoError(err)
 	consumerChain, err := s.Provider.GetConsumerChain(s.GetContext(), consumerId)
@@ -499,16 +459,16 @@ func (s *ProviderSuite) TestOptOut() {
 // Confirm that the chain moves to the Stopped phase and is not getting any VSCPackets anymore
 // Confirm that after unbonding period, the chain moves to the Deleted phase and things like consumer id to client id
 // associations are deleted, but the chain metadata and the chain id are not deleted
-func (s *ProviderSuite) TestProviderRemoveConsumer() {
-	testAcc := s.Provider.TestWallets[8].FormattedAddress()
-	testAccKey := s.Provider.TestWallets[8].KeyName()
+func (s *SingleValidatorProviderSuite) TestProviderRemoveConsumer() {
+	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 
 	// Test removing a chain
-	chainName := "removeConsumer"
+	chainName := "removeConsumer-1"
 	spawnTime := time.Now().Add(time.Hour)
 	initParams := consumerInitParamsTemplate(&spawnTime)
 	powerShapingParams := powerShapingParamsTemplate()
-	createConsumerMsg := msgCreateConsumer(chainName, initParams, powerShapingParams, testAcc)
+	createConsumerMsg := msgCreateConsumer(chainName, initParams, powerShapingParams, nil, testAcc)
 	consumerId, err := s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
 	s.Require().NoError(err)
 	consumerChain, err := s.Provider.GetConsumerChain(s.GetContext(), consumerId)
@@ -555,14 +515,14 @@ func (s *ProviderSuite) TestProviderRemoveConsumer() {
 
 // Confirm that only the owner can send MsgUpdateConsumer, MsgRemoveConsumer
 // Confirm that ownership can be transferred to a different address -> results in the "old" owner losing ownership
-func (s *ProviderSuite) TestProviderOwnerChecks() {
-	testAcc1 := s.Provider.TestWallets[9].FormattedAddress()
-	testAcc2 := s.Provider.TestWallets[10].FormattedAddress()
-	testAccKey1 := s.Provider.TestWallets[9].KeyName()
-	testAccKey2 := s.Provider.TestWallets[10].KeyName()
+func (s *SingleValidatorProviderSuite) TestProviderOwnerChecks() {
+	testAcc1, testAccKey1, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
+	testAcc2, testAccKey2, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
 	// Create an opt-in chain
-	chainName := "providerOwnerChecks"
-	createMsg := msgCreateConsumer(chainName, nil, nil, testAcc1)
+	chainName := "providerOwnerChecks-1"
+	createMsg := msgCreateConsumer(chainName, nil, nil, nil, testAcc1)
 
 	// create consumer with owner set to test account 1
 	consumerId, err := s.Provider.CreateConsumer(s.GetContext(), createMsg, testAccKey1)
@@ -657,4 +617,134 @@ func (s *ProviderSuite) TestProviderOwnerChecks() {
 	s.Require().Equal(providertypes.CONSUMER_PHASE_LAUNCHED.String(), consumerChain.Phase)
 	s.Require().Equal(powerShapingParams.Top_N, uint32(consumerChain.PowerShapingParams.TopN))
 	s.Require().Equal(chainsuite.GovModuleAddress, consumerChain.OwnerAddress)
+}
+
+// Tests adding and updating infraction parameters with MsgCreateConsumer and MsgUpdateConsumer.
+// Confirms that default parameters are used if infraction parameters are not set.
+// Confirms that if a chain is in the pre-launched phase, parameters submitted with MsgUpdateConsumer are updated immediately.
+// Confirms that if omitting one of the Downtime or DoubleSign parameters, the other will be updated successfully.
+// Confirms that if a chain is in the launched phase, parameters will be queued and applied after the provider unbonding period.
+// Confirms that existing queued parameters, scheduled for update after the unbonding period, can be canceled if a new MsgUpdateConsumer
+// is sent with values identical to the current infraction parameters for that chain.
+func (s *SingleValidatorProviderSuite) TestInfractionParameters() {
+	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	s.Require().NoError(err)
+	defaultInfractionParams := defaultInfractionParams()
+
+	// Confirm that a default params are used if infraction params are not set (taken from provider)
+	chainName := "defaultInfractionParams-1"
+	createConsumerMsg := msgCreateConsumer(chainName, nil, nil, nil, testAcc)
+	consumerId, err := s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
+	s.Require().NoError(err)
+	consumerChain, err := s.Provider.GetConsumerChain(s.GetContext(), consumerId)
+	s.Require().NoError(err)
+	s.Require().Equal(providertypes.CONSUMER_PHASE_REGISTERED.String(), consumerChain.Phase)
+	s.Require().Equal(defaultInfractionParams, convertJsonToInfractionParameters(consumerChain.InfractionParams))
+
+	// update infraction params for a non launched chain
+	upgradeMsg := &providertypes.MsgUpdateConsumer{
+		Owner:                testAcc,
+		ConsumerId:           consumerChain.ConsumerID,
+		NewOwnerAddress:      testAcc,
+		InfractionParameters: infractionParamsTemplate(),
+	}
+	s.Require().NoError(s.Provider.UpdateConsumer(s.GetContext(), upgradeMsg, testAccKey))
+	s.Require().NoError(testutil.WaitForBlocks(s.GetContext(), 1, s.Provider))
+	consumerChain, err = s.Provider.GetConsumerChain(s.GetContext(), consumerId)
+	s.Require().NoError(err)
+	// chain is in pre-launched phase, params are updated immediatelly
+	s.Require().Equal(infractionParamsTemplate(), convertJsonToInfractionParameters(consumerChain.InfractionParams))
+
+	// Confirm that a chain can be created with custom infraction parameters set only for double sign
+	chainName = "doubleSignInfractionParams-1"
+	infractionParams := infractionParamsTemplate()
+	infractionParams.Downtime = nil
+	createConsumerMsg = msgCreateConsumer(chainName, nil, nil, infractionParams, testAcc)
+	consumerId, err = s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
+	s.Require().NoError(err)
+	consumerChain, err = s.Provider.GetConsumerChain(s.GetContext(), consumerId)
+	s.Require().NoError(err)
+	response := convertJsonToInfractionParameters(consumerChain.InfractionParams)
+	s.Require().Equal(infractionParams.DoubleSign, response.DoubleSign)
+	s.Require().Equal(defaultInfractionParams.Downtime, response.Downtime)
+
+	// Confirm that a chain can be created with custom infraction parameters set only for downtime
+	chainName = "downtimeInfractionParams-1"
+	infractionParams = infractionParamsTemplate()
+	infractionParams.DoubleSign = nil
+	createConsumerMsg = msgCreateConsumer(chainName, nil, nil, infractionParams, testAcc)
+	consumerId, err = s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
+	s.Require().NoError(err)
+	consumerChain, err = s.Provider.GetConsumerChain(s.GetContext(), consumerId)
+	s.Require().NoError(err)
+	response = convertJsonToInfractionParameters(consumerChain.InfractionParams)
+	s.Require().Equal(infractionParams.Downtime, response.Downtime)
+	s.Require().Equal(defaultInfractionParams.DoubleSign, response.DoubleSign)
+
+	// Confirm that a chain can be created with custom infraction parameters set for both downtime and doublesign
+	chainName = "infractionParams-1"
+	spawnTime := time.Now().Add(time.Hour)
+	consumerInitParams := consumerInitParamsTemplate(&spawnTime)
+	infractionParams = infractionParamsTemplate()
+	createConsumerMsg = msgCreateConsumer(chainName, consumerInitParams, powerShapingParamsTemplate(), infractionParams, testAcc)
+	consumerId, err = s.Provider.CreateConsumer(s.GetContext(), createConsumerMsg, testAccKey)
+	s.Require().NoError(err)
+	consumerChain, err = s.Provider.GetConsumerChain(s.GetContext(), consumerId)
+	s.Require().NoError(err)
+	s.Require().NoError(s.Provider.OptIn(s.GetContext(), consumerChain.ConsumerID, 0))
+	consumerInitParams.SpawnTime = time.Now()
+	upgradeMsg = &providertypes.MsgUpdateConsumer{
+		Owner:                    testAcc,
+		ConsumerId:               consumerChain.ConsumerID,
+		NewOwnerAddress:          testAcc,
+		InitializationParameters: consumerInitParams,
+		PowerShapingParameters:   powerShapingParamsTemplate(),
+	}
+	s.Require().NoError(s.Provider.UpdateConsumer(s.GetContext(), upgradeMsg, testAccKey))
+	s.Require().NoError(testutil.WaitForBlocks(s.GetContext(), 1, s.Provider))
+	consumerChain, err = s.Provider.GetConsumerChain(s.GetContext(), consumerId)
+	s.Require().NoError(err)
+	// chain is started
+	s.Require().Equal(providertypes.CONSUMER_PHASE_LAUNCHED.String(), consumerChain.Phase)
+	s.Require().Equal(infractionParams, convertJsonToInfractionParameters(consumerChain.InfractionParams))
+
+	// update infraction params for a launched chain
+	upgradeMsg = &providertypes.MsgUpdateConsumer{
+		Owner:                testAcc,
+		ConsumerId:           consumerChain.ConsumerID,
+		NewOwnerAddress:      testAcc,
+		InfractionParameters: defaultInfractionParams,
+	}
+	s.Require().NoError(s.Provider.UpdateConsumer(s.GetContext(), upgradeMsg, testAccKey))
+	s.Require().NoError(testutil.WaitForBlocks(s.GetContext(), 1, s.Provider))
+	consumerChain, err = s.Provider.GetConsumerChain(s.GetContext(), consumerId)
+	s.Require().NoError(err)
+	s.Require().Equal(infractionParamsTemplate(), convertJsonToInfractionParameters(consumerChain.InfractionParams))
+	time.Sleep(chainsuite.ProviderUnbondingTime)
+	s.Require().NoError(testutil.WaitForBlocks(s.GetContext(), 1, s.Provider))
+	// chain is in launched phase, parameters are queued and updated after provider unbonding time
+	consumerChain, err = s.Provider.GetConsumerChain(s.GetContext(), consumerId)
+	s.Require().NoError(err)
+	s.Require().Equal(defaultInfractionParams, convertJsonToInfractionParameters(consumerChain.InfractionParams))
+
+	// test cancelling infraction params update
+	upgradeMsg = &providertypes.MsgUpdateConsumer{
+		Owner:                testAcc,
+		ConsumerId:           consumerChain.ConsumerID,
+		NewOwnerAddress:      testAcc,
+		InfractionParameters: infractionParamsTemplate(),
+	}
+	// current value is defaultInfractionParams
+	// - first MsgUpdateConsumer will queue parameters infractionParamsTemplate to be applied after undonding period
+	// - second MsgUpdateConsumer is submitted before unbonding period is expired, so the update will be cancelled because the params in the second msg
+	//		are the same as the current infraction params for that chain
+	s.Require().NoError(s.Provider.UpdateConsumer(s.GetContext(), upgradeMsg, testAccKey))
+	s.Require().NoError(testutil.WaitForBlocks(s.GetContext(), 1, s.Provider))
+	upgradeMsg.InfractionParameters = defaultInfractionParams
+	s.Require().NoError(s.Provider.UpdateConsumer(s.GetContext(), upgradeMsg, testAccKey))
+	time.Sleep(chainsuite.ProviderUnbondingTime)
+	s.Require().NoError(testutil.WaitForBlocks(s.GetContext(), 1, s.Provider))
+	consumerChain, err = s.Provider.GetConsumerChain(s.GetContext(), consumerId)
+	s.Require().NoError(err)
+	s.Require().Equal(defaultInfractionParams, convertJsonToInfractionParameters(consumerChain.InfractionParams))
 }
