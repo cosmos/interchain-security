@@ -675,7 +675,7 @@ func (s *SingleValidatorProviderSuite) TestInfractionParameters() {
 	s.Require().Equal(infractionParams.Downtime, response.Downtime)
 	s.Require().Equal(defaultInfractionParams.DoubleSign, response.DoubleSign)
 
-	// Confirm that a chain can be created with custom infrection parameters set for both downtime and doublesign
+	// Confirm that a chain can be created with custom infraction parameters set for both downtime and doublesign
 	chainName = "infractionParams-1"
 	spawnTime := time.Now().Add(time.Hour)
 	consumerInitParams := consumerInitParamsTemplate(&spawnTime)
