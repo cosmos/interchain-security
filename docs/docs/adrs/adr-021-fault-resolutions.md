@@ -1,8 +1,8 @@
 ---
-sidebar_position: 20
+sidebar_position: 21
 title: Fault Resolutions
 ---
-# ADR 019: Fault Resolutions
+# ADR 021: Fault Resolutions
 
 ## Changelog
 * 17th July 2024: Initial draft
