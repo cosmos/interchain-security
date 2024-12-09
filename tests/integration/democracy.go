@@ -235,6 +235,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyMsgUpdateParams() {
 
 func (s *ConsumerDemocracyTestSuite) TestDemocracyValidatorUnjail() {
 	stakingKeeper := s.consumerApp.GetTestStakingKeeper()
+	consumerKeeper := s.consumerApp.GetConsumerKeeper()
 
 	validators, err := stakingKeeper.GetAllValidators(s.consumerCtx())
 	s.Require().NoError(err)
@@ -258,8 +259,9 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyValidatorUnjail() {
 		}
 	}
 
-	// the actual test if unjailing works
-	err = stakingKeeper.GetValidatorSet().Unjail(s.consumerCtx(), consAddr)
+	// confirm unjail will not error and properly unjail
+	// in case of a consumer chain without standalone staking the call is a no-op
+	err = consumerKeeper.Unjail(s.consumerCtx(), consAddr)
 	s.Require().NoError(err)
 	s.consumerChain.NextBlock()
 
