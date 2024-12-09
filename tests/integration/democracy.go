@@ -233,6 +233,43 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyMsgUpdateParams() {
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 }
 
+func (s *ConsumerDemocracyTestSuite) TestDemocracyValidatorUnjail() {
+	stakingKeeper := s.consumerApp.GetTestStakingKeeper()
+
+	validators, err := stakingKeeper.GetAllValidators(s.consumerCtx())
+	s.Require().NoError(err)
+
+	// setting up pre-conditions
+	// validator[0] is expected to be jailed
+	expectJailed := validators[0]
+	expectJailed.Jailed = true
+	consAddr, err := expectJailed.GetConsAddr()
+	s.Require().NoError(err)
+	stakingKeeper.GetValidatorSet().Jail(s.consumerCtx(), consAddr)
+	s.consumerChain.NextBlock()
+
+	validators, err = stakingKeeper.GetAllValidators(s.consumerCtx())
+	s.Require().NoError(err)
+	for _, validator := range validators {
+		if validator.OperatorAddress == expectJailed.OperatorAddress {
+			s.Require().True(validator.IsJailed())
+		} else {
+			s.Require().False(validator.IsJailed())
+		}
+	}
+
+	// the actual test if unjailing works
+	err = stakingKeeper.GetValidatorSet().Unjail(s.consumerCtx(), consAddr)
+	s.Require().NoError(err)
+	s.consumerChain.NextBlock()
+
+	validators, err = stakingKeeper.GetAllValidators(s.consumerCtx())
+	s.Require().NoError(err)
+	for _, validator := range validators {
+		s.Require().False(validator.IsJailed())
+	}
+}
+
 func submitProposalWithDepositAndVote(govKeeper govkeeper.Keeper, ctx sdk.Context, msgs []sdk.Msg,
 	accounts []ibctesting.SenderAccount, proposer sdk.AccAddress, depositAmount sdk.Coins,
 ) error {
