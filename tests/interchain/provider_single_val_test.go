@@ -649,7 +649,7 @@ func (s *SingleValidatorProviderSuite) TestInfractionParameters() {
 	// chain is in pre-launched phase, params are updated immediatelly
 	s.Require().Equal(infractionParamsTemplate(), convertJsonToInfractionParameters(consumerChain.InfractionParams))
 
-	// Confirm that a chain can be created with custom infrection parameters set only for double sign
+	// Confirm that a chain can be created with custom infraction parameters set only for double sign
 	chainName = "doubleSignInfractionParams-1"
 	infractionParams := infractionParamsTemplate()
 	infractionParams.Downtime = nil
