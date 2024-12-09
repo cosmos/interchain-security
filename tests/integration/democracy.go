@@ -243,10 +243,10 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyValidatorUnjail() {
 	// setting up pre-conditions
 	// validator[0] is expected to be jailed
 	expectJailed := validators[0]
-	expectJailed.Jailed = true
 	consAddr, err := expectJailed.GetConsAddr()
 	s.Require().NoError(err)
 	stakingKeeper.GetValidatorSet().Jail(s.consumerCtx(), consAddr)
+
 	s.consumerChain.NextBlock()
 
 	validators, err = stakingKeeper.GetAllValidators(s.consumerCtx())
