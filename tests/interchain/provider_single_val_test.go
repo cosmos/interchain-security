@@ -619,7 +619,13 @@ func (s *SingleValidatorProviderSuite) TestProviderOwnerChecks() {
 	s.Require().Equal(chainsuite.GovModuleAddress, consumerChain.OwnerAddress)
 }
 
-// Tests adding  and updating infraction parameters with MsgCreateConsumer, MsgUpdateConsumer
+// Tests adding and updating infraction parameters with MsgCreateConsumer and MsgUpdateConsumer.
+// Confirms that default parameters are used if infraction parameters are not set.
+// Confirms that if a chain is in the pre-launched phase, parameters submitted with MsgUpdateConsumer are updated immediately.
+// Confirms that if omitting one of the Downtime or DoubleSign parameters, the other will be updated successfully.
+// Confirms that if a chain is in the launched phase, parameters will be queued and applied after the provider unbonding period.
+// Confirms that existing queued parameters, scheduled for update after the unbonding period, can be canceled if a new MsgUpdateConsumer
+// is sent with values identical to the current infraction parameters for that chain.
 func (s *SingleValidatorProviderSuite) TestInfractionParameters() {
 	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
 	s.Require().NoError(err)
