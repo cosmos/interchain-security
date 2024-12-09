@@ -61,6 +61,10 @@ func TestDemocracyMsgUpdateParams(t *testing.T) {
 	runConsumerDemocracyTestByName(t, "TestDemocracyMsgUpdateParams")
 }
 
+func TestDemocracyUnjail(t *testing.T) {
+	runConsumerDemocracyTestByName(t, "TestDemocracyValidatorUnjail")
+}
+
 //
 // Distribution tests
 //
@@ -191,6 +195,10 @@ func TestSlashAllValidators(t *testing.T) {
 
 func TestUndelegationCompletion(t *testing.T) {
 	runCCVTestByName(t, "TestUndelegationCompletion")
+}
+
+func TestConsumerUnjailNoOp(t *testing.T) {
+	runCCVTestByName(t, "TestConsumerUnjailNoOp")
 }
 
 //

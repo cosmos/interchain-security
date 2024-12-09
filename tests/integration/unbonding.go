@@ -2,6 +2,7 @@ package integration
 
 import (
 	"cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // TestUndelegationCompletion tests that undelegations complete after
@@ -42,4 +43,14 @@ func (s *CCVTestSuite) TestUndelegationCompletion() {
 		getBalance(s, s.providerCtx(), delAddr),
 		"unexpected initial balance after unbonding; test: %s",
 	)
+}
+
+// TestConsumerUnjailNoOp check that consumerKeeper can call .Unjail() without error.
+// This operation must only be available in case the app also implements a "standalone" staking keeper.
+func (s *CCVTestSuite) TestConsumerUnjailNoOp() {
+	consumerKeeper := s.consumerApp.GetConsumerKeeper()
+
+	// this is a no-op
+	err := consumerKeeper.Unjail(s.consumerCtx(), sdk.ConsAddress([]byte{0x01, 0x02, 0x03}))
+	s.Require().NoError(err)
 }
