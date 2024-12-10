@@ -259,12 +259,12 @@ where create_consumer.json has the following structure:
   },
   "infraction_parameters":{
    "double_sign":{
-      "slash_fraction":"0.05",
-      "jail_duration":"9223372036854775807"
+      "slash_fraction": "0.05",
+      "jail_duration": 9223372036854775807
    },
    "downtime":{
-      "slash_fraction":"0.0001",
-      "jail_duration":"600000000000"
+      "slash_fraction": "0.0001",
+      "jail_duration": 600000000000
    }
   },
   "allowlisted_reward_denoms": {
@@ -368,12 +368,12 @@ where update_consumer.json has the following structure:
    },
   "infraction_parameters":{
    "double_sign":{
-      "slash_fraction":"0.05",
-      "jail_duration":"9223372036854775807"
+      "slash_fraction": "0.05",
+      "jail_duration": 9223372036854775807
    },
    "downtime":{
-      "slash_fraction":"0.0001",
-      "jail_duration":"600000000000"
+      "slash_fraction": "0.0001",
+      "jail_duration": 600000000000
    }
   },
   "allowlisted_reward_denoms": {
