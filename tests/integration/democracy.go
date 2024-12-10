@@ -233,6 +233,13 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyMsgUpdateParams() {
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 }
 
+// TestDemocracyValidatorUnjail checks that the consumer validator can be unjailed when there is a standalone staking keeper available.
+// @Long Description@
+// * Set up a democracy consumer chain.
+// * Jail a validator.
+// * Check that the validator is jailed.
+// * Unjail the validator.
+// * Check that the validator is unjailed.
 func (s *ConsumerDemocracyTestSuite) TestDemocracyValidatorUnjail() {
 	stakingKeeper := s.consumerApp.GetTestStakingKeeper()
 	consumerKeeper := s.consumerApp.GetConsumerKeeper()
