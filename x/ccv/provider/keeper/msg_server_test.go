@@ -4,7 +4,9 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/require"
 
@@ -16,8 +18,11 @@ import (
 )
 
 func TestCreateConsumer(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
+
+	mocks.MockSlashingKeeper.EXPECT().DowntimeJailDuration(gomock.Any()).Return(time.Second*600, nil).AnyTimes()
+	mocks.MockSlashingKeeper.EXPECT().SlashFractionDoubleSign(gomock.Any()).Return(math.LegacyNewDec(0), nil).AnyTimes()
 
 	msgServer := providerkeeper.NewMsgServerImpl(&providerKeeper)
 
@@ -41,6 +46,11 @@ func TestCreateConsumer(t *testing.T) {
 	require.Equal(t, "submitter", ownerAddress)
 	phase := providerKeeper.GetConsumerPhase(ctx, "0")
 	require.Equal(t, providertypes.CONSUMER_PHASE_REGISTERED, phase)
+	infractionParam, err := providerKeeper.GetInfractionParameters(ctx, response.ConsumerId)
+	require.NoError(t, err)
+	expectedInfractionParameters, err := providertypes.DefaultConsumerInfractionParameters(ctx, mocks.MockSlashingKeeper)
+	require.NoError(t, err)
+	require.Equal(t, expectedInfractionParameters, infractionParam)
 
 	consumerMetadata = providertypes.ConsumerMetadata{
 		Name:        "chain name",
@@ -68,6 +78,11 @@ func TestCreateConsumer(t *testing.T) {
 func TestUpdateConsumer(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
+
+	mocks.MockSlashingKeeper.EXPECT().DowntimeJailDuration(gomock.Any()).Return(time.Second*600, nil).AnyTimes()
+	mocks.MockSlashingKeeper.EXPECT().SlashFractionDoubleSign(gomock.Any()).Return(math.LegacyNewDec(0), nil).AnyTimes()
+	unbondingTime := 2 * time.Second
+	mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTime, nil).AnyTimes()
 
 	msgServer := providerkeeper.NewMsgServerImpl(&providerKeeper)
 
@@ -142,6 +157,16 @@ func TestUpdateConsumer(t *testing.T) {
 	expectedInitializationParameters := testkeeper.GetTestInitializationParameters()
 	expectedInitializationParameters.InitialHeight.RevisionNumber = 1
 	expectedPowerShapingParameters := testkeeper.GetTestPowerShapingParameters()
+	expectedInfractionParameters := providertypes.InfractionParameters{
+		DoubleSign: &providertypes.SlashJailParameters{
+			JailDuration:  1000 * time.Second,
+			SlashFraction: math.LegacyNewDecWithPrec(4, 1), // 0.4
+		},
+		Downtime: &providertypes.SlashJailParameters{
+			JailDuration:  500 * time.Second,
+			SlashFraction: math.LegacyNewDec(0),
+		},
+	}
 
 	expectedOwnerAddress := "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la"
 	expectedChainId = "updatedChainId-1"
@@ -151,6 +176,7 @@ func TestUpdateConsumer(t *testing.T) {
 			Metadata:                 &expectedConsumerMetadata,
 			InitializationParameters: &expectedInitializationParameters,
 			PowerShapingParameters:   &expectedPowerShapingParameters,
+			InfractionParameters:     &expectedInfractionParameters,
 			NewChainId:               expectedChainId,
 		})
 	require.NoError(t, err)
@@ -174,6 +200,11 @@ func TestUpdateConsumer(t *testing.T) {
 	actualPowerShapingParameters, err := providerKeeper.GetConsumerPowerShapingParameters(ctx, consumerId)
 	require.NoError(t, err)
 	require.Equal(t, expectedPowerShapingParameters, actualPowerShapingParameters)
+
+	// assert that infraction parameters were updated
+	actualInfractionParameters, err := providerKeeper.GetInfractionParameters(ctx, consumerId)
+	require.NoError(t, err)
+	require.Equal(t, expectedInfractionParameters, actualInfractionParameters)
 
 	// assert that the chain id has been updated
 	actualChainId, err := providerKeeper.GetConsumerChainId(ctx, consumerId)
@@ -281,6 +312,35 @@ func TestUpdateConsumer(t *testing.T) {
 	actualPowerShapingParameters, err = providerKeeper.GetConsumerPowerShapingParameters(ctx, consumerId)
 	require.NoError(t, err)
 	require.Equal(t, expectedPowerShapingParameters, actualPowerShapingParameters)
+
+	// assert that we can update the infraction parameters of a launched chain
+	providerKeeper.SetConsumerPhase(ctx, consumerId, providertypes.CONSUMER_PHASE_LAUNCHED)
+	newExpectedInfractionParameters := providertypes.InfractionParameters{
+		DoubleSign: &providertypes.SlashJailParameters{
+			JailDuration:  2000 * time.Second,
+			SlashFraction: math.LegacyNewDecWithPrec(6, 1), // 0.6
+		},
+		Downtime: &providertypes.SlashJailParameters{
+			JailDuration:  1000 * time.Second,
+			SlashFraction: math.LegacyNewDecWithPrec(2, 1),
+		},
+	}
+	_, err = msgServer.UpdateConsumer(ctx,
+		&providertypes.MsgUpdateConsumer{
+			Owner: expectedOwnerAddress, ConsumerId: consumerId,
+			Metadata:                 nil,
+			InitializationParameters: nil,
+			PowerShapingParameters:   nil,
+			InfractionParameters:     &newExpectedInfractionParameters,
+		})
+	require.NoError(t, err)
+	// infraction parameters are queued and not updated yet to newExpectedInfractionParameters since the chain is launched
+	require.Equal(t, expectedInfractionParameters, actualInfractionParameters)
+	// trigger update of queud infraction params after unbonding time is passed
+	providerKeeper.BeginBlockUpdateInfractionParameters(ctx.WithBlockTime(ctx.BlockTime().Add(2 * unbondingTime)))
+	actualInfractionParameters, err = providerKeeper.GetInfractionParameters(ctx, consumerId)
+	require.NoError(t, err)
+	require.Equal(t, newExpectedInfractionParameters, actualInfractionParameters)
 
 	// assert that if we call `MsgUpdateConsumer` with a spawn time of zero on an initialized chain, the chain
 	// will not be scheduled to launch and will move back to its Registered phase

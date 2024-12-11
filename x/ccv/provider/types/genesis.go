@@ -1,6 +1,7 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
@@ -94,7 +95,7 @@ func (cs ConsumerState) Validate() error {
 
 	for _, pVSC := range cs.PendingValsetChanges {
 		if pVSC.ValsetUpdateId == 0 {
-			return fmt.Errorf("valset update ID cannot be equal to zero")
+			return errors.New("valset update ID cannot be equal to zero")
 		}
 		if err := validateSlashAcksAddress(pVSC.SlashAcks); err != nil {
 			return err

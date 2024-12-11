@@ -482,8 +482,8 @@ message MsgChangeRewardDenoms {
 `MsgCreateConsumer` enables a user to create a consumer chain. 
 
 Both the `chain_id` and `metadata` fields are mandatory. 
-The `initialization_parameters`, `power_shaping_parameters`, and `allowlisted_reward_denoms` fields are optional. 
-The parameters not provided are set to their zero value.
+The `initialization_parameters`, `power_shaping_parameters`, `infraction_parameters` and `allowlisted_reward_denoms` fields are optional. 
+The parameters not provided are set to their zero value. If `infraction_parameters` are not set, the default values currently configured on the provider are used.
 
 The owner of the created consumer chain is the submitter of the message.
 This message cannot be submitted as part of a governance proposal, i.e., the submitter cannot be the gov module account address.
@@ -516,6 +516,9 @@ message MsgCreateConsumer {
 
   // allowlisted reward denoms by the consumer chain
   AllowlistedRewardDenoms allowlisted_reward_denoms = 6;
+
+  // infraction parameters for slashing and jailing
+  InfractionParameters infraction_parameters = 7;
 }
 ```
 
@@ -528,7 +531,7 @@ The others fields are optional. Not providing one of them will leave the existin
 Providing one of `metadata`, `initialization_parameters`, `power_shaping_parameters`, or `allowlisted_reward_denoms`
 will update all the containing fields. 
 If one of the containing fields is missing, it will be set to its zero value.
-For example, updating the `initialization_parameters` without specifying the `spawn_time`, will set the `spawn_time` to zero.
+For example, updating the `initialization_parameters` without specifying the `spawn_time`, will set the `spawn_time` to zero. 
 
 If the `initialization_parameters` field is set and `initialization_parameters.spawn_time > 0`, then the consumer chain will be scheduled to launch at `spawn_time`.
 Updating the `spawn_time` from a positive value to zero will remove the consumer chain from the list of scheduled to launch chains. 
@@ -568,6 +571,9 @@ message MsgUpdateConsumer {
 
   // to update the chain id of the chain (can only be updated if the chain has not yet launched)
   string new_chain_id = 8;
+
+  // infraction parameters for slashing and jailing
+  InfractionParameters infraction_parameters = 9;
 }
 ```
 
@@ -829,6 +835,7 @@ In the `BeginBlock` of the provider module the following actions are performed:
 - Remove every stopped consumer chain for which the removal time has passed.
 - Replenish the throttling meter if necessary.
 - Distribute ICS rewards to the opted in validators.  
+- Update consumer infraction parameters with the queued infraction parameters that were added to the queue before a time period greater than the unbonding time. 
 
 Note that for every consumer chain, the computation of its initial validator set is based on the consumer's [power shaping parameters](../../features/power-shaping.md)
 and the [validators that opted in on that consumer](../../features/partial-set-security.md).
@@ -2338,7 +2345,7 @@ Output:
 
 #### List Consumer Chains
 
-The `QueryConsumerChains` endpoint queries consumer chains supported by the provider chain.
+The `QueryConsumerChains` endpoint queries consumer chains supported by the provider chain and supports pagination for managing a large number of chains.
 An optional integer parameter can be passed for phase filtering of consumer chains, (Registered=1|Initialized=2|Launched=3|Stopped=4|Deleted=5).`
 
 ```bash
@@ -2875,7 +2882,18 @@ grpcurl -plaintext -d '{"consumer_id": "0"}' localhost:9090 interchain_security.
     "validatorSetCap": 50,
     "minStake": "1000",
     "allowInactiveVals": true
-  }
+  },
+ "infraction_parameters":{
+      "double_sign":{
+         "slash_fraction":"0.050000000000000000",
+         "jail_duration":"9223372036.854775807s"
+      },
+      "downtime":{
+         "slash_fraction":"0.000000000000000000",
+         "jail_duration":"600s"
+      }
+   },
+  "clientId": "07-tendermint-28"
 }
 ```
 
@@ -3574,6 +3592,17 @@ Output:
     "minStake": "1000",
     "allowInactiveVals": true
   }
+  ,
+  "infraction_parameters":{
+      "double_sign":{
+         "slash_fraction":"0.050000000000000000",
+         "jail_duration":"9223372036.854775807s"
+      },
+      "downtime":{
+         "slash_fraction":"0.000000000000000000",
+         "jail_duration":"600s"
+      }
+   }
 }
 ```
 

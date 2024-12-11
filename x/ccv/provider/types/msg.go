@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -283,7 +284,7 @@ func (msg MsgSetConsumerCommissionRate) ValidateBasic() error {
 // NewMsgCreateConsumer creates a new MsgCreateConsumer instance
 func NewMsgCreateConsumer(submitter, chainId string, metadata ConsumerMetadata,
 	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters,
-	allowlistedRewardDenoms *AllowlistedRewardDenoms,
+	allowlistedRewardDenoms *AllowlistedRewardDenoms, infractionParameters *InfractionParameters,
 ) (*MsgCreateConsumer, error) {
 	return &MsgCreateConsumer{
 		Submitter:                submitter,
@@ -292,6 +293,7 @@ func NewMsgCreateConsumer(submitter, chainId string, metadata ConsumerMetadata,
 		InitializationParameters: initializationParameters,
 		PowerShapingParameters:   powerShapingParameters,
 		AllowlistedRewardDenoms:  allowlistedRewardDenoms,
+		InfractionParameters:     infractionParameters,
 	}, nil
 }
 
@@ -338,11 +340,17 @@ func (msg MsgCreateConsumer) ValidateBasic() error {
 
 	if msg.PowerShapingParameters != nil {
 		if msg.PowerShapingParameters.Top_N != 0 {
-			return fmt.Errorf("cannot create a Top N chain through `MsgCreateConsumer`; " +
+			return errors.New("cannot create a Top N chain through `MsgCreateConsumer`; " +
 				"first create the chain and then use `MsgUpdateConsumer` to make the chain Top N")
 		}
 		if err := ValidatePowerShapingParameters(*msg.PowerShapingParameters); err != nil {
 			return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "PowerShapingParameters: %s", err.Error())
+		}
+	}
+
+	if msg.InfractionParameters != nil {
+		if err := ValidateInfractionParameters(*msg.InfractionParameters); err != nil {
+			return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "InfractionParameters: %s", err.Error())
 		}
 	}
 
@@ -358,7 +366,7 @@ func (msg MsgCreateConsumer) ValidateBasic() error {
 // NewMsgUpdateConsumer creates a new MsgUpdateConsumer instance
 func NewMsgUpdateConsumer(owner, consumerId, ownerAddress string, metadata *ConsumerMetadata,
 	initializationParameters *ConsumerInitializationParameters, powerShapingParameters *PowerShapingParameters,
-	allowlistedRewardDenoms *AllowlistedRewardDenoms, newChainId string,
+	allowlistedRewardDenoms *AllowlistedRewardDenoms, newChainId string, infractionParameters *InfractionParameters,
 ) (*MsgUpdateConsumer, error) {
 	return &MsgUpdateConsumer{
 		Owner:                    owner,
@@ -369,6 +377,7 @@ func NewMsgUpdateConsumer(owner, consumerId, ownerAddress string, metadata *Cons
 		PowerShapingParameters:   powerShapingParameters,
 		AllowlistedRewardDenoms:  allowlistedRewardDenoms,
 		NewChainId:               newChainId,
+		InfractionParameters:     infractionParameters,
 	}, nil
 }
 
@@ -395,6 +404,12 @@ func (msg MsgUpdateConsumer) ValidateBasic() error {
 	if msg.PowerShapingParameters != nil {
 		if err := ValidatePowerShapingParameters(*msg.PowerShapingParameters); err != nil {
 			return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "PowerShapingParameters: %s", err.Error())
+		}
+	}
+
+	if msg.InfractionParameters != nil {
+		if err := ValidateInfractionParameters(*msg.InfractionParameters); err != nil {
+			return errorsmod.Wrapf(ErrInvalidMsgUpdateConsumer, "InfractionParameters: %s", err.Error())
 		}
 	}
 
@@ -448,19 +463,19 @@ func ParseConsumerKeyFromJson(jsonStr string) (pkType, key string, err error) {
 // TODO create unit test
 func ValidateHeaderForConsumerDoubleVoting(header *ibctmtypes.Header) error {
 	if header == nil {
-		return fmt.Errorf("infraction block header cannot be nil")
+		return errors.New("infraction block header cannot be nil")
 	}
 
 	if header.SignedHeader == nil {
-		return fmt.Errorf("signed header in infraction block header cannot be nil")
+		return errors.New("signed header in infraction block header cannot be nil")
 	}
 
 	if header.SignedHeader.Header == nil {
-		return fmt.Errorf("invalid signed header in infraction block header, 'SignedHeader.Header' is nil")
+		return errors.New("invalid signed header in infraction block header, 'SignedHeader.Header' is nil")
 	}
 
 	if header.ValidatorSet == nil {
-		return fmt.Errorf("invalid infraction block header, validator set is nil")
+		return errors.New("invalid infraction block header, validator set is nil")
 	}
 
 	return nil
@@ -610,6 +625,29 @@ func ValidateInitializationParameters(initializationParameters ConsumerInitializ
 
 	if err := ccvtypes.ValidateConnectionIdentifier(initializationParameters.ConnectionId); err != nil {
 		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "ConnectionId: %s", err.Error())
+	}
+
+	return nil
+}
+
+// ValidateInfractionParameters validates that all the provided infraction parameters are in the expected range
+func ValidateInfractionParameters(initializationParameters InfractionParameters) error {
+	if initializationParameters.DoubleSign != nil {
+		if initializationParameters.DoubleSign.JailDuration < 0 {
+			return errorsmod.Wrap(ErrInvalidConsumerInfractionParameters, "DoubleSign.JailDuration cannot be negative")
+		}
+		if err := ccvtypes.ValidateFraction(initializationParameters.DoubleSign.SlashFraction); err != nil {
+			return errorsmod.Wrapf(ErrInvalidConsumerInfractionParameters, "DoubleSign.SlashFraction: %s", err.Error())
+		}
+	}
+
+	if initializationParameters.Downtime != nil {
+		if initializationParameters.Downtime.JailDuration < 0 {
+			return errorsmod.Wrap(ErrInvalidConsumerInfractionParameters, "Downtime.JailDuration cannot be negative")
+		}
+		if err := ccvtypes.ValidateFraction(initializationParameters.Downtime.SlashFraction); err != nil {
+			return errorsmod.Wrapf(ErrInvalidConsumerInfractionParameters, "Downtime.SlashFraction: %s", err.Error())
+		}
 	}
 
 	return nil

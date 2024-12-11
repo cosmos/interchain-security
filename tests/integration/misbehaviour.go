@@ -80,8 +80,9 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 		s.Require().True(s.providerApp.GetTestSlashingKeeper().IsTombstoned(s.providerCtx(), provAddr.ToSdkConsAddr()))
 
 		validator, _ := s.providerApp.GetTestStakingKeeper().GetValidator(s.providerCtx(), provAddr.ToSdkConsAddr().Bytes())
-		slashFraction, err := s.providerApp.GetTestSlashingKeeper().SlashFractionDoubleSign(s.providerCtx())
+		infractionParam, err := s.providerApp.GetProviderKeeper().GetInfractionParameters(s.providerCtx(), s.getFirstBundle().ConsumerId)
 		s.Require().NoError(err)
+		slashFraction := infractionParam.DoubleSign.SlashFraction
 		actualTokens := math.LegacyNewDecFromInt(validator.GetTokens())
 		s.Require().True(initialTokens.Sub(initialTokens.Mul(slashFraction)).Equal(actualTokens))
 	}

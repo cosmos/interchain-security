@@ -156,6 +156,12 @@ const (
 	ConsumerRewardsAllocationByDenomKeyName = "ConsumerRewardsAllocationByDenomKey"
 
 	PrioritylistKeyName = "PrioritylistKey"
+
+	ConsumerIdToInfractionParametersKeyName = "ConsumerIdToInfractionParametersKey"
+
+	ConsumerIdToQueuedInfractionParametersKeyName = "ConsumerIdToQueuedInfractionParametersKeyName"
+
+	InfractionScheduledTimeToConsumerIdsKeyName = "InfractionScheduledTimeToConsumerIdsKeyName"
 )
 
 // getKeyPrefixes returns a constant map of all the byte prefixes for existing keys
@@ -397,6 +403,15 @@ func getKeyPrefixes() map[string]byte {
 		// prioritylisted.
 		PrioritylistKeyName: 56,
 
+		// ConsumerIdToInfractionParametersKeyName is the key for storing slashing and jailing infraction parameters for a specific consumer chain
+		ConsumerIdToInfractionParametersKeyName: 57,
+
+		// ConsumerIdToQueuedInfractionParametersKeyName is the key for storing queued infraction parameters that will be used to update consumer infraction parameters
+		ConsumerIdToQueuedInfractionParametersKeyName: 58,
+
+		// InfractionScheduledTimeToConsumerIdsKeyName is the key for storing time when the infraction parameters will be updated for the specific consumer
+		InfractionScheduledTimeToConsumerIdsKeyName: 59,
+
 		// NOTE: DO NOT ADD NEW BYTE PREFIXES HERE WITHOUT ADDING THEM TO TestPreserveBytePrefix() IN keys_test.go
 	}
 }
@@ -428,7 +443,7 @@ func GetAllKeyPrefixes() []byte {
 	return prefixList
 }
 
-// GetAllKeys returns the names of all the keys.
+// GetAllKeyNames returns the names of all the keys.
 // Only used for testing
 func GetAllKeyNames() []string {
 	prefixMap := getKeyPrefixes()
@@ -798,6 +813,41 @@ func ConsumerRewardsAllocationByDenomKeyPrefix() byte {
 // ConsumerRewardsAllocationByDenomKey returns the key used to store the ICS rewards per consumer chain
 func ConsumerRewardsAllocationByDenomKey(consumerId string, denom string) []byte {
 	return append(StringIdWithLenKey(ConsumerRewardsAllocationByDenomKeyPrefix(), consumerId), []byte(denom)...)
+}
+
+// ConsumerIdToInfractionParametersKeyPrefix returns the key prefix for storing consumer infraction parameters
+func ConsumerIdToInfractionParametersKeyPrefix() byte {
+	return mustGetKeyPrefix(ConsumerIdToInfractionParametersKeyName)
+}
+
+// ConsumerIdToInfractionParametersKey returns the key used to store the infraction parameters that corresponds to this consumer id
+func ConsumerIdToInfractionParametersKey(consumerId string) []byte {
+	return StringIdWithLenKey(ConsumerIdToInfractionParametersKeyPrefix(), consumerId)
+}
+
+// ConsumerIdToQueuedInfractionParametersKeyPrefix returns the key prefix for storing queued consumer infraction parameters that will be applied after due time
+func ConsumerIdToQueuedInfractionParametersKeyPrefix() byte {
+	return mustGetKeyPrefix(ConsumerIdToQueuedInfractionParametersKeyName)
+}
+
+// ConsumerIdToQueuedInfractionParametersKey returns the key used to store the queued consumer infraction parameters that will be applied after due time
+func ConsumerIdToQueuedInfractionParametersKey(consumerId string) []byte {
+	return StringIdWithLenKey(ConsumerIdToQueuedInfractionParametersKeyPrefix(), consumerId)
+}
+
+// InfractionScheduledTimeToConsumerIdsKeyPrefix returns the key prefix for storing pending consumers ids that needs to update their infraction parameters at the specific time
+func InfractionScheduledTimeToConsumerIdsKeyPrefix() byte {
+	return mustGetKeyPrefix(InfractionScheduledTimeToConsumerIdsKeyName)
+}
+
+// InfractionScheduledTimeToConsumerIdsKey returns the key prefix for storing pending consumers ids that needs to update their infraction parameters at the specific time
+func InfractionScheduledTimeToConsumerIdsKey(updateTime time.Time) []byte {
+	return ccvtypes.AppendMany(
+		// append the prefix
+		[]byte{InfractionScheduledTimeToConsumerIdsKeyPrefix()},
+		// append the time
+		sdk.FormatTimeBytes(updateTime),
+	)
 }
 
 // NOTE: DO	NOT ADD FULLY DEFINED KEY FUNCTIONS WITHOUT ADDING THEM TO getAllFullyDefinedKeys() IN keys_test.go

@@ -472,6 +472,67 @@ func TestConsumeIdsFromTimeQueue(t *testing.T) {
 	}
 }
 
+func TestHasActiveValidatorOptedIn(t *testing.T) {
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	providerKeeper, ctx, _, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+
+	// set 5 bonded validators with powers 5, 4, 3, 2, and 1
+	NumberOfBondedValidators := 5
+	var bondedValidators []stakingtypes.Validator
+	for i := 0; i < NumberOfBondedValidators; i++ {
+		power := int64(NumberOfBondedValidators - i)
+		bondedValidators = append(bondedValidators, createStakingValidator(ctx, mocks, power, i))
+	}
+	mocks.MockStakingKeeper.EXPECT().GetBondedValidatorsByPower(gomock.Any()).Return(bondedValidators, nil).AnyTimes()
+
+	// get the consensus addresses of the previously-set bonded validators
+	var consensusAddresses [][]byte
+	for i := 0; i < NumberOfBondedValidators; i++ {
+		consAddr, _ := bondedValidators[i].GetConsAddr()
+		consensusAddresses = append(consensusAddresses, consAddr)
+	}
+
+	// Set the maximum number of provider consensus active validators (i.e., active validators) to 3. As a result
+	// `bondedValidators[0]` (with power of 5), `bondedValidators[1]` (with power of 4), `bondedValidators[2]` (with power of 3)
+	// are the active validators, and `bondedValidators[3]` (with power of 2) and `bondedValidators[4]` (with power of 1)
+	// are non-active validators.
+	maxProviderConsensusValidators := int64(3)
+	params := providerKeeper.GetParams(ctx)
+	params.MaxProviderConsensusValidators = maxProviderConsensusValidators
+	providerKeeper.SetParams(ctx, params)
+
+	activeValidators, _ := providerKeeper.GetLastProviderConsensusActiveValidators(ctx)
+
+	consumerId := "0"
+
+	// consumer chain has only non-active validators
+	err := providerKeeper.SetConsumerValSet(ctx, consumerId, []providertypes.ConsensusValidator{
+		{ProviderConsAddr: consensusAddresses[3]},
+		{ProviderConsAddr: consensusAddresses[4]}})
+	require.NoError(t, err)
+	hasActiveValidatorOptedIn, err := providerKeeper.HasActiveConsumerValidator(ctx, consumerId, activeValidators)
+	require.NoError(t, err)
+	require.False(t, hasActiveValidatorOptedIn)
+
+	// consumer chain has one active validator
+	err = providerKeeper.SetConsumerValSet(ctx, consumerId, []providertypes.ConsensusValidator{
+		{ProviderConsAddr: consensusAddresses[2]}})
+	require.NoError(t, err)
+	hasActiveValidatorOptedIn, err = providerKeeper.HasActiveConsumerValidator(ctx, consumerId, activeValidators)
+	require.NoError(t, err)
+	require.True(t, hasActiveValidatorOptedIn)
+
+	// consumer chain has one active and two non-active validators
+	err = providerKeeper.SetConsumerValSet(ctx, consumerId, []providertypes.ConsensusValidator{
+		{ProviderConsAddr: consensusAddresses[3]},
+		{ProviderConsAddr: consensusAddresses[4]},
+		{ProviderConsAddr: consensusAddresses[1]}})
+	require.NoError(t, err)
+	hasActiveValidatorOptedIn, err = providerKeeper.HasActiveConsumerValidator(ctx, consumerId, activeValidators)
+	require.NoError(t, err)
+	require.True(t, hasActiveValidatorOptedIn)
+}
+
 func TestCreateConsumerClient(t *testing.T) {
 	type testCase struct {
 		description string

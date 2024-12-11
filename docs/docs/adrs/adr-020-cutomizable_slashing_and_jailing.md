@@ -10,7 +10,7 @@ title: Customizable Slashing and Jailing
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 

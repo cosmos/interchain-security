@@ -186,6 +186,12 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	// set consumer infraction parameters
+	err = providerKeeper.SetInfractionParameters(ctx, consumerId0, *getTestInfractionParameters())
+	require.NoError(t, err)
+	err = providerKeeper.SetInfractionParameters(ctx, consumerId1, *getTestInfractionParameters())
+	require.NoError(t, err)
+
 	// Also bounced for chain-2
 	ackResult, err = executeOnRecvSlashPacket(t, &providerKeeper, ctx, channelId1, 2, packetData)
 	require.Equal(t, ccv.SlashPacketBouncedResult, ackResult)
@@ -200,12 +206,13 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 
 	// Mock call to GetEffectiveValPower, so that it returns 2.
 	providerAddr := providertypes.NewProviderConsAddress(packetData.Validator.Address)
+	valAddr := sdk.ValAddress(packetData.Validator.Address).String()
 	calls := []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx, providerAddr.ToSdkConsAddr()).
 			Return(stakingtypes.Validator{
 				// provided address must be valid so it can be processed correctly
 				// by k.ValidatorAddressCodec().StringToBytes(val.GetOperator()) call in GetEffectiveValPower()
-				OperatorAddress: sdk.ValAddress(packetData.Validator.Address).String(),
+				OperatorAddress: valAddr,
 			}, nil).Times(1),
 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(ctx, gomock.Any()).
 			Return(int64(2), nil).Times(1),
@@ -214,7 +221,7 @@ func TestOnRecvDowntimeSlashPacket(t *testing.T) {
 	// Add mocks for slash packet handling
 	calls = append(calls,
 		testkeeper.GetMocksForHandleSlashPacket(
-			ctx, mocks, providerAddr, stakingtypes.Validator{Jailed: false}, true)...,
+			ctx, mocks, providerAddr, stakingtypes.Validator{Jailed: false, OperatorAddress: valAddr}, true)...,
 	)
 	gomock.InOrder(calls...)
 
@@ -343,6 +350,8 @@ func TestHandleSlashPacket(t *testing.T) {
 	providerConsAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(7842334).ProviderConsAddress()
 	consumerConsAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(784987634).ConsumerConsAddress()
 
+	valOperAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(7842334).SDKValOpAddressString()
+
 	testCases := []struct {
 		name       string
 		packetData ccv.SlashPacketData
@@ -431,9 +440,10 @@ func TestHandleSlashPacket(t *testing.T) {
 			) []*gomock.Call {
 				return testkeeper.GetMocksForHandleSlashPacket(
 					ctx, mocks,
-					providerConsAddr,                      // expected provider cons addr returned from GetProviderAddrFromConsumerAddr
-					stakingtypes.Validator{Jailed: false}, // staking keeper val to return
-					true)                                  // expectJailing = true
+					providerConsAddr, // expected provider cons addr returned from GetProviderAddrFromConsumerAddr
+					stakingtypes.Validator{Jailed: false, OperatorAddress: valOperAddr}, // staking keeper val to return
+					true, // expectJailing = true
+				)
 			},
 			1,
 			consumerConsAddr,
@@ -449,9 +459,10 @@ func TestHandleSlashPacket(t *testing.T) {
 			) []*gomock.Call {
 				return testkeeper.GetMocksForHandleSlashPacket(
 					ctx, mocks,
-					providerConsAddr,                     // expected provider cons addr returned from GetProviderAddrFromConsumerAddr
-					stakingtypes.Validator{Jailed: true}, // staking keeper val to return
-					false)                                // expectJailing = false, validator is already jailed.
+					providerConsAddr, // expected provider cons addr returned from GetProviderAddrFromConsumerAddr
+					stakingtypes.Validator{Jailed: true, OperatorAddress: valOperAddr}, // staking keeper val to return
+					false, // expectJailing = false, validator is already jailed.
+				)
 			},
 			1,
 			consumerConsAddr,
@@ -475,6 +486,10 @@ func TestHandleSlashPacket(t *testing.T) {
 			require.NotEmpty(t, tc.packetData.Validator.Address)
 			providerKeeper.SetValidatorByConsumerAddr(ctx, chainId, consumerConsAddr, providerConsAddr)
 			err := providerKeeper.SetConsumerValidator(ctx, chainId, providertypes.ConsensusValidator{ProviderConsAddr: providerConsAddr.Address.Bytes()})
+			require.NoError(t, err)
+
+			// set infraction params
+			err = providerKeeper.SetInfractionParameters(ctx, chainId, *getTestInfractionParameters())
 			require.NoError(t, err)
 
 			// Execute method and assert expected mock calls.

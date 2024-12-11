@@ -14,8 +14,8 @@ The ICS protocol differentiates between downtime and equivocation infractions.
 ## Downtime Infractions
 
 Downtime infractions are reported by consumer chains and are acted upon on the provider as soon as they are received. 
-Instead of slashing, the provider will **_only jail_** offending validator for the duration of time established by the provider chain parameters.
-Note that validators are only jailed for downtime on consumer chains that they opted in to validate on,
+The provider will jail and slash the offending validator. The jailing duration and slashing fraction are determined by the consumer's downtime infraction parameters on the provider chain.
+By default, validators are **_only jailed_** for downtime on consumer chains that they opted in to validate on,
 or in the case of Top N chains, where they are automatically opted in by being in the Top N% of the validator set on the provider.
 
 For preventing malicious consumer chains from harming the provider, [slash throttling](../adrs/adr-002-throttle.md) (also known as _jail throttling_) ensures that only a fraction of the provider validator set can be jailed at any given time.
@@ -24,7 +24,7 @@ For preventing malicious consumer chains from harming the provider, [slash throt
 
 Equivocation infractions are reported by external agents (e.g., relayers) that can submit to the provider evidence of light client or double signing attacks observed on a consumer chain. 
 The evidence is submitted by sending `MsgSubmitConsumerMisbehaviour` or `MsgSubmitConsumerDoubleVoting` messages to the provider. 
-When valid evidence is received, the malicious validators are slashed, jailed, and tombstoned on the provider.
+When valid evidence is received, the malicious validators are slashed, jailed, and tombstoned on the provider. The jailing duration and slashing fraction are determined by the consumer's double sign infraction parameters on the provider chain.
 This is enabled through the _cryptographic verification of equivocation_ feature. 
 For more details, see [ADR-005](../adrs/adr-005-cryptographic-equivocation-verification.md) and [ADR-013](../adrs/adr-013-equivocation-slashing.md).
 
@@ -597,3 +597,7 @@ The following command demonstrates how to run a Hermes instance in _evidence mod
 hermes evidence --chain <CONSUMER-CHAIN-ID>
 ```
 Note that `hermes evidence` takes a `--check-past-blocks` option giving the possibility to look for older evidence (default is 100).
+
+### Infraction parameters
+
+Jailing and slashing for misbehavior on a consumer chain are governed by parameters defined on the provider chain for that specific consumer chain. To create or update these infraction parameters, use the MsgCreateConsumer or MsgUpdateConsumer messages. When creating a consumer chain, if custom infraction parameters are not specified, default values from the provider are applied. For updates, parameters can be modified immediately if the chain is in the pre-launch phase. If the chain has already launched, the update will be scheduled to take effect after the unbonding period expires. This ensures that changes are applied seamlessly based on the chain's lifecycle.

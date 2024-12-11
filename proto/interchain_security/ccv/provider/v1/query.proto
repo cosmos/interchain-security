@@ -209,6 +209,8 @@ message Chain {
   // filled with these validators first, and other validators will be added to the validator set only if there are
   // not enough eligible priority validators.
   repeated string prioritylist = 15;
+   // Infraction parameters for slashing and jailing
+   InfractionParameters infraction_parameters = 16;
 }
 
 message QueryValidatorConsumerAddrRequest {
@@ -397,6 +399,10 @@ message QueryConsumerChainResponse {
   ConsumerMetadata metadata = 5 [ (gogoproto.nullable) = false ];
   ConsumerInitializationParameters init_params = 6;
   PowerShapingParameters power_shaping_params = 7;
+  InfractionParameters infraction_parameters = 8;
+
+  // corresponds to the id of the client that is created during launch
+  string client_id = 9;
 }
 
 message QueryConsumerGenesisTimeRequest {

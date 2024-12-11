@@ -181,6 +181,7 @@ const config = {
     }),
   themes: ["@you54f/theme-github-codeblock"],
   plugins: [
+    require.resolve("docusaurus-lunr-search"),
     async function myPlugin(context, options) {
       return {
         name: "docusaurus-tailwindcss",
