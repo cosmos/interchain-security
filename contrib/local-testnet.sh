@@ -69,7 +69,7 @@ do
 
     sleep 1
 
-    # Create account key pair
+    # Create account keypair
     interchain-security-pd keys add $PROV_KEY --home ${PROV_NODE_DIR} --keyring-backend test --output json > ${PROV_NODE_DIR}/${PROV_KEY}.json 2>&1
     sleep 1
 
@@ -394,7 +394,7 @@ do
 
     sleep 1
 
-    # Create account key pair
+    # Create account keypair
     interchain-security-cd keys add $PROV_KEY --home  ${CONS_NODE_DIR} --keyring-backend test --output json > ${CONS_NODE_DIR}/${PROV_KEY}.json 2>&1
     sleep 1
 
