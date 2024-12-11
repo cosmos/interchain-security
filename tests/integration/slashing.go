@@ -227,7 +227,7 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 // TestHandleSlashPacketDowntime tests the handling of a downtime related slash packet, with integration tests.
 // @Long Description@
 // * Retrieve a validator from provider chain's validators and checks if it's bonded.
-// * Set tThe signing information for the validator.
+// * Set the signing information for the validator.
 // * The provider processes the downtime slashing packet from the consumer.
 // * Check that the validator has been jailed as a result of the downtime slashing packet being processed.
 // * Verify that the validator’s signing information is updated and that the jailing duration is set correctly.
