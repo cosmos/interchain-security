@@ -233,6 +233,52 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyMsgUpdateParams() {
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 }
 
+// TestDemocracyValidatorUnjail checks that the consumer validator can be unjailed when there is a standalone staking keeper available.
+// @Long Description@
+// * Set up a democracy consumer chain.
+// * Jail a validator.
+// * Check that the validator is jailed.
+// * Unjail the validator.
+// * Check that the validator is unjailed.
+func (s *ConsumerDemocracyTestSuite) TestDemocracyValidatorUnjail() {
+	stakingKeeper := s.consumerApp.GetTestStakingKeeper()
+	consumerKeeper := s.consumerApp.GetConsumerKeeper()
+
+	validators, err := stakingKeeper.GetAllValidators(s.consumerCtx())
+	s.Require().NoError(err)
+
+	// setting up pre-conditions
+	// validator[0] is expected to be jailed
+	expectJailed := validators[0]
+	consAddr, err := expectJailed.GetConsAddr()
+	s.Require().NoError(err)
+	stakingKeeper.GetValidatorSet().Jail(s.consumerCtx(), consAddr)
+
+	s.consumerChain.NextBlock()
+
+	validators, err = stakingKeeper.GetAllValidators(s.consumerCtx())
+	s.Require().NoError(err)
+	for _, validator := range validators {
+		if validator.OperatorAddress == expectJailed.OperatorAddress {
+			s.Require().True(validator.IsJailed())
+		} else {
+			s.Require().False(validator.IsJailed())
+		}
+	}
+
+	// confirm unjail will not error and properly unjail
+	// in case of a consumer chain without standalone staking the call is a no-op
+	err = consumerKeeper.Unjail(s.consumerCtx(), consAddr)
+	s.Require().NoError(err)
+	s.consumerChain.NextBlock()
+
+	validators, err = stakingKeeper.GetAllValidators(s.consumerCtx())
+	s.Require().NoError(err)
+	for _, validator := range validators {
+		s.Require().False(validator.IsJailed())
+	}
+}
+
 func submitProposalWithDepositAndVote(govKeeper govkeeper.Keeper, ctx sdk.Context, msgs []sdk.Msg,
 	accounts []ibctesting.SenderAccount, proposer sdk.AccAddress, depositAmount sdk.Coins,
 ) error {

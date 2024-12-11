@@ -15,6 +15,7 @@
 |----------|-------------------|
  [TestDemocracyRewardsDistribution](../../tests/integration/democracy.go#L77) | TestDemocracyRewardsDistribution checks that rewards to democracy representatives, community pool, and provider redistribution account are done correctly.<details><summary>Details</summary>* Set up a democracy consumer chain.<br>* Create a new block.<br>* Check that rewards to democracy representatives, community pool, and provider redistribution account are distributed in the right proportions.</details> |
  [TestDemocracyMsgUpdateParams](../../tests/integration/democracy.go#L187) | TestDemocracyMsgUpdateParams checks that the consumer parameters can be updated through a governance proposal.<details><summary>Details</summary>* Set up a democracy consumer chain.<br>* Submit a proposal containing changes to the consumer module parameters.<br>* Check that the proposal is executed, and the parameters are updated.</details> |
+ [TestDemocracyValidatorUnjail](../../tests/integration/democracy.go#L243) | TestDemocracyValidatorUnjail checks that the consumer validator can be unjailed when there is a standalone staking keeper available.<details><summary>Details</summary>* Set up a democracy consumer chain.<br>* Jail a validator.<br>* Check that the validator is jailed.<br>* Unjail the validator.<br>* Check that the validator is unjailed.</details> |
 </details>
 
 # [distribution.go](../../tests/integration/distribution.go) 
@@ -127,7 +128,8 @@
 
 | Function | Short Description |
 |----------|-------------------|
- [TestUndelegationCompletion](../../tests/integration/unbonding.go#L16) | TestUndelegationCompletion tests that undelegations complete after the unbonding period elapses on the provider, regardless of the consumer's state<details><summary>Details</summary>* Set up CCV channel.<br>* Perform initial delegation of tokens followed by a partial undelegation (1/4 of the tokens).<br>* Verify that the staking unbonding operation is created as expected.<br>* Increment provider block height.<br>* Check that the unbonding operation has been completed.<br>* Verify that the token balances are correctly updated and the expected amount of tokens has been returned to the account.</details> |
+ [TestUndelegationCompletion](../../tests/integration/unbonding.go#L17) | TestUndelegationCompletion tests that undelegations complete after the unbonding period elapses on the provider, regardless of the consumer's state<details><summary>Details</summary>* Set up CCV channel.<br>* Perform initial delegation of tokens followed by a partial undelegation (1/4 of the tokens).<br>* Verify that the staking unbonding operation is created as expected.<br>* Increment provider block height.<br>* Check that the unbonding operation has been completed.<br>* Verify that the token balances are correctly updated and the expected amount of tokens has been returned to the account.</details> |
+ [TestConsumerUnjailNoOp](../../tests/integration/unbonding.go#L50) | TestConsumerUnjailNoOp check that consumerKeeper can call .Unjail() without error. This operation must only be available in case the app also implements a "standalone" staking keeper. |
 </details>
 
 # [valset_update.go](../../tests/integration/valset_update.go) 
