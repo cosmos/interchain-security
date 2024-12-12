@@ -507,15 +507,6 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, consumerId string, data ccv.S
 			k.Logger(ctx).Error("failed to set jail duration", "err", err.Error())
 			return
 		}
-
-		// tombstone validator
-		if infractionParams.Downtime.Tombstone {
-			if err = k.slashingKeeper.Tombstone(ctx, providerConsAddr.ToSdkConsAddr()); err != nil {
-				k.Logger(ctx).Error("failed to tombstone validator", "err", err.Error())
-				return
-			}
-			k.Logger(ctx).Info("HandleSlashPacket - validator tombstoned", "provider cons addr", providerConsAddr.String())
-		}
 	}
 
 	ctx.EventManager().EmitEvent(
