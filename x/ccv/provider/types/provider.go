@@ -44,10 +44,12 @@ func DefaultConsumerInfractionParameters(ctx context.Context, slashingKeeper ccv
 		DoubleSign: &SlashJailParameters{
 			JailDuration:  time.Duration(1<<63 - 1), // the largest value a time.Duration can hold 9223372036854775807 (approximately 292 years)
 			SlashFraction: doubleSignSlashingFraction,
+			Tombstone:     true,
 		},
 		Downtime: &SlashJailParameters{
 			JailDuration:  jailDuration,
 			SlashFraction: math.LegacyNewDec(0),
+			Tombstone:     false,
 		},
 	}, nil
 }

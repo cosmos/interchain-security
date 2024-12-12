@@ -250,6 +250,9 @@ func compareSlashJailParameters(param1, param2 *types.SlashJailParameters) bool 
 	if param1 == nil || param2 == nil {
 		return false
 	}
+	if param1.Tombstone != param2.Tombstone {
+		return false
+	}
 	if !param1.SlashFraction.Equal(param2.SlashFraction) {
 		return false
 	}

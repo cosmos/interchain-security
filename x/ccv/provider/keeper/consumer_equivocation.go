@@ -451,11 +451,17 @@ func (k Keeper) JailAndTombstoneValidator(ctx sdk.Context, providerAddr types.Pr
 		return fmt.Errorf("fail to set jail duration for validator: %s: %s", providerAddr.String(), err)
 	}
 
-	// Tombstone the validator so that we cannot slash the validator more than once
-	// Note that we cannot simply use the fact that a validator is jailed to avoid slashing more than once
-	// because then a validator could i) perform an equivocation, ii) get jailed (e.g., through downtime)
-	// and in such a case the validator would not get slashed when we call `SlashValidator`.
-	return k.slashingKeeper.Tombstone(ctx, providerAddr.ToSdkConsAddr())
+	if jailingParams.Tombstone {
+		// Tombstone the validator so that we cannot slash the validator more than once
+		// Note that we cannot simply use the fact that a validator is jailed to avoid slashing more than once
+		// because then a validator could i) perform an equivocation, ii) get jailed (e.g., through downtime)
+		// and in such a case the validator would not get slashed when we call `SlashValidator`.
+		if err = k.slashingKeeper.Tombstone(ctx, providerAddr.ToSdkConsAddr()); err != nil {
+			return fmt.Errorf("fail to tombstone validator: %s: %s", providerAddr.String(), err)
+		}
+	}
+
+	return nil
 }
 
 // ComputePowerToSlash computes the power to be slashed based on the tokens in non-matured `undelegations` and
