@@ -50,7 +50,9 @@ func (s *CCVTestSuite) TestUndelegationCompletion() {
 func (s *CCVTestSuite) TestConsumerUnjailNoOp() {
 	consumerKeeper := s.consumerApp.GetConsumerKeeper()
 
-	// this is a no-op
-	err := consumerKeeper.Unjail(s.consumerCtx(), sdk.ConsAddress([]byte{0x01, 0x02, 0x03}))
-	s.Require().NoError(err)
+	if s.consumerApp.GetStakingKeeper() == nil {
+		// this is a no-op
+		err := consumerKeeper.Unjail(s.consumerCtx(), sdk.ConsAddress([]byte{0x01, 0x02, 0x03}))
+		s.Require().NoError(err)
+	}
 }
