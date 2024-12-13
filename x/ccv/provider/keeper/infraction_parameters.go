@@ -33,6 +33,10 @@ func (k Keeper) SetInfractionParameters(ctx sdk.Context, consumerId string, para
 		return fmt.Errorf("failed to marshal infraction parameters (%+v) for consumer id (%s): %w", parameters, consumerId, err)
 	}
 
+	if parameters.Downtime.Tombstone {
+		k.Logger(ctx).Info("tombstone field is ignored for downtime infractions; setting it to true for consumer ID (%s) will have no effect", consumerId)
+	}
+
 	store.Set(types.ConsumerIdToInfractionParametersKey(consumerId), bz)
 
 	return nil
