@@ -2884,11 +2884,13 @@ grpcurl -plaintext -d '{"consumer_id": "0"}' localhost:9090 interchain_security.
  "infraction_parameters":{
       "double_sign":{
          "slash_fraction":"0.050000000000000000",
-         "jail_duration":"9223372036.854775807s"
+         "jail_duration":"9223372036.854775807s",
+         "tombstone": true
       },
       "downtime":{
          "slash_fraction":"0.000000000000000000",
-         "jail_duration":"600s"
+         "jail_duration":"600s",
+         "tombstone": false
       }
    },
   "clientId": "07-tendermint-28"
@@ -3594,11 +3596,13 @@ Output:
   "infraction_parameters":{
       "double_sign":{
          "slash_fraction":"0.050000000000000000",
-         "jail_duration":"9223372036.854775807s"
+         "jail_duration":"9223372036.854775807s",
+         "tombstone": true
       },
       "downtime":{
          "slash_fraction":"0.000000000000000000",
-         "jail_duration":"600s"
+         "jail_duration":"600s",
+          "tombstone": false
       }
    }
 }

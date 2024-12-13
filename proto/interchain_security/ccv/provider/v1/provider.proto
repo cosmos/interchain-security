@@ -574,4 +574,6 @@ message SlashJailParameters {
   // for permanent jailing use 9223372036854775807 which is the largest value a time.Duration can hold (approximately 292 years)
   google.protobuf.Duration jail_duration = 2
       [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+  // Indicates whether the validator should be tombstoned when slashed
+  bool tombstone = 3;
 }

@@ -470,10 +470,12 @@ func TestMsgCreateConsumerValidateBasic(t *testing.T) {
 				DoubleSign: &types.SlashJailParameters{
 					JailDuration:  time.Duration(1<<63 - 1),        // max duration
 					SlashFraction: math.LegacyNewDecWithPrec(5, 2), // 0.05
+					Tombstone:     true,
 				},
 				Downtime: &types.SlashJailParameters{
 					JailDuration:  600 * time.Second,
 					SlashFraction: math.LegacyNewDec(0),
+					Tombstone:     false,
 				},
 			}, // valid infraction params
 			true,
