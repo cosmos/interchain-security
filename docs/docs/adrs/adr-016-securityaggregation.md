@@ -81,7 +81,7 @@ type PowerSource interface {
 func (k *Keeper) MixPowers(source ...PowerSource) []abci.ValidatorUpdate {
   var valUpdate []abci.ValidatorUpdate
   for _, ps := range source {
-    // mix powers from two sets of validator updates an return set of validator updates
+    // mix powers from two sets of validator updates a return set of validator updates
     // with aggregated powers
     valUpdate = mixPower(valUpdate, ps.GetValidatorUpdates())
   }
