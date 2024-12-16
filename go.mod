@@ -145,7 +145,7 @@ require (
 )
 
 require (
-	cosmossdk.io/client/v2 v2.0.0-beta.6
+	cosmossdk.io/client/v2 v2.0.0-beta.7
 	cosmossdk.io/log v1.5.0
 	cosmossdk.io/store v1.1.1
 	cosmossdk.io/tools/confix v0.1.2
