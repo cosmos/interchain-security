@@ -794,7 +794,7 @@ func (tr Commands) GetValidatorIP(chain ChainID, validator ValidatorID) string {
 	return tr.ChainConfigs[chain].IpPrefix + "." + tr.ValidatorConfigs[validator].IpSuffix
 }
 
-// getQueryNode returns query node tcp address on chain.
+// GetQueryNode returns query node tcp address on chain.
 func (tr Commands) GetQueryNode(chain ChainID) string {
 	return fmt.Sprintf("tcp://%s", tr.GetQueryNodeRPCAddress(chain))
 }
