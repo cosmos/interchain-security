@@ -469,7 +469,7 @@ func (tr Chain) removeConsumerChain(action RemoveConsumerChainAction, verbose bo
 
 }
 
-// submitConsumerAdditionProposal initializes a consumer chain and submits a governance proposal
+// SubmitConsumerAdditionProposal initializes a consumer chain and submits a governance proposal
 func (tr Chain) SubmitConsumerAdditionProposal(
 	action e2e.SubmitConsumerAdditionProposalAction,
 	verbose bool,

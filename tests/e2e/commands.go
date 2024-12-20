@@ -741,7 +741,7 @@ func (tr Commands) GetProposedConsumerChains(chain ChainID) []string {
 	return chains
 }
 
-// getQueryNode returns query node tcp address on chain.
+// GetQueryNode returns query node tcp address on chain.
 func (tr Commands) GetQueryNode(chain ChainID) string {
 	return fmt.Sprintf("tcp://%s", tr.GetQueryNodeRPCAddress(chain))
 }
