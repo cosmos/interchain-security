@@ -151,6 +151,13 @@ func TestIsValidatorJailed(t *testing.T) {
 	isJailed3, err := consumerKeeper.IsValidatorJailed(ctx, consAddr)
 	require.NoError(t, err)
 	require.True(t, isJailed3)
+
+	// confirm that unjail returns no error and validator remains jailed
+	mocks.MockStakingKeeper.EXPECT().IsValidatorJailed(ctx, consAddr).Return(true, nil).Times(1)
+	require.NoError(t, consumerKeeper.Unjail(ctx, consAddr))
+	isJailed3, err = consumerKeeper.IsValidatorJailed(ctx, consAddr)
+	require.NoError(t, err)
+	require.True(t, isJailed3)
 }
 
 func TestSlash(t *testing.T) {

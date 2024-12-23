@@ -306,10 +306,12 @@ func GetTestInfractionParameters() providertypes.InfractionParameters {
 		DoubleSign: &providertypes.SlashJailParameters{
 			JailDuration:  1200 * time.Second,
 			SlashFraction: math.LegacyNewDecWithPrec(5, 1), // 0.5
+			Tombstone:     true,
 		},
 		Downtime: &providertypes.SlashJailParameters{
 			JailDuration:  600 * time.Second,
 			SlashFraction: math.LegacyNewDec(0),
+			Tombstone:     false,
 		},
 	}
 }
