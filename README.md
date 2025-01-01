@@ -7,7 +7,7 @@
 [![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=cosmos_interchain-security&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=cosmos_interchain-security)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=cosmos_interchain-security&metric=coverage)](https://sonarcloud.io/summary/new_code?id=cosmos_interchain-security)
 
-**interchain-security** contains a working and in-production implementation of the Interchain Security (ICS) protocol. ICS is an open sourced IBC application which allows cosmos blockchains to lease their proof-of-stake security to one another.
+**interchain-security** contains a working and in-production implementation of the Interchain Security (ICS) protocol. ICS is an open-source IBC application which allows cosmos blockchains to lease their proof-of-stake security to one another.
 
 For more details on the **Interchain Security protocol**, take a look at the [docs](https://cosmos.github.io/interchain-security/) or [technical specification](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/README.md).
 
