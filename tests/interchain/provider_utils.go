@@ -2,9 +2,12 @@ package interchain
 
 import (
 	"cosmos/interchain-security/tests/interchain/chainsuite"
+	"fmt"
+	"strings"
 	"time"
 
 	"cosmossdk.io/math"
+	sdkmath "cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
@@ -104,4 +107,13 @@ func convertJsonToInfractionParameters(jsonParams chainsuite.InfractionParams) *
 			JailDuration:  downtimeJailDuration,
 		},
 	}
+}
+
+func StrToSDKInt(s string) (sdkmath.Int, error) {
+	s, _, _ = strings.Cut(s, ".")
+	i, ok := sdkmath.NewIntFromString(s)
+	if !ok {
+		return sdkmath.Int{}, fmt.Errorf("s: %s", s)
+	}
+	return i, nil
 }
