@@ -7,6 +7,7 @@
   - [Stable Release Policy](#stable-release-policy)
   - [Version Matrix](#version-matrix)
     - [Backwards Compatibility](#backwards-compatibility)
+      - [Notes](#notes)
 
 ## Semantic Versioning
 
@@ -59,30 +60,26 @@ All missing minor release versions have been discontinued.
 | Release  | End of Life Date |
 | -------- | ---------------- |
 | `v4.0.x` | January 24, 2025 |
-| `v4.3.x` | January 24, 2025 |
 | `v4.4.x` | January 24, 2025 |
+| `v4.5.x` | January 24, 2025 |
 | `v5.0.x` | May 9, 2025      |
 | `v5.2.x` | May 9, 2025      |
 | `v6.1.x` | Sep 13, 2025     |
-
-**Note**: Gaia versions on SDK 0.47 (i.e., `v15.0.x` -- `v18.1.x`) use a fork of Cosmos SDK (i.e., `v0.47.x-ics-lsm`) that contains the Liquid Staking Module (LSM).
-This means that these versions of Gaia require a fork of ICS.
-This fork is maintained by the development team and released using the `-lsm` prefix.
-Starting with Gaia `v19.0.x` (that uses SDK 0.50), the fork of ICS is no longer needed. 
+| `v6.3.x` | Sep 13, 2025     |
 
 ## Version Matrix
 
 Versions of Golang, IBC, Cosmos SDK and CometBFT used by ICS in the currently active releases:
 
-| ICS                                                                                 | Golang | IBC    | Cosmos SDK       | CometBFT | Note                                |
-| ----------------------------------------------------------------------------------- | ------ | ------ | ---------------- | -------- | ----------------------------------- |
-| [v4.0.0](https://github.com/cosmos/interchain-security/releases/tag/v4.0.0)         | 1.21   | v7.3.1 | v0.47.7          | v0.37.4  |                                     |
-| [v4.3.1](https://github.com/cosmos/interchain-security/releases/tag/v4.3.1)         | 1.21   | v7.6.0 | v0.47.12         | v0.37.6  |                                     |
-| [v4.3.1-lsm](https://github.com/cosmos/interchain-security/releases/tag/v4.3.1-lsm) | 1.21   | v7.6.0 | v0.47.16-ics-lsm | v0.37.6  | Provider only (Cosmos Hub specific) |
-| [v4.4.0](https://github.com/cosmos/interchain-security/releases/tag/v4.4.0)         | 1.21   | v7.6.0 | v0.47.12         | v0.37.6  |                                     |
-| [v5.0.0](https://github.com/cosmos/interchain-security/releases/tag/v5.0.0)         | 1.21   | v8.1.0 | v0.50.4          | v0.38.5  |                                     |
-| [v5.2.0](https://github.com/cosmos/interchain-security/releases/tag/v5.2.0)         | 1.22   | v8.3.2 | v0.50.8          | v0.38.9  |                                     |
-| [v6.1.0](https://github.com/cosmos/interchain-security/releases/tag/v6.1.0)         | 1.22   | v8.5.0 | v0.50.9          | v0.38.11 |                                     |
+| ICS                                                                         | Golang | IBC    | Cosmos SDK | CometBFT | Note |
+| --------------------------------------------------------------------------- | ------ | ------ | ---------- | -------- | ---- |
+| [v4.0.0](https://github.com/cosmos/interchain-security/releases/tag/v4.0.0) | 1.21   | v7.3.1 | v0.47.7    | v0.37.4  |      |
+| [v4.4.0](https://github.com/cosmos/interchain-security/releases/tag/v4.4.0) | 1.21   | v7.6.0 | v0.47.12   | v0.37.6  |      |
+| [v4.5.0](https://github.com/cosmos/interchain-security/releases/tag/v4.4.0) | 1.21   | v7.6.0 | v0.47.12   | v0.37.6  |      |
+| [v5.0.0](https://github.com/cosmos/interchain-security/releases/tag/v5.0.0) | 1.21   | v8.1.0 | v0.50.4    | v0.38.5  |      |
+| [v5.2.0](https://github.com/cosmos/interchain-security/releases/tag/v5.2.0) | 1.22   | v8.3.2 | v0.50.8    | v0.38.9  |      |
+| [v6.1.0](https://github.com/cosmos/interchain-security/releases/tag/v6.1.0) | 1.22   | v8.5.0 | v0.50.9    | v0.38.11 |      |
+| [v6.3.0](https://github.com/cosmos/interchain-security/releases/tag/v6.3.0) | 1.22   | v8.5.1 | v0.50.9    | v0.38.11 |      |
 
 **Note:** For a list of major ICS features available in the currently active releases, see [FEATURES.md](./FEATURES.md).
 
@@ -92,10 +89,16 @@ A MAJOR version of ICS will always be backwards compatible with the previous MAJ
 
 The following table indicates the compatibility of currently active releases:
 
-| Consumer | Provider | `v4.3.1-lsm` | `v5.2.0` | `v6.1.0` |
-| -------- | -------- | ------------ | -------- | -------- |
-| `v4.0.0` |          | ✅           | ✅       | ✅       |
-| `v4.3.1` |          | ✅           | ✅       | ✅       |
-| `v4.4.0` |          | ✅           | ✅       | ✅       |
-| `v5.0.0` |          | ✅           | ✅       | ✅       |
-| `v5.2.0` |          | ✅           | ✅       | ✅       |
+| Consumer | Provider | `v5.2.0` | `v6.1.0` | `v6.3.0` |
+| -------- | -------- | -------- | -------- | -------- |
+| `v4.0.0` |          | ✅       | ✅       | ✅ (1)   |
+| `v4.4.0` |          | ✅       | ✅       | ✅ (1)   |
+| `v4.5.0` |          | ✅       | ✅       | ✅       |
+| `v5.0.0` |          | ✅       | ✅       | ✅ (1)   |
+| `v5.2.0` |          | ✅       | ✅       | ✅ (1)   |
+| `v6.3.0` |          | ✅       | ✅       | ✅       |
+
+#### Notes
+The following adjustments must be made to the CCV consumer genesis state that is obtained from the provider chain after the spawn time is reached in order for the consumer chain to start without errors.
+
+- (1) Use `interchain-security-cd genesis transform` to transform the consumer genesis file obtained from the provider.
