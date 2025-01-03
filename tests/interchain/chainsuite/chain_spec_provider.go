@@ -1,15 +1,13 @@
 package chainsuite
 
 import (
-	"strconv"
-
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 	"github.com/strangelove-ventures/interchaintest/v8/ibc"
 
 	"github.com/strangelove-ventures/interchaintest/v8"
 )
 
-func GetProviderSpec(validatorCount int) *interchaintest.ChainSpec {
+func GetProviderSpec(validatorCount int, modifiedGenesis []cosmos.GenesisKV) *interchaintest.ChainSpec {
 	fullNodes := FullNodeCount
 	validators := validatorCount
 
@@ -33,25 +31,8 @@ func GetProviderSpec(validatorCount int) *interchaintest.ChainSpec {
 				Repository: ProviderImageName(),
 				UIDGID:     "1025:1025",
 			}},
-			ModifyGenesis:        cosmos.ModifyGenesis(providerModifiedGenesis()),
+			ModifyGenesis:        cosmos.ModifyGenesis(modifiedGenesis),
 			ModifyGenesisAmounts: DefaultGenesisAmounts(Stake),
 		},
-	}
-}
-
-func providerModifiedGenesis() []cosmos.GenesisKV {
-	return []cosmos.GenesisKV{
-		cosmos.NewGenesisKV("app_state.staking.params.unbonding_time", ProviderUnbondingTime.String()),
-		cosmos.NewGenesisKV("app_state.gov.params.voting_period", GovVotingPeriod.String()),
-		cosmos.NewGenesisKV("app_state.gov.params.max_deposit_period", GovDepositPeriod.String()),
-		cosmos.NewGenesisKV("app_state.gov.params.min_deposit.0.denom", Stake),
-		cosmos.NewGenesisKV("app_state.gov.params.min_deposit.0.amount", strconv.Itoa(GovMinDepositAmount)),
-		cosmos.NewGenesisKV("app_state.slashing.params.signed_blocks_window", strconv.Itoa(ProviderSlashingWindow)),
-		cosmos.NewGenesisKV("app_state.slashing.params.downtime_jail_duration", DowntimeJailDuration.String()),
-		cosmos.NewGenesisKV("app_state.slashing.params.slash_fraction_double_sign", SlashFractionDoubleSign),
-		cosmos.NewGenesisKV("app_state.provider.params.slash_meter_replenish_period", ProviderReplenishPeriod),
-		cosmos.NewGenesisKV("app_state.provider.params.slash_meter_replenish_fraction", ProviderReplenishFraction),
-		cosmos.NewGenesisKV("app_state.provider.params.blocks_per_epoch", "1"),
-		cosmos.NewGenesisKV("app_state.staking.params.max_validators", "1"),
 	}
 }

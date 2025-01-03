@@ -34,10 +34,9 @@ func TestValidateParams(t *testing.T) {
 		{"blank client", types.NewParams(&ibctmtypes.ClientState{},
 			"0.33", time.Hour, 30*time.Minute, "0.1", sdk.Coin{Denom: "stake", Amount: math.NewInt(10000000)}, 1000, 24, 180), false},
 		{"nil client", types.NewParams(nil, "0.33", time.Hour, 30*time.Minute, "0.1", sdk.Coin{Denom: "stake", Amount: math.NewInt(10000000)}, 1000, 24, 180), false},
-		// Check if "0.00" is valid or if a zero dec TrustFraction needs to return an error
 		{"0 trusting period fraction", types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 			time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
-			"0.00", time.Hour, 30*time.Minute, "0.1", sdk.Coin{Denom: "stake", Amount: math.NewInt(10000000)}, 1000, 24, 180), true},
+			"0.00", time.Hour, 30*time.Minute, "0.1", sdk.Coin{Denom: "stake", Amount: math.NewInt(10000000)}, 1000, 24, 180), false},
 		{"0 ccv timeout period", types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 			time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}),
 			"0.33", 0, 30*time.Minute, "0.1", sdk.Coin{Denom: "stake", Amount: math.NewInt(10000000)}, 1000, 24, 180), false},

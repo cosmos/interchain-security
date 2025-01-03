@@ -3,57 +3,55 @@ package interchain
 import (
 	"context"
 	"cosmos/interchain-security/tests/interchain/chainsuite"
-	"fmt"
 	"strconv"
-	"sync"
 
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 	"github.com/stretchr/testify/suite"
 )
 
-type ProviderSuite struct {
+type ChangeoverSuite struct {
 	suite.Suite
-	Provider       *chainsuite.Chain
-	ValidatorNodes int
-	ctx            context.Context
-	walletMtx      sync.Mutex
-	walletsInUse   map[int]bool
+	Provider *chainsuite.Chain
+	Consumer *chainsuite.Chain
+	Relayer  *chainsuite.Relayer
+	ctx      context.Context
 }
 
-func (s *ProviderSuite) SetupSuite() {
-	s.walletsInUse = make(map[int]bool)
+func (s *ChangeoverSuite) SetupSuite() {
 	ctx, err := chainsuite.NewSuiteContext(&s.Suite)
 	s.Require().NoError(err)
 	s.ctx = ctx
 
 	// create and start provider chain
-	s.Provider, err = chainsuite.CreateChain(s.GetContext(), s.T(), chainsuite.GetProviderSpec(s.ValidatorNodes, providerModifiedGenesis()))
+	s.Provider, err = chainsuite.CreateChain(s.GetContext(), s.T(), chainsuite.GetProviderSpec(1, provChangeoverModifiedGenesis()))
 	s.Require().NoError(err)
+
+	// create and start sovereign chain that will later changeover to consumer
+	s.Consumer, err = chainsuite.CreateChain(s.GetContext(), s.T(), chainsuite.GetSovereignSpec())
+	s.Require().NoError(err)
+
+	// setup hermes relayer
+	relayer, err := chainsuite.NewRelayer(s.GetContext(), s.T())
+	s.Require().NoError(err)
+	s.Relayer = relayer
+
+	err = relayer.SetupChainKeys(s.GetContext(), s.Provider)
+	s.Require().NoError(err)
+	s.Require().NoError(relayer.RestartRelayer(ctx))
+
+	err = relayer.SetupChainKeys(s.GetContext(), s.Consumer)
+	s.Require().NoError(err)
+	s.Require().NoError(relayer.RestartRelayer(ctx))
 }
 
-func (s *ProviderSuite) GetContext() context.Context {
+func (s *ChangeoverSuite) GetContext() context.Context {
 	s.Require().NotNil(s.ctx, "Tried to GetContext before it was set. SetupSuite must run first")
 	return s.ctx
 }
 
-// GetUnusedTestingAddresss retrieves an unused wallet address and its key name safely
-func (s *ProviderSuite) GetUnusedTestingAddresss() (formattedAddress string, keyName string, err error) {
-	s.walletMtx.Lock()
-	defer s.walletMtx.Unlock()
-
-	for i, wallet := range s.Provider.TestWallets {
-		if !s.walletsInUse[i] {
-			s.walletsInUse[i] = true
-			return wallet.FormattedAddress(), wallet.KeyName(), nil
-		}
-	}
-
-	return "", "", fmt.Errorf("no unused wallets available")
-}
-
-func providerModifiedGenesis() []cosmos.GenesisKV {
+func provChangeoverModifiedGenesis() []cosmos.GenesisKV {
 	return []cosmos.GenesisKV{
-		cosmos.NewGenesisKV("app_state.staking.params.unbonding_time", chainsuite.ProviderUnbondingTime.String()),
+		cosmos.NewGenesisKV("app_state.staking.params.unbonding_time", (chainsuite.ProviderUnbondingTime * 10000000).String()),
 		cosmos.NewGenesisKV("app_state.gov.params.voting_period", chainsuite.GovVotingPeriod.String()),
 		cosmos.NewGenesisKV("app_state.gov.params.max_deposit_period", chainsuite.GovDepositPeriod.String()),
 		cosmos.NewGenesisKV("app_state.gov.params.min_deposit.0.denom", chainsuite.Stake),

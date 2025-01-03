@@ -66,6 +66,7 @@ All missing minor release versions have been discontinued.
 | `v5.2.x` | May 9, 2025      |
 | `v6.1.x` | Sep 13, 2025     |
 | `v6.3.x` | Sep 13, 2025     |
+| `v6.4.x` | Sep 13, 2025     |
 
 ## Version Matrix
 
@@ -80,6 +81,7 @@ Versions of Golang, IBC, Cosmos SDK and CometBFT used by ICS in the currently ac
 | [v5.2.0](https://github.com/cosmos/interchain-security/releases/tag/v5.2.0) | 1.22   | v8.3.2 | v0.50.8    | v0.38.9  |      |
 | [v6.1.0](https://github.com/cosmos/interchain-security/releases/tag/v6.1.0) | 1.22   | v8.5.0 | v0.50.9    | v0.38.11 |      |
 | [v6.3.0](https://github.com/cosmos/interchain-security/releases/tag/v6.3.0) | 1.22   | v8.5.1 | v0.50.9    | v0.38.11 |      |
+| [v6.4.0](https://github.com/cosmos/interchain-security/releases/tag/v6.4.0) | 1.22   | v8.5.2 | v0.50.11   | v0.38.15 |      |
 
 **Note:** For a list of major ICS features available in the currently active releases, see [FEATURES.md](./FEATURES.md).
 
@@ -89,14 +91,15 @@ A MAJOR version of ICS will always be backwards compatible with the previous MAJ
 
 The following table indicates the compatibility of currently active releases:
 
-| Consumer | Provider | `v5.2.0` | `v6.1.0` | `v6.3.0` |
-| -------- | -------- | -------- | -------- | -------- |
-| `v4.0.0` |          | ✅       | ✅       | ✅ (1)   |
-| `v4.4.0` |          | ✅       | ✅       | ✅ (1)   |
-| `v4.5.0` |          | ✅       | ✅       | ✅       |
-| `v5.0.0` |          | ✅       | ✅       | ✅ (1)   |
-| `v5.2.0` |          | ✅       | ✅       | ✅ (1)   |
-| `v6.3.0` |          | ✅       | ✅       | ✅       |
+| Consumer            | Provider | `v5.2.0` | `v6.1.0` | `v6.3.0` | `v6.4.0` |
+| ------------------- | -------- | -------- | -------- | -------- | -------- |
+| `v4.0.0`            |          | ✅       | ✅       | ✅ (1)   | ✅ (1)   |
+| `v4.4.0`            |          | ✅       | ✅       | ✅ (1)   | ✅ (1)   |
+| `v4.5.0`            |          | ✅       | ✅       | ✅       | ✅ (1)   |
+| `v5.0.0`            |          | ✅       | ✅       | ✅ (1)   | ✅ (1)   |
+| `v5.2.0`            |          | ✅       | ✅       | ✅ (1)   | ✅ (1)   |
+| `v6.2.0` / `v6.3.0` |          | ✅       | ✅       | ✅       | ✅ (1)   |
+| `v6.4.0`            |          | ✅       | ✅       | ✅       | ✅       |
 
 #### Notes
 The following adjustments must be made to the CCV consumer genesis state that is obtained from the provider chain after the spawn time is reached in order for the consumer chain to start without errors.

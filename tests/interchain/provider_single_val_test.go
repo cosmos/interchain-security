@@ -316,24 +316,24 @@ func (s *SingleValidatorProviderSuite) TestProviderTransformOptInToTopN() {
 	upgradeMsg := &providertypes.MsgUpdateConsumer{
 		Owner:           testAcc,
 		ConsumerId:      consumerId,
-		NewOwnerAddress: chainsuite.GovModuleAddress,
+		NewOwnerAddress: chainsuite.ProviderGovModuleAddress,
 	}
 	s.Require().NoError(s.Provider.UpdateConsumer(s.GetContext(), upgradeMsg, testAccKey))
 	consumerChain, err = s.Provider.GetConsumerChain(s.GetContext(), consumerId)
 	s.Require().NoError(err)
-	s.Require().Equal(chainsuite.GovModuleAddress, consumerChain.OwnerAddress)
+	s.Require().Equal(chainsuite.ProviderGovModuleAddress, consumerChain.OwnerAddress)
 	// Confirm that the chain can be updated to a lower TopN
 	spawTimeFromNow := 10 * time.Second
 	initParams.SpawnTime = time.Now().Add(spawTimeFromNow)
 	powerShapingParams.Top_N = 50
 	upgradeMsg = &providertypes.MsgUpdateConsumer{
-		Owner:                    chainsuite.GovModuleAddress,
+		Owner:                    chainsuite.ProviderGovModuleAddress,
 		ConsumerId:               consumerId,
-		NewOwnerAddress:          chainsuite.GovModuleAddress,
+		NewOwnerAddress:          chainsuite.ProviderGovModuleAddress,
 		InitializationParameters: initParams,
 		PowerShapingParameters:   powerShapingParams,
 	}
-	s.Require().NoError(s.Provider.ExecuteProposalMsg(s.GetContext(), upgradeMsg, chainsuite.GovModuleAddress, chainName, cosmos.ProposalVoteYes, govv1.StatusPassed, false))
+	s.Require().NoError(s.Provider.ExecuteProposalMsg(s.GetContext(), upgradeMsg, chainsuite.ProviderGovModuleAddress, chainName, cosmos.ProposalVoteYes, govv1.StatusPassed, false))
 	time.Sleep(spawTimeFromNow)
 	s.Require().NoError(testutil.WaitForBlocks(s.GetContext(), 1, s.Provider))
 	updatedChain, err := s.Provider.GetConsumerChain(s.GetContext(), consumerId)
@@ -344,12 +344,12 @@ func (s *SingleValidatorProviderSuite) TestProviderTransformOptInToTopN() {
 	//Confirm that the chain can be updated to a higher TopN
 	powerShapingParams.Top_N = 100
 	upgradeMsg = &providertypes.MsgUpdateConsumer{
-		Owner:                  chainsuite.GovModuleAddress,
+		Owner:                  chainsuite.ProviderGovModuleAddress,
 		ConsumerId:             consumerId,
-		NewOwnerAddress:        chainsuite.GovModuleAddress,
+		NewOwnerAddress:        chainsuite.ProviderGovModuleAddress,
 		PowerShapingParameters: powerShapingParams,
 	}
-	s.Require().NoError(s.Provider.ExecuteProposalMsg(s.GetContext(), upgradeMsg, chainsuite.GovModuleAddress, chainName, cosmos.ProposalVoteYes, govv1.StatusPassed, false))
+	s.Require().NoError(s.Provider.ExecuteProposalMsg(s.GetContext(), upgradeMsg, chainsuite.ProviderGovModuleAddress, chainName, cosmos.ProposalVoteYes, govv1.StatusPassed, false))
 	updatedChain, err = s.Provider.GetConsumerChain(s.GetContext(), consumerId)
 	s.Require().NoError(err)
 	s.Require().Equal(providertypes.CONSUMER_PHASE_LAUNCHED.String(), updatedChain.Phase)
@@ -357,11 +357,11 @@ func (s *SingleValidatorProviderSuite) TestProviderTransformOptInToTopN() {
 
 	// Confirm that the owner of the chain cannot change as long as it remains a Top N chain
 	upgradeMsg = &providertypes.MsgUpdateConsumer{
-		Owner:           chainsuite.GovModuleAddress,
+		Owner:           chainsuite.ProviderGovModuleAddress,
 		ConsumerId:      consumerId,
 		NewOwnerAddress: testAcc,
 	}
-	s.Require().Error(s.Provider.ExecuteProposalMsg(s.GetContext(), upgradeMsg, chainsuite.GovModuleAddress, chainName, cosmos.ProposalVoteYes, govv1.StatusPassed, false))
+	s.Require().Error(s.Provider.ExecuteProposalMsg(s.GetContext(), upgradeMsg, chainsuite.ProviderGovModuleAddress, chainName, cosmos.ProposalVoteYes, govv1.StatusPassed, false))
 }
 
 // Create a Top N chain, and transform it to an opt-in via `tx gov submit-proposal` using MsgUpdateConsumer
@@ -375,20 +375,20 @@ func (s *SingleValidatorProviderSuite) TestProviderTransformTopNtoOptIn() {
 	spawnTimeFromNow := time.Now().Add(time.Hour)
 	powerShapingParams := powerShapingParamsTemplate()
 	initParams := consumerInitParamsTemplate(&spawnTimeFromNow)
-	proposalMsg := msgCreateConsumer(chainName, initParams, powerShapingParams, nil, chainsuite.GovModuleAddress)
-	s.Require().NoError(s.Provider.ExecuteProposalMsg(s.GetContext(), proposalMsg, chainsuite.GovModuleAddress, chainName, cosmos.ProposalVoteYes, govv1.StatusPassed, false))
+	proposalMsg := msgCreateConsumer(chainName, initParams, powerShapingParams, nil, chainsuite.ProviderGovModuleAddress)
+	s.Require().NoError(s.Provider.ExecuteProposalMsg(s.GetContext(), proposalMsg, chainsuite.ProviderGovModuleAddress, chainName, cosmos.ProposalVoteYes, govv1.StatusPassed, false))
 	consumerChain, err := s.Provider.GetConsumerChainByChainId(s.GetContext(), chainName)
 	s.Require().NoError(err)
 	powerShapingParams.Top_N = 100
 	initParams.SpawnTime = time.Now().Add(-time.Hour)
 	upgradeMsg := &providertypes.MsgUpdateConsumer{
-		Owner:                    chainsuite.GovModuleAddress,
+		Owner:                    chainsuite.ProviderGovModuleAddress,
 		ConsumerId:               consumerChain.ConsumerID,
-		NewOwnerAddress:          chainsuite.GovModuleAddress,
+		NewOwnerAddress:          chainsuite.ProviderGovModuleAddress,
 		PowerShapingParameters:   powerShapingParams,
 		InitializationParameters: initParams,
 	}
-	s.Require().NoError(s.Provider.ExecuteProposalMsg(s.GetContext(), upgradeMsg, chainsuite.GovModuleAddress, chainName, cosmos.ProposalVoteYes, govv1.StatusPassed, false))
+	s.Require().NoError(s.Provider.ExecuteProposalMsg(s.GetContext(), upgradeMsg, chainsuite.ProviderGovModuleAddress, chainName, cosmos.ProposalVoteYes, govv1.StatusPassed, false))
 	consumerChain, err = s.Provider.GetConsumerChainByChainId(s.GetContext(), chainName)
 	s.Require().NoError(err)
 	s.Require().Equal(providertypes.CONSUMER_PHASE_LAUNCHED.String(), consumerChain.Phase)
@@ -397,12 +397,12 @@ func (s *SingleValidatorProviderSuite) TestProviderTransformTopNtoOptIn() {
 	// Transform to opt in chain
 	powerShapingParams.Top_N = 0
 	upgradeMsg = &providertypes.MsgUpdateConsumer{
-		Owner:                  chainsuite.GovModuleAddress,
+		Owner:                  chainsuite.ProviderGovModuleAddress,
 		ConsumerId:             consumerChain.ConsumerID,
 		NewOwnerAddress:        testAcc,
 		PowerShapingParameters: powerShapingParams,
 	}
-	s.Require().NoError(s.Provider.ExecuteProposalMsg(s.GetContext(), upgradeMsg, chainsuite.GovModuleAddress, chainName, cosmos.ProposalVoteYes, govv1.StatusPassed, false))
+	s.Require().NoError(s.Provider.ExecuteProposalMsg(s.GetContext(), upgradeMsg, chainsuite.ProviderGovModuleAddress, chainName, cosmos.ProposalVoteYes, govv1.StatusPassed, false))
 	optInChain, err := s.Provider.GetConsumerChain(s.GetContext(), consumerChain.ConsumerID)
 	s.Require().NoError(err)
 	s.Require().Equal(powerShapingParams.Top_N, uint32(optInChain.PowerShapingParams.TopN))
@@ -594,10 +594,10 @@ func (s *SingleValidatorProviderSuite) TestProviderOwnerChecks() {
 	// update owner using proposal is not possible - current owner is among expected signers
 	upgradeMsg = &providertypes.MsgUpdateConsumer{
 		Owner:           testAcc2,
-		NewOwnerAddress: chainsuite.GovModuleAddress,
+		NewOwnerAddress: chainsuite.ProviderGovModuleAddress,
 		ConsumerId:      consumerId,
 	}
-	err = s.Provider.ExecuteProposalMsg(s.GetContext(), upgradeMsg, chainsuite.GovModuleAddress, chainName, cosmos.ProposalVoteYes, govv1.StatusPassed, false)
+	err = s.Provider.ExecuteProposalMsg(s.GetContext(), upgradeMsg, chainsuite.ProviderGovModuleAddress, chainName, cosmos.ProposalVoteYes, govv1.StatusPassed, false)
 	s.Require().Error(err)
 	s.Require().Contains(err.Error(), "expected gov account")
 
@@ -606,17 +606,17 @@ func (s *SingleValidatorProviderSuite) TestProviderOwnerChecks() {
 
 	// update to top N using proposal
 	upgradeMsg = &providertypes.MsgUpdateConsumer{
-		Owner:                  chainsuite.GovModuleAddress,
-		NewOwnerAddress:        chainsuite.GovModuleAddress,
+		Owner:                  chainsuite.ProviderGovModuleAddress,
+		NewOwnerAddress:        chainsuite.ProviderGovModuleAddress,
 		ConsumerId:             consumerId,
 		PowerShapingParameters: powerShapingParams,
 	}
-	s.Require().NoError(s.Provider.ExecuteProposalMsg(s.GetContext(), upgradeMsg, chainsuite.GovModuleAddress, chainName, cosmos.ProposalVoteYes, govv1.StatusPassed, false))
+	s.Require().NoError(s.Provider.ExecuteProposalMsg(s.GetContext(), upgradeMsg, chainsuite.ProviderGovModuleAddress, chainName, cosmos.ProposalVoteYes, govv1.StatusPassed, false))
 	consumerChain, err = s.Provider.GetConsumerChain(s.GetContext(), consumerId)
 	s.Require().NoError(err)
 	s.Require().Equal(providertypes.CONSUMER_PHASE_LAUNCHED.String(), consumerChain.Phase)
 	s.Require().Equal(powerShapingParams.Top_N, uint32(consumerChain.PowerShapingParams.TopN))
-	s.Require().Equal(chainsuite.GovModuleAddress, consumerChain.OwnerAddress)
+	s.Require().Equal(chainsuite.ProviderGovModuleAddress, consumerChain.OwnerAddress)
 }
 
 // Tests adding and updating infraction parameters with MsgCreateConsumer and MsgUpdateConsumer.

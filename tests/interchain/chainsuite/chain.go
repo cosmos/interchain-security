@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"path"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	sdkmath "cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -16,6 +19,7 @@ import (
 	"github.com/strangelove-ventures/interchaintest/v8"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 	"github.com/strangelove-ventures/interchaintest/v8/ibc"
+	"github.com/tidwall/gjson"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -48,8 +52,8 @@ func chainFromCosmosChain(cosmos *cosmos.CosmosChain, relayerWallet ibc.Wallet, 
 	return c, nil
 }
 
-// CreateProviderChain creates a single new chain with the given version and returns the chain object.
-func CreateProviderChain(ctx context.Context, testName interchaintest.TestName, spec *interchaintest.ChainSpec) (*Chain, error) {
+// CreateChain creates a single new chain with the given version and returns the chain object.
+func CreateChain(ctx context.Context, testName interchaintest.TestName, spec *interchaintest.ChainSpec) (*Chain, error) {
 	cf := interchaintest.NewBuiltinChainFactory(
 		GetLogger(ctx),
 		[]*interchaintest.ChainSpec{spec},
@@ -155,6 +159,97 @@ func getValidatorWallets(ctx context.Context, chain *Chain) ([]ValidatorWallet, 
 	return wallets, nil
 }
 
+// UpdateAndVerifyStakeChange updates the staking amount on the provider chain and verifies that the change is reflected on the consumer side
+func (p *Chain) UpdateAndVerifyStakeChange(ctx context.Context, consumer *Chain, relayer *Relayer, amount, valIdx int) error {
+
+	providerAddress := p.ValidatorWallets[valIdx]
+
+	providerHex, err := p.GetValidatorHexAddress(ctx, valIdx)
+	if err != nil {
+		return err
+	}
+	consumerHex, err := consumer.GetValidatorHexAddress(ctx, valIdx)
+	if err != nil {
+		return err
+	}
+
+	providerPowerBefore, err := p.GetValidatorPower(ctx, providerHex)
+	if err != nil {
+		return err
+	}
+
+	// increase the stake for the given validator
+	_, err = p.Validators[valIdx].ExecTx(ctx, providerAddress.Moniker,
+		"staking", "delegate",
+		providerAddress.ValoperAddress, fmt.Sprintf("%d%s", amount, p.Config().Denom),
+	)
+	if err != nil {
+		return err
+	}
+
+	// check that the validator power is updated on both, provider and consumer chains
+	tCtx, tCancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer tCancel()
+	var retErr error
+	for tCtx.Err() == nil {
+		retErr = nil
+		providerPower, err := p.GetValidatorPower(ctx, providerHex)
+		if err != nil {
+			return err
+		}
+		consumerPower, err := consumer.GetValidatorPower(ctx, consumerHex)
+		if err != nil {
+			return err
+		}
+		if providerPowerBefore >= providerPower {
+			retErr = fmt.Errorf("provider power did not increase after delegation")
+		} else if providerPower != consumerPower {
+			retErr = fmt.Errorf("consumer power did not update after provider delegation")
+		}
+		if retErr == nil {
+			break
+		}
+		time.Sleep(CommitTimeout)
+	}
+	return retErr
+}
+
+func (p *Chain) GetValidatorHexAddress(ctx context.Context, valIdx int) (string, error) {
+	json, err := p.Validators[valIdx].ReadFile(ctx, "config/priv_validator_key.json")
+	if err != nil {
+		return "", err
+	}
+	return gjson.GetBytes(json, "address").String(), nil
+}
+
+func (c *Chain) GetValidatorPower(ctx context.Context, hexaddr string) (int64, error) {
+	var power int64
+	err := checkEndpoint(c.GetHostRPCAddress()+"/validators", func(b []byte) error {
+		power = gjson.GetBytes(b, fmt.Sprintf("result.validators.#(address==\"%s\").voting_power", hexaddr)).Int()
+		if power == 0 {
+			return fmt.Errorf("validator %s power not found; validators are: %s", hexaddr, string(b))
+		}
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+	return power, nil
+}
+
+func checkEndpoint(url string, f func([]byte) error) error {
+	resp, err := http.Get(url) //nolint:gosec
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	bts, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	return f(bts)
+}
+
 func (c *Chain) WaitForProposalStatus(ctx context.Context, proposalID string, status govv1.ProposalStatus) error {
 	propID, err := strconv.ParseInt(proposalID, 10, 64)
 	if err != nil {
@@ -201,8 +296,8 @@ func (c *Chain) SubmitAndVoteForProposal(ctx context.Context, prop cosmos.TxProp
 }
 
 // builds proposal message, submits, votes and wait for proposal expected status
-func (c *Chain) ExecuteProposalMsg(ctx context.Context, proposalMsg cosmos.ProtoMessage, proposer string, chainName string, vote string, expectedStatus govv1.ProposalStatus, expedited bool) error {
-	proposal, err := c.BuildProposal([]cosmos.ProtoMessage{proposalMsg}, chainName, "summary", "", GovMinDepositString, proposer, false)
+func (c *Chain) ExecuteProposalMsg(ctx context.Context, proposalMsg cosmos.ProtoMessage, proposer string, title string, vote string, expectedStatus govv1.ProposalStatus, expedited bool) error {
+	proposal, err := c.BuildProposal([]cosmos.ProtoMessage{proposalMsg}, title, "summary", "", GovMinDepositString, proposer, false)
 	if err != nil {
 		return err
 	}
@@ -437,6 +532,24 @@ func (c *Chain) GetValidatorKey(ctx context.Context, validatorIndex int) (string
 	address := strings.TrimSpace(string(queryRes))
 
 	return address, nil
+}
+
+func (c *Chain) GetCcvConsumerParams(ctx context.Context) (ConsumerParamsResponse, error) {
+	queryRes, _, err := c.GetNode().ExecQuery(
+		ctx,
+		"ccvconsumer", "params",
+	)
+	if err != nil {
+		return ConsumerParamsResponse{}, err
+	}
+
+	var queryResponse ConsumerParamsResponse
+	err = json.Unmarshal([]byte(queryRes), &queryResponse)
+	if err != nil {
+		return ConsumerParamsResponse{}, err
+	}
+
+	return queryResponse, nil
 }
 
 func getEvtAttribute(events []abci.Event, evtType string, key string) (string, bool) {
