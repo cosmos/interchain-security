@@ -7,7 +7,7 @@ title: Key Assignment
 
 ## Changelog
 * 2022-12-01: Initial Draft
-* 2024-03-01: Updated to take into account they key-assigment-replacement deprecation.
+* 2024-03-01: Updated to take into account they key-assignment-replacement deprecation.
 
 ## Status
 
