@@ -12,7 +12,7 @@ A collection of utilities based on [ibc-go/testing](https://github.com/cosmos/ib
 
 It is very hard to reason about tests written using vanilla [ibc-go/testing](https://github.com/cosmos/ibc-go/tree/main/testing) because the methods included in that library have many side effects. For example, that library has a notion of global time, so calling EndBlock on one chain will influence the future block times of another chain. As another example, sending a packet from chain A to B will automatically progress the block height on chain A. These behaviors make it very hard to understand, especially if your applications have business logic in BeginBlock or EndBlock.
 
-The utilities in simibc do not have any side effects, making it very easy to understand what is happening. It also makes it very easy to write data driven tests (like table tests, model based tests or property based tests).
+The utilities in simibc do not have any side effects, making it very easy to understand what is happening. It also makes it very easy to write data-driven tests (like table tests, model-based tests or property-based tests).
 
 ## How do I use this?
 
