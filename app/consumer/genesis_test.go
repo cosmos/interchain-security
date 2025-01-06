@@ -275,8 +275,8 @@ var consumerGenesisStates map[string]string = map[string]string{
 	    ]
 	  },
 	  "new_chain": true,
-	  "preCCV": false,
-	  "connection_id": ""
+	  "preCCV": true,
+	  "connection_id": "connection-0"
 	}
 	`,
 }
@@ -353,9 +353,25 @@ func TestConsumerGenesisTransformationV63xToV4x(t *testing.T) {
 	CheckGenesisTransform(t, Provider_v6_3_x, Consumer_v4_x_x)
 }
 
-// TODO: check the following transformations
-// - Provider_v6_4_x to Consumer_v4_5_x
-// - Provider_v6_4_x to Consumer_v6_x_x
+// Check transformation of provider v6.4.x implementation to consumer v4.x.x
+func TestConsumerGenesisTransformationV64xToV4xx(t *testing.T) {
+	CheckGenesisTransform(t, Provider_v6_4_x, Consumer_v4_x_x)
+}
+
+// Check transformation of provider v6.4.x implementation to consumer v5.x.x
+func TestConsumerGenesisTransformationV64xToV5xx(t *testing.T) {
+	CheckGenesisTransform(t, Provider_v6_4_x, Consumer_v5_x_x)
+}
+
+// Check transformation of provider v6.4.x implementation to consumer v4.5.x
+func TestConsumerGenesisTransformationV64xToV45x(t *testing.T) {
+	CheckGenesisTransform(t, Provider_v6_4_x, Consumer_v4_5_x)
+}
+
+// Check transformation of provider v6.4.x implementation to consumer v6.x.x
+func TestConsumerGenesisTransformationV64xToV6xx(t *testing.T) {
+	CheckGenesisTransform(t, Provider_v6_4_x, Consumer_v6_x_x)
+}
 
 // CheckGenesisTransform checks that the transformation of consumer genesis data
 // from a given source version to a target version is successful
@@ -388,7 +404,14 @@ func CheckGenesisTransform(t *testing.T, sourceVersion string, targetVersion str
 	require.NoError(t, err)
 
 	_, consumerIdFound := params["consumer_id"]
-	require.False(t, consumerIdFound, "consumer_id field should not be present in params")
+	require.Equal(t, shouldContainConsumerId(targetVersion), consumerIdFound)
+
+	// Check for preCCV
+	_, found = resultRaw["preCCV"]
+	require.Equal(t, shouldContainPreCCVAndConnectionId(targetVersion), found)
+	// Check for no connection_id
+	_, found = resultRaw["connection_id"]
+	require.Equal(t, shouldContainPreCCVAndConnectionId(targetVersion), found)
 
 	// Iterate over all fields of ConsumerParams and check:
 	// - that they match between source and result genesis
@@ -401,8 +424,14 @@ func CheckGenesisTransform(t *testing.T, sourceVersion string, targetVersion str
 		srcField := srcParams.Field(i).Interface()
 		// srcType and resultType are the same so we can use index 'i' to get the field from resultParams
 		resultField := resultParams.Field(i).Interface()
-		if fieldName == "ConsumerId" {
+		if fieldName == "ConsumerId" && !shouldContainConsumerId(targetVersion) {
 			// ConsumerId is not present in v5.x => expect empty string when unmarshalled to v6
+			require.EqualValues(t, "", resultField, "Field %s does not match", fieldName)
+		} else if fieldName == "PreCCV" && !shouldContainPreCCVAndConnectionId(targetVersion) {
+			// PreCCV is not present in <v6.4.x => expect false when unmarshalled it
+			require.EqualValues(t, false, resultField, "Field %s does not match", fieldName)
+		} else if fieldName == "ConnectionId" && !shouldContainPreCCVAndConnectionId(targetVersion) {
+			// ConnectionId is not present in <v6.4.x => expect empty string when unmarshalled it
 			require.EqualValues(t, "", resultField, "Field %s does not match", fieldName)
 		} else {
 			require.EqualValues(t, srcField, resultField, "Field %s does not match", fieldName)
@@ -419,7 +448,7 @@ func CheckGenesisTransform(t *testing.T, sourceVersion string, targetVersion str
 	for i := 0; i < srcParams.NumField(); i++ {
 		fieldName := srcType.Field(i).Name
 		// Skip Params field as it was checked above
-		if fieldName == "Params" {
+		if fieldName == "Params" || fieldName == "PreCCV" || fieldName == "ConnectionId" {
 			continue
 		}
 		srcField := srcParams.Field(i).Interface()
@@ -427,4 +456,25 @@ func CheckGenesisTransform(t *testing.T, sourceVersion string, targetVersion str
 		resultField := resultParams.Field(i).Interface()
 		require.EqualValues(t, srcField, resultField, "Field %s does not match", fieldName)
 	}
+}
+
+func shouldContainConsumerId(version string) bool {
+	switch version {
+	case Consumer_v6_x_x, Consumer_v4_5_x:
+		return true
+	case Consumer_v5_x_x, Consumer_v4_x_x:
+		return false
+	}
+
+	return false
+}
+
+func shouldContainPreCCVAndConnectionId(version string) bool {
+	switch version {
+	case Consumer_v4_x_x, Consumer_v4_5_x, Consumer_v5_x_x, Consumer_v6_x_x:
+		return false
+		// future greater versions will contain this fields and should return true
+	}
+
+	return false
 }
