@@ -6,6 +6,8 @@ sidebar_position: 6
 
 Chains that were **not** initially launched as consumers of Interchain Security can still participate in the protocol and leverage the economic security of the provider chain. The process where a standalone chain transitions to being a consumer chain is called the **changeover procedure** and is part of the Interchain Security protocol. After the changeover, the new consumer chain will retain all existing state, including the IBC clients, connections and channels already established by the chain.
 
+In a nutshell, to become an ICS consumer chain, a standalone chain needs to add the `x/ccv/consumer` module (via a coordinated upgrade) and to transfer validation responsibilities to the provider validators as stated in `consumer_genesis.json`.  
+
 The relevant protocol specifications are available below:
 * [ICS-28 with existing chains](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/overview_and_basic_concepts.md#channel-initialization-existing-chains).
 * [ADR in ICS repo](../adrs/adr-010-standalone-changeover.md)
@@ -73,6 +75,6 @@ Therefore, when creating a new consumer chain on the provider, the following cha
 
 Before the upgrade of the standalone chain (i.e., adding the `x/ccv/consumer` module), the consumer module genesis state created by the provider at `spawn_time` must be adapted to older versions of the consumer module. This consists of two changes.
 
-First, by setting `connection_id` to an empty string, the provider will set the `preCCV` flag in the `ConsumerGenesisState` struct to `false`. This must be changed to `true` in order to trigger the changeover procedure logic on the `x/ccv/consumer` module.
+First, by setting `connection_id` in the consumer initialization parameters to an empty string, the provider will set the `preCCV` flag in the `ConsumerGenesisState` struct to `false`. This must be changed to `true` in order to trigger the changeover procedure logic on the `x/ccv/consumer` module.
 
 Second, the `connection_id` field of `ConsumerGenesisState` must be removed to enable older versions of the consumer module to unmarshal the consumer module genesis state obtained from the provider. This can be done using the `interchain-security-cd genesis transform` CLI command. 
