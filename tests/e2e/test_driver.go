@@ -297,18 +297,6 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 	case StartChainAction:
 		target := td.getTargetDriver(action.Chain)
 		target.StartChain(action, td.verbose)
-	case StartSovereignChainAction:
-		target := td.getTargetDriver(action.Chain)
-		target.startSovereignChain(action, td.verbose)
-	case UpgradeProposalAction:
-		target := td.getTargetDriver(ChainID("sover"))
-		target.submitUpgradeProposal(action, td.verbose)
-	case WaitUntilBlockAction:
-		target := td.getTargetDriver(action.Chain)
-		target.waitUntilBlockOnChain(action)
-	case e2e.ChangeoverChainAction:
-		target := td.getTargetDriver("")
-		target.changeoverChain(action, td.verbose)
 	case SendTokensAction:
 		target := td.getTargetDriver(action.Chain)
 		target.sendTokens(action, td.verbose)
