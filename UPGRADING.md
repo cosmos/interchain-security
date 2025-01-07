@@ -1,10 +1,10 @@
 # Upgrading Interchain Security
 
-## Unreleased
+## v6.4.x
 
 ### Provider
 
-Upgrading a provider from v6.2.0 requires state migrations. The following migrators should be added to the upgrade handler of the provider chain:
+Upgrading a provider from `v6.2.x / v6.3.x` requires state migrations. The following migrators should be added to the upgrade handler of the provider chain:
 
 ```golang
 // Initializes infraction parameters for each active consumer. During slashing and jailing of validators for misbehavior on the consumer chain, the parameters defined for that specific consumer will be used. Initially, default values are set, which can later be customized for each consumer as needed.
