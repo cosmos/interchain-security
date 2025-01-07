@@ -73,6 +73,6 @@ Therefore, when creating a new consumer chain on the provider, the following cha
 
 Before the upgrade of the standalone chain (i.e., adding the `x/ccv/consumer` module), the consumer module genesis state created by the provider at `spawn_time` must be adapted to older versions of the consumer module. This consists of two changes.
 
-First, by setting `connection_id` to an empty string, the provider will set the `preCCV` flag in the `ConsumerGenesisState` struct to `false`. This must be change to `true` in order to trigger the changeover procedure logic on the `x/ccv/consumer` module.
+First, by setting `connection_id` to an empty string, the provider will set the `preCCV` flag in the `ConsumerGenesisState` struct to `false`. This must be changed to `true` in order to trigger the changeover procedure logic on the `x/ccv/consumer` module.
 
 Second, the `connection_id` field of `ConsumerGenesisState` must be removed to enable older versions of the consumer module to unmarshal the consumer module genesis state obtained from the provider. This can be done using the `interchain-security-cd genesis transform` CLI command. 
