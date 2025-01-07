@@ -406,12 +406,9 @@ func CheckGenesisTransform(t *testing.T, sourceVersion string, targetVersion str
 	_, consumerIdFound := params["consumer_id"]
 	require.Equal(t, shouldContainConsumerId(targetVersion), consumerIdFound)
 
-	// Check for preCCV
-	_, found = resultRaw["preCCV"]
-	require.Equal(t, shouldContainPreCCVAndConnectionId(targetVersion), found)
 	// Check for no connection_id
 	_, found = resultRaw["connection_id"]
-	require.Equal(t, shouldContainPreCCVAndConnectionId(targetVersion), found)
+	require.Equal(t, shouldContainConnectionId(targetVersion), found)
 
 	// Iterate over all fields of ConsumerParams and check:
 	// - that they match between source and result genesis
@@ -427,10 +424,7 @@ func CheckGenesisTransform(t *testing.T, sourceVersion string, targetVersion str
 		if fieldName == "ConsumerId" && !shouldContainConsumerId(targetVersion) {
 			// ConsumerId is not present in v5.x => expect empty string when unmarshalled to v6
 			require.EqualValues(t, "", resultField, "Field %s does not match", fieldName)
-		} else if fieldName == "PreCCV" && !shouldContainPreCCVAndConnectionId(targetVersion) {
-			// PreCCV is not present in <v6.4.x => expect false when unmarshalled it
-			require.EqualValues(t, false, resultField, "Field %s does not match", fieldName)
-		} else if fieldName == "ConnectionId" && !shouldContainPreCCVAndConnectionId(targetVersion) {
+		} else if fieldName == "ConnectionId" && !shouldContainConnectionId(targetVersion) {
 			// ConnectionId is not present in <v6.4.x => expect empty string when unmarshalled it
 			require.EqualValues(t, "", resultField, "Field %s does not match", fieldName)
 		} else {
@@ -448,7 +442,7 @@ func CheckGenesisTransform(t *testing.T, sourceVersion string, targetVersion str
 	for i := 0; i < srcParams.NumField(); i++ {
 		fieldName := srcType.Field(i).Name
 		// Skip Params field as it was checked above
-		if fieldName == "Params" || fieldName == "PreCCV" || fieldName == "ConnectionId" {
+		if fieldName == "Params" || fieldName == "ConnectionId" {
 			continue
 		}
 		srcField := srcParams.Field(i).Interface()
@@ -469,7 +463,7 @@ func shouldContainConsumerId(version string) bool {
 	return false
 }
 
-func shouldContainPreCCVAndConnectionId(version string) bool {
+func shouldContainConnectionId(version string) bool {
 	switch version {
 	case Consumer_v4_x_x, Consumer_v4_5_x, Consumer_v5_x_x, Consumer_v6_x_x:
 		return false

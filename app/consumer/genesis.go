@@ -92,9 +92,9 @@ func transformGenesis(targetVersion IcsVersion, jsonRaw []byte) (json.RawMessage
 		if err != nil {
 			break
 		}
-		genState, err = removeFieldsFromGenesisState(genState, []string{"preCCV", "connection_id"})
+		genState, err = removeFieldsFromGenesisState(genState, []string{"connection_id"})
 	case v4_5_x, v6_x_x:
-		genState, err = removeFieldsFromGenesisState(genState, []string{"preCCV", "connection_id"})
+		genState, err = removeFieldsFromGenesisState(genState, []string{"connection_id"})
 	default:
 		err = fmt.Errorf("unsupported target version '%s'. Run %s --help",
 			targetVersion, version.AppName)
