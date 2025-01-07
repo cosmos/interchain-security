@@ -44,7 +44,7 @@ The consumer genesis state must be exported to a file and placed in the correct 
 The file must be placed at the exact specified location, otherwise the upgrade will not be executed correctly.
 Usually the file is placed in `$NODE_HOME/config`, but the file name and the exact directory is dictated by the upgrade code on the `standalone` chain. 
 
-After the `genesis.json` file has been made available, the process is equivalent to a normal on-chain upgrade. The standalone validator set will sign the next couple of blocks before transferring control to the initial ICS validator set.
+After the `consumer_genesis.json` file has been made available, the process is equivalent to a normal on-chain upgrade. The standalone validator set will sign the next couple of blocks before transferring control to the initial ICS validator set.
 
 Once upgraded, the `x/ccv/consumer` module will act as the "staking module" for the consumer chain, i.e., it will provide the validator set to the consensus engine. For staking a native token (e.g., for governance), the `x/ccv/democracy/staking` module allows the cosmos-sdk `x/staking` module to be used alongside the `x/ccv/consumer` module. For more details, check out the [democracy modules](../build/modules/04-democracy.md).
 
