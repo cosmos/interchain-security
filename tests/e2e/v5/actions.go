@@ -43,10 +43,8 @@ type (
 	StartChainAction                    = e2e.StartChainAction
 	StartChainValidator                 = e2e.StartChainValidator
 	StartConsumerChainAction            = e2e.StartConsumerChainAction
-	StartSovereignChainAction           = e2e.StartSovereignChainAction
 	SubmitConsumerRemovalProposalAction = e2e.SubmitConsumerRemovalProposalAction
 	DelegateTokensAction                = e2e.DelegateTokensAction
-	ChangeoverChainAction               = e2e.ChangeoverChainAction
 	UnbondTokensAction                  = e2e.UnbondTokensAction
 )
 
@@ -777,131 +775,6 @@ func (tr *Chain) transformConsumerGenesis(consumerChain ChainID, genesis []byte)
 		log.Panic(err, "CCV consumer genesis transformation failed: %s", string(result))
 	}
 	return result
-}
-
-func (tr Chain) changeoverChain(
-	action ChangeoverChainAction,
-	verbose bool,
-) {
-	// sleep until the consumer chain genesis is ready on consumer
-	time.Sleep(5 * time.Second)
-	cmd := tr.Target.ExecCommand(
-		tr.TestConfig.ChainConfigs[action.ProviderChain].BinaryName,
-
-		"query", "provider", "consumer-genesis",
-		string(tr.TestConfig.ChainConfigs[action.SovereignChain].ChainId),
-
-		`--node`, tr.Target.GetQueryNode(action.ProviderChain),
-		`-o`, `json`,
-	)
-
-	if verbose {
-		log.Println("changeoverChain cmd: ", cmd.String())
-	}
-
-	bz, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	consumerGenesis := ".app_state.ccvconsumer = " + string(bz)
-	consumerGenesisChanges := tr.TestConfig.ChainConfigs[action.SovereignChain].GenesisChanges
-	if consumerGenesisChanges != "" {
-		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges
-	}
-	if action.GenesisChanges != "" {
-		consumerGenesis = consumerGenesis + " | " + action.GenesisChanges
-	}
-
-	tr.startChangeover(ChangeoverChainAction{
-		Validators:     action.Validators,
-		GenesisChanges: consumerGenesis,
-	}, verbose)
-}
-
-func (tr Chain) startChangeover(
-	action ChangeoverChainAction,
-	verbose bool,
-) {
-	chainConfig := tr.TestConfig.ChainConfigs[ChainID("sover")]
-	type jsonValAttrs struct {
-		Mnemonic         string `json:"mnemonic"`
-		Allocation       string `json:"allocation"`
-		Stake            string `json:"stake"`
-		ValId            string `json:"val_id"`
-		PrivValidatorKey string `json:"priv_validator_key"`
-		NodeKey          string `json:"node_key"`
-		IpSuffix         string `json:"ip_suffix"`
-
-		ConsumerMnemonic         string `json:"consumer_mnemonic"`
-		ConsumerPrivValidatorKey string `json:"consumer_priv_validator_key"`
-		StartWithConsumerKey     bool   `json:"start_with_consumer_key"`
-	}
-
-	var validators []jsonValAttrs
-	for _, val := range action.Validators {
-		validators = append(validators, jsonValAttrs{
-			Mnemonic:         tr.TestConfig.ValidatorConfigs[val.Id].Mnemonic,
-			NodeKey:          tr.TestConfig.ValidatorConfigs[val.Id].NodeKey,
-			ValId:            fmt.Sprint(val.Id),
-			PrivValidatorKey: tr.TestConfig.ValidatorConfigs[val.Id].PrivValidatorKey,
-			Allocation:       fmt.Sprint(val.Allocation) + "stake",
-			Stake:            fmt.Sprint(val.Stake) + "stake",
-			IpSuffix:         tr.TestConfig.ValidatorConfigs[val.Id].IpSuffix,
-
-			ConsumerMnemonic:         tr.TestConfig.ValidatorConfigs[val.Id].ConsumerMnemonic,
-			ConsumerPrivValidatorKey: tr.TestConfig.ValidatorConfigs[val.Id].ConsumerPrivValidatorKey,
-			// if true node will be started with consumer key for each consumer chain
-			StartWithConsumerKey: tr.TestConfig.ValidatorConfigs[val.Id].UseConsumerKey,
-		})
-	}
-
-	vals, err := json.Marshal(validators)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Concat genesis changes defined in chain config, with any custom genesis changes for this chain instantiation
-	var genesisChanges string
-	if action.GenesisChanges != "" {
-		genesisChanges = chainConfig.GenesisChanges + " | " + action.GenesisChanges
-	} else {
-		genesisChanges = chainConfig.GenesisChanges
-	}
-
-	isConsumer := true
-	changeoverScript := tr.Target.GetTestScriptPath(isConsumer, "start-changeover.sh")
-	cmd := tr.Target.ExecCommand(
-		"/bin/bash",
-		changeoverScript, chainConfig.UpgradeBinary, string(vals),
-		"sover", chainConfig.IpPrefix, genesisChanges,
-		tr.TestConfig.TendermintConfigOverride,
-	)
-
-	cmdReader, err := cmd.StdoutPipe()
-	if err != nil {
-		log.Fatal(err)
-	}
-	cmd.Stderr = cmd.Stdout
-
-	if err := cmd.Start(); err != nil {
-		log.Fatal(err)
-	}
-
-	scanner := bufio.NewScanner(cmdReader)
-
-	for scanner.Scan() {
-		out := scanner.Text()
-		if verbose {
-			fmt.Println("startChangeover: " + out)
-		}
-		if out == done {
-			break
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal("startChangeover died", err)
-	}
 }
 
 type AddChainToRelayerAction struct {

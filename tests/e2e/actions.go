@@ -38,12 +38,10 @@ type (
 	StartChainAction                     = e2e.StartChainAction
 	StartChainValidator                  = e2e.StartChainValidator
 	StartConsumerChainAction             = e2e.StartConsumerChainAction
-	StartSovereignChainAction            = e2e.StartSovereignChainAction
 	SubmitConsumerAdditionProposalAction = e2e.SubmitConsumerAdditionProposalAction
 	SubmitConsumerRemovalProposalAction  = e2e.SubmitConsumerRemovalProposalAction
 	DelegateTokensAction                 = e2e.DelegateTokensAction
 	UnbondTokensAction                   = e2e.UnbondTokensAction
-	ChangeoverChainAction                = e2e.ChangeoverChainAction
 )
 
 type SendTokensAction struct {
@@ -1098,111 +1096,6 @@ func (tr *Chain) transformConsumerGenesis(targetVersion string, genesis []byte) 
 		log.Panic(err, "CCV consumer genesis transformation failed: %s", string(result))
 	}
 	return result
-}
-
-func (tr Chain) changeoverChain(
-	action e2e.ChangeoverChainAction,
-	verbose bool,
-) {
-	consumerGenesis := ".app_state.ccvconsumer = " + tr.getConsumerGenesis(action.ProviderChain, action.SovereignChain)
-
-	consumerGenesisChanges := tr.testConfig.ChainConfigs[action.SovereignChain].GenesisChanges
-	if consumerGenesisChanges != "" {
-		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges
-	}
-	if action.GenesisChanges != "" {
-		consumerGenesis = consumerGenesis + " | " + action.GenesisChanges
-	}
-
-	tr.startChangeover(e2e.ChangeoverChainAction{
-		Validators:     action.Validators,
-		GenesisChanges: consumerGenesis,
-	}, verbose)
-}
-
-func (tr Chain) startChangeover(
-	action e2e.ChangeoverChainAction,
-	verbose bool,
-) {
-	chainConfig := tr.testConfig.ChainConfigs[ChainID("sover")]
-	type jsonValAttrs struct {
-		Mnemonic         string `json:"mnemonic"`
-		Allocation       string `json:"allocation"`
-		Stake            string `json:"stake"`
-		ValId            string `json:"val_id"`
-		PrivValidatorKey string `json:"priv_validator_key"`
-		NodeKey          string `json:"node_key"`
-		IpSuffix         string `json:"ip_suffix"`
-
-		ConsumerMnemonic         string `json:"consumer_mnemonic"`
-		ConsumerPrivValidatorKey string `json:"consumer_priv_validator_key"`
-		StartWithConsumerKey     bool   `json:"start_with_consumer_key"`
-	}
-
-	var validators []jsonValAttrs
-	for _, val := range action.Validators {
-		validators = append(validators, jsonValAttrs{
-			Mnemonic:         tr.testConfig.ValidatorConfigs[val.Id].Mnemonic,
-			NodeKey:          tr.testConfig.ValidatorConfigs[val.Id].NodeKey,
-			ValId:            fmt.Sprint(val.Id),
-			PrivValidatorKey: tr.testConfig.ValidatorConfigs[val.Id].PrivValidatorKey,
-			Allocation:       fmt.Sprint(val.Allocation) + "stake",
-			Stake:            fmt.Sprint(val.Stake) + "stake",
-			IpSuffix:         tr.testConfig.ValidatorConfigs[val.Id].IpSuffix,
-
-			ConsumerMnemonic:         tr.testConfig.ValidatorConfigs[val.Id].ConsumerMnemonic,
-			ConsumerPrivValidatorKey: tr.testConfig.ValidatorConfigs[val.Id].ConsumerPrivValidatorKey,
-			// if true node will be started with consumer key for each consumer chain
-			StartWithConsumerKey: tr.testConfig.ValidatorConfigs[val.Id].UseConsumerKey,
-		})
-	}
-
-	vals, err := json.Marshal(validators)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Concat genesis changes defined in chain config, with any custom genesis changes for this chain instantiation
-	var genesisChanges string
-	if action.GenesisChanges != "" {
-		genesisChanges = chainConfig.GenesisChanges + " | " + action.GenesisChanges
-	} else {
-		genesisChanges = chainConfig.GenesisChanges
-	}
-
-	isConsumer := true
-	changeoverScript := tr.target.GetTestScriptPath(isConsumer, "start-changeover.sh")
-	cmd := tr.target.ExecCommand(
-		"/bin/bash",
-		changeoverScript, chainConfig.UpgradeBinary, string(vals),
-		"sover", chainConfig.IpPrefix, genesisChanges,
-		tr.testConfig.TendermintConfigOverride,
-	)
-
-	cmdReader, err := cmd.StdoutPipe()
-	if err != nil {
-		log.Fatal(err)
-	}
-	cmd.Stderr = cmd.Stdout
-
-	if err := cmd.Start(); err != nil {
-		log.Fatal(err)
-	}
-
-	scanner := bufio.NewScanner(cmdReader)
-
-	for scanner.Scan() {
-		out := scanner.Text()
-		if verbose {
-			fmt.Println("startChangeover: " + out)
-		}
-		if out == done {
-			break
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal("startChangeover died", err)
-	}
 }
 
 type AddChainToRelayerAction struct {
