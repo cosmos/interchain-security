@@ -3,7 +3,10 @@ package keeper
 import (
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
@@ -55,11 +58,31 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 	// initialValSet is checked in NewChain case by ValidateGenesis
 	// start a new chain
 	if state.NewChain {
-		// create the provider client in InitGenesis for new consumer chain. CCV Handshake must be established with this client id.
-		clientID, err := k.clientKeeper.CreateClient(ctx, state.Provider.ClientState, state.Provider.ConsensusState)
-		if err != nil {
-			// If the client creation fails, the chain MUST NOT start
-			panic(err)
+		var clientID string
+		if state.ConnectionId == "" {
+			// create the provider client in InitGenesis for new consumer chain. CCV Handshake must be established with this client id.
+			cid, err := k.clientKeeper.CreateClient(ctx, state.Provider.ClientState, state.Provider.ConsensusState)
+			if err != nil {
+				// If the client creation fails, the chain MUST NOT start
+				panic(err)
+			}
+			clientID = cid
+
+			k.Logger(ctx).Info("create new provider chain client",
+				"client id", clientID,
+			)
+		} else {
+			// if connection id is provided, then the client is already created
+			connectionEnd, found := k.connectionKeeper.GetConnection(ctx, state.ConnectionId)
+			if !found {
+				panic(errorsmod.Wrapf(conntypes.ErrConnectionNotFound, "could not find connection(%s)", state.ConnectionId))
+			}
+			clientID = connectionEnd.ClientId
+
+			k.Logger(ctx).Info("use existing client and connection to provider chain",
+				"client id", clientID,
+				"connection id", state.ConnectionId,
+			)
 		}
 
 		// set provider client id.
@@ -67,6 +90,26 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 
 		// set default value for valset update ID
 		k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight()), uint64(0))
+
+		if state.ConnectionId != "" {
+			// initiate CCV channel handshake
+			ccvChannelOpenInitMsg := channeltypes.NewMsgChannelOpenInit(
+				ccv.ConsumerPortID,
+				ccv.Version,
+				channeltypes.ORDERED,
+				[]string{state.ConnectionId},
+				ccv.ProviderPortID,
+				"", // signer unused
+			)
+			_, err := k.ChannelOpenInit(ctx, ccvChannelOpenInitMsg)
+			if err != nil {
+				panic(err)
+			}
+
+			// Note that if the connection ID is not provider, we cannot initiate
+			// the connection handshake as the counterparty client ID is unknown
+			// at this point. The connection handshake must be initiated by a relayer.
+		}
 
 	} else {
 		// chain restarts with the CCV channel established

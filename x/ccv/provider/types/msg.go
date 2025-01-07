@@ -623,6 +623,10 @@ func ValidateInitializationParameters(initializationParameters ConsumerInitializ
 		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "UnbondingPeriod: %s", err.Error())
 	}
 
+	if err := ccvtypes.ValidateConnectionIdentifier(initializationParameters.ConnectionId); err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerInitializationParameters, "ConnectionId: %s", err.Error())
+	}
+
 	return nil
 }
 

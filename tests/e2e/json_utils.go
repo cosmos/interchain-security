@@ -216,30 +216,6 @@ func UnmarshalMapToActionType(rawAction json.RawMessage, actionTypeString string
 		if err == nil {
 			return a, nil
 		}
-	case "main.LegacyUpgradeProposalAction":
-		var a UpgradeProposalAction
-		err := json.Unmarshal(rawAction, &a)
-		if err == nil {
-			return a, nil
-		}
-	case "main.WaitUntilBlockAction":
-		var a WaitUntilBlockAction
-		err := json.Unmarshal(rawAction, &a)
-		if err == nil {
-			return a, nil
-		}
-	case "main.ChangeoverChainAction":
-		var a ChangeoverChainAction
-		err := json.Unmarshal(rawAction, &a)
-		if err == nil {
-			return a, nil
-		}
-	case "main.StartSovereignChainAction":
-		var a StartSovereignChainAction
-		err := json.Unmarshal(rawAction, &a)
-		if err == nil {
-			return a, nil
-		}
 	case "main.LightClientEquivocationAttackAction":
 		var a LightClientEquivocationAttackAction
 		err := json.Unmarshal(rawAction, &a)

@@ -10,12 +10,9 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
 
-	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
-
-	"github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
 // The genesis state of the blockchain is represented here as a map of raw json
@@ -31,13 +28,17 @@ type GenesisState map[string]json.RawMessage
 type IcsVersion string
 
 const (
-	v4_x_x IcsVersion = "v4.x"
-	v5_x_x IcsVersion = "v5.x"
+	v4_x_x IcsVersion = "<v4.5.x" // all v4 versions < v4.5.0
+	v4_5_x IcsVersion = "v4.5.x"
+	v5_x_x IcsVersion = "v5.x"    // all v5 version
+	v6_x_x IcsVersion = "<v6.4.x" // all v6 versions < v6.4.0
 )
 
 var TransformationVersions map[string]IcsVersion = map[string]IcsVersion{
-	"v4.x": v4_x_x,
-	"v5.x": v5_x_x,
+	"<v4.5.x": v4_x_x,
+	"v4.5.x":  v4_5_x,
+	"v5.x":    v5_x_x,
+	"<v6.4.x": v6_x_x,
 }
 
 // Remove a parameter from a JSON object
@@ -56,51 +57,44 @@ func removeParameterFromParams(params json.RawMessage, param string) (json.RawMe
 // Transformation of consumer genesis content as it is exported by provider version >= v6.2.x
 // to a format supported by consumer chains version with either SDK v0.47 and ICS < v4.5.0 or SDK v0.50 and ICS < v6.2.0
 // This transformation removes the 'consumer_id' parameter from the 'params' field introduced in ICS v6.2.x
-func transformToV5(jsonRaw []byte, ctx client.Context) (json.RawMessage, error) {
-	srcConGen := types.ConsumerGenesisState{}
-	err := ctx.Codec.UnmarshalJSON(jsonRaw, &srcConGen)
-	if err != nil {
-		return nil, fmt.Errorf("reading consumer genesis data failed: %s", err)
-	}
-
+func removeConsumerID(genState map[string]json.RawMessage) (map[string]json.RawMessage, error) {
 	// Remove 'consumer_id' from 'params'
-	params, err := ctx.Codec.MarshalJSON(&srcConGen.Params)
+	params, err := removeParameterFromParams(genState["params"], "consumer_id")
 	if err != nil {
 		return nil, err
 	}
 
-	params, err = removeParameterFromParams(params, "consumer_id")
-	if err != nil {
-		return nil, err
-	}
-
-	// Marshal GenesisState and patch 'params' value
-	result, err := ctx.Codec.MarshalJSON(&srcConGen)
-	if err != nil {
-		return nil, err
-	}
-	genState := map[string]json.RawMessage{}
-	if err := json.Unmarshal(result, &genState); err != nil {
-		return nil, fmt.Errorf("unmarshalling 'GenesisState' failed: %v", err)
-	}
 	genState["params"] = params
 
-	result, err = json.Marshal(genState)
-	if err != nil {
-		return nil, fmt.Errorf("marshalling transformation result failed: %v", err)
+	return genState, nil
+}
+
+func removeFieldsFromGenesisState(genState map[string]json.RawMessage, keysToRemove []string) (map[string]json.RawMessage, error) {
+	for _, key := range keysToRemove {
+		delete(genState, key) // Remove the key from the map if it exists
 	}
-	return result, nil
+	return genState, nil
 }
 
 // transformGenesis transforms ccv consumer genesis data to the specified target version
 // Returns the transformed data or an error in case the transformation failed or the format is not supported by current implementation
-func transformGenesis(ctx client.Context, targetVersion IcsVersion, jsonRaw []byte) (json.RawMessage, error) {
-	var newConsumerGenesis json.RawMessage = nil
+func transformGenesis(targetVersion IcsVersion, jsonRaw []byte) (json.RawMessage, error) {
 	var err error
+	// Unmarshal genesis state from raw msg
+	genState := map[string]json.RawMessage{}
+	if err := json.Unmarshal(jsonRaw, &genState); err != nil {
+		return nil, fmt.Errorf("unmarshalling 'GenesisState' failed: %v", err)
+	}
 
 	switch targetVersion {
 	case v4_x_x, v5_x_x:
-		newConsumerGenesis, err = transformToV5(jsonRaw, ctx)
+		genState, err = removeConsumerID(genState)
+		if err != nil {
+			break
+		}
+		genState, err = removeFieldsFromGenesisState(genState, []string{"connection_id"})
+	case v4_5_x, v6_x_x:
+		genState, err = removeFieldsFromGenesisState(genState, []string{"connection_id"})
 	default:
 		err = fmt.Errorf("unsupported target version '%s'. Run %s --help",
 			targetVersion, version.AppName)
@@ -109,6 +103,13 @@ func transformGenesis(ctx client.Context, targetVersion IcsVersion, jsonRaw []by
 	if err != nil {
 		return nil, fmt.Errorf("transformation failed: %v", err)
 	}
+
+	// Marshal genesis state to raw msg
+	newConsumerGenesis, err := json.Marshal(genState)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling transformation result failed: %v", err)
+	}
+
 	return newConsumerGenesis, err
 }
 
@@ -125,7 +126,6 @@ func TransformConsumerGenesis(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	clientCtx := client.GetClientContextFromCmd(cmd)
 	version, err := cmd.Flags().GetString("to")
 	if err != nil {
 		return fmt.Errorf("error getting targetVersion %v", err)
@@ -136,7 +136,7 @@ func TransformConsumerGenesis(cmd *cobra.Command, args []string) error {
 	}
 
 	// try to transform data to target format
-	newConsumerGenesis, err := transformGenesis(clientCtx, targetVersion, jsonRaw)
+	newConsumerGenesis, err := transformGenesis(targetVersion, jsonRaw)
 	if err != nil {
 		return err
 	}
@@ -165,17 +165,17 @@ func NewDefaultGenesisState(cdc codec.JSONCodec) GenesisState {
 func GetConsumerGenesisTransformCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "transform [-to version] genesis-file",
-		Short: "Transform CCV consumer genesis data exported to a specific target format",
+		Short: "Transform consumer module genesis data exported to a specific target format",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`
-Transform the consumer genesis data exported from a provider version v5.x v6.x to a specified consumer target version.
+Transform the consumer genesis data exported from a provider version >= v6.3.x to a specified consumer target version.
 The result is printed to STDOUT.
 
 Note: Content to be transformed is not the consumer genesis file itself but the exported content from provider chain which is used to patch the consumer genesis file!
 
 Example:
 $ %s transform /path/to/ccv_consumer_genesis.json
-$ %s --to v2.x transform /path/to/ccv_consumer_genesis.json
+$ %s --to v5.x transform /path/to/ccv_consumer_genesis.json
 `, version.AppName, version.AppName),
 		),
 		Args: cobra.RangeArgs(1, 2),

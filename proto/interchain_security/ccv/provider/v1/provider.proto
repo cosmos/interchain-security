@@ -94,7 +94,7 @@ message ConsumerAdditionProposal {
   // sub-protocol. If DistributionTransmissionChannel == "", a new transfer
   // channel is created on top of the same connection as the CCV channel.
   // Note that transfer_channel_id is the ID of the channel end on the consumer
-  // chain. it is most relevant for chains performing a sovereign to consumer
+  // chain. It is most relevant for chains performing a standalone to consumer
   // changeover in order to maintain the existing ibc transfer channel
   string distribution_transmission_channel = 14;
   // Corresponds to the percentage of validators that have to validate the chain under the Top N case.
@@ -466,9 +466,15 @@ message ConsumerInitializationParameters {
   // sub-protocol. If DistributionTransmissionChannel == "", a new transfer
   // channel is created on top of the same connection as the CCV channel.
   // Note that transfer_channel_id is the ID of the channel end on the consumer
-  // chain. it is most relevant for chains performing a sovereign to consumer
+  // chain. It is most relevant for chains performing a standalone to consumer
   // changeover in order to maintain the existing ibc transfer channel
   string distribution_transmission_channel = 11;
+  // The ID of the connection end on the provider chain on top of which the CCV 
+  // channel will be established. If connection_id == "", a new client of the 
+  // consumer chain and a new connection on top of this client are created. 
+  // Note that a standalone chain can transition to a consumer chain while 
+  // maintaining existing IBC channels to other chains by providing a valid connection_id.
+  string connection_id = 12;
 }
 
 // PowerShapingParameters contains parameters that shape the validator set that we send to the consumer chain
