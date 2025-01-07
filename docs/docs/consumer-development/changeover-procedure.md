@@ -33,7 +33,7 @@ Submit a `MsgCreateConsumer` message to the provider chain. This is a "normal" [
 
 The standalone chain **MUST** go through an upgrade to include the `x/ccv/consumer` module. 
 Note that adding the `x/ccv/consumer` module requires the consumer module genesis state which is created by the provider at `spawn_time`.
-Consequently, the `spawn_time` should occur before this upgrade. 
+Consequently, the `spawn_time` **MUST** occur before this upgrade. 
 
 Note that the consumer module genesis state can be obtain from the provider using the [consumer genesis query](../build/modules/02-provider.md#consumer-genesis), i.e., 
 ```shell
