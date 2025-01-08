@@ -53,16 +53,17 @@ test-integration-cov:
 	go test ./tests/integration/... -timeout 30m -coverpkg=./... -coverprofile=integration-profile.out -covermode=atomic
 
 # run interchain tests
-# we can use PROVIDER_IMAGE_TAG, PROVIDER_IMAGE_NAME, SOUVEREIGN_IMAGE_TAG, and SOUVEREIGN_IMAGE_NAME to run tests with desired docker images,
-# including locally built ones that, for example, contain some of our changes that are not yet on the main branch.
-# if not provided, default value for PROVIDER_IMAGE_TAG and SOUVEREIGN_IMAGE_TAG is "latest" and for PROVIDER_IMAGE_NAME 
-# and SOUVEREIGN_IMAGE_NAME is "ghcr.io/cosmos/interchain-security"
+# we can use PROVIDER_IMAGE_TAG, PROVIDER_IMAGE_NAME, CONSUMER_IMAGE_TAG, CONSUMER_IMAGE_NAME, SOUVEREIGN_IMAGE_TAG, and SOUVEREIGN_IMAGE_NAME to run 
+# tests with desired docker images, including locally built ones that, for example, contain some of our changes that are not yet on the main branch.
+# if not provided, default value for image tag is "latest" and for image name is "ghcr.io/cosmos/interchain-security"
 test-interchain:
 	cd tests/interchain && \
 	PROVIDER_IMAGE_NAME=$(PROVIDER_IMAGE_NAME) \
 	PROVIDER_IMAGE_TAG=$(PROVIDER_IMAGE_TAG) \
 	SOUVEREIGN_IMAGE_NAME=$(SOUVEREIGN_IMAGE_NAME) \
 	SOUVEREIGN_IMAGE_TAG=$(SOUVEREIGN_IMAGE_TAG) \
+	CONSUMER_IMAGE_NAME=$(CONSUMER_IMAGE_NAME) \
+	CONSUMER_IMAGE_TAG=$(CONSUMER_IMAGE_TAG) \
 	go test ./... -timeout 30m
 
 # run mbt tests

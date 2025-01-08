@@ -12,11 +12,12 @@ import (
 
 const (
 	ProviderBin                = "interchain-security-pd"
-	ProviderBech32Prefix       = "cosmos"
-	ProviderValOperPrefix      = "cosmosvaloper"
+	SovereignBin               = "interchain-security-sd"
+	ConsumerBin                = "interchain-security-cdd"
 	ProviderChainID            = "ics-provider"
 	SovereignToConsumerChainID = "ics-sovereign-consumer"
-	SovereignBin               = "interchain-security-sd"
+	ConsumerChainID            = "ics-consumer"
+	ProviderBech32Prefix       = "cosmos"
 	Bech32PrefixConsumer       = "consumer"
 	Stake                      = "stake"
 	DowntimeJailDuration       = 10 * time.Second
@@ -36,7 +37,7 @@ const (
 	TotalValidatorFunds        = 11_000_000_000
 	ValidatorFunds             = 30_000_000
 	FullNodeCount              = 0
-	ChainSpawnWait             = 155 * time.Second
+	BlocksPerDistribution      = 5
 	CosmosChainType            = "cosmos"
 	ProviderGovModuleAddress   = "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
 	ConsumerGovModuleAddress   = "consumer10d07y265gmmuvt4z0w9aw880jnsr700jlh7295"
@@ -67,37 +68,43 @@ func DefaultGenesisAmounts(denom string) func(i int) (sdktypes.Coin, sdktypes.Co
 }
 
 func ProviderImageVersion() string {
-	providerImageVersion := os.Getenv("PROVIDER_IMAGE_TAG")
-	if providerImageVersion == "" {
-		providerImageVersion = "latest"
-	}
-
-	return providerImageVersion
+	return getImageVersion("PROVIDER_IMAGE_TAG")
 }
 
 func ProviderImageName() string {
-	providerImageName := os.Getenv("PROVIDER_IMAGE_NAME")
-	if providerImageName == "" {
-		providerImageName = "ghcr.io/cosmos/interchain-security"
-	}
-
-	return providerImageName
+	return getImageName("PROVIDER_IMAGE_NAME")
 }
 
 func SouvereignImageVersion() string {
-	souvereignImageVersion := os.Getenv("SOUVEREIGN_IMAGE_TAG")
-	if souvereignImageVersion == "" {
-		souvereignImageVersion = "latest"
-	}
-
-	return souvereignImageVersion
+	return getImageVersion("SOUVEREIGN_IMAGE_TAG")
 }
 
 func SouvereignImageName() string {
-	souvereignImageName := os.Getenv("SOUVEREIGN_IMAGE_NAME")
-	if souvereignImageName == "" {
-		souvereignImageName = "ghcr.io/cosmos/interchain-security"
+	return getImageName("SOUVEREIGN_IMAGE_NAME")
+}
+
+func ConsumerImageVersion() string {
+	return getImageVersion("CONSUMER_IMAGE_TAG")
+}
+
+func ConsumerImageName() string {
+	return getImageName("CONSUMER_IMAGE_NAME")
+}
+
+func getImageName(imgName string) string {
+	imageName := os.Getenv(imgName)
+	if imageName == "" {
+		imageName = "ghcr.io/cosmos/interchain-security"
 	}
 
-	return souvereignImageName
+	return imageName
+}
+
+func getImageVersion(imgVersion string) string {
+	imageVersion := os.Getenv(imgVersion)
+	if imageVersion == "" {
+		imageVersion = "latest"
+	}
+
+	return imageVersion
 }

@@ -32,6 +32,8 @@ type Chain struct {
 	ValidatorWallets []ValidatorWallet
 	RelayerWallet    ibc.Wallet
 	TestWallets      []ibc.Wallet
+	walletMtx        sync.Mutex
+	walletsInUse     map[int]bool
 }
 
 type ValidatorWallet struct {
@@ -49,6 +51,7 @@ func chainFromCosmosChain(cosmos *cosmos.CosmosChain, relayerWallet ibc.Wallet, 
 	c.ValidatorWallets = wallets
 	c.RelayerWallet = relayerWallet
 	c.TestWallets = testWallets
+	c.walletsInUse = make(map[int]bool)
 	return c, nil
 }
 
@@ -88,7 +91,7 @@ func CreateChain(ctx context.Context, testName interchaintest.TestName, spec *in
 	}
 
 	// build test wallets
-	testWallets, err := setupTestWallets(ctx, cosmosChain, TestWalletsNumber)
+	testWallets, err := SetupTestWallets(ctx, cosmosChain, TestWalletsNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +103,7 @@ func CreateChain(ctx context.Context, testName interchaintest.TestName, spec *in
 	return chain, nil
 }
 
-func setupTestWallets(ctx context.Context, cosmosChain *cosmos.CosmosChain, walletCount int) ([]ibc.Wallet, error) {
+func SetupTestWallets(ctx context.Context, cosmosChain *cosmos.CosmosChain, walletCount int) ([]ibc.Wallet, error) {
 	wallets := make([]ibc.Wallet, walletCount)
 	eg := new(errgroup.Group)
 	for i := 0; i < walletCount; i++ {
@@ -157,6 +160,85 @@ func getValidatorWallets(ctx context.Context, chain *Chain) ([]ValidatorWallet, 
 		return nil, err
 	}
 	return wallets, nil
+}
+
+func (p *Chain) AddConsumerChain(ctx context.Context, relayer *Relayer, spec *interchaintest.ChainSpec) (*Chain, error) {
+	dockerClient, dockerNetwork := GetDockerContext(ctx)
+
+	cf := interchaintest.NewBuiltinChainFactory(
+		GetLogger(ctx),
+		[]*interchaintest.ChainSpec{spec},
+	)
+
+	chains, err := cf.Chains(p.GetNode().TestName)
+	if err != nil {
+		return nil, err
+	}
+	consumer := chains[0].(*cosmos.CosmosChain)
+
+	// We can't use AddProviderConsumerLink here because the provider chain is already built; we'll have to do everything by hand.
+	p.Consumers = append(p.Consumers, consumer)
+	consumer.Provider = p.CosmosChain
+	relayerWallet, err := consumer.BuildRelayerWallet(ctx, "relayer-"+consumer.Config().ChainID)
+	if err != nil {
+		return nil, err
+	}
+	wallets := make([]ibc.Wallet, len(p.Validators)+1)
+	wallets[0] = relayerWallet
+	// This is a hack, but we need to create wallets for the validators that have the right moniker.
+	for i := 1; i <= len(p.Validators); i++ {
+		wallets[i], err = consumer.BuildRelayerWallet(ctx, ValidatorMoniker)
+		if err != nil {
+			return nil, err
+		}
+	}
+	walletAmounts := make([]ibc.WalletAmount, len(wallets))
+	for i, wallet := range wallets {
+		walletAmounts[i] = ibc.WalletAmount{
+			Address: wallet.FormattedAddress(),
+			Denom:   consumer.Config().Denom,
+			Amount:  sdkmath.NewInt(TotalValidatorFunds),
+		}
+	}
+
+	ic := interchaintest.NewInterchain().
+		AddChain(consumer, walletAmounts...).
+		AddRelayer(relayer, "relayer")
+
+	if err := ic.Build(ctx, GetRelayerExecReporter(ctx), interchaintest.InterchainBuildOptions{
+		Client:    dockerClient,
+		NetworkID: dockerNetwork,
+		TestName:  p.GetNode().TestName,
+	}); err != nil {
+		return nil, err
+	}
+
+	for i, val := range consumer.Validators {
+		if err := val.RecoverKey(ctx, ValidatorMoniker, wallets[i+1].Mnemonic()); err != nil {
+			return nil, err
+		}
+	}
+	consumerChain, err := chainFromCosmosChain(consumer, relayerWallet, p.TestWallets)
+	if err != nil {
+		return nil, err
+	}
+
+	return consumerChain, nil
+}
+
+// GetUnusedTestingAddresss retrieves an unused wallet address and its key name safely
+func (p *Chain) GetUnusedTestingAddresss() (formattedAddress string, keyName string, err error) {
+	p.walletMtx.Lock()
+	defer p.walletMtx.Unlock()
+
+	for i, wallet := range p.TestWallets {
+		if !p.walletsInUse[i] {
+			p.walletsInUse[i] = true
+			return wallet.FormattedAddress(), wallet.KeyName(), nil
+		}
+	}
+
+	return "", "", fmt.Errorf("no unused wallets available")
 }
 
 // UpdateAndVerifyStakeChange updates the staking amount on the provider chain and verifies that the change is reflected on the consumer side
@@ -550,6 +632,36 @@ func (c *Chain) GetCcvConsumerParams(ctx context.Context) (ConsumerParamsRespons
 	}
 
 	return queryResponse, nil
+}
+
+func (c *Chain) GetProviderInfo(ctx context.Context) (ProviderInfoResponse, error) {
+	queryRes, _, err := c.GetNode().ExecQuery(
+		ctx,
+		"ccvconsumer", "provider-info",
+	)
+	if err != nil {
+		return ProviderInfoResponse{}, err
+	}
+
+	var queryResponse ProviderInfoResponse
+	err = json.Unmarshal([]byte(queryRes), &queryResponse)
+	if err != nil {
+		return ProviderInfoResponse{}, err
+	}
+
+	return queryResponse, nil
+}
+
+func (c *Chain) QueryJSON(ctx context.Context, jsonPath string, query ...string) (gjson.Result, error) {
+	stdout, _, err := c.GetNode().ExecQuery(ctx, query...)
+	if err != nil {
+		return gjson.Result{}, err
+	}
+	retval := gjson.GetBytes(stdout, jsonPath)
+	if !retval.Exists() {
+		return gjson.Result{}, fmt.Errorf("json path %s not found in query result %s", jsonPath, stdout)
+	}
+	return retval, nil
 }
 
 func getEvtAttribute(events []abci.Event, evtType string, key string) (string, bool) {
