@@ -92,6 +92,8 @@ make sim-full-no-inactive-vals
 make test-interchain
 # run interchain tests with specific image(e.g. test-image:local)
 make test-interchain PROVIDER_IMAGE_NAME=test-image PROVIDER_IMAGE_TAG=local SOUVEREIGN_IMAGE_NAME=test-image SOUVEREIGN_IMAGE_TAG=local
+# to run single interchain test, first navigate to /tests/interchain directory and run the command for desired test e.g.
+# go test -run ^TestMultiValidatorProviderSuite/TestOptInChainCanOnlyStartIfActiveValidatorOptedIn$ ./...
 ```
 
 Alternatively you can run tests using `go test`:
