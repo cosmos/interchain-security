@@ -209,7 +209,7 @@ jobs:
         run: |
           make verify-models
 
- test-interchain:
+  test-interchain:
     runs-on: Gaia-Runner-medium
     steps:
       - uses: actions/checkout@v4
