@@ -64,7 +64,7 @@ test-interchain:
 	SOUVEREIGN_IMAGE_TAG=$(SOUVEREIGN_IMAGE_TAG) \
 	CONSUMER_IMAGE_NAME=$(CONSUMER_IMAGE_NAME) \
 	CONSUMER_IMAGE_TAG=$(CONSUMER_IMAGE_TAG) \
-	go test ./... -timeout 30m
+	go test ./... -timeout 30m -v | grep --text -E '^=== RUN|PASS|FAIL|---'
 
 # run mbt tests
 test-mbt:
