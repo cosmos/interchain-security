@@ -97,6 +97,9 @@ func (s *ProviderConsumersSuite) TestSovereignToConsumerChangeover() {
 	genesis, err = sjson.SetRawBytes(genesis, "app_state.ccvconsumer", ccvState)
 	s.Require().NoError(err)
 
+	genesis, err = sjson.SetBytes(genesis, "app_state.ccvconsumer.preCCV", true)
+	s.Require().NoError(err)
+
 	eg := errgroup.Group{}
 	for _, val := range s.Sovereign.Validators {
 		val := val

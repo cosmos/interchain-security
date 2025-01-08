@@ -91,7 +91,7 @@ make sim-full-no-inactive-vals
 #run interchain tests (running with the latest image ghcr.io/cosmos/interchain-security:latest)
 make test-interchain
 # run interchain tests with specific image(e.g. test-image:local)
-make test-interchain PROVIDER_IMAGE_NAME=test-image PROVIDER_IMAGE_TAG=local SOUVEREIGN_IMAGE_NAME=test-image SOUVEREIGN_IMAGE_TAG=local
+make test-interchain PROVIDER_IMAGE_NAME=test-image PROVIDER_IMAGE_TAG=local SOVEREIGN_IMAGE_NAME=test-image SOVEREIGN_IMAGE_TAG=local
 # to run single interchain test, first navigate to /tests/interchain directory and run the command for desired test e.g.
 # go test -run ^TestMultiValidatorProviderSuite/TestOptInChainCanOnlyStartIfActiveValidatorOptedIn$ ./...
 ```

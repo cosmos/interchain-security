@@ -76,11 +76,11 @@ func ProviderImageName() string {
 }
 
 func SouvereignImageVersion() string {
-	return getImageVersion("SOUVEREIGN_IMAGE_TAG")
+	return getImageVersion("SOVEREIGN_IMAGE_TAG")
 }
 
 func SouvereignImageName() string {
-	return getImageName("SOUVEREIGN_IMAGE_NAME")
+	return getImageName("SOVEREIGN_IMAGE_NAME")
 }
 
 func ConsumerImageVersion() string {
