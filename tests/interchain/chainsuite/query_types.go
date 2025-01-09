@@ -209,3 +209,15 @@ type ConsumerParams struct {
 	RetryDelayPeriod                  string   `json:"retry_delay_period"`
 	ConsumerID                        string   `json:"consumer_id"`
 }
+
+type ProviderInfoResponse struct {
+	Consumer ChainDetails `json:"consumer"`
+	Provider ChainDetails `json:"provider"`
+}
+
+type ChainDetails struct {
+	ChainID      string `json:"chainID"`
+	ClientID     string `json:"clientID"`
+	ConnectionID string `json:"connectionID"`
+	ChannelID    string `json:"channelID"`
+}
