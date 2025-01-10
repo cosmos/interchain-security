@@ -354,7 +354,7 @@ func (suite *CCVTestSuite) setupTransferChannel(
 	suite.Require().NoError(err)
 }
 
-// SetupAllTransferChannel setup all consumer chains transfer channel
+// SetupAllTransferChannels setup all consumer chains transfer channel
 func (suite *CCVTestSuite) SetupAllTransferChannels() {
 	// setup the first consumer transfer channel
 	suite.SetupTransferChannel()
