@@ -515,7 +515,7 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 	return tr
 }
 
-// PermissionlessTestConfig contains a provider chain and 2 cosumer chains with the same chain identifier
+// PermissionlessTestConfig contains a provider chain and 2 consumer chains with the same chain identifier
 func PermissionlessTestConfig() TestConfig {
 	tr := TestConfig{
 		Name: string(PermissionlessTestCfg),

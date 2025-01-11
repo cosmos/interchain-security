@@ -354,7 +354,7 @@ The consumer module contains the following parameters.
 
 `DistributionTransmissionChannel` is the provider chain IBC channel used for receiving consumer chain reward distribution token transfers. This is automatically set during the consumer-provider handshake procedure.
 
-Providing an IBC transfer channel enables a consumer chain to re-use one of the existing channels to the provider for consumer chain rewards distribution. 
+Providing an IBC transfer channel enables a consumer chain to reuse one of the existing channels to the provider for consumer chain rewards distribution. 
 This will preserve the `ibc denom` that may already be in use. 
 This is especially important for standalone chains transitioning to become consumer chains. 
 For more details, see the [changeover procedure](../../consumer-development/changeover-procedure.md).
