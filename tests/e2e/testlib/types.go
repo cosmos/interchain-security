@@ -76,20 +76,6 @@ type StartConsumerChainAction struct {
 	GenesisChanges string
 }
 
-type ChangeoverChainAction struct {
-	SovereignChain ChainID
-	ProviderChain  ChainID
-	Validators     []StartChainValidator
-	GenesisChanges string
-}
-
-type StartSovereignChainAction struct {
-	Chain      ChainID
-	Validators []StartChainValidator
-	// Genesis changes specific to this action, appended to genesis changes defined in chain config
-	GenesisChanges string
-}
-
 type DelegateTokensAction struct {
 	Chain  ChainID
 	From   ValidatorID

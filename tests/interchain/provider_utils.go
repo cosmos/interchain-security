@@ -2,9 +2,12 @@ package interchain
 
 import (
 	"cosmos/interchain-security/tests/interchain/chainsuite"
+	"fmt"
+	"strings"
 	"time"
 
 	"cosmossdk.io/math"
+	sdkmath "cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 )
@@ -36,9 +39,9 @@ func consumerInitParamsTemplate(spawnTime *time.Time) *providertypes.ConsumerIni
 		InitialHeight:                     clienttypes.NewHeight(1, 1),
 		GenesisHash:                       []byte("gen_hash"),
 		BinaryHash:                        []byte("bin_hash"),
-		UnbondingPeriod:                   10 * time.Second,
-		CcvTimeoutPeriod:                  time.Duration(100000000000),
-		TransferTimeoutPeriod:             time.Duration(100000000000),
+		UnbondingPeriod:                   1728000000000000,
+		CcvTimeoutPeriod:                  2419200000000000,
+		TransferTimeoutPeriod:             3600000000000,
 		ConsumerRedistributionFraction:    "0.75",
 		BlocksPerDistributionTransmission: 10,
 		HistoricalEntries:                 10000,
@@ -104,4 +107,13 @@ func convertJsonToInfractionParameters(jsonParams chainsuite.InfractionParams) *
 			JailDuration:  downtimeJailDuration,
 		},
 	}
+}
+
+func StrToSDKInt(s string) (sdkmath.Int, error) {
+	s, _, _ = strings.Cut(s, ".")
+	i, ok := sdkmath.NewIntFromString(s)
+	if !ok {
+		return sdkmath.Int{}, fmt.Errorf("s: %s", s)
+	}
+	return i, nil
 }

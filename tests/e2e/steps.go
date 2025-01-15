@@ -107,21 +107,6 @@ var multipleConsumers = concatSteps(
 	stepsMultiConsumerDoubleSign("consu", "densu"), // double sign on one of the chains
 )
 
-var changeoverSteps = concatSteps(
-	// start sovereign chain and test delegation operation
-
-	stepRunSovereignChain(),
-	stepStartProviderChain(),
-	stepsSovereignTransferChan(),
-
-	// the chain will halt once upgrade height is reached
-	// after upgrade height is reached, the chain will become a consumer
-	stepsUpgradeChain(),
-	stepsChangeoverToConsumer("sover"),
-
-	stepsPostChangeoverDelegate("sover"),
-)
-
 var consumerMisbehaviourSteps = concatSteps(
 	// start provider and consumer chain
 	stepsStartChainsForConsumerMisbehaviour("consu"),

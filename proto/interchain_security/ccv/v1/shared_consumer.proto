@@ -87,16 +87,27 @@ message ConsumerParams {
 message ConsumerGenesisState {
   ConsumerParams params = 1 [ (gogoproto.nullable) = false ];
   ProviderInfo provider = 2 [ (gogoproto.nullable) = false ];
-  // true for new chain, false for chain restart.
-  bool new_chain = 3; // TODO:Check if this is really needed
+  // True for new chain, false for chain restart.
+  // This is needed and always set to true; otherwise, new_chain in the consumer 
+  // genesis state will default to false
+  bool new_chain = 3;
+  // Flag indicating whether the consumer CCV module starts in pre-CCV state
+  bool preCCV = 4;
+  // The ID of the connection end on the consumer chain on top of which the 
+  // CCV channel will be established. If connection_id == "", a new client of 
+  // the provider chain and a new connection on top of this client are created.
+  // The new client is initialized using client_state and consensus_state.
+  string connection_id = 5;
 }
 
 // ProviderInfo defines all information a consumer needs from a provider
 // Shared data type between provider and consumer
 message ProviderInfo {
-  // ProviderClientState filled in on new chain, nil on restart.
+  // The client state for the provider client filled in on new chain, nil on restart.
+  // If connection_id != "", then client_state is ignored.
   ibc.lightclients.tendermint.v1.ClientState client_state = 1;
-  // ProviderConsensusState filled in on new chain, nil on restart.
+  // The consensus state for the provider client filled in on new chain, nil on restart.
+  // If connection_id != "", then consensus_state is ignored.
   ibc.lightclients.tendermint.v1.ConsensusState consensus_state = 2;
   // InitialValset filled in on new chain and on restart.
   repeated .tendermint.abci.ValidatorUpdate initial_val_set = 3

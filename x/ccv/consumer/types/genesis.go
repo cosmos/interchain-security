@@ -64,7 +64,13 @@ func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.Co
 // expect the following optional and mandatory genesis states:
 //
 // 1. New chain starts:
-//   - Params, InitialValset, provider client state, provider consensus state // mandatory
+//   - Params, InitialValset // mandatory
+//
+// 1a. ConnectionId is empty
+//   - provider client state, provider consensus state // mandatory
+//
+// 1b. ConnectionId is not empty
+//   - provider client state, provider consensus state // nil
 //
 // 2. Chain restarts with CCV handshake still in progress:
 //   - Params, InitialValset, ProviderID, HeightToValidatorSetUpdateID // mandatory
@@ -73,8 +79,6 @@ func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.Co
 // 3. Chain restarts with CCV handshake completed:
 //   - Params, InitialValset, ProviderID, channelID, HeightToValidatorSetUpdateID // mandatory
 //   - MaturingVSCPackets, OutstandingDowntime, PendingConsumerPacket, LastTransmissionBlockHeight // optional
-//
-
 func (gs GenesisState) Validate() error {
 	if !gs.Params.Enabled {
 		return nil
@@ -87,23 +91,44 @@ func (gs GenesisState) Validate() error {
 	}
 
 	if gs.NewChain {
-		if gs.Provider.ClientState == nil {
-			return errorsmod.Wrap(ccv.ErrInvalidGenesis, "provider client state cannot be nil for new chain")
+		if gs.ConnectionId == "" {
+			// connection ID is not provided
+			if gs.Provider.ClientState == nil {
+				return errorsmod.Wrap(ccv.ErrInvalidGenesis, "provider client state cannot be nil for new chain")
+			}
+			if err := gs.Provider.ClientState.Validate(); err != nil {
+				return errorsmod.Wrapf(ccv.ErrInvalidGenesis, "provider client state invalid for new chain %s", err.Error())
+			}
+			if gs.Provider.ConsensusState == nil {
+				return errorsmod.Wrap(ccv.ErrInvalidGenesis, "provider consensus state cannot be nil for new chain")
+			}
+			if err := gs.Provider.ConsensusState.ValidateBasic(); err != nil {
+				return errorsmod.Wrapf(ccv.ErrInvalidGenesis, "provider consensus state invalid for new chain %s", err.Error())
+			}
+		} else {
+			// connection ID is provided
+			if gs.Provider.ClientState != nil {
+				return errorsmod.Wrap(ccv.ErrInvalidGenesis, "provider client state must be nil when connection id is provided")
+			}
+			if gs.Provider.ConsensusState != nil {
+				return errorsmod.Wrap(ccv.ErrInvalidGenesis, "provider consensus state must be nil when connection id is provided")
+			}
+			if err := ccv.ValidateConnectionIdentifier(gs.ConnectionId); err != nil {
+				return errorsmod.Wrapf(ccv.ErrInvalidGenesis, "invalid connection id: %s", err.Error())
+			}
 		}
-		if err := gs.Provider.ClientState.Validate(); err != nil {
-			return errorsmod.Wrapf(ccv.ErrInvalidGenesis, "provider client state invalid for new chain %s", err.Error())
-		}
-		if gs.Provider.ConsensusState == nil {
-			return errorsmod.Wrap(ccv.ErrInvalidGenesis, "provider consensus state cannot be nil for new chain")
-		}
-		if err := gs.Provider.ConsensusState.ValidateBasic(); err != nil {
-			return errorsmod.Wrapf(ccv.ErrInvalidGenesis, "provider consensus state invalid for new chain %s", err.Error())
-		}
+
 		if gs.ProviderClientId != "" {
 			return errorsmod.Wrap(ccv.ErrInvalidGenesis, "provider client id cannot be set for new chain. It must be established on handshake")
 		}
 		if gs.ProviderChannelId != "" {
 			return errorsmod.Wrap(ccv.ErrInvalidGenesis, "provider channel id cannot be set for new chain. It must be established on handshake")
+		}
+		if len(gs.HeightToValsetUpdateId) != 0 {
+			return errorsmod.Wrap(ccv.ErrInvalidGenesis, "HeightToValsetUpdateId must be nil for new chain")
+		}
+		if len(gs.OutstandingDowntimeSlashing) != 0 {
+			return errorsmod.Wrap(ccv.ErrInvalidGenesis, "OutstandingDowntimeSlashing must be nil for new chain")
 		}
 		if len(gs.PendingConsumerPackets.List) != 0 {
 			return errorsmod.Wrap(ccv.ErrInvalidGenesis, "pending consumer packets must be empty for new chain")
@@ -121,11 +146,11 @@ func (gs GenesisState) Validate() error {
 		if handshakeInProgress {
 			if len(gs.OutstandingDowntimeSlashing) != 0 {
 				return errorsmod.Wrap(
-					ccv.ErrInvalidGenesis, "outstanding downtime must be empty when handshake isn't completed")
+					ccv.ErrInvalidGenesis, "outstanding downtime must be empty when handshake in progress")
 			}
 			if gs.LastTransmissionBlockHeight.Height != 0 {
 				return errorsmod.Wrap(
-					ccv.ErrInvalidGenesis, "last transmission block height must be zero when handshake isn't completed")
+					ccv.ErrInvalidGenesis, "last transmission block height must be zero when handshake in progress")
 			}
 			if len(gs.PendingConsumerPackets.List) != 0 {
 				for _, packet := range gs.PendingConsumerPackets.List {

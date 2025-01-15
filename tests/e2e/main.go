@@ -103,12 +103,6 @@ var stepChoices = map[string]StepChoice{
 		description: "happy path tests",
 		testConfig:  DefaultTestCfg,
 	},
-	"changeover": {
-		name:        "changeover",
-		steps:       changeoverSteps,
-		description: "changeover tests",
-		testConfig:  ChangeoverTestCfg,
-	},
 	"democracy-reward": {
 		name:        "democracy-reward",
 		steps:       democracyRegisteredDenomSteps,

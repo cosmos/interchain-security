@@ -11,32 +11,37 @@ import (
 )
 
 const (
-	ProviderBin               = "interchain-security-pd"
-	ProviderBech32Prefix      = "cosmos"
-	ProviderValOperPrefix     = "cosmosvaloper"
-	ProviderChainID           = "ics-provider"
-	Stake                     = "stake"
-	DowntimeJailDuration      = 10 * time.Second
-	SlashFractionDoubleSign   = "0.05"
-	ProviderSlashingWindow    = 10
-	ProviderUnbondingTime     = 10 * time.Second
-	ProviderReplenishPeriod   = "2s"
-	ProviderReplenishFraction = "1.00"
-	GovMinDepositAmount       = 1000
-	GovMinDepositString       = "1000" + Stake
-	GovDepositPeriod          = 10 * time.Second
-	GovVotingPeriod           = 15 * time.Second
-	GasPrices                 = "0.005"
-	UpgradeDelta              = 30
-	SlashingWindowConsumer    = 20
-	CommitTimeout             = 2 * time.Second
-	TotalValidatorFunds       = 11_000_000_000
-	ValidatorFunds            = 30_000_000
-	FullNodeCount             = 0
-	ChainSpawnWait            = 155 * time.Second
-	CosmosChainType           = "cosmos"
-	GovModuleAddress          = "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
-	TestWalletsNumber         = 20 // Ensure that test accounts are used in a way that maintains the mutual independence of tests
+	ProviderBin                = "interchain-security-pd"
+	SovereignBin               = "interchain-security-sd"
+	ConsumerBin                = "interchain-security-cdd"
+	ProviderChainID            = "ics-provider"
+	SovereignToConsumerChainID = "ics-sovereign-consumer"
+	ConsumerChainID            = "ics-consumer"
+	ProviderBech32Prefix       = "cosmos"
+	Bech32PrefixConsumer       = "consumer"
+	Stake                      = "stake"
+	DowntimeJailDuration       = 10 * time.Second
+	SlashFractionDoubleSign    = "0.05"
+	ProviderSlashingWindow     = 10
+	ProviderUnbondingTime      = 10 * time.Second
+	ProviderReplenishPeriod    = "2s"
+	ProviderReplenishFraction  = "1.00"
+	GovMinDepositAmount        = 1000
+	GovMinDepositString        = "1000" + Stake
+	GovDepositPeriod           = 10 * time.Second
+	GovVotingPeriod            = 15 * time.Second
+	GasPrices                  = "0.005"
+	UpgradeDelta               = 30
+	SlashingWindowConsumer     = 20
+	CommitTimeout              = 2 * time.Second
+	TotalValidatorFunds        = 11_000_000_000
+	ValidatorFunds             = 30_000_000
+	FullNodeCount              = 0
+	BlocksPerDistribution      = 5
+	CosmosChainType            = "cosmos"
+	ProviderGovModuleAddress   = "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
+	ConsumerGovModuleAddress   = "consumer10d07y265gmmuvt4z0w9aw880jnsr700jlh7295"
+	TestWalletsNumber          = 20
 )
 
 func DefaultConfigToml() testutil.Toml {
@@ -63,19 +68,43 @@ func DefaultGenesisAmounts(denom string) func(i int) (sdktypes.Coin, sdktypes.Co
 }
 
 func ProviderImageVersion() string {
-	providerImageVersion := os.Getenv("PROVIDER_IMAGE_TAG")
-	if providerImageVersion == "" {
-		providerImageVersion = "latest"
-	}
-
-	return providerImageVersion
+	return getImageVersion("PROVIDER_IMAGE_TAG")
 }
 
 func ProviderImageName() string {
-	providerImageName := os.Getenv("PROVIDER_IMAGE_NAME")
-	if providerImageName == "" {
-		providerImageName = "ghcr.io/cosmos/interchain-security"
+	return getImageName("PROVIDER_IMAGE_NAME")
+}
+
+func SouvereignImageVersion() string {
+	return getImageVersion("SOVEREIGN_IMAGE_TAG")
+}
+
+func SouvereignImageName() string {
+	return getImageName("SOVEREIGN_IMAGE_NAME")
+}
+
+func ConsumerImageVersion() string {
+	return getImageVersion("CONSUMER_IMAGE_TAG")
+}
+
+func ConsumerImageName() string {
+	return getImageName("CONSUMER_IMAGE_NAME")
+}
+
+func getImageName(imgName string) string {
+	imageName := os.Getenv(imgName)
+	if imageName == "" {
+		imageName = "ghcr.io/cosmos/interchain-security"
 	}
 
-	return providerImageName
+	return imageName
+}
+
+func getImageVersion(imgVersion string) string {
+	imageVersion := os.Getenv(imgVersion)
+	if imageVersion == "" {
+		imageVersion = "latest"
+	}
+
+	return imageVersion
 }

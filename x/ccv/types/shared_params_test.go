@@ -21,3 +21,51 @@ func TestValidateConsumerId(t *testing.T) {
 	require.NoError(t, types.ValidateConsumerId("0"))
 	require.NoError(t, types.ValidateConsumerId("18446744073709551615")) // 2^64 - 1
 }
+
+func TestValidateConnectionIdentifier(t *testing.T) {
+	testCases := []struct {
+		name    string
+		connId  string
+		expPass bool
+	}{
+		{
+			name:    "valid connection ID",
+			connId:  "connection-0",
+			expPass: true,
+		},
+		{
+			name:    "valid empty connection ID",
+			connId:  "",
+			expPass: true,
+		},
+		{
+			name:    "valid empty (multiple spaces) connection ID",
+			connId:  "  ",
+			expPass: true,
+		},
+		{
+			name:    "invalid connection ID with /",
+			connId:  "invalid-connection-id/",
+			expPass: false,
+		},
+		{
+			name:    "invalid connection ID with special characters",
+			connId:  "connection-@#",
+			expPass: false,
+		},
+		{
+			name:    "invalid connection ID with spaces",
+			connId:  "connection id",
+			expPass: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		err := types.ValidateConnectionIdentifier(tc.connId)
+		if tc.expPass {
+			require.NoError(t, err, "valid case: '%s' should not return error. got %w", tc.name, err)
+		} else {
+			require.Error(t, err, "invalid case: '%s' must return error but got none", tc.name)
+		}
+	}
+}

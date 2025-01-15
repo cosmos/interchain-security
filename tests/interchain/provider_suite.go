@@ -3,9 +3,9 @@ package interchain
 import (
 	"context"
 	"cosmos/interchain-security/tests/interchain/chainsuite"
-	"fmt"
-	"sync"
+	"strconv"
 
+	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -14,18 +14,15 @@ type ProviderSuite struct {
 	Provider       *chainsuite.Chain
 	ValidatorNodes int
 	ctx            context.Context
-	walletMtx      sync.Mutex
-	walletsInUse   map[int]bool
 }
 
 func (s *ProviderSuite) SetupSuite() {
-	s.walletsInUse = make(map[int]bool)
 	ctx, err := chainsuite.NewSuiteContext(&s.Suite)
 	s.Require().NoError(err)
 	s.ctx = ctx
 
 	// create and start provider chain
-	s.Provider, err = chainsuite.CreateProviderChain(s.GetContext(), s.T(), chainsuite.GetProviderSpec(s.ValidatorNodes))
+	s.Provider, err = chainsuite.CreateChain(s.GetContext(), s.T(), chainsuite.GetProviderSpec(s.ValidatorNodes, providerModifiedGenesis()))
 	s.Require().NoError(err)
 }
 
@@ -34,17 +31,19 @@ func (s *ProviderSuite) GetContext() context.Context {
 	return s.ctx
 }
 
-// GetUnusedTestingAddresss retrieves an unused wallet address and its key name safely
-func (s *ProviderSuite) GetUnusedTestingAddresss() (formattedAddress string, keyName string, err error) {
-	s.walletMtx.Lock()
-	defer s.walletMtx.Unlock()
-
-	for i, wallet := range s.Provider.TestWallets {
-		if !s.walletsInUse[i] {
-			s.walletsInUse[i] = true
-			return wallet.FormattedAddress(), wallet.KeyName(), nil
-		}
+func providerModifiedGenesis() []cosmos.GenesisKV {
+	return []cosmos.GenesisKV{
+		cosmos.NewGenesisKV("app_state.staking.params.unbonding_time", chainsuite.ProviderUnbondingTime.String()),
+		cosmos.NewGenesisKV("app_state.gov.params.voting_period", chainsuite.GovVotingPeriod.String()),
+		cosmos.NewGenesisKV("app_state.gov.params.max_deposit_period", chainsuite.GovDepositPeriod.String()),
+		cosmos.NewGenesisKV("app_state.gov.params.min_deposit.0.denom", chainsuite.Stake),
+		cosmos.NewGenesisKV("app_state.gov.params.min_deposit.0.amount", strconv.Itoa(chainsuite.GovMinDepositAmount)),
+		cosmos.NewGenesisKV("app_state.slashing.params.signed_blocks_window", strconv.Itoa(chainsuite.ProviderSlashingWindow)),
+		cosmos.NewGenesisKV("app_state.slashing.params.downtime_jail_duration", chainsuite.DowntimeJailDuration.String()),
+		cosmos.NewGenesisKV("app_state.slashing.params.slash_fraction_double_sign", chainsuite.SlashFractionDoubleSign),
+		cosmos.NewGenesisKV("app_state.provider.params.slash_meter_replenish_period", chainsuite.ProviderReplenishPeriod),
+		cosmos.NewGenesisKV("app_state.provider.params.slash_meter_replenish_fraction", chainsuite.ProviderReplenishFraction),
+		cosmos.NewGenesisKV("app_state.provider.params.blocks_per_epoch", "1"),
+		cosmos.NewGenesisKV("app_state.staking.params.max_validators", "1"),
 	}
-
-	return "", "", fmt.Errorf("no unused wallets available")
 }

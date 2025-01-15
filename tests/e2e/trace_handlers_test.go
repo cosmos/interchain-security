@@ -51,7 +51,6 @@ func TestWriterThenParser(t *testing.T) {
 		"multipleConsumers":     {multipleConsumers},
 		"shorthappy":            {shortHappyPathSteps},
 		"democracyRewardsSteps": {democracyRegisteredDenomSteps},
-		"changeover":            {changeoverSteps},
 	}
 
 	dir, err := os.MkdirTemp("", "example")
@@ -82,7 +81,6 @@ func TestWriteExamples(t *testing.T) {
 		"multipleConsumers":     {multipleConsumers},
 		"shorthappy":            {shortHappyPathSteps},
 		"democracyRewardsSteps": {democracyRegisteredDenomSteps},
-		"changeover":            {changeoverSteps},
 		"consumer-misbehaviour": {consumerMisbehaviourSteps},
 		"consumer-double-sign":  {consumerDoubleSignSteps},
 	}

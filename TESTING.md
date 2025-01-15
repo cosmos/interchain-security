@@ -44,6 +44,13 @@ Notably, as-of-now simulation tests do not include any multi-chain testing, so c
 To test compatibility between different provider and consumer versions the [E2E tests](tests/e2e/) were extended by compatibility tests. The test cases perform basic sanity tests against the selected provider and consumer versions. A selected combination of provider and consumer versions are tested on a nightly bases and can be run locally with the
 related make command listed below.
 
+## Interchain Tests
+The interchain tests evaluate the fundamental functionalities of both the provider and provider-consumer chains. This includes testing the transition of a sovereign chain to a consumer chain. These tests leverage the interchain framework, where each chain node operates within its own Docker container.To execute these tests, you can use the default ics image built from the latest code on the main branch. Alternatively, tests can be run with a specific image and version, whether published or locally built. The tests are triggered using the make test-interchain command. For more details, see the [Running Tests](#running-tests) section.
+- If you wish to build the docker image from the code on your desired branch, run this command:
+```bash
+    docker build -t test-image:local .
+```
+
 ## Running Tests
 Tests can be run using `make`:
 
@@ -80,6 +87,13 @@ make sim-full
 
 #run simulation tests where providerModule.max_provider_consensus_validators=stakingModule.max_validators=100
 make sim-full-no-inactive-vals
+
+#run interchain tests (running with the latest image ghcr.io/cosmos/interchain-security:latest)
+make test-interchain
+# run interchain tests with specific image(e.g. test-image:local)
+make test-interchain PROVIDER_IMAGE_NAME=test-image PROVIDER_IMAGE_TAG=local SOVEREIGN_IMAGE_NAME=test-image SOVEREIGN_IMAGE_TAG=local
+# to run single interchain test, first navigate to /tests/interchain directory and run the command for desired test e.g.
+# go test -run ^TestMultiValidatorProviderSuite/TestOptInChainCanOnlyStartIfActiveValidatorOptedIn$ ./...
 ```
 
 Alternatively you can run tests using `go test`:

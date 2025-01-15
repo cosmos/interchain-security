@@ -188,3 +188,36 @@ type ValidatorConsumerAddressResponse struct {
 type ValidatorProviderAddressResponse struct {
 	ProviderAddress string `json:"provider_address"`
 }
+
+type ConsumerParamsResponse struct {
+	Params Params `json:"params"`
+}
+
+type ConsumerParams struct {
+	Enabled                           bool     `json:"enabled"`
+	BlocksPerDistributionTransmission string   `json:"blocks_per_distribution_transmission"`
+	DistributionTransmissionChannel   string   `json:"distribution_transmission_channel"`
+	ProviderFeePoolAddrStr            string   `json:"provider_fee_pool_addr_str"`
+	CCVTimeoutPeriod                  string   `json:"ccv_timeout_period"`
+	TransferTimeoutPeriod             string   `json:"transfer_timeout_period"`
+	ConsumerRedistributionFraction    string   `json:"consumer_redistribution_fraction"`
+	HistoricalEntries                 string   `json:"historical_entries"`
+	UnbondingPeriod                   string   `json:"unbonding_period"`
+	SoftOptOutThreshold               string   `json:"soft_opt_out_threshold"`
+	RewardDenoms                      []string `json:"reward_denoms"`
+	ProviderRewardDenoms              []string `json:"provider_reward_denoms"`
+	RetryDelayPeriod                  string   `json:"retry_delay_period"`
+	ConsumerID                        string   `json:"consumer_id"`
+}
+
+type ProviderInfoResponse struct {
+	Consumer ChainDetails `json:"consumer"`
+	Provider ChainDetails `json:"provider"`
+}
+
+type ChainDetails struct {
+	ChainID      string `json:"chainID"`
+	ClientID     string `json:"clientID"`
+	ConnectionID string `json:"connectionID"`
+	ChannelID    string `json:"channelID"`
+}

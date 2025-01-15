@@ -99,21 +99,26 @@ func NewParams(
 	}
 }
 
+// DefaultTemplateClient is the default template client
+func DefaultTemplateClient() *ibctmtypes.ClientState {
+	return ibctmtypes.NewClientState(
+		"", // chainID
+		ibctmtypes.DefaultTrustLevel,
+		0, // trusting period
+		0, // unbonding period
+		DefaultMaxClockDrift,
+		clienttypes.Height{}, // latest(initial) height
+		commitmenttypes.GetSDKSpecs(),
+		[]string{"upgrade", "upgradedIBCState"},
+	)
+}
+
 // DefaultParams is the default params for the provider module
 func DefaultParams() Params {
 	// create default client state with chainID, trusting period, unbonding period, and initial height zeroed out.
 	// these fields will be populated during proposal handler.
 	return NewParams(
-		ibctmtypes.NewClientState(
-			"", // chainID
-			ibctmtypes.DefaultTrustLevel,
-			0, // trusting period
-			0, // unbonding period
-			DefaultMaxClockDrift,
-			clienttypes.Height{}, // latest(initial) height
-			commitmenttypes.GetSDKSpecs(),
-			[]string{"upgrade", "upgradedIBCState"},
-		),
+		DefaultTemplateClient(),
 		DefaultTrustingPeriodFraction,
 		ccvtypes.DefaultCCVTimeoutPeriod,
 		DefaultSlashMeterReplenishPeriod,
@@ -138,7 +143,7 @@ func (p Params) Validate() error {
 	if err := ValidateTemplateClient(*p.TemplateClient); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateStringFraction(p.TrustingPeriodFraction); err != nil {
+	if err := ccvtypes.ValidateStringFractionNonZero(p.TrustingPeriodFraction); err != nil {
 		return fmt.Errorf("trusting period fraction is invalid: %s", err)
 	}
 	if err := ccvtypes.ValidateDuration(p.CcvTimeoutPeriod); err != nil {
@@ -147,7 +152,7 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidateDuration(p.SlashMeterReplenishPeriod); err != nil {
 		return fmt.Errorf("slash meter replenish period is invalid: %s", err)
 	}
-	if err := ccvtypes.ValidateStringFraction(p.SlashMeterReplenishFraction); err != nil {
+	if err := ccvtypes.ValidateStringFractionNonZero(p.SlashMeterReplenishFraction); err != nil {
 		return fmt.Errorf("slash meter replenish fraction is invalid: %s", err)
 	}
 	if err := ValidateCoin(p.ConsumerRewardDenomRegistrationFee); err != nil {
