@@ -199,7 +199,7 @@ func TestConsecutiveReplenishments(t *testing.T) {
 	require.Equal(t, now.Add(6*time.Hour).Add(5*time.Second), providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
 }
 
-// TestSlashMeterAllowanceChanges tests the behavior of a full slash meter
+// TestTotalVotingPowerChanges tests the behavior of a full slash meter
 // when total voting power becomes higher and lower.
 func TestTotalVotingPowerChanges(t *testing.T) {
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
