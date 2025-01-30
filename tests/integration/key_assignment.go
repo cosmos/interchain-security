@@ -1,7 +1,7 @@
 package integration
 
 import (
-	"github.com/cosmos/ibc-go/v8/testing/mock"
+	"github.com/cosmos/ibc-go/v9/testing/mock"
 
 	"cosmossdk.io/math"
 

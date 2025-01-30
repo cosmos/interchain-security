@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	"github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/require"
