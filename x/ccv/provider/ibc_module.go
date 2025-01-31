@@ -174,6 +174,7 @@ func (am AppModule) OnChanCloseConfirm(
 // logic returns without error.
 func (am AppModule) OnRecvPacket(
 	ctx sdk.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
@@ -270,6 +271,7 @@ func UnmarshalConsumerPacketData(packetData []byte) (consumerPacket ccv.Consumer
 // OnAcknowledgementPacket implements the IBCModule interface
 func (am AppModule) OnAcknowledgementPacket(
 	ctx sdk.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 	_ sdk.AccAddress,
@@ -314,6 +316,7 @@ func (am AppModule) OnAcknowledgementPacket(
 // OnTimeoutPacket implements the IBCModule interface
 func (am AppModule) OnTimeoutPacket(
 	ctx sdk.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) error {

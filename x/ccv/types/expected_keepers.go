@@ -97,7 +97,7 @@ type ChannelKeeper interface {
 	) (sequence uint64, err error)
 	WriteAcknowledgement(ctx sdk.Context, chanCap *capabilitytypes.Capability, packet ibcexported.PacketI, acknowledgement ibcexported.Acknowledgement) error
 	ChanCloseInit(ctx sdk.Context, portID, channelID string, chanCap *capabilitytypes.Capability) error
-	GetChannelConnection(ctx sdk.Context, portID, channelID string) (string, ibcexported.ConnectionI, error)
+	GetChannelConnection(ctx sdk.Context, portID, channelID string) (string, conntypes.ConnectionEnd, error)
 }
 
 // PortKeeper defines the expected IBC port keeper
@@ -112,10 +112,9 @@ type ConnectionKeeper interface {
 
 // ClientKeeper defines the expected IBC client keeper
 type ClientKeeper interface {
-	CreateClient(ctx sdk.Context, clientState ibcexported.ClientState, consensusState ibcexported.ConsensusState) (string, error)
+	CreateClient(ctx sdk.Context, clientType string, clientState, consensusState []byte) (string, error)
 	GetClientState(ctx sdk.Context, clientID string) (ibcexported.ClientState, bool)
 	GetLatestClientConsensusState(ctx sdk.Context, clientID string) (ibcexported.ConsensusState, bool)
-	GetSelfConsensusState(ctx sdk.Context, height ibcexported.Height) (ibcexported.ConsensusState, error)
 	ClientStore(ctx sdk.Context, clientID string) storetypes.KVStore
 	SetClientState(ctx sdk.Context, clientID string, clientState ibcexported.ClientState)
 	GetClientConsensusState(ctx sdk.Context, clientID string, height ibcexported.Height) (ibcexported.ConsensusState, bool)

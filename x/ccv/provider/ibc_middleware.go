@@ -111,13 +111,14 @@ func (im IBCMiddleware) OnChanCloseConfirm(
 // it appends the coin to the consumer's chain allocation record
 func (im IBCMiddleware) OnRecvPacket(
 	ctx sdk.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) exported.Acknowledgement {
 	logger := im.keeper.Logger(ctx)
 
 	// executes the IBC transfer OnRecv logic
-	ack := im.app.OnRecvPacket(ctx, packet, relayer)
+	ack := im.app.OnRecvPacket(ctx, channelVersion, packet, relayer)
 
 	// Note that inside the below if condition statement,
 	// we know that the IBC transfer succeeded. That entails
@@ -272,23 +273,25 @@ func (im IBCMiddleware) OnRecvPacket(
 // If fees are not enabled, this callback will default to the ibc-core packet callback
 func (im IBCMiddleware) OnAcknowledgementPacket(
 	ctx sdk.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
 ) error {
 	// call underlying app's OnAcknowledgementPacket callback.
-	return im.app.OnAcknowledgementPacket(ctx, packet, acknowledgement, relayer)
+	return im.app.OnAcknowledgementPacket(ctx, channelVersion, packet, acknowledgement, relayer)
 }
 
 // OnTimeoutPacket implements the IBCMiddleware interface
 // If fees are not enabled, this callback will default to the ibc-core packet callback
 func (im IBCMiddleware) OnTimeoutPacket(
 	ctx sdk.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
 	// call underlying app's OnTimeoutPacket callback.
-	return im.app.OnTimeoutPacket(ctx, packet, relayer)
+	return im.app.OnTimeoutPacket(ctx, channelVersion, packet, relayer)
 }
 
 // SendPacket implements the ICS4 Wrapper interface
