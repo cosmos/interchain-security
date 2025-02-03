@@ -52,8 +52,6 @@ func GetMocksForMakeConsumerGenesis(ctx sdk.Context, mocks *MockedKeepers,
 ) []*gomock.Call {
 	return []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeToInject, nil).Times(1),
-		mocks.MockClientKeeper.EXPECT().GetSelfConsensusState(gomock.Any(),
-			clienttypes.GetSelfHeight(ctx)).Return(&ibctmtypes.ConsensusState{}, nil).Times(1),
 	}
 }
 

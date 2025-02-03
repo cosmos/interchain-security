@@ -434,11 +434,12 @@ func (k Keeper) MakeConsumerGenesis(
 		clientState.TrustingPeriod = trustPeriod
 		clientState.UnbondingPeriod = providerUnbondingPeriod
 
-		consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)
+		consState, err := k.getSelfConsensusState(ctx, height)
+
 		if err != nil {
 			return gen, errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
 		}
-		tmConsState = consState.(*ibctmtypes.ConsensusState)
+		tmConsState = consState
 	} else {
 		// connection ID provided
 		preCCV = true
@@ -502,6 +503,26 @@ func (k Keeper) MakeConsumerGenesis(
 	)
 
 	return gen, nil
+}
+
+// This is copied from the client keeper in ibc v8, since this function was removed in ibc v9
+func (k Keeper) getSelfConsensusState(ctx sdk.Context, height clienttypes.Height) (*ibctmtypes.ConsensusState, error) {
+	// check that height revision matches chainID revision
+	revision := clienttypes.ParseChainID(ctx.ChainID())
+	if revision != height.GetRevisionNumber() {
+		return nil, errorsmod.Wrapf(clienttypes.ErrInvalidHeight, "chainID revision number does not match height revision number: expected %d, got %d", revision, height.GetRevisionNumber())
+	}
+	histInfo, err := k.stakingKeeper.GetHistoricalInfo(ctx, int64(height.RevisionHeight))
+	if err != nil {
+		return nil, errorsmod.Wrapf(err, "height %d", height.RevisionHeight)
+	}
+
+	consensusState := &ibctmtypes.ConsensusState{
+		Timestamp:          histInfo.Header.Time,
+		Root:               commitmenttypes.NewMerkleRoot(histInfo.Header.GetAppHash()),
+		NextValidatorsHash: histInfo.Header.NextValidatorsHash,
+	}
+	return consensusState, nil
 }
 
 // StopAndPrepareForConsumerRemoval sets the phase of the chain to stopped and prepares to get the state of the

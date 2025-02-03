@@ -108,6 +108,21 @@ func (mr *MockStakingKeeperMockRecorder) GetBondedValidatorsByPower(ctx interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBondedValidatorsByPower", reflect.TypeOf((*MockStakingKeeper)(nil).GetBondedValidatorsByPower), ctx)
 }
 
+// GetHistoricalInfo mocks base method.
+func (m *MockStakingKeeper) GetHistoricalInfo(ctx context.Context, height int64) (types3.HistoricalInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetHistoricalInfo", ctx, height)
+	ret0, _ := ret[0].(types3.HistoricalInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetHistoricalInfo indicates an expected call of GetHistoricalInfo.
+func (mr *MockStakingKeeperMockRecorder) GetHistoricalInfo(ctx, height interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHistoricalInfo", reflect.TypeOf((*MockStakingKeeper)(nil).GetHistoricalInfo), ctx, height)
+}
+
 // GetLastTotalPower mocks base method.
 func (m *MockStakingKeeper) GetLastTotalPower(ctx context.Context) (math.Int, error) {
 	m.ctrl.T.Helper()

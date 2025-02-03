@@ -68,6 +68,7 @@ type StakingKeeper interface {
 	StakingTokenSupply(ctx context.Context) (math.Int, error)
 	BondedRatio(ctx context.Context) (math.LegacyDec, error)
 	TotalBondedTokens(ctx context.Context) (math.Int, error)
+	GetHistoricalInfo(ctx context.Context, height int64) (stakingtypes.HistoricalInfo, error)
 }
 
 // SlashingKeeper defines the contract expected to perform ccv slashing
