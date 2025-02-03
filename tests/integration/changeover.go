@@ -27,7 +27,7 @@ func (suite *CCVTestSuite) TestRecycleTransferChannel() {
 	// Create transfer channel manually
 	distrTransferMsg := channeltypes.NewMsgChannelOpenInit(
 		transfertypes.PortID,
-		transfertypes.Version,
+		transfertypes.V1, // TODO(wllmshao): assuming this is v1 for now, may be wrong
 		channeltypes.UNORDERED,
 		[]string{suite.path.EndpointA.ConnectionID},
 		transfertypes.PortID,

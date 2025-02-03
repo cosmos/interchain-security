@@ -258,8 +258,8 @@ func initConsumerChain(
 	bundle.TransferPath = ibctesting.NewPath(bundle.Chain, s.providerChain)
 	bundle.TransferPath.EndpointA.ChannelConfig.PortID = transfertypes.PortID
 	bundle.TransferPath.EndpointB.ChannelConfig.PortID = transfertypes.PortID
-	bundle.TransferPath.EndpointA.ChannelConfig.Version = transfertypes.Version
-	bundle.TransferPath.EndpointB.ChannelConfig.Version = transfertypes.Version
+	bundle.TransferPath.EndpointA.ChannelConfig.Version = transfertypes.V1 // TODO(wllmshao): assuming this is v1 for now, may be wrong
+	bundle.TransferPath.EndpointB.ChannelConfig.Version = transfertypes.V1 // TODO(wllmshao): assuming this is v1 for now, may be wrong
 
 	// commit state on this consumer chain
 	s.coordinator.CommitBlock(bundle.Chain)

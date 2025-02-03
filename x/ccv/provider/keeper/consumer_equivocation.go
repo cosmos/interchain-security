@@ -358,15 +358,11 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, consumerId string, misbehavio
 		)
 	}
 
-	clientState, found := k.clientKeeper.GetClientState(ctx, clientId)
-	if !found {
-		return errorsmod.Wrapf(ibcclienttypes.ErrClientNotFound, "cannot find client state for client with ID %s", clientId)
-	}
-
-	clientStore := k.clientKeeper.ClientStore(ctx, clientId)
+	// TODO(wllmshao): this forces the client to be tendermint, unsure if this is ok
+	lightClientModule := ibctmtypes.NewLightClientModule(k.cdc, k.clientKeeper.GetStoreProvider())
 
 	// CheckForMisbehaviour verifies that the headers have different blockID hashes
-	ok := clientState.CheckForMisbehaviour(ctx, k.cdc, clientStore, &misbehaviour)
+	ok := lightClientModule.CheckForMisbehaviour(ctx, misbehaviour.ClientId, &misbehaviour)
 	if !ok {
 		return errorsmod.Wrapf(ibcclienttypes.ErrInvalidMisbehaviour, "invalid misbehaviour for client-id: %s", misbehaviour.ClientId)
 	}
@@ -374,7 +370,7 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, consumerId string, misbehavio
 	// VerifyClientMessage calls verifyMisbehaviour which verifies that the headers in the misbehaviour
 	// are valid against their respective trusted consensus states and that at least a TrustLevel of the validator set signed their commit,
 	// see checkMisbehaviourHeader in ibc-go/blob/v7.3.0/modules/light-clients/07-tendermint/misbehaviour_handle.go#L126
-	if err := clientState.VerifyClientMessage(ctx, k.cdc, clientStore, &misbehaviour); err != nil {
+	if err := lightClientModule.VerifyClientMessage(ctx, clientId, &misbehaviour); err != nil {
 		return err
 	}
 

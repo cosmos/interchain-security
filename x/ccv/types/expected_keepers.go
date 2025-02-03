@@ -118,6 +118,7 @@ type ClientKeeper interface {
 	ClientStore(ctx sdk.Context, clientID string) storetypes.KVStore
 	SetClientState(ctx sdk.Context, clientID string, clientState ibcexported.ClientState)
 	GetClientConsensusState(ctx sdk.Context, clientID string, height ibcexported.Height) (ibcexported.ConsensusState, bool)
+	GetStoreProvider() clienttypes.StoreProvider
 }
 
 // DistributionKeeper defines the expected interface of the distribution keeper

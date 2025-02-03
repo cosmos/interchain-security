@@ -220,7 +220,7 @@ func TestOnChanOpenAck(t *testing.T) {
 				// Expected msg
 				distrTransferMsg := channeltypes.NewMsgChannelOpenInit(
 					transfertypes.PortID,
-					transfertypes.Version,
+					transfertypes.V1, // TODO(wllmshao): assuming this is v1 for now, may be wrong
 					channeltypes.UNORDERED,
 					[]string{"connectionID"},
 					transfertypes.PortID,

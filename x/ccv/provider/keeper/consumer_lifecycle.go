@@ -334,7 +334,17 @@ func (k Keeper) CreateConsumerClient(
 		valsetHash,
 	)
 
-	clientID, err := k.clientKeeper.CreateClient(ctx, clientState, consensusState)
+	clientStateBytes, err := clientState.Marshal()
+	if err != nil {
+		return err
+	}
+	consensusStateBytes, err := consensusState.Marshal()
+	if err != nil {
+		return err
+	}
+
+	// TODO(wllmshao): this forces the client to be tendermint, unsure if this is ok
+	clientID, err := k.clientKeeper.CreateClient(ctx, ibchost.Tendermint, clientStateBytes, consensusStateBytes)
 	if err != nil {
 		return err
 	}

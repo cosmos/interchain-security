@@ -328,8 +328,8 @@ func (im IBCMiddleware) GetAppVersion(ctx sdk.Context, portID, channelID string)
 func GetProviderDenom(denom string, packet channeltypes.Packet) (providerDenom string) {
 	// If the prefix denom corresponds to the packet's source port and channel,
 	// returns the base denom
-	if ibctransfertypes.ReceiverChainIsSource(packet.GetSourcePort(), packet.GetSourceChannel(), denom) {
-		voucherPrefix := ibctransfertypes.GetDenomPrefix(packet.GetSourcePort(), packet.GetSourceChannel())
+	if ccvtypes.ReceiverChainIsSource(packet.GetSourcePort(), packet.GetSourceChannel(), denom) {
+		voucherPrefix := ccvtypes.GetDenomPrefix(packet.GetSourcePort(), packet.GetSourceChannel())
 		unprefixedDenom := denom[len(voucherPrefix):]
 
 		// coin denomination used in sending from the escrow address
@@ -337,19 +337,19 @@ func GetProviderDenom(denom string, packet channeltypes.Packet) (providerDenom s
 
 		// The denomination used to send the coins is either the native denom or the hash of the path
 		// if the denomination is not native.
-		denomTrace := ibctransfertypes.ParseDenomTrace(unprefixedDenom)
+		denomTrace := ccvtypes.ParseDenomTrace(unprefixedDenom)
 		if denomTrace.Path != "" {
 			providerDenom = denomTrace.IBCDenom()
 		}
 		// update the prefix denom according to the packet info
 	} else {
-		prefixedDenom := ibctransfertypes.GetPrefixedDenom(
+		prefixedDenom := ccvtypes.GetPrefixedDenom(
 			packet.GetDestPort(),
 			packet.GetDestChannel(),
 			denom,
 		)
 
-		providerDenom = ibctransfertypes.ParseDenomTrace(prefixedDenom).IBCDenom()
+		providerDenom = ccvtypes.ParseDenomTrace(prefixedDenom).IBCDenom()
 	}
 
 	return providerDenom

@@ -218,10 +218,10 @@ func checkClientExpired(s *CCVTestSuite, clientTo ChainType, expectedExpired boo
 		hostChain = s.consumerChain
 	}
 	// check that the client to the consumer is not active
-	cs, ok := hostChain.App.GetIBCKeeper().ClientKeeper.GetClientState(hostChain.GetContext(), hostEndpoint.ClientID)
+	_, ok := hostChain.App.GetIBCKeeper().ClientKeeper.GetClientState(hostChain.GetContext(), hostEndpoint.ClientID)
 	s.Require().True(ok)
-	clientStore := hostChain.App.GetIBCKeeper().ClientKeeper.ClientStore(hostChain.GetContext(), hostEndpoint.ClientID)
-	status := cs.Status(hostChain.GetContext(), clientStore, hostChain.App.AppCodec())
+	lightClientModule := ibctm.NewLightClientModule(hostChain.App.AppCodec(), hostChain.App.GetIBCKeeper().ClientKeeper.GetStoreProvider())
+	status := lightClientModule.Status(hostChain.GetContext(), hostEndpoint.ClientID)
 	if expectedExpired {
 		s.Require().NotEqual(ibcexported.Active, status, "client is active")
 	} else {

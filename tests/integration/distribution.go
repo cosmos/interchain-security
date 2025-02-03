@@ -658,7 +658,7 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 			)
 
 			providerKeeper.SetConsumerRewardDenom(s.providerCtx(),
-				transfertypes.GetPrefixedDenom(
+				ccv.GetPrefixedDenom(
 					packet.DestinationPort,
 					packet.DestinationChannel,
 					sdk.DefaultBondDenom,
@@ -666,8 +666,8 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 			)
 
 			getIBCDenom = func(dstPort, dstChannel string) string {
-				return transfertypes.ParseDenomTrace(
-					transfertypes.GetPrefixedDenom(
+				return ccv.ParseDenomTrace(
+					ccv.GetPrefixedDenom(
 						packet.DestinationPort,
 						packet.DestinationChannel,
 						sdk.DefaultBondDenom,
@@ -677,7 +677,7 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 
 			tc.setup(s.providerCtx(), &providerKeeper, bankKeeper)
 
-			cbs, ok := s.providerChain.App.GetIBCKeeper().Router.GetRoute(transfertypes.ModuleName)
+			cbs, ok := s.providerChain.App.GetIBCKeeper().PortKeeper.Router.GetRoute(transfertypes.ModuleName)
 			s.Require().True(ok)
 
 			// save the IBC transfer rewards transferred
@@ -689,7 +689,8 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 			s.Require().NoError(err)
 
 			// execute middleware OnRecvPacket logic
-			ack := cbs.OnRecvPacket(s.providerCtx(), packet, sdk.AccAddress{})
+			// TODO(wllmshao): passing an empty string for channelVersion, unsure if this is ok
+			ack := cbs.OnRecvPacket(s.providerCtx(), "", packet, sdk.AccAddress{})
 
 			// compute expected rewards with provider denom
 			expRewards := sdk.Coin{
@@ -1199,12 +1200,12 @@ func (s *CCVTestSuite) TestMultiConsumerRewardsDistribution() {
 		bundle.Chain.NextBlock()
 
 		// construct the denom of the reward tokens for the provider
-		prefixedDenom := transfertypes.GetPrefixedDenom(
+		prefixedDenom := ccv.GetPrefixedDenom(
 			transfertypes.PortID,
 			bundle.TransferPath.EndpointB.ChannelID,
 			rewardsPerConsumer.Denom,
 		)
-		provIBCDenom := transfertypes.ParseDenomTrace(prefixedDenom).IBCDenom()
+		provIBCDenom := ccv.ParseDenomTrace(prefixedDenom).IBCDenom()
 
 		providerRewards := providerBankKeeper.GetBalance(s.providerCtx(), rewardPool, prefixedDenom)
 
