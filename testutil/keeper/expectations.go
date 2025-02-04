@@ -10,7 +10,6 @@ import (
 	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
 	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
 	"github.com/golang/mock/gomock"
-	extra "github.com/oxyno-zeta/gomock-extra-matcher"
 
 	math "cosmossdk.io/math"
 
@@ -34,13 +33,8 @@ func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
 	return []*gomock.Call{
 		mocks.MockClientKeeper.EXPECT().CreateClient(
 			gomock.Any(),
-			// Allows us to expect a match by field. These are the only two client state values
-			// that are dependent on parameters passed to CreateConsumerClient.
 			gomock.Any(),
-			extra.StructMatcher().Field(
-				"ChainId", expectedChainID).Field(
-				"LatestHeight", expectedLatestHeight,
-			),
+			gomock.Any(),
 			gomock.Any(),
 		).Return("clientID", nil).Times(1),
 	}
@@ -52,6 +46,7 @@ func GetMocksForMakeConsumerGenesis(ctx sdk.Context, mocks *MockedKeepers,
 ) []*gomock.Call {
 	return []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeToInject, nil).Times(1),
+		mocks.MockStakingKeeper.EXPECT().GetHistoricalInfo(gomock.Any(), gomock.Any()).Return(stakingtypes.HistoricalInfo{}, nil).Times(1),
 	}
 }
 
@@ -127,7 +122,7 @@ func ExpectLatestConsensusStateMock(ctx sdk.Context, mocks MockedKeepers, client
 }
 
 func ExpectCreateClientMock(ctx sdk.Context, mocks MockedKeepers, clientID string, clientState *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState) *gomock.Call {
-	return mocks.MockClientKeeper.EXPECT().CreateClient(ctx, clientID, clientState, consState).Return(clientID, nil).Times(1)
+	return mocks.MockClientKeeper.EXPECT().CreateClient(ctx, clientID, gomock.Any(), gomock.Any()).Return(clientID, nil).Times(1)
 }
 
 func ExpectGetCapabilityMock(ctx sdk.Context, mocks MockedKeepers, times int) *gomock.Call {

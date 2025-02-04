@@ -30,7 +30,7 @@ import (
 // and finally the restart of chain when the CCV channel is already established.
 func TestInitGenesis(t *testing.T) {
 	// mock the consumer genesis state values
-	provClientID := "tendermint-07"
+	provClientID := "07-tendermint" // TODO(wllmshao): not sure if this is ok
 	provChannelID := "ChannelID"
 
 	vscID := uint64(0)
