@@ -3,10 +3,10 @@ package integration
 import (
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
-	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
+	ibctm "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v9/testing"
 
 	"cosmossdk.io/math"
 
@@ -218,10 +218,10 @@ func checkClientExpired(s *CCVTestSuite, clientTo ChainType, expectedExpired boo
 		hostChain = s.consumerChain
 	}
 	// check that the client to the consumer is not active
-	cs, ok := hostChain.App.GetIBCKeeper().ClientKeeper.GetClientState(hostChain.GetContext(), hostEndpoint.ClientID)
+	_, ok := hostChain.App.GetIBCKeeper().ClientKeeper.GetClientState(hostChain.GetContext(), hostEndpoint.ClientID)
 	s.Require().True(ok)
-	clientStore := hostChain.App.GetIBCKeeper().ClientKeeper.ClientStore(hostChain.GetContext(), hostEndpoint.ClientID)
-	status := cs.Status(hostChain.GetContext(), clientStore, hostChain.App.AppCodec())
+	lightClientModule := ibctm.NewLightClientModule(hostChain.App.AppCodec(), hostChain.App.GetIBCKeeper().ClientKeeper.GetStoreProvider())
+	status := lightClientModule.Status(hostChain.GetContext(), hostEndpoint.ClientID)
 	if expectedExpired {
 		s.Require().NotEqual(ibcexported.Active, status, "client is active")
 	} else {

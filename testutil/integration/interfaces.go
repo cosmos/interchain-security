@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	ibctesting "github.com/cosmos/ibc-go/v9/testing"
 
 	"cosmossdk.io/core/comet"
 	"cosmossdk.io/math"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 

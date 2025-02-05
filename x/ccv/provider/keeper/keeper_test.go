@@ -5,7 +5,7 @@ import (
 	"sort"
 	"testing"
 
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	ibctesting "github.com/cosmos/ibc-go/v9/testing"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"

@@ -5,8 +5,9 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+	ibchost "github.com/cosmos/ibc-go/v9/modules/core/exported"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
@@ -61,7 +62,17 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		var clientID string
 		if state.ConnectionId == "" {
 			// create the provider client in InitGenesis for new consumer chain. CCV Handshake must be established with this client id.
-			cid, err := k.clientKeeper.CreateClient(ctx, state.Provider.ClientState, state.Provider.ConsensusState)
+			clientStateBytes, err := state.Provider.ClientState.Marshal()
+			if err != nil {
+				panic(err)
+			}
+			consensusStateBytes, err := state.Provider.ConsensusState.Marshal()
+			if err != nil {
+				panic(err)
+			}
+
+			// TODO(wllmshao): this forces the client to be tendermint, unsure if this is ok
+			cid, err := k.clientKeeper.CreateClient(ctx, ibchost.Tendermint, clientStateBytes, consensusStateBytes)
 			if err != nil {
 				// If the client creation fails, the chain MUST NOT start
 				panic(err)

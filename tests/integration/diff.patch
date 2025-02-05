@@ -1,0 +1,3297 @@
+diff --git a/app/consumer-democracy/ante_handler.go b/app/consumer-democracy/ante_handler.go
+index 4d7b7886..f72b09a3 100644
+--- a/app/consumer-democracy/ante_handler.go
++++ b/app/consumer-democracy/ante_handler.go
+@@ -1,8 +1,8 @@
+ package app
+ 
+ import (
+-	ibcante "github.com/cosmos/ibc-go/v9/modules/core/ante"
+-	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
++	ibcante "github.com/cosmos/ibc-go/v9/modules/core/ante"
++	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
+ 
+ 	errorsmod "cosmossdk.io/errors"
+ 
+diff --git a/app/consumer-democracy/app.go b/app/consumer-democracy/app.go
+index ce34dc71..91d5d45b 100644
+--- a/app/consumer-democracy/app.go
++++ b/app/consumer-democracy/app.go
+@@ -13,17 +13,17 @@ import (
+ 	"github.com/cosmos/ibc-go/modules/capability"
+ 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
+ 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+-	"github.com/cosmos/ibc-go/v9/modules/apps/transfer"
+-	ibctransferkeeper "github.com/cosmos/ibc-go/v9/modules/apps/transfer/keeper"
+-	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+-	ibc "github.com/cosmos/ibc-go/v9/modules/core"
+-	ibcconnectiontypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
+-	porttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
+-	ibchost "github.com/cosmos/ibc-go/v9/modules/core/exported"
+-	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
+-	ibctm "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+-	ibctestingtypes "github.com/cosmos/ibc-go/v9/testing/types"
++	"github.com/cosmos/ibc-go/v9/modules/apps/transfer"
++	ibctransferkeeper "github.com/cosmos/ibc-go/v9/modules/apps/transfer/keeper"
++	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
++	ibc "github.com/cosmos/ibc-go/v9/modules/core"
++	ibcconnectiontypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
++	porttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
++	ibchost "github.com/cosmos/ibc-go/v9/modules/core/exported"
++	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
++	ibctm "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
++	ibctestingtypes "github.com/cosmos/ibc-go/v9/testing/types"
+ 	"github.com/spf13/cast"
+ 
+ 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
+@@ -445,7 +445,6 @@ func New(
+ 		appCodec,
+ 		keys[ibchost.StoreKey],
+ 		app.GetSubspace(ibchost.ModuleName),
+-		app.ConsumerKeeper,
+ 		app.UpgradeKeeper,
+ 		scopedIBCKeeper,
+ 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+@@ -455,7 +454,6 @@ func New(
+ 		appCodec,
+ 		keys[ibchost.StoreKey],
+ 		app.GetSubspace(ibchost.ModuleName),
+-		&app.ConsumerKeeper,
+ 		app.UpgradeKeeper,
+ 		scopedIBCKeeper,
+ 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+@@ -559,7 +557,7 @@ func New(
+ 		params.NewAppModule(app.ParamsKeeper),
+ 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
+ 		ibc.NewAppModule(app.IBCKeeper),
+-		ibctm.NewAppModule(),
++		ibctm.NewAppModule(ibctm.NewLightClientModule(appCodec, app.IBCKeeper.ClientKeeper.GetStoreProvider())),
+ 		transferModule,
+ 		consumerModule,
+ 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
+diff --git a/app/consumer/ante/disabled_modules_ante_test.go b/app/consumer/ante/disabled_modules_ante_test.go
+index 5fbe82d9..e1e9887d 100644
+--- a/app/consumer/ante/disabled_modules_ante_test.go
++++ b/app/consumer/ante/disabled_modules_ante_test.go
+@@ -3,7 +3,7 @@ package ante_test
+ import (
+ 	"testing"
+ 
+-	ibcclienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	ibcclienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 	"github.com/stretchr/testify/require"
+ 
+ 	evidencetypes "cosmossdk.io/x/evidence/types"
+diff --git a/app/consumer/ante/msg_filter_ante_test.go b/app/consumer/ante/msg_filter_ante_test.go
+index 4c335372..28f006e4 100644
+--- a/app/consumer/ante/msg_filter_ante_test.go
++++ b/app/consumer/ante/msg_filter_ante_test.go
+@@ -3,7 +3,7 @@ package ante_test
+ import (
+ 	"testing"
+ 
+-	ibcclienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	ibcclienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 	"github.com/stretchr/testify/require"
+ 
+ 	sdk "github.com/cosmos/cosmos-sdk/types"
+diff --git a/app/consumer/ante_handler.go b/app/consumer/ante_handler.go
+index 4d7b7886..f72b09a3 100644
+--- a/app/consumer/ante_handler.go
++++ b/app/consumer/ante_handler.go
+@@ -1,8 +1,8 @@
+ package app
+ 
+ import (
+-	ibcante "github.com/cosmos/ibc-go/v9/modules/core/ante"
+-	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
++	ibcante "github.com/cosmos/ibc-go/v9/modules/core/ante"
++	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
+ 
+ 	errorsmod "cosmossdk.io/errors"
+ 
+diff --git a/app/consumer/app.go b/app/consumer/app.go
+index c3e78181..793b3b46 100644
+--- a/app/consumer/app.go
++++ b/app/consumer/app.go
+@@ -12,17 +12,17 @@ import (
+ 	"github.com/cosmos/ibc-go/modules/capability"
+ 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
+ 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+-	"github.com/cosmos/ibc-go/v9/modules/apps/transfer"
+-	ibctransferkeeper "github.com/cosmos/ibc-go/v9/modules/apps/transfer/keeper"
+-	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+-	ibc "github.com/cosmos/ibc-go/v9/modules/core"
+-	ibcconnectiontypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
+-	porttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
+-	ibchost "github.com/cosmos/ibc-go/v9/modules/core/exported"
+-	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
+-	ibctm "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+-	ibctestingtypes "github.com/cosmos/ibc-go/v9/testing/types"
++	"github.com/cosmos/ibc-go/v9/modules/apps/transfer"
++	ibctransferkeeper "github.com/cosmos/ibc-go/v9/modules/apps/transfer/keeper"
++	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
++	ibc "github.com/cosmos/ibc-go/v9/modules/core"
++	ibcconnectiontypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
++	porttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
++	ibchost "github.com/cosmos/ibc-go/v9/modules/core/exported"
++	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
++	ibctm "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
++	ibctestingtypes "github.com/cosmos/ibc-go/v9/testing/types"
+ 	"github.com/spf13/cast"
+ 
+ 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
+@@ -365,7 +365,6 @@ func New(
+ 		appCodec,
+ 		keys[ibchost.StoreKey],
+ 		app.GetSubspace(ibchost.ModuleName),
+-		app.ConsumerKeeper,
+ 		app.UpgradeKeeper,
+ 		scopedIBCKeeper,
+ 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+@@ -451,7 +450,7 @@ func New(
+ 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
+ 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
+ 		ibc.NewAppModule(app.IBCKeeper),
+-		ibctm.NewAppModule(),
++		ibctm.NewAppModule(ibctm.NewLightClientModule(appCodec, app.IBCKeeper.ClientKeeper.GetStoreProvider())),
+ 		params.NewAppModule(app.ParamsKeeper),
+ 		transferModule,
+ 		consumerModule,
+diff --git a/app/provider/ante_handler.go b/app/provider/ante_handler.go
+index 564f9628..676a8009 100644
+--- a/app/provider/ante_handler.go
++++ b/app/provider/ante_handler.go
+@@ -1,8 +1,8 @@
+ package app
+ 
+ import (
+-	ibcante "github.com/cosmos/ibc-go/v9/modules/core/ante"
+-	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
++	ibcante "github.com/cosmos/ibc-go/v9/modules/core/ante"
++	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
+ 
+ 	errorsmod "cosmossdk.io/errors"
+ 
+diff --git a/app/provider/app.go b/app/provider/app.go
+index 1e611fc0..0f914a5f 100644
+--- a/app/provider/app.go
++++ b/app/provider/app.go
+@@ -13,17 +13,17 @@ import (
+ 	"github.com/cosmos/ibc-go/modules/capability"
+ 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
+ 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+-	"github.com/cosmos/ibc-go/v9/modules/apps/transfer"
+-	ibctransferkeeper "github.com/cosmos/ibc-go/v9/modules/apps/transfer/keeper"
+-	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+-	ibc "github.com/cosmos/ibc-go/v9/modules/core"
+-	ibcconnectiontypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
+-	porttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
+-	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
+-	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
+-	ibctm "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+-	ibctestingtypes "github.com/cosmos/ibc-go/v9/testing/types"
++	"github.com/cosmos/ibc-go/v9/modules/apps/transfer"
++	ibctransferkeeper "github.com/cosmos/ibc-go/v9/modules/apps/transfer/keeper"
++	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
++	ibc "github.com/cosmos/ibc-go/v9/modules/core"
++	ibcconnectiontypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
++	porttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
++	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
++	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
++	ibctm "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
++	ibctestingtypes "github.com/cosmos/ibc-go/v9/testing/types"
+ 	"github.com/spf13/cast"
+ 
+ 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
+@@ -423,7 +423,6 @@ func New(
+ 		appCodec,
+ 		keys[ibcexported.StoreKey],
+ 		app.GetSubspace(ibcexported.ModuleName),
+-		app.StakingKeeper,
+ 		app.UpgradeKeeper,
+ 		scopedIBCKeeper,
+ 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+@@ -559,7 +558,7 @@ func New(
+ 		evidence.NewAppModule(app.EvidenceKeeper),
+ 
+ 		ibc.NewAppModule(app.IBCKeeper),
+-		ibctm.NewAppModule(),
++		ibctm.NewAppModule(ibctm.NewLightClientModule(appCodec, app.IBCKeeper.ClientKeeper.GetStoreProvider())),
+ 		params.NewAppModule(app.ParamsKeeper),
+ 		transfer.NewAppModule(app.TransferKeeper),
+ 		providerModule,
+diff --git a/app/sovereign/ante_handler.go b/app/sovereign/ante_handler.go
+index 564f9628..676a8009 100644
+--- a/app/sovereign/ante_handler.go
++++ b/app/sovereign/ante_handler.go
+@@ -1,8 +1,8 @@
+ package app
+ 
+ import (
+-	ibcante "github.com/cosmos/ibc-go/v9/modules/core/ante"
+-	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
++	ibcante "github.com/cosmos/ibc-go/v9/modules/core/ante"
++	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
+ 
+ 	errorsmod "cosmossdk.io/errors"
+ 
+diff --git a/app/sovereign/app.go b/app/sovereign/app.go
+index ef8d50f8..72046dac 100644
+--- a/app/sovereign/app.go
++++ b/app/sovereign/app.go
+@@ -12,17 +12,17 @@ import (
+ 	"github.com/cosmos/ibc-go/modules/capability"
+ 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
+ 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+-	"github.com/cosmos/ibc-go/v9/modules/apps/transfer"
+-	ibctransferkeeper "github.com/cosmos/ibc-go/v9/modules/apps/transfer/keeper"
+-	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+-	ibc "github.com/cosmos/ibc-go/v9/modules/core"
+-	ibcconnectiontypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
+-	porttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
+-	ibchost "github.com/cosmos/ibc-go/v9/modules/core/exported"
+-	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
+-	ibctm "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+-	ibctestingtypes "github.com/cosmos/ibc-go/v9/testing/types"
++	"github.com/cosmos/ibc-go/v9/modules/apps/transfer"
++	ibctransferkeeper "github.com/cosmos/ibc-go/v9/modules/apps/transfer/keeper"
++	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
++	ibc "github.com/cosmos/ibc-go/v9/modules/core"
++	ibcconnectiontypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
++	porttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
++	ibchost "github.com/cosmos/ibc-go/v9/modules/core/exported"
++	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
++	ibctm "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
++	ibctestingtypes "github.com/cosmos/ibc-go/v9/testing/types"
+ 	"github.com/spf13/cast"
+ 
+ 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
+@@ -37,6 +37,7 @@ import (
+ 	"cosmossdk.io/x/feegrant"
+ 	feegrantkeeper "cosmossdk.io/x/feegrant/keeper"
+ 	feegrantmodule "cosmossdk.io/x/feegrant/module"
++
+ 	// add mint
+ 	"cosmossdk.io/x/upgrade"
+ 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
+@@ -429,7 +430,6 @@ func New(
+ 		appCodec,
+ 		keys[ibchost.StoreKey],
+ 		app.GetSubspace(ibchost.ModuleName),
+-		&app.StakingKeeper,
+ 		app.UpgradeKeeper,
+ 		scopedIBCKeeper,
+ 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+diff --git a/go.mod b/go.mod
+index ac2a98be..ba6293f0 100644
+--- a/go.mod
++++ b/go.mod
+@@ -42,12 +42,12 @@ require (
+ 	cosmossdk.io/depinject v1.1.0 // indirect
+ 	filippo.io/edwards25519 v1.1.0 // indirect
+ 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
+-	github.com/99designs/keyring v1.2.1 // indirect
++	github.com/99designs/keyring v1.2.2 // indirect
+ 	github.com/aws/aws-sdk-go v1.44.224 // indirect
+ 	github.com/beorn7/perks v1.0.1 // indirect
+ 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
+-	github.com/bgentry/speakeasy v0.1.1-0.20220910012023-760eaf8b6816 // indirect
+-	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
++	github.com/bgentry/speakeasy v0.2.0 // indirect
++	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
+ 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+ 	github.com/chzyer/readline v1.5.1 // indirect
+ 	github.com/cockroachdb/apd/v2 v2.0.2 // indirect
+@@ -57,13 +57,13 @@ require (
+ 	github.com/cosmos/gogogateway v1.2.0 // indirect
+ 	github.com/cosmos/iavl v1.2.2 // indirect
+ 	github.com/cosmos/ledger-cosmos-go v0.13.3 // indirect
+-	github.com/danieljoos/wincred v1.1.2 // indirect
++	github.com/danieljoos/wincred v1.2.1 // indirect
+ 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
+ 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0 // indirect
+-	github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f // indirect
++	github.com/desertbit/timer v1.0.1 // indirect
+ 	github.com/dgraph-io/ristretto v0.1.1 // indirect
+ 	github.com/dustin/go-humanize v1.0.1 // indirect
+-	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
++	github.com/dvsekhvalnov/jose2go v1.7.0 // indirect
+ 	github.com/felixge/httpsnoop v1.0.4 // indirect
+ 	github.com/fsnotify/fsnotify v1.7.0 // indirect
+ 	github.com/go-kit/kit v0.13.0 // indirect
+@@ -92,7 +92,7 @@ require (
+ 	github.com/hashicorp/go-version v1.6.0 // indirect
+ 	github.com/hashicorp/golang-lru v1.0.2 // indirect
+ 	github.com/hashicorp/hcl v1.0.0 // indirect
+-	github.com/hdevalence/ed25519consensus v0.1.0 // indirect
++	github.com/hdevalence/ed25519consensus v0.2.0 // indirect
+ 	github.com/huandu/skiplist v1.2.0 // indirect
+ 	github.com/improbable-eng/grpc-web v0.15.0 // indirect
+ 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+@@ -100,7 +100,7 @@ require (
+ 	github.com/jmhodges/levigo v1.0.0 // indirect
+ 	github.com/klauspost/compress v1.17.9 // indirect
+ 	github.com/lib/pq v1.10.9 // indirect
+-	github.com/linxGnu/grocksdb v1.8.14 // indirect
++	github.com/linxGnu/grocksdb v1.9.2 // indirect
+ 	github.com/magiconair/properties v1.8.7 // indirect
+ 	github.com/manifoldco/promptui v0.9.0 // indirect
+ 	github.com/mattn/go-isatty v0.0.20 // indirect
+@@ -131,7 +131,7 @@ require (
+ 	github.com/ulikunitz/xz v0.5.11 // indirect
+ 	github.com/zondax/hid v0.9.2 // indirect
+ 	github.com/zondax/ledger-go v0.14.3 // indirect
+-	go.etcd.io/bbolt v1.4.0-alpha.0.0.20240404170359-43604f3112c5 // indirect
++	go.etcd.io/bbolt v1.4.0-alpha.1 // indirect
+ 	go.opencensus.io v0.24.0 // indirect
+ 	golang.org/x/oauth2 v0.23.0 // indirect
+ 	golang.org/x/term v0.27.0 // indirect
+@@ -139,7 +139,7 @@ require (
+ 	google.golang.org/api v0.186.0 // indirect
+ 	gopkg.in/ini.v1 v1.67.0 // indirect
+ 	gopkg.in/yaml.v3 v3.0.1 // indirect
+-	nhooyr.io/websocket v1.8.6 // indirect
++	nhooyr.io/websocket v1.8.11 // indirect
+ 	pgregory.net/rapid v1.1.0
+ 	sigs.k8s.io/yaml v1.4.0 // indirect
+ )
+@@ -155,7 +155,7 @@ require (
+ 	cosmossdk.io/x/upgrade v0.1.4
+ 	github.com/cosmos/cosmos-db v1.1.1
+ 	github.com/cosmos/ibc-go/modules/capability v1.0.1
+-	github.com/cosmos/ibc-go/v9 v8.5.2
++	github.com/cosmos/ibc-go/v9 v9.0.2
+ 	github.com/informalsystems/itf-go v0.0.1
+ 	github.com/spf13/viper v1.19.0
+ 	golang.org/x/mod v0.22.0
+@@ -166,16 +166,16 @@ require (
+ 	cloud.google.com/go/auth v0.6.0 // indirect
+ 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
+ 	cosmossdk.io/collections v0.4.0 // indirect
+-	cosmossdk.io/x/circuit v0.1.1 // indirect
+-	github.com/DataDog/datadog-go v3.2.0+incompatible // indirect
++	github.com/DataDog/datadog-go v4.8.3+incompatible // indirect
+ 	github.com/DataDog/zstd v1.5.5 // indirect
++	github.com/Microsoft/go-winio v0.6.2 // indirect
+ 	github.com/bits-and-blooms/bitset v1.8.0 // indirect
+ 	github.com/bytedance/sonic v1.12.3 // indirect
+ 	github.com/bytedance/sonic/loader v0.2.0 // indirect
+ 	github.com/cloudwego/base64x v0.1.4 // indirect
+ 	github.com/cloudwego/iasm v0.2.0 // indirect
+ 	github.com/cockroachdb/errors v1.11.3 // indirect
+-	github.com/cockroachdb/fifo v0.0.0-20240606204812-0bbfbd93a7ce // indirect
++	github.com/cockroachdb/fifo v0.0.0-20240616162244-4768e80dfb9a // indirect
+ 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
+ 	github.com/cockroachdb/pebble v1.1.2 // indirect
+ 	github.com/cockroachdb/redact v1.1.5 // indirect
+@@ -184,15 +184,15 @@ require (
+ 	github.com/creachadair/tomledit v0.0.24 // indirect
+ 	github.com/dgraph-io/badger/v4 v4.2.0 // indirect
+ 	github.com/emicklei/dot v1.6.2 // indirect
+-	github.com/fatih/color v1.15.0 // indirect
+-	github.com/getsentry/sentry-go v0.27.0 // indirect
++	github.com/fatih/color v1.17.0 // indirect
++	github.com/getsentry/sentry-go v0.28.1 // indirect
+ 	github.com/go-logr/logr v1.4.2 // indirect
+ 	github.com/go-logr/stdr v1.2.2 // indirect
+-	github.com/google/flatbuffers v1.12.1 // indirect
++	github.com/google/flatbuffers v24.3.25+incompatible // indirect
+ 	github.com/google/s2a-go v0.1.7 // indirect
+-	github.com/hashicorp/go-hclog v1.5.0 // indirect
++	github.com/hashicorp/go-hclog v1.6.3 // indirect
+ 	github.com/hashicorp/go-metrics v0.5.3 // indirect
+-	github.com/hashicorp/go-plugin v1.5.2 // indirect
++	github.com/hashicorp/go-plugin v1.6.1 // indirect
+ 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
+ 	github.com/hashicorp/yamux v0.1.1 // indirect
+ 	github.com/iancoleman/strcase v0.3.0 // indirect
+@@ -205,7 +205,7 @@ require (
+ 	github.com/oklog/run v1.1.0 // indirect
+ 	github.com/rogpeppe/go-internal v1.12.0 // indirect
+ 	github.com/rs/zerolog v1.33.0 // indirect
+-	github.com/sagikazarmark/locafero v0.4.0 // indirect
++	github.com/sagikazarmark/locafero v0.6.0 // indirect
+ 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
+ 	github.com/sourcegraph/conc v0.3.0 // indirect
+ 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
+@@ -219,6 +219,7 @@ require (
+ 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
+ 	golang.org/x/sync v0.10.0 // indirect
+ 	golang.org/x/time v0.5.0 // indirect
++	golang.org/x/tools v0.22.0 // indirect
+ 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241015192408-796eee8c2d53 // indirect
+ 	gotest.tools/v3 v3.5.1 // indirect
+ )
+diff --git a/go.sum b/go.sum
+index 2b1bc465..84db41aa 100644
+--- a/go.sum
++++ b/go.sum
+@@ -206,8 +206,6 @@ cosmossdk.io/store v1.1.1 h1:NA3PioJtWDVU7cHHeyvdva5J/ggyLDkyH0hGHl2804Y=
+ cosmossdk.io/store v1.1.1/go.mod h1:8DwVTz83/2PSI366FERGbWSH7hL6sB7HbYp8bqksNwM=
+ cosmossdk.io/tools/confix v0.1.2 h1:2hoM1oFCNisd0ltSAAZw2i4ponARPmlhuNu3yy0VwI4=
+ cosmossdk.io/tools/confix v0.1.2/go.mod h1:7XfcbK9sC/KNgVGxgLM0BrFbVcR/+6Dg7MFfpx7duYo=
+-cosmossdk.io/x/circuit v0.1.1 h1:KPJCnLChWrxD4jLwUiuQaf5mFD/1m7Omyo7oooefBVQ=
+-cosmossdk.io/x/circuit v0.1.1/go.mod h1:B6f/urRuQH8gjt4eLIXfZJucrbreuYrKh5CSjaOxr+Q=
+ cosmossdk.io/x/evidence v0.1.1 h1:Ks+BLTa3uftFpElLTDp9L76t2b58htjVbSZ86aoK/E4=
+ cosmossdk.io/x/evidence v0.1.1/go.mod h1:OoDsWlbtuyqS70LY51aX8FBTvguQqvFrt78qL7UzeNc=
+ cosmossdk.io/x/feegrant v0.1.1 h1:EKFWOeo/pup0yF0svDisWWKAA9Zags6Zd0P3nRvVvw8=
+@@ -221,19 +219,20 @@ filippo.io/edwards25519 v1.1.0 h1:FNf4tywRC1HmFuKW5xopWpigGjJKiJSV0Cqo0cJWDaA=
+ filippo.io/edwards25519 v1.1.0/go.mod h1:BxyFTGdWcka3PhytdK4V28tE5sGfRvvvRV7EaN4VDT4=
+ github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 h1:/vQbFIOMbk2FiG/kXiLl8BRyzTWDw7gX/Hz7Dd5eDMs=
+ github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4/go.mod h1:hN7oaIRCjzsZ2dE+yG5k+rsdt3qcwykqK6HVGcKwsw4=
+-github.com/99designs/keyring v1.2.1 h1:tYLp1ULvO7i3fI5vE21ReQuj99QFSs7lGm0xWyJo87o=
+-github.com/99designs/keyring v1.2.1/go.mod h1:fc+wB5KTk9wQ9sDx0kFXB3A0MaeGHM9AwRStKOQ5vOA=
++github.com/99designs/keyring v1.2.2 h1:pZd3neh/EmUzWONb35LxQfvuY7kiSXAq3HQd97+XBn0=
++github.com/99designs/keyring v1.2.2/go.mod h1:wes/FrByc8j7lFOAGLGSNEg8f/PaI3cgTBqhFkHUrPk=
+ github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 h1:L/gRVlceqvL25UVaW/CKtUDjefjrs0SPonmDGUVOYP0=
+ github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161/go.mod h1:xomTg63KZ2rFqZQzSB4Vz2SUXa1BpHTVz9L5PTmPC4E=
+ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
+ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
+-github.com/DataDog/datadog-go v3.2.0+incompatible h1:qSG2N4FghB1He/r2mFrWKCaL7dXCilEuNEeAn20fdD4=
+ github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
++github.com/DataDog/datadog-go v4.8.3+incompatible h1:fNGaYSuObuQb5nzeTQqowRAd9bpDIRRV4/gUtIBjh8Q=
++github.com/DataDog/datadog-go v4.8.3+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
+ github.com/DataDog/zstd v1.5.5 h1:oWf5W7GtOLgp6bciQYDmhHHjdhYkALu6S/5Ni9ZgSvQ=
+ github.com/DataDog/zstd v1.5.5/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwSAmyw=
+ github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
+-github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
+-github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
++github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
++github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
+ github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 h1:TngWCqHvy9oXAN6lEVMRuU21PR1EtLVZJmdB18Gu3Rw=
+ github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5/go.mod h1:lmUJ/7eu/Q8D7ML55dXQrVaamCz2vxCfdQBasLZfHKk=
+ github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
+@@ -270,8 +269,8 @@ github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6r
+ github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d h1:xDfNPAt8lFiC1UJrqV3uuy861HCTo708pDMbjHHdCas=
+ github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d/go.mod h1:6QX/PXZ00z/TKoufEY6K/a0k6AhaJrQKdFe6OfVXsa4=
+ github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
+-github.com/bgentry/speakeasy v0.1.1-0.20220910012023-760eaf8b6816 h1:41iFGWnSlI2gVpmOtVTJZNodLdLQLn/KsJqFvXwnd/s=
+-github.com/bgentry/speakeasy v0.1.1-0.20220910012023-760eaf8b6816/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
++github.com/bgentry/speakeasy v0.2.0 h1:tgObeVOf8WAvtuAX6DhJ4xks4CFNwPDZiqzGqIHE51E=
++github.com/bgentry/speakeasy v0.2.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
+ github.com/bits-and-blooms/bitset v1.8.0 h1:FD+XqgOZDUxxZ8hzoBFuV9+cGWY9CslN6d5MS5JVb4c=
+ github.com/bits-and-blooms/bitset v1.8.0/go.mod h1:7hO7Gc7Pp1vODcmWvKMRA9BNmbv6a/7QIWpPxHddWR8=
+ github.com/btcsuite/btcd/btcec/v2 v2.3.4 h1:3EJjcN70HCu/mwqlUsGK8GcNVyLVxFDlWurTXGPFfiQ=
+@@ -289,8 +288,8 @@ github.com/casbin/casbin/v2 v2.1.2/go.mod h1:YcPU1XXisHhLzuxH9coDNf2FbKpjGlbCg3n
+ github.com/cenkalti/backoff v2.2.1+incompatible h1:tNowT99t7UNflLxfYYSlKYsBpXdEet03Pg2g16Swow4=
+ github.com/cenkalti/backoff v2.2.1+incompatible/go.mod h1:90ReRw6GdpyfrHakVjL/QHaoyV4aDUVVkXQJJJ3NXXM=
+ github.com/cenkalti/backoff/v4 v4.1.1/go.mod h1:scbssz8iZGpm3xbr14ovlUdkxfGXNInqkPWOWmG2CLw=
+-github.com/cenkalti/backoff/v4 v4.1.3 h1:cFAlzYUlVYDysBEH2T5hyJZMh3+5+WCBvSnK6Q8UtC4=
+-github.com/cenkalti/backoff/v4 v4.1.3/go.mod h1:scbssz8iZGpm3xbr14ovlUdkxfGXNInqkPWOWmG2CLw=
++github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
++github.com/cenkalti/backoff/v4 v4.3.0/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
+ github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
+ github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
+ github.com/cespare/xxhash/v2 v2.1.1/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
+@@ -330,8 +329,8 @@ github.com/cockroachdb/datadriven v1.0.3-0.20230413201302-be42291fc80f h1:otljaY
+ github.com/cockroachdb/datadriven v1.0.3-0.20230413201302-be42291fc80f/go.mod h1:a9RdTaap04u637JoCzcUoIcDmvwSUtcUFtT/C3kJlTU=
+ github.com/cockroachdb/errors v1.11.3 h1:5bA+k2Y6r+oz/6Z/RFlNeVCesGARKuC6YymtcDrbC/I=
+ github.com/cockroachdb/errors v1.11.3/go.mod h1:m4UIW4CDjx+R5cybPsNrRbreomiFqt8o1h1wUVazSd8=
+-github.com/cockroachdb/fifo v0.0.0-20240606204812-0bbfbd93a7ce h1:giXvy4KSc/6g/esnpM7Geqxka4WSqI1SZc7sMJFd3y4=
+-github.com/cockroachdb/fifo v0.0.0-20240606204812-0bbfbd93a7ce/go.mod h1:9/y3cnZ5GKakj/H4y9r9GTjCvAFta7KLgSHPJJYc52M=
++github.com/cockroachdb/fifo v0.0.0-20240616162244-4768e80dfb9a h1:f52TdbU4D5nozMAhO9TvTJ2ZMCXtN4VIAmfrrZ0JXQ4=
++github.com/cockroachdb/fifo v0.0.0-20240616162244-4768e80dfb9a/go.mod h1:9/y3cnZ5GKakj/H4y9r9GTjCvAFta7KLgSHPJJYc52M=
+ github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b h1:r6VH0faHjZeQy818SGhaone5OnYfxFR/+AzdY3sf5aE=
+ github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b/go.mod h1:Vz9DsVWQQhf3vs21MhPMZpMGSht7O/2vFW2xusFUVOs=
+ github.com/cockroachdb/pebble v1.1.2 h1:CUh2IPtR4swHlEj48Rhfzw6l/d0qA31fItcIszQVIsA=
+@@ -370,8 +369,8 @@ github.com/cosmos/iavl v1.2.2 h1:qHhKW3I70w+04g5KdsdVSHRbFLgt3yY3qTMd4Xa4rC8=
+ github.com/cosmos/iavl v1.2.2/go.mod h1:GiM43q0pB+uG53mLxLDzimxM9l/5N9UuSY3/D0huuVw=
+ github.com/cosmos/ibc-go/modules/capability v1.0.1 h1:ibwhrpJ3SftEEZRxCRkH0fQZ9svjthrX2+oXdZvzgGI=
+ github.com/cosmos/ibc-go/modules/capability v1.0.1/go.mod h1:rquyOV262nGJplkumH+/LeYs04P3eV8oB7ZM4Ygqk4E=
+-github.com/cosmos/ibc-go/v9 v8.5.2 h1:27s9oeD2AxLQF3e9BQsYt9doONyZ7FwZi/qkBv6Sdks=
+-github.com/cosmos/ibc-go/v9 v8.5.2/go.mod h1:P5hkAvq0Qbg0h18uLxDVA9q1kOJ0l36htMsskiNwXbo=
++github.com/cosmos/ibc-go/v9 v9.0.2 h1:4481uaqY8Asoqqfb2OZC8Cu9Ud8ZgarF9cS3sntBIsY=
++github.com/cosmos/ibc-go/v9 v9.0.2/go.mod h1:FeznzlNFQhhu1O8TrWJT+2L1OyKdUEb1kmmjuWod3VI=
+ github.com/cosmos/ics23/go v0.11.0 h1:jk5skjT0TqX5e5QJbEnwXIS2yI2vnmLOgpQPeM5RtnU=
+ github.com/cosmos/ics23/go v0.11.0/go.mod h1:A8OjxPE67hHST4Icw94hOxxFEJMBG031xIGF/JHNIY0=
+ github.com/cosmos/ledger-cosmos-go v0.13.3 h1:7ehuBGuyIytsXbd4MP43mLeoN2LTOEnk5nvue4rK+yM=
+@@ -384,8 +383,8 @@ github.com/creachadair/tomledit v0.0.24 h1:5Xjr25R2esu1rKCbQEmjZYlrhFkDspoAbAKb6
+ github.com/creachadair/tomledit v0.0.24/go.mod h1:9qHbShRWQzSCcn617cMzg4eab1vbLCOjOshAWSzWr8U=
+ github.com/creack/pty v1.1.7/go.mod h1:lj5s0c3V2DBrqTV7llrYr5NG6My20zk30Fl46Y7DoTY=
+ github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
+-github.com/danieljoos/wincred v1.1.2 h1:QLdCxFs1/Yl4zduvBdcHB8goaYk9RARS2SgLLRuAyr0=
+-github.com/danieljoos/wincred v1.1.2/go.mod h1:GijpziifJoIBfYh+S7BbkdUTU4LfM+QnGqR5Vl2tAx0=
++github.com/danieljoos/wincred v1.2.1 h1:dl9cBrupW8+r5250DYkYxocLeZ1Y4vB1kxgtjxw8GQs=
++github.com/danieljoos/wincred v1.2.1/go.mod h1:uGaFL9fDn3OLTvzCGulzE+SzjEe5NGlh5FdCcyfPwps=
+ github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+ github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+ github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
+@@ -394,8 +393,9 @@ github.com/decred/dcrd/crypto/blake256 v1.0.1 h1:7PltbUIQB7u/FfZ39+DGa/ShuMyJ5il
+ github.com/decred/dcrd/crypto/blake256 v1.0.1/go.mod h1:2OfgNZ5wDpcsFmHmCK5gZTPcCXqlm2ArzUIkw9czNJo=
+ github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0 h1:rpfIENRNNilwHwZeG5+P150SMrnNEcHYvcCuK6dPZSg=
+ github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0/go.mod h1:v57UDF4pDQJcEfFUCRop3lJL149eHGSe9Jvczhzjo/0=
+-github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f h1:U5y3Y5UE0w7amNe7Z5G/twsBW0KEalRQXZzf8ufSh9I=
+ github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f/go.mod h1:xH/i4TFMt8koVQZ6WFms69WAsDWr2XsYL3Hkl7jkoLE=
++github.com/desertbit/timer v1.0.1 h1:yRpYNn5Vaaj6QXecdLMPMJsW81JLiI1eokUft5nBmeo=
++github.com/desertbit/timer v1.0.1/go.mod h1:htRrYeY5V/t4iu1xCJ5XsQvp4xve8QulXXctAzxqcwE=
+ github.com/dgraph-io/badger/v4 v4.2.0 h1:kJrlajbXXL9DFTNuhhu9yCx7JJa4qpYWxtE8BzuWsEs=
+ github.com/dgraph-io/badger/v4 v4.2.0/go.mod h1:qfCqhPoWDFJRx1gp5QwwyGo8xk1lbHUxvK9nK0OGAak=
+ github.com/dgraph-io/ristretto v0.1.1 h1:6CWw5tJNgpegArSHpNHJKldNeq03FQCwYvfMVWajOK8=
+@@ -412,8 +412,8 @@ github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:Htrtb
+ github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
+ github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
+ github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
+-github.com/dvsekhvalnov/jose2go v1.6.0 h1:Y9gnSnP4qEI0+/uQkHvFXeD2PLPJeXEL+ySMEA2EjTY=
+-github.com/dvsekhvalnov/jose2go v1.6.0/go.mod h1:QsHjhyTlD/lAVqn/NSbVZmSCGeDehTB/mPZadG+mhXU=
++github.com/dvsekhvalnov/jose2go v1.7.0 h1:bnQc8+GMnidJZA8zc6lLEAb4xNrIqHwO+9TzqvtQZPo=
++github.com/dvsekhvalnov/jose2go v1.7.0/go.mod h1:QsHjhyTlD/lAVqn/NSbVZmSCGeDehTB/mPZadG+mhXU=
+ github.com/eapache/go-resiliency v1.1.0/go.mod h1:kFI+JgMyC7bLPUVY133qvEBtVayf5mFgVsvEsIPBvNs=
+ github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21/go.mod h1:+020luEh2TKB4/GOp8oxxtq0Daoen/Cii55CzbTV6DU=
+ github.com/eapache/queue v1.1.0/go.mod h1:6eCeP0CKFpHLu8blIFXhExK/dRa7WDZfr6jVFPTqq+I=
+@@ -433,8 +433,8 @@ github.com/envoyproxy/go-control-plane v0.10.2-0.20220325020618-49ff273808a1/go.
+ github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
+ github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
+ github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=
+-github.com/fatih/color v1.15.0 h1:kOqh6YHBtK8aywxGerMG2Eq3H6Qgoqeo13Bk2Mv/nBs=
+-github.com/fatih/color v1.15.0/go.mod h1:0h5ZqXfHYED7Bhv2ZJamyIOUej9KtShiJESRwBDUSsw=
++github.com/fatih/color v1.17.0 h1:GlRw1BRJxkpqUCBKzKOw098ed57fEsKeNjpTe3cSjK4=
++github.com/fatih/color v1.17.0/go.mod h1:YZ7TlrGPkiz6ku9fK3TLD/pl3CpsiFyu8N92HLgmosI=
+ github.com/felixge/httpsnoop v1.0.4 h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2Wg=
+ github.com/felixge/httpsnoop v1.0.4/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
+ github.com/fortytw2/leaktest v1.3.0 h1:u8491cBMTQ8ft8aeV+adlcytMZylmA5nnwwkRZjI8vw=
+@@ -447,14 +447,11 @@ github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMo
+ github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
+ github.com/fsnotify/fsnotify v1.7.0 h1:8JEhPFa5W2WU7YfeZzPNqzMP6Lwt7L2715Ggo0nosvA=
+ github.com/fsnotify/fsnotify v1.7.0/go.mod h1:40Bi/Hjc2AVfZrqy+aj+yEI+/bRxZnMJyTJwOpGvigM=
+-github.com/getsentry/sentry-go v0.27.0 h1:Pv98CIbtB3LkMWmXi4Joa5OOcwbmnX88sF5qbK3r3Ps=
+-github.com/getsentry/sentry-go v0.27.0/go.mod h1:lc76E2QywIyW8WuBnwl8Lc4bkmQH4+w1gwTf25trprY=
++github.com/getsentry/sentry-go v0.28.1 h1:zzaSm/vHmGllRM6Tpx1492r0YDzauArdBfkJRtY6P5k=
++github.com/getsentry/sentry-go v0.28.1/go.mod h1:1fQZ+7l7eeJ3wYi82q5Hg8GqAPgefRq+FP/QhafYVgg=
+ github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
+-github.com/gin-contrib/sse v0.1.0 h1:Y/yl/+YNO8GZSjAhjMsSuLt29uWRFHdHYUb5lYOV9qE=
+ github.com/gin-contrib/sse v0.1.0/go.mod h1:RHrZQHXnP2xjPF+u1gW/2HnVO7nvIa9PG3Gm+fLHvGI=
+ github.com/gin-gonic/gin v1.6.3/go.mod h1:75u5sXoLsGZoRN5Sgbi1eraJ4GU3++wFwWzhwvtwp4M=
+-github.com/gin-gonic/gin v1.8.1 h1:4+fr/el88TOO3ewCmQr8cx/CtZ/umlIRIs5M4NTNjf8=
+-github.com/gin-gonic/gin v1.8.1/go.mod h1:ji8BvRH1azfM+SYow9zQ6SZMvR8qOMZHmsCuWR9tTTk=
+ github.com/go-errors/errors v1.4.2 h1:J6MZopCL4uSllY1OfXM374weqZFFItUbrImctkmUxIA=
+ github.com/go-errors/errors v1.4.2/go.mod h1:sIVyrIiJhuEF+Pj9Ebtd6P/rEYROXFi3BopGUQ5a5Og=
+ github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1/go.mod h1:vR7hzQXu2zJy9AVAgeJqvqgH9Q5CA+iKCZ2gyEVpxRU=
+@@ -480,24 +477,13 @@ github.com/go-logr/stdr v1.2.2 h1:hSWxHoqTgW2S2qGc0LTAI563KZ5YKYRhT3MFKZMbjag=
+ github.com/go-logr/stdr v1.2.2/go.mod h1:mMo/vtBO5dYbehREoey6XUKy/eSumjCCveDpRre4VKE=
+ github.com/go-playground/assert/v2 v2.0.1/go.mod h1:VDjEfimB/XKnb+ZQfWdccd7VUvScMdVu0Titje2rxJ4=
+ github.com/go-playground/locales v0.13.0/go.mod h1:taPMhCMXrRLJO55olJkUXHZBHCxTMfnGwq/HNwmWNS8=
+-github.com/go-playground/locales v0.14.0 h1:u50s323jtVGugKlcYeyzC0etD1HifMjqmJqb8WugfUU=
+-github.com/go-playground/locales v0.14.0/go.mod h1:sawfccIbzZTqEDETgFXqTho0QybSa7l++s0DH+LDiLs=
+ github.com/go-playground/universal-translator v0.17.0/go.mod h1:UkSxE5sNxxRwHyU+Scu5vgOQjsIJAF8j9muTVoKLVtA=
+-github.com/go-playground/universal-translator v0.18.0 h1:82dyy6p4OuJq4/CByFNOn/jYrnRPArHwAcmLoJZxyho=
+-github.com/go-playground/universal-translator v0.18.0/go.mod h1:UvRDBj+xPUEGrFYl+lu/H90nyDXpg0fqeB/AQUGNTVA=
+ github.com/go-playground/validator/v10 v10.2.0/go.mod h1:uOYAAleCW8F/7oMFd6aG0GOhaH6EGOAJShg8Id5JGkI=
+-github.com/go-playground/validator/v10 v10.11.1 h1:prmOlTVv+YjZjmRmNSF3VmspqJIxJWXmqUsHwfTRRkQ=
+-github.com/go-playground/validator/v10 v10.11.1/go.mod h1:i+3WkQ1FvaUjjxh1kSvIA4dMGDBiPU55YFDl0WbKdWU=
+ github.com/go-sql-driver/mysql v1.4.0/go.mod h1:zAC/RDZ24gD3HViQzih4MyKcchzm+sOG5ZlKdlhCg5w=
+ github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/melR3HDY=
+-github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee h1:s+21KNqlpePfkah2I+gwHF8xmJWRjooY+5248k6m4A0=
+ github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee/go.mod h1:L0fX3K22YWvt/FAX9NnzrNzcI4wNYi9Yku4O0LKYflo=
+-github.com/gobwas/pool v0.2.0 h1:QEmUOlnSjWtnpRGHF3SauEiOsy82Cup83Vf2LcMlnc8=
+ github.com/gobwas/pool v0.2.0/go.mod h1:q8bcK0KcYlCgd9e7WYLm9LpyS+YeLd8JVDW6WezmKEw=
+-github.com/gobwas/ws v1.0.2 h1:CoAavW/wd/kulfZmSIBt6p24n4j7tHgNVCjsfHVNUbo=
+ github.com/gobwas/ws v1.0.2/go.mod h1:szmBTxLgaFppYjEmNtny/v3w89xOydFnnZMcgRRu/EM=
+-github.com/goccy/go-json v0.9.11 h1:/pAaQDLHEoCq/5FFmSKBswWmK6H0e8g4159Kc/X/nqk=
+-github.com/goccy/go-json v0.9.11/go.mod h1:6MelG93GURQebXPDq3khkgXZkazVtN9CRI+MGFi0w8I=
+ github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 h1:ZpnhV/YsD2/4cESfV5+Hoeu/iUR3ruzNvZ+yQfO03a0=
+ github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2/go.mod h1:bBOAhwG1umN6/6ZUMtDFBMQR8jRg9O75tm9K00oMsK4=
+ github.com/godbus/dbus/v5 v5.0.4/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
+@@ -558,8 +544,8 @@ github.com/google/btree v0.0.0-20180813153112-4030bb1f1f0c/go.mod h1:lNA+9X1NB3Z
+ github.com/google/btree v1.0.0/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
+ github.com/google/btree v1.1.3 h1:CVpQJjYgC4VbzxeGVHfvZrv1ctoYCAI8vbl07Fcxlyg=
+ github.com/google/btree v1.1.3/go.mod h1:qOPhT0dTNdNzV6Z/lhRX0YXUafgPLFUh+gZMl761Gm4=
+-github.com/google/flatbuffers v1.12.1 h1:MVlul7pQNoDzWRLTw5imwYsl+usrS1TXG2H4jg6ImGw=
+-github.com/google/flatbuffers v1.12.1/go.mod h1:1AeVuKshWv4vARoZatz6mlQ0JxURH0Kv5+zNeJKJCa8=
++github.com/google/flatbuffers v24.3.25+incompatible h1:CX395cjN9Kke9mmalRoL3d81AtFUxJM+yDthflgJGkI=
++github.com/google/flatbuffers v24.3.25+incompatible/go.mod h1:1AeVuKshWv4vARoZatz6mlQ0JxURH0Kv5+zNeJKJCa8=
+ github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5aqRK0M=
+ github.com/google/go-cmp v0.3.0/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMywk6iLU=
+ github.com/google/go-cmp v0.3.1/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMywk6iLU=
+@@ -660,8 +646,8 @@ github.com/hashicorp/go-cleanhttp v0.5.2 h1:035FKYIWjmULyFRBKPs8TBQoi0x6d9G4xc9n
+ github.com/hashicorp/go-cleanhttp v0.5.2/go.mod h1:kO/YDlP8L1346E6Sodw+PrpBSV4/SoxCXGY6BqNFT48=
+ github.com/hashicorp/go-getter v1.7.4 h1:3yQjWuxICvSpYwqSayAdKRFcvBl1y/vogCxczWSmix0=
+ github.com/hashicorp/go-getter v1.7.4/go.mod h1:W7TalhMmbPmsSMdNjD0ZskARur/9GJ17cfHTRtXV744=
+-github.com/hashicorp/go-hclog v1.5.0 h1:bI2ocEMgcVlz55Oj1xZNBsVi900c7II+fWDyV9o+13c=
+-github.com/hashicorp/go-hclog v1.5.0/go.mod h1:W4Qnvbt70Wk/zYJryRzDRU/4r0kIg0PVHBcfoyhpF5M=
++github.com/hashicorp/go-hclog v1.6.3 h1:Qr2kF+eVWjTiYmU7Y31tYlP1h0q/X3Nl3tPGdaB11/k=
++github.com/hashicorp/go-hclog v1.6.3/go.mod h1:W4Qnvbt70Wk/zYJryRzDRU/4r0kIg0PVHBcfoyhpF5M=
+ github.com/hashicorp/go-immutable-radix v1.0.0/go.mod h1:0y9vanUI8NX6FsYoO3zeMjhV/C5i9g4Q3DwcSNZ4P60=
+ github.com/hashicorp/go-immutable-radix v1.3.1 h1:DKHmCUm2hRBK510BaiZlwvpD40f8bJFeZnpfm2KLowc=
+ github.com/hashicorp/go-immutable-radix v1.3.1/go.mod h1:0y9vanUI8NX6FsYoO3zeMjhV/C5i9g4Q3DwcSNZ4P60=
+@@ -669,8 +655,8 @@ github.com/hashicorp/go-metrics v0.5.3 h1:M5uADWMOGCTUNU1YuC4hfknOeHNaX54LDm4oYS
+ github.com/hashicorp/go-metrics v0.5.3/go.mod h1:KEjodfebIOuBYSAe/bHTm+HChmKSxAOXPBieMLYozDE=
+ github.com/hashicorp/go-msgpack v0.5.3/go.mod h1:ahLV/dePpqEmjfWmKiqvPkv/twdG7iPBM1vqhUKIvfM=
+ github.com/hashicorp/go-multierror v1.0.0/go.mod h1:dHtQlpGsu+cZNNAkkCN/P3hoUDHhCYQXV3UM06sGGrk=
+-github.com/hashicorp/go-plugin v1.5.2 h1:aWv8eimFqWlsEiMrYZdPYl+FdHaBJSN4AWwGWfT1G2Y=
+-github.com/hashicorp/go-plugin v1.5.2/go.mod h1:w1sAEES3g3PuV/RzUrgow20W2uErMly84hhD3um1WL4=
++github.com/hashicorp/go-plugin v1.6.1 h1:P7MR2UP6gNKGPp+y7EZw2kOiq4IR9WiqLvp0XOsVdwI=
++github.com/hashicorp/go-plugin v1.6.1/go.mod h1:XPHFku2tFo3o3QKFgSYo+cghcUhw1NA1hZyMK0PWAw0=
+ github.com/hashicorp/go-retryablehttp v0.5.3/go.mod h1:9B5zBasrRhHXnJnui7y6sL7es7NDiJgTc6Er0maI1Xs=
+ github.com/hashicorp/go-rootcerts v1.0.0/go.mod h1:K6zTfqpRlCUIjkwsN4Z+hiSfzSTQa6eBIzfwKfwNnHU=
+ github.com/hashicorp/go-safetemp v1.0.0 h1:2HR189eFNrjHQyENnQMMpCiBAsRxzbTMIgBhEyExpmo=
+@@ -699,8 +685,8 @@ github.com/hashicorp/memberlist v0.1.3/go.mod h1:ajVTdAv/9Im8oMAAj5G31PhhMCZJV2p
+ github.com/hashicorp/serf v0.8.2/go.mod h1:6hOLApaqBFA1NXqRQAsxw9QxuDEvNxSQRwA/JwenrHc=
+ github.com/hashicorp/yamux v0.1.1 h1:yrQxtgseBDrq9Y652vSRDvsKCJKOUD+GzTS4Y0Y8pvE=
+ github.com/hashicorp/yamux v0.1.1/go.mod h1:CtWFDAQgb7dxtzFs4tWbplKIe2jSi3+5vKbgIO0SLnQ=
+-github.com/hdevalence/ed25519consensus v0.1.0 h1:jtBwzzcHuTmFrQN6xQZn6CQEO/V9f7HsjsjeEZ6auqU=
+-github.com/hdevalence/ed25519consensus v0.1.0/go.mod h1:w3BHWjwJbFU29IRHL1Iqkw3sus+7FctEyM4RqDxYNzo=
++github.com/hdevalence/ed25519consensus v0.2.0 h1:37ICyZqdyj0lAZ8P4D1d1id3HqbbG1N3iBb1Tb4rdcU=
++github.com/hdevalence/ed25519consensus v0.2.0/go.mod h1:w3BHWjwJbFU29IRHL1Iqkw3sus+7FctEyM4RqDxYNzo=
+ github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
+ github.com/huandu/go-assert v1.1.5 h1:fjemmA7sSfYHJD7CUqs9qTwwfdNAx7/j2/ZlHXzNB3c=
+ github.com/huandu/go-assert v1.1.5/go.mod h1:yOLvuqZwmcHIC5rIzrBhT7D3Q9c3GFnd0JrPVhn/06U=
+@@ -735,8 +721,6 @@ github.com/json-iterator/go v1.1.7/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/u
+ github.com/json-iterator/go v1.1.8/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/uOdHXbAo4=
+ github.com/json-iterator/go v1.1.9/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/uOdHXbAo4=
+ github.com/json-iterator/go v1.1.10/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/uOdHXbAo4=
+-github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
+-github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
+ github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1:6v2b51hI/fHJwM22ozAgKL4VKDeJcHhJFhtBdhmNjmU=
+ github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/XSXhF0NWZEnDohbsk=
+ github.com/jtolds/gls v4.20.0+incompatible/go.mod h1:QJZ7F/aHp+rZTRtaJ1ow/lLfFfVYBRgL+9YlvaHOwJU=
+@@ -767,14 +751,12 @@ github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
+ github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0SNc=
+ github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
+ github.com/leodido/go-urn v1.2.0/go.mod h1:+8+nEpDfqqsY+g338gtMEUOtuK+4dEMhiQEgxpxOKII=
+-github.com/leodido/go-urn v1.2.1 h1:BqpAaACuzVSgi/VLzGZIobT2z4v53pjosyNd9Yv6n/w=
+-github.com/leodido/go-urn v1.2.1/go.mod h1:zt4jvISO2HfUBqxjfIshjdMTYS56ZS/qv49ictyFfxY=
+ github.com/lib/pq v1.10.9 h1:YXG7RB+JIjhP29X+OtkiDnYaXQwpS4JEWq7dtCCRUEw=
+ github.com/lib/pq v1.10.9/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
+ github.com/lightstep/lightstep-tracer-common/golang/gogo v0.0.0-20190605223551-bc2310a04743/go.mod h1:qklhhLq1aX+mtWk9cPHPzaBjWImj5ULL6C7HFJtXQMM=
+ github.com/lightstep/lightstep-tracer-go v0.18.1/go.mod h1:jlF1pusYV4pidLvZ+XD0UBX0ZE6WURAspgAczcDHrL4=
+-github.com/linxGnu/grocksdb v1.8.14 h1:HTgyYalNwBSG/1qCQUIott44wU5b2Y9Kr3z7SK5OfGQ=
+-github.com/linxGnu/grocksdb v1.8.14/go.mod h1:QYiYypR2d4v63Wj1adOOfzglnoII0gLj3PNh4fZkcFA=
++github.com/linxGnu/grocksdb v1.9.2 h1:O3mzvO0wuzQ9mtlHbDrShixyVjVbmuqTjFrzlf43wZ8=
++github.com/linxGnu/grocksdb v1.9.2/go.mod h1:QYiYypR2d4v63Wj1adOOfzglnoII0gLj3PNh4fZkcFA=
+ github.com/lyft/protoc-gen-validate v0.0.13/go.mod h1:XbGvPuh87YZc5TdIa2/I4pLk0QoUACkjt2znoq26NVQ=
+ github.com/magiconair/properties v1.8.7 h1:IeQXZAiQcpL9mgcAe1Nu6cX9LLw6ExEHKjN0VQdvPDY=
+ github.com/magiconair/properties v1.8.7/go.mod h1:Dhd985XPs7jluiymwWYZ0G4Z61jb3vdS329zhj2hYo0=
+@@ -813,12 +795,9 @@ github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh
+ github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
+ github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
+ github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
+-github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd h1:TRLaZ9cD/w8PVh93nsPXa1VrQ6jlwL5oN8l14QlcNfg=
+ github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
+ github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
+ github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
+-github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9Gz0M=
+-github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
+ github.com/mtibben/percent v0.2.1 h1:5gssi8Nqo8QU/r2pynCm+hBQHpkB/uNK7BJCFogWdzs=
+ github.com/mtibben/percent v0.2.1/go.mod h1:KG9uO+SZkUp+VkRHsCdYQV3XSZrrSpR3O9ibNBTZrns=
+ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
+@@ -836,8 +815,8 @@ github.com/nats-io/nkeys v0.1.3/go.mod h1:xpnFELMwJABBLVhffcfd1MZx6VsNRFpEugbxzi
+ github.com/nats-io/nuid v1.0.1/go.mod h1:19wcPz3Ph3q0Jbyiqsd0kePYG7A95tJPxeL+1OSON2c=
+ github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
+ github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
+-github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
+-github.com/nxadm/tail v1.4.8/go.mod h1:+ncqLTQzXmGhMZNUePPaPqPvBxHAIsmXswZKocGu+AU=
++github.com/nxadm/tail v1.4.11 h1:8feyoE3OzPrcshW5/MJ4sGESc5cqmGkGCWlco4l0bqY=
++github.com/nxadm/tail v1.4.11/go.mod h1:OTaG3NK980DZzxbRq6lEuzgU+mug70nY11sMd4JXXHc=
+ github.com/oasisprotocol/curve25519-voi v0.0.0-20230904125328-1f23a7beb09a h1:dlRvE5fWabOchtH7znfiFCcOvmIYgOeAS5ifBXBlh9Q=
+ github.com/oasisprotocol/curve25519-voi v0.0.0-20230904125328-1f23a7beb09a/go.mod h1:hVoHR2EVESiICEMbg137etN/Lx+lSrHPTD39Z/uE+2s=
+ github.com/oklog/oklog v0.3.2/go.mod h1:FCV+B7mhrz4o+ueLpx+KqkyXRGMWOYEvfiXtdGtbWGs=
+@@ -949,8 +928,8 @@ github.com/rs/zerolog v1.33.0/go.mod h1:/7mN4D5sKwJLZQ2b/znpjC3/GQWY/xaDXUM0kKWR
+ github.com/russross/blackfriday/v2 v2.0.1/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
+ github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
+ github.com/ryanuber/columnize v0.0.0-20160712163229-9b3edd62028f/go.mod h1:sm1tb6uqfes/u+d4ooFouqFdy9/2g9QGwK3SQygK0Ts=
+-github.com/sagikazarmark/locafero v0.4.0 h1:HApY1R9zGo4DBgr7dqsTH/JJxLTTsOt7u6keLGt6kNQ=
+-github.com/sagikazarmark/locafero v0.4.0/go.mod h1:Pe1W6UlPYUk/+wc/6KFhbORCfqzgYEpgQ3O5fPuL3H4=
++github.com/sagikazarmark/locafero v0.6.0 h1:ON7AQg37yzcRPU69mt7gwhFEBwxI6P9T4Qu3N51bwOk=
++github.com/sagikazarmark/locafero v0.6.0/go.mod h1:77OmuIc6VTraTXKXIs/uvUxKGUXjE1GbemJYHqdNjX0=
+ github.com/sagikazarmark/slog-shim v0.1.0 h1:diDBnUNK9N/354PgrxMywXnAwEr1QZcOr6gto+ugjYE=
+ github.com/sagikazarmark/slog-shim v0.1.0/go.mod h1:SrcSrq8aKtyuqEI1uvTDTK1arOWRIczQRv+GVI1AkeQ=
+ github.com/samuel/go-zookeeper v0.0.0-20190923202752-2cc03de413da/go.mod h1:gi+0XIa01GRL2eRQVjQkKGqKF3SF9vZR/HnPullcV2E=
+@@ -1024,11 +1003,8 @@ github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8/go.mod h1
+ github.com/tv42/httpunix v0.0.0-20150427012821-b75d8614f926/go.mod h1:9ESjWnEqriFuLhtthL60Sar/7RFoluCcXsuvEwTV5KM=
+ github.com/twitchyliquid64/golang-asm v0.15.1 h1:SU5vSMR7hnwNxj24w34ZyCi/FmDZTkS4MhqMhdFk5YI=
+ github.com/twitchyliquid64/golang-asm v0.15.1/go.mod h1:a1lVb/DtPvCB8fslRZhAngC2+aY1QWCk3Cedj/Gdt08=
+-github.com/ugorji/go v1.1.7 h1:/68gy2h+1mWMrwZFeD1kQialdSzAb432dtpeJ42ovdo=
+ github.com/ugorji/go v1.1.7/go.mod h1:kZn38zHttfInRq0xu/PH0az30d+z6vm202qpg1oXVMw=
+ github.com/ugorji/go/codec v1.1.7/go.mod h1:Ax+UKWsSmolVDwsd+7N3ZtXu+yMGCf907BLYF3GoBXY=
+-github.com/ugorji/go/codec v1.2.11 h1:BMaWp1Bb6fHwEtbplGBGJ498wD+LKlNSl25MjdZY4dU=
+-github.com/ugorji/go/codec v1.2.11/go.mod h1:UNopzCgEMSXjBc6AOMqYvWC1ktqTAfzJZUZgYf6w6lg=
+ github.com/ulikunitz/xz v0.5.10/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
+ github.com/ulikunitz/xz v0.5.11 h1:kpFauv27b6ynzBNT/Xy+1k+fK4WswhN/6PN5WhFAGw8=
+ github.com/ulikunitz/xz v0.5.11/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
+@@ -1047,8 +1023,8 @@ github.com/zondax/hid v0.9.2/go.mod h1:l5wttcP0jwtdLjqjMMWFVEE7d1zO0jvSPA9OPZxWp
+ github.com/zondax/ledger-go v0.14.3 h1:wEpJt2CEcBJ428md/5MgSLsXLBos98sBOyxNmCjfUCw=
+ github.com/zondax/ledger-go v0.14.3/go.mod h1:IKKaoxupuB43g4NxeQmbLXv7T9AlQyie1UpHb342ycI=
+ go.etcd.io/bbolt v1.3.3/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
+-go.etcd.io/bbolt v1.4.0-alpha.0.0.20240404170359-43604f3112c5 h1:qxen9oVGzDdIRP6ejyAJc760RwW4SnVDiTYTzwnXuxo=
+-go.etcd.io/bbolt v1.4.0-alpha.0.0.20240404170359-43604f3112c5/go.mod h1:eW0HG9/oHQhvRCvb1/pIXW4cOvtDqeQK+XSi3TnwaXY=
++go.etcd.io/bbolt v1.4.0-alpha.1 h1:3yrqQzbRRPFPdOMWS/QQIVxVnzSkAZQYeWlZFv1kbj4=
++go.etcd.io/bbolt v1.4.0-alpha.1/go.mod h1:S/Z/Nm3iuOnyO1W4XuFfPci51Gj6F1Hv0z8hisyYYOw=
+ go.etcd.io/etcd v0.0.0-20191023171146-3cf2f69b5738/go.mod h1:dnLIgRNXwCJa5e+c6mIZCrds/GIG4ncV9HhK5PX7jPg=
+ go.opencensus.io v0.20.1/go.mod h1:6WKK9ahsWS3RSO+PY9ZHZUfv2irvY6gN279GOPZjmmk=
+ go.opencensus.io v0.20.2/go.mod h1:6WKK9ahsWS3RSO+PY9ZHZUfv2irvY6gN279GOPZjmmk=
+@@ -1319,7 +1295,6 @@ golang.org/x/sys v0.0.0-20210616094352-59db8d763f22/go.mod h1:oPkhp1MJrh7nUepCBc
+ golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+ golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+ golang.org/x/sys v0.0.0-20210809222454-d867a43fc93e/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+-golang.org/x/sys v0.0.0-20210819135213-f52c844e1c1c/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+ golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+ golang.org/x/sys v0.0.0-20210908233432-aa78b53d3365/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+ golang.org/x/sys v0.0.0-20210927094055-39ccf1dd6fa6/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+@@ -1723,8 +1698,9 @@ honnef.co/go/tools v0.0.0-20190523083050-ea95bdfd59fc/go.mod h1:rf3lG4BRIbNafJWh
+ honnef.co/go/tools v0.0.1-2019.2.3/go.mod h1:a3bituU0lyd329TUQxRnasdCoJDkEUEAqEt0JzvZhAg=
+ honnef.co/go/tools v0.0.1-2020.1.3/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9vFzvIQ3k=
+ honnef.co/go/tools v0.0.1-2020.1.4/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9vFzvIQ3k=
+-nhooyr.io/websocket v1.8.6 h1:s+C3xAMLwGmlI31Nyn/eAehUlZPwfYZu2JXM621Q5/k=
+ nhooyr.io/websocket v1.8.6/go.mod h1:B70DZP8IakI65RVQ51MsWP/8jndNma26DVA/nFSCgW0=
++nhooyr.io/websocket v1.8.11 h1:f/qXNc2/3DpoSZkHt1DQu6rj4zGC8JmkkLkWss0MgN0=
++nhooyr.io/websocket v1.8.11/go.mod h1:rN9OFWIUwuxg4fR5tELlYC04bXYowCP9GX47ivo2l+c=
+ nullprogram.com/x/optparse v1.0.0/go.mod h1:KdyPE+Igbe0jQUrVfMqDMeJQIJZEuyV7pjYmp6pbG50=
+ pgregory.net/rapid v1.1.0 h1:CMa0sjHSru3puNx+J0MIAuiiEV4N0qj8/cMWGBBCsjw=
+ pgregory.net/rapid v1.1.0/go.mod h1:PY5XlDGj0+V1FCq0o192FdRhpKHGTRIWBgqjDBTrq04=
+diff --git a/tests/e2e/actions.go b/tests/e2e/actions.go
+index 7aefcf74..0aa0cf2e 100644
+--- a/tests/e2e/actions.go
++++ b/tests/e2e/actions.go
+@@ -14,8 +14,8 @@ import (
+ 	"sync"
+ 	"time"
+ 
+-	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
+ 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/client"
+ 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+diff --git a/tests/e2e/commands.go b/tests/e2e/commands.go
+index 4c9b54ab..4fc4a7dc 100644
+--- a/tests/e2e/commands.go
++++ b/tests/e2e/commands.go
+@@ -11,7 +11,7 @@ import (
+ 	"strconv"
+ 	"strings"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 	"github.com/kylelemons/godebug/pretty"
+ 	"github.com/tidwall/gjson"
+ 	"gopkg.in/yaml.v2"
+diff --git a/tests/e2e/json_marshal_test.go b/tests/e2e/json_marshal_test.go
+index 564df54e..753f5e23 100644
+--- a/tests/e2e/json_marshal_test.go
++++ b/tests/e2e/json_marshal_test.go
+@@ -6,7 +6,7 @@ import (
+ 	"strings"
+ 	"testing"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 	"github.com/davecgh/go-spew/spew"
+ 
+ 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+diff --git a/tests/e2e/state.go b/tests/e2e/state.go
+index 20e110e6..21d16d10 100644
+--- a/tests/e2e/state.go
++++ b/tests/e2e/state.go
+@@ -6,7 +6,7 @@ import (
+ 	"regexp"
+ 	"time"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 
+ 	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
+ )
+diff --git a/tests/e2e/state_rapid_test.go b/tests/e2e/state_rapid_test.go
+index da4bbed8..40b90b71 100644
+--- a/tests/e2e/state_rapid_test.go
++++ b/tests/e2e/state_rapid_test.go
+@@ -3,7 +3,7 @@ package main
+ import (
+ 	"testing"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 	"pgregory.net/rapid"
+ )
+ 
+diff --git a/tests/e2e/steps.go b/tests/e2e/steps.go
+index a776d41b..1eb8ccf4 100644
+--- a/tests/e2e/steps.go
++++ b/tests/e2e/steps.go
+@@ -2,7 +2,7 @@ package main
+ 
+ import (
+ 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ )
+ 
+ type Step struct {
+diff --git a/tests/e2e/steps_active_set_changes.go b/tests/e2e/steps_active_set_changes.go
+index dda2f3ae..87f5f40a 100644
+--- a/tests/e2e/steps_active_set_changes.go
++++ b/tests/e2e/steps_active_set_changes.go
+@@ -2,7 +2,7 @@ package main
+ 
+ import (
+ 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ )
+ 
+ // stepsActiveSetChanges starts a top N provider chain and causes a change in the active set
+diff --git a/tests/e2e/steps_compatibility.go b/tests/e2e/steps_compatibility.go
+index 628fefaf..8b035802 100644
+--- a/tests/e2e/steps_compatibility.go
++++ b/tests/e2e/steps_compatibility.go
+@@ -5,7 +5,7 @@ package main
+ 
+ import (
+ 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 
+ 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+ )
+diff --git a/tests/e2e/steps_consumer_misbehaviour.go b/tests/e2e/steps_consumer_misbehaviour.go
+index d715b1ba..77f5986e 100644
+--- a/tests/e2e/steps_consumer_misbehaviour.go
++++ b/tests/e2e/steps_consumer_misbehaviour.go
+@@ -2,7 +2,7 @@ package main
+ 
+ import (
+ 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ )
+ 
+ // starts a provider chain and an Opt-In consumer chain with one validator
+diff --git a/tests/e2e/steps_inactive_vals.go b/tests/e2e/steps_inactive_vals.go
+index 783ae0ce..ff9c1612 100644
+--- a/tests/e2e/steps_inactive_vals.go
++++ b/tests/e2e/steps_inactive_vals.go
+@@ -2,7 +2,7 @@ package main
+ 
+ import (
+ 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
+ )
+ 
+diff --git a/tests/e2e/steps_partial_set_security.go b/tests/e2e/steps_partial_set_security.go
+index 06d41bf4..f0be8450 100644
+--- a/tests/e2e/steps_partial_set_security.go
++++ b/tests/e2e/steps_partial_set_security.go
+@@ -3,7 +3,7 @@ package main
+ import (
+ 	"time"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 
+ 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+ )
+diff --git a/tests/e2e/steps_permissionless_ics.go b/tests/e2e/steps_permissionless_ics.go
+index e6711628..e20a9066 100644
+--- a/tests/e2e/steps_permissionless_ics.go
++++ b/tests/e2e/steps_permissionless_ics.go
+@@ -4,7 +4,7 @@ import (
+ 	"time"
+ 
+ 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
+ )
+ 
+diff --git a/tests/e2e/steps_start_chains.go b/tests/e2e/steps_start_chains.go
+index 6bdc9620..8b603e6e 100644
+--- a/tests/e2e/steps_start_chains.go
++++ b/tests/e2e/steps_start_chains.go
+@@ -4,7 +4,7 @@ import (
+ 	"time"
+ 
+ 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
+ )
+ 
+diff --git a/tests/e2e/test_driver.go b/tests/e2e/test_driver.go
+index d3ed0be9..af505135 100644
+--- a/tests/e2e/test_driver.go
++++ b/tests/e2e/test_driver.go
+@@ -9,7 +9,7 @@ import (
+ 	"github.com/kylelemons/godebug/pretty"
+ 	"golang.org/x/mod/semver"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
+ 	v5 "github.com/cosmos/interchain-security/v6/tests/e2e/v5"
+ )
+diff --git a/tests/e2e/testlib/types.go b/tests/e2e/testlib/types.go
+index 6a290a24..8c14a11e 100644
+--- a/tests/e2e/testlib/types.go
++++ b/tests/e2e/testlib/types.go
+@@ -7,7 +7,7 @@ import (
+ 	"reflect"
+ 	"time"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+ )
+ 
+diff --git a/tests/e2e/trace_handlers_test.go b/tests/e2e/trace_handlers_test.go
+index 77e5d838..52f0c9cd 100644
+--- a/tests/e2e/trace_handlers_test.go
++++ b/tests/e2e/trace_handlers_test.go
+@@ -8,7 +8,7 @@ import (
+ 	"path/filepath"
+ 	"testing"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 	"github.com/google/go-cmp/cmp"
+ 
+ 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+diff --git a/tests/e2e/v5/commands.go b/tests/e2e/v5/commands.go
+index a2588871..8f6a6e48 100644
+--- a/tests/e2e/v5/commands.go
++++ b/tests/e2e/v5/commands.go
+@@ -11,7 +11,7 @@ import (
+ 	"strings"
+ 	"time"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+ 	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
+ 
+diff --git a/tests/integration/changeover.go b/tests/integration/changeover.go
+index b18ea38f..2b8a8454 100644
+--- a/tests/integration/changeover.go
++++ b/tests/integration/changeover.go
+@@ -1,8 +1,8 @@
+ package integration
+ 
+ import (
+-	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+ )
+ 
+ // TestRecycleTransferChannel tests that an existing transfer channel can be reused when transitioning from
+@@ -27,7 +27,7 @@ func (suite *CCVTestSuite) TestRecycleTransferChannel() {
+ 	// Create transfer channel manually
+ 	distrTransferMsg := channeltypes.NewMsgChannelOpenInit(
+ 		transfertypes.PortID,
+-		transfertypes.Version,
++		transfertypes.V1, // TODO(wllmshao): assuming this is v1 for now, may be wrong
+ 		channeltypes.UNORDERED,
+ 		[]string{suite.path.EndpointA.ConnectionID},
+ 		transfertypes.PortID,
+diff --git a/tests/integration/common.go b/tests/integration/common.go
+index a7c0c997..ad9d8a92 100644
+--- a/tests/integration/common.go
++++ b/tests/integration/common.go
+@@ -4,12 +4,12 @@ import (
+ 	"fmt"
+ 	"time"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	commitmenttypes "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"
+-	"github.com/cosmos/ibc-go/v9/modules/core/exported"
+-	ibctm "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	commitmenttypes "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"
++	"github.com/cosmos/ibc-go/v9/modules/core/exported"
++	ibctm "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+ 	"github.com/stretchr/testify/require"
+ 
+ 	"cosmossdk.io/math"
+@@ -489,13 +489,13 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
+ 	require.NoError(endpoint.Chain.TB, err)
+ 	tmConfig.TrustingPeriod = trustPeriod
+ 
+-	height := endpoint.Counterparty.Chain.LastHeader.GetHeight().(clienttypes.Height)
++	height := endpoint.Counterparty.Chain.LatestCommittedHeader.GetHeight().(clienttypes.Height)
+ 	UpgradePath := []string{"upgrade", "upgradedIBCState"}
+ 	clientState := ibctm.NewClientState(
+ 		endpoint.Counterparty.Chain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
+ 		height, commitmenttypes.GetSDKSpecs(), UpgradePath,
+ 	)
+-	consensusState := endpoint.Counterparty.Chain.LastHeader.ConsensusState()
++	consensusState := endpoint.Counterparty.Chain.LatestCommittedHeader.ConsensusState()
+ 
+ 	msg, err := clienttypes.NewMsgCreateClient(
+ 		clientState, consensusState, endpoint.Chain.SenderAccount.GetAddress().String(),
+@@ -523,8 +523,10 @@ func (suite *CCVTestSuite) GetConsumerEndpointClientAndConsState(
+ 	clientState, found := consumerBundle.App.GetIBCKeeper().ClientKeeper.GetClientState(ctx, clientID)
+ 	suite.Require().True(found)
+ 
++	lightClientModule := ibctm.NewLightClientModule(consumerBundle.App.AppCodec(), consumerBundle.App.GetIBCKeeper().ClientKeeper.GetStoreProvider())
++
+ 	consState, found := consumerBundle.App.GetIBCKeeper().ClientKeeper.GetClientConsensusState(
+-		ctx, clientID, clientState.GetLatestHeight())
++		ctx, clientID, lightClientModule.LatestHeight(ctx, clientID))
+ 	suite.Require().True(found)
+ 
+ 	return clientState, consState
+diff --git a/tests/integration/democracy.go b/tests/integration/democracy.go
+index 993a0d1b..34db6fe0 100644
+--- a/tests/integration/democracy.go
++++ b/tests/integration/democracy.go
+@@ -3,7 +3,7 @@ package integration
+ import (
+ 	"time"
+ 
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+ 	"github.com/stretchr/testify/suite"
+ 
+ 	"cosmossdk.io/math"
+@@ -219,7 +219,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyMsgUpdateParams() {
+ 	s.Assert().NoError(err)
+ 	// set current header time to be equal or later than voting end time in order to process proposal from active queue,
+ 	// once the proposal is added to the chain
+-	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(*params.VotingPeriod)
++	s.consumerChain.ProposedHeader.Time = s.consumerChain.ProposedHeader.Time.Add(*params.VotingPeriod)
+ 
+ 	s.consumerChain.NextBlock()
+ 
+diff --git a/tests/integration/distribution.go b/tests/integration/distribution.go
+index afce8e64..93d666c6 100644
+--- a/tests/integration/distribution.go
++++ b/tests/integration/distribution.go
+@@ -3,9 +3,9 @@ package integration
+ import (
+ 	"strings"
+ 
+-	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+ 
+ 	"cosmossdk.io/math"
+ 
+@@ -658,7 +658,7 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
+ 			)
+ 
+ 			providerKeeper.SetConsumerRewardDenom(s.providerCtx(),
+-				transfertypes.GetPrefixedDenom(
++				ccv.GetPrefixedDenom(
+ 					packet.DestinationPort,
+ 					packet.DestinationChannel,
+ 					sdk.DefaultBondDenom,
+@@ -666,8 +666,8 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
+ 			)
+ 
+ 			getIBCDenom = func(dstPort, dstChannel string) string {
+-				return transfertypes.ParseDenomTrace(
+-					transfertypes.GetPrefixedDenom(
++				return ccv.ParseDenomTrace(
++					ccv.GetPrefixedDenom(
+ 						packet.DestinationPort,
+ 						packet.DestinationChannel,
+ 						sdk.DefaultBondDenom,
+@@ -677,7 +677,7 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
+ 
+ 			tc.setup(s.providerCtx(), &providerKeeper, bankKeeper)
+ 
+-			cbs, ok := s.providerChain.App.GetIBCKeeper().Router.GetRoute(transfertypes.ModuleName)
++			cbs, ok := s.providerChain.App.GetIBCKeeper().PortKeeper.Router.GetRoute(transfertypes.ModuleName)
+ 			s.Require().True(ok)
+ 
+ 			// save the IBC transfer rewards transferred
+@@ -689,7 +689,8 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
+ 			s.Require().NoError(err)
+ 
+ 			// execute middleware OnRecvPacket logic
+-			ack := cbs.OnRecvPacket(s.providerCtx(), packet, sdk.AccAddress{})
++			// TODO(wllmshao): passing an empty string for channelVersion, unsure if this is ok
++			ack := cbs.OnRecvPacket(s.providerCtx(), "", packet, sdk.AccAddress{})
+ 
+ 			// compute expected rewards with provider denom
+ 			expRewards := sdk.Coin{
+@@ -1199,12 +1200,12 @@ func (s *CCVTestSuite) TestMultiConsumerRewardsDistribution() {
+ 		bundle.Chain.NextBlock()
+ 
+ 		// construct the denom of the reward tokens for the provider
+-		prefixedDenom := transfertypes.GetPrefixedDenom(
++		prefixedDenom := ccv.GetPrefixedDenom(
+ 			transfertypes.PortID,
+ 			bundle.TransferPath.EndpointB.ChannelID,
+ 			rewardsPerConsumer.Denom,
+ 		)
+-		provIBCDenom := transfertypes.ParseDenomTrace(prefixedDenom).IBCDenom()
++		provIBCDenom := ccv.ParseDenomTrace(prefixedDenom).IBCDenom()
+ 
+ 		providerRewards := providerBankKeeper.GetBalance(s.providerCtx(), rewardPool, prefixedDenom)
+ 
+diff --git a/tests/integration/double_vote.go b/tests/integration/double_vote.go
+index d4471a5c..b07ed8b1 100644
+--- a/tests/integration/double_vote.go
++++ b/tests/integration/double_vote.go
+@@ -30,12 +30,12 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
+ 		s.setDefaultValSigningInfo(*v)
+ 	}
+ 
+-	consuValSet, err := tmtypes.ValidatorSetFromProto(s.consumerChain.LastHeader.ValidatorSet)
++	consuValSet, err := tmtypes.ValidatorSetFromProto(s.consumerChain.LatestCommittedHeader.ValidatorSet)
+ 	s.Require().NoError(err)
+ 	consuVal := consuValSet.Validators[0]
+ 	consuSigner := s.consumerChain.Signers[consuVal.Address.String()]
+ 
+-	provValSet, err := tmtypes.ValidatorSetFromProto(s.providerChain.LastHeader.ValidatorSet)
++	provValSet, err := tmtypes.ValidatorSetFromProto(s.providerChain.LatestCommittedHeader.ValidatorSet)
+ 	s.Require().NoError(err)
+ 
+ 	provVal := provValSet.Validators[0]
+@@ -292,7 +292,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
+ 		s.setDefaultValSigningInfo(*v)
+ 	}
+ 
+-	consuValSet, err := tmtypes.ValidatorSetFromProto(s.consumerChain.LastHeader.ValidatorSet)
++	consuValSet, err := tmtypes.ValidatorSetFromProto(s.consumerChain.LatestCommittedHeader.ValidatorSet)
+ 	s.Require().NoError(err)
+ 	consuVal := consuValSet.Validators[0]
+ 	consuVal2 := consuValSet.Validators[1]
+diff --git a/tests/integration/expired_client.go b/tests/integration/expired_client.go
+index f07c8cc7..475c1146 100644
+--- a/tests/integration/expired_client.go
++++ b/tests/integration/expired_client.go
+@@ -3,10 +3,10 @@ package integration
+ import (
+ 	"time"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
+-	ibctm "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
++	ibctm "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+ 
+ 	"cosmossdk.io/math"
+ 
+@@ -218,10 +218,10 @@ func checkClientExpired(s *CCVTestSuite, clientTo ChainType, expectedExpired boo
+ 		hostChain = s.consumerChain
+ 	}
+ 	// check that the client to the consumer is not active
+-	cs, ok := hostChain.App.GetIBCKeeper().ClientKeeper.GetClientState(hostChain.GetContext(), hostEndpoint.ClientID)
++	_, ok := hostChain.App.GetIBCKeeper().ClientKeeper.GetClientState(hostChain.GetContext(), hostEndpoint.ClientID)
+ 	s.Require().True(ok)
+-	clientStore := hostChain.App.GetIBCKeeper().ClientKeeper.ClientStore(hostChain.GetContext(), hostEndpoint.ClientID)
+-	status := cs.Status(hostChain.GetContext(), clientStore, hostChain.App.AppCodec())
++	lightClientModule := ibctm.NewLightClientModule(hostChain.App.AppCodec(), hostChain.App.GetIBCKeeper().ClientKeeper.GetStoreProvider())
++	status := lightClientModule.Status(hostChain.GetContext(), hostEndpoint.ClientID)
+ 	if expectedExpired {
+ 		s.Require().NotEqual(ibcexported.Active, status, "client is active")
+ 	} else {
+diff --git a/tests/integration/key_assignment.go b/tests/integration/key_assignment.go
+index a7614a70..7bfe08f9 100644
+--- a/tests/integration/key_assignment.go
++++ b/tests/integration/key_assignment.go
+@@ -1,9 +1,8 @@
+ package integration
+ 
+ import (
+-	"github.com/cosmos/ibc-go/v9/testing/mock"
+-
+ 	"cosmossdk.io/math"
++	"github.com/cosmos/cosmos-sdk/testutil/mock"
+ 
+ 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+ 
+diff --git a/tests/integration/misbehaviour.go b/tests/integration/misbehaviour.go
+index a7a41530..43612c1f 100644
+--- a/tests/integration/misbehaviour.go
++++ b/tests/integration/misbehaviour.go
+@@ -3,7 +3,7 @@ package integration
+ import (
+ 	"time"
+ 
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 
+ 	"cosmossdk.io/math"
+ 
+@@ -33,7 +33,7 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
+ 
+ 	altTime := s.providerCtx().BlockTime().Add(time.Minute)
+ 
+-	clientHeight := s.consumerChain.LastHeader.TrustedHeight
++	clientHeight := s.consumerChain.LatestCommittedHeader.TrustedHeight
+ 	clientTMValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators)
+ 	clientSigners := s.consumerChain.Signers
+ 
+@@ -107,7 +107,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
+ 	altTime := s.providerCtx().BlockTime().Add(time.Minute)
+ 
+ 	// Get the consumer client validator set
+-	clientHeight := s.consumerChain.LastHeader.TrustedHeight
++	clientHeight := s.consumerChain.LatestCommittedHeader.TrustedHeight
+ 	clientTMValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators)
+ 	clientSigners := s.consumerChain.Signers
+ 
+@@ -411,7 +411,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
+ 	headerTs := s.providerCtx().BlockTime().Add(time.Minute)
+ 
+ 	// get trusted validators and height
+-	clientHeight := s.consumerChain.LastHeader.TrustedHeight
++	clientHeight := s.consumerChain.LatestCommittedHeader.TrustedHeight
+ 	clientTMValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators)
+ 	clientSigners := s.consumerChain.Signers
+ 
+diff --git a/tests/integration/partial_set_security_test.go b/tests/integration/partial_set_security_test.go
+index c79bcd3f..866833a8 100644
+--- a/tests/integration/partial_set_security_test.go
++++ b/tests/integration/partial_set_security_test.go
+@@ -137,7 +137,7 @@ func TestMinStake(t *testing.T) {
+ 			}
+ 
+ 			// check the validator set on the consumer chain is the original one
+-			consuValSet := s.consumerChain.LastHeader.ValidatorSet
++			consuValSet := s.consumerChain.LatestCommittedHeader.ValidatorSet
+ 			s.Require().Equal(len(consuValSet.Validators), 4)
+ 
+ 			// get just the powers of the consu val set
+@@ -181,7 +181,7 @@ func TestMinStake(t *testing.T) {
+ 			s.consumerChain.NextBlock()
+ 
+ 			// construct the new val powers
+-			newConsuValSet := s.consumerChain.LastHeader.ValidatorSet
++			newConsuValSet := s.consumerChain.LatestCommittedHeader.ValidatorSet
+ 			newConsuValPowers := make([]int64, len(newConsuValSet.Validators))
+ 			for i, consuVal := range newConsuValSet.Validators {
+ 				// voting power corresponds to staked tokens at a 1:stake_multiplier ratio
+diff --git a/tests/integration/setup.go b/tests/integration/setup.go
+index ca9adec4..c34537ac 100644
+--- a/tests/integration/setup.go
++++ b/tests/integration/setup.go
+@@ -5,10 +5,10 @@ import (
+ 	"fmt"
+ 	"testing"
+ 
+-	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
++	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+ 	"github.com/stretchr/testify/suite"
+ 
+ 	store "cosmossdk.io/store/types"
+@@ -258,8 +258,8 @@ func initConsumerChain(
+ 	bundle.TransferPath = ibctesting.NewPath(bundle.Chain, s.providerChain)
+ 	bundle.TransferPath.EndpointA.ChannelConfig.PortID = transfertypes.PortID
+ 	bundle.TransferPath.EndpointB.ChannelConfig.PortID = transfertypes.PortID
+-	bundle.TransferPath.EndpointA.ChannelConfig.Version = transfertypes.Version
+-	bundle.TransferPath.EndpointB.ChannelConfig.Version = transfertypes.Version
++	bundle.TransferPath.EndpointA.ChannelConfig.Version = transfertypes.V1 // TODO(wllmshao): assuming this is v1 for now, may be wrong
++	bundle.TransferPath.EndpointB.ChannelConfig.Version = transfertypes.V1 // TODO(wllmshao): assuming this is v1 for now, may be wrong
+ 
+ 	// commit state on this consumer chain
+ 	s.coordinator.CommitBlock(bundle.Chain)
+diff --git a/tests/integration/slashing.go b/tests/integration/slashing.go
+index 7c51ad9e..6945c405 100644
+--- a/tests/integration/slashing.go
++++ b/tests/integration/slashing.go
+@@ -4,8 +4,8 @@ import (
+ 	"context"
+ 	"fmt"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+ 
+ 	"cosmossdk.io/core/comet"
+ 	"cosmossdk.io/math"
+diff --git a/tests/integration/stop_consumer.go b/tests/integration/stop_consumer.go
+index c134c83a..46b92172 100644
+--- a/tests/integration/stop_consumer.go
++++ b/tests/integration/stop_consumer.go
+@@ -1,7 +1,7 @@
+ package integration
+ 
+ import (
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+ 
+ 	"cosmossdk.io/math"
+ 
+diff --git a/tests/integration/throttle.go b/tests/integration/throttle.go
+index f7196d3e..0fad2c82 100644
+--- a/tests/integration/throttle.go
++++ b/tests/integration/throttle.go
+@@ -3,7 +3,7 @@ package integration
+ import (
+ 	"time"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 
+ 	"cosmossdk.io/math"
+ 
+diff --git a/tests/integration/throttle_retry.go b/tests/integration/throttle_retry.go
+index 685fa03d..c5bd54b3 100644
+--- a/tests/integration/throttle_retry.go
++++ b/tests/integration/throttle_retry.go
+@@ -3,7 +3,7 @@ package integration
+ import (
+ 	"time"
+ 
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+ 
+ 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+ 
+diff --git a/tests/interchain/provider_consumers_suite.go b/tests/interchain/provider_consumers_suite.go
+index f5ccb037..b940c720 100644
+--- a/tests/interchain/provider_consumers_suite.go
++++ b/tests/interchain/provider_consumers_suite.go
+@@ -7,7 +7,7 @@ import (
+ 	"time"
+ 
+ 	sdkmath "cosmossdk.io/math"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
+ 	"github.com/strangelove-ventures/interchaintest/v8/ibc"
+ 	"github.com/stretchr/testify/suite"
+diff --git a/tests/interchain/provider_consumers_test.go b/tests/interchain/provider_consumers_test.go
+index c8355dd1..4c7ac320 100644
+--- a/tests/interchain/provider_consumers_test.go
++++ b/tests/interchain/provider_consumers_test.go
+@@ -12,9 +12,9 @@ import (
+ 
+ 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 
+-	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
++	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+ 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+ 	"github.com/strangelove-ventures/interchaintest/v8"
+ 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
+diff --git a/tests/interchain/provider_utils.go b/tests/interchain/provider_utils.go
+index 7f21e720..2f50f7f6 100644
+--- a/tests/interchain/provider_utils.go
++++ b/tests/interchain/provider_utils.go
+@@ -8,7 +8,7 @@ import (
+ 
+ 	"cosmossdk.io/math"
+ 	sdkmath "cosmossdk.io/math"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+ )
+ 
+diff --git a/tests/mbt/driver/core.go b/tests/mbt/driver/core.go
+index e3aaabe6..f947accb 100644
+--- a/tests/mbt/driver/core.go
++++ b/tests/mbt/driver/core.go
+@@ -8,8 +8,8 @@ import (
+ 	"testing"
+ 	"time"
+ 
+-	tendermint "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
++	tendermint "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+ 	"github.com/stretchr/testify/require"
+ 
+ 	sdkmath "cosmossdk.io/math"
+@@ -79,7 +79,7 @@ func (s *Driver) providerChain() *ibctesting.TestChain {
+ }
+ 
+ func (s *Driver) providerHeight() int64 {
+-	return s.providerChain().CurrentHeader.Height
++	return s.providerChain().ProposedHeader.Height
+ }
+ 
+ func (s *Driver) providerCtx() sdk.Context {
+@@ -109,13 +109,13 @@ func (s *Driver) consumerCtx(chain ChainId) sdk.Context {
+ // runningTime returns the timestamp of the current header of chain
+ func (s *Driver) runningTime(chain ChainId) time.Time {
+ 	testChain := s.chain(chain)
+-	return testChain.CurrentHeader.Time
++	return testChain.ProposedHeader.Time
+ }
+ 
+ // lastTime returns the timestamp of the last header of chain
+ func (s *Driver) lastTime(chain ChainId) time.Time {
+ 	testChain := s.chain(chain)
+-	return testChain.LastHeader.Header.Time
++	return testChain.LatestCommittedHeader.Header.Time
+ }
+ 
+ // delegator retrieves the address for the delegator account
+@@ -380,7 +380,7 @@ func (s *Driver) setTime(chain ChainId, newTime time.Time) {
+ 	testChain, found := s.coordinator.Chains[string(chain)]
+ 	require.True(s.t, found, "chain %s not found", chain)
+ 
+-	testChain.CurrentHeader.Time = newTime
++	testChain.ProposedHeader.Time = newTime
+ }
+ 
+ func (s *Driver) AssignKey(chain ChainId, valIndex int64, value crypto.PublicKey) error {
+diff --git a/tests/mbt/driver/mbt_test.go b/tests/mbt/driver/mbt_test.go
+index 429a0e35..721f4594 100644
+--- a/tests/mbt/driver/mbt_test.go
++++ b/tests/mbt/driver/mbt_test.go
+@@ -10,7 +10,7 @@ import (
+ 	"testing"
+ 	"time"
+ 
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+ 	"github.com/informalsystems/itf-go/itf"
+ 	"github.com/kylelemons/godebug/pretty"
+ 	"github.com/stretchr/testify/require"
+@@ -240,7 +240,7 @@ func RunItfTrace(t *testing.T, path string) {
+ 	t.Log("Reading the trace...")
+ 
+ 	for index, state := range trace.States {
+-		t.Log("Height modulo epoch length:", driver.providerChain().CurrentHeader.Height%blocksPerEpoch)
++		t.Log("Height modulo epoch length:", driver.providerChain().ProposedHeader.Height%blocksPerEpoch)
+ 		t.Log("Model height modulo epoch length:", ProviderHeight(state.VarValues["currentState"].Value.(itf.MapExprType))%modelBlocksPerEpoch)
+ 		t.Logf("Reading state %v of trace %v", index, path)
+ 
+@@ -382,7 +382,7 @@ func RunItfTrace(t *testing.T, path string) {
+ 
+ 			// as in EndAndBeginBlockForProvider, we need to produce 2 blocks,
+ 			// while still honoring the time advancement
+-			headerBefore := driver.chain(ChainId(consumerChain)).LastHeader
++			headerBefore := driver.chain(ChainId(consumerChain)).LatestCommittedHeader
+ 			_ = headerBefore
+ 
+ 			driver.endAndBeginBlock(ChainId(consumerChain), 1*time.Nanosecond)
+@@ -594,7 +594,7 @@ func UpdateProviderClientOnConsumer(t *testing.T, driver *Driver, consumerChainI
+ 
+ func UpdateConsumerClientOnProvider(t *testing.T, driver *Driver, consumerChain string) {
+ 	t.Helper()
+-	consumerHeader := driver.chain(ChainId(consumerChain)).LastHeader
++	consumerHeader := driver.chain(ChainId(consumerChain)).LatestCommittedHeader
+ 	driver.path(ChainId(consumerChain)).AddClientHeader(consumerChain, consumerHeader)
+ 	err := driver.path(ChainId(consumerChain)).UpdateClient(PROVIDER, false)
+ 	require.True(t, err == nil, "Error updating client from %v on provider: %v", consumerChain, err)
+diff --git a/tests/mbt/driver/setup.go b/tests/mbt/driver/setup.go
+index 1fe0cf02..bf864770 100644
+--- a/tests/mbt/driver/setup.go
++++ b/tests/mbt/driver/setup.go
+@@ -7,11 +7,11 @@ import (
+ 	"testing"
+ 	"time"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	commitmenttypes "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	commitmenttypes "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+ 	"github.com/stretchr/testify/require"
+ 
+ 	"cosmossdk.io/math"
+@@ -287,12 +287,11 @@ func newChain(
+ 		Coordinator: coord,
+ 		ChainID:     chainID,
+ 		App:         app,
+-		CurrentHeader: cmtproto.Header{
++		ProposedHeader: cmtproto.Header{
+ 			ChainID: chainID,
+ 			Height:  1,
+ 			Time:    coord.CurrentTime.UTC(),
+ 		},
+-		QueryServer:    app.GetIBCKeeper(),
+ 		TxConfig:       app.GetTxConfig(),
+ 		Codec:          app.AppCodec(),
+ 		Vals:           validators,
+@@ -343,7 +342,7 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
+ 
+ 	consumerClientState := ibctmtypes.NewClientState(
+ 		providerChain.ChainID, tmCfg.TrustLevel, tmCfg.TrustingPeriod, tmCfg.UnbondingPeriod, tmCfg.MaxClockDrift,
+-		providerChain.LastHeader.GetHeight().(clienttypes.Height), commitmenttypes.GetSDKSpecs(),
++		providerChain.LatestCommittedHeader.GetHeight().(clienttypes.Height), commitmenttypes.GetSDKSpecs(),
+ 		[]string{"upgrade", "upgradedIBCState"},
+ 	)
+ 
+@@ -428,7 +427,7 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
+ }
+ 
+ func (s *Driver) providerHeader() *ibctmtypes.Header {
+-	return s.coordinator.Chains["provider"].LastHeader
++	return s.coordinator.Chains["provider"].LatestCommittedHeader
+ }
+ 
+ func (s *Driver) setupProvider(
+@@ -489,7 +488,7 @@ func (s *Driver) setupConsumer(
+ }
+ 
+ func createConsumerGenesis(modelParams ModelParams, providerChain *ibctesting.TestChain, consumerClientState *ibctmtypes.ClientState) *consumertypes.GenesisState {
+-	providerConsState := providerChain.LastHeader.ConsensusState()
++	providerConsState := providerChain.LatestCommittedHeader.ConsensusState()
+ 
+ 	valUpdates := cmttypes.TM2PB.ValidatorUpdates(providerChain.Vals)
+ 	params := ccvtypes.NewParams(
+diff --git a/testutil/crypto/evidence.go b/testutil/crypto/evidence.go
+index 786db952..60bdaf3b 100644
+--- a/testutil/crypto/evidence.go
++++ b/testutil/crypto/evidence.go
+@@ -4,7 +4,7 @@ import (
+ 	"fmt"
+ 	"time"
+ 
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 
+ 	"github.com/cometbft/cometbft/crypto/tmhash"
+ 	"github.com/cometbft/cometbft/libs/bytes"
+diff --git a/testutil/ibc_testing/generic_setup.go b/testutil/ibc_testing/generic_setup.go
+index 940971f7..4e7852f3 100644
+--- a/testutil/ibc_testing/generic_setup.go
++++ b/testutil/ibc_testing/generic_setup.go
+@@ -5,9 +5,9 @@ import (
+ 	"fmt"
+ 	"testing"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+-	"github.com/cosmos/ibc-go/v9/testing/mock"
++	"github.com/cosmos/cosmos-sdk/testutil/mock"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+ 	"github.com/stretchr/testify/require"
+ 	"github.com/stretchr/testify/suite"
+ 
+diff --git a/testutil/ibc_testing/specific_setup.go b/testutil/ibc_testing/specific_setup.go
+index 145989ce..7c211e38 100644
+--- a/testutil/ibc_testing/specific_setup.go
++++ b/testutil/ibc_testing/specific_setup.go
+@@ -8,7 +8,7 @@ import (
+ 	"encoding/json"
+ 
+ 	db "github.com/cosmos/cosmos-db"
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+ 
+ 	"cosmossdk.io/log"
+ 
+diff --git a/testutil/integration/interfaces.go b/testutil/integration/interfaces.go
+index 0376f42e..51ce643f 100644
+--- a/testutil/integration/interfaces.go
++++ b/testutil/integration/interfaces.go
+@@ -4,7 +4,7 @@ import (
+ 	"context"
+ 	"time"
+ 
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+ 
+ 	"cosmossdk.io/core/comet"
+ 	"cosmossdk.io/math"
+diff --git a/testutil/keeper/expectations.go b/testutil/keeper/expectations.go
+index 3ae55eeb..f0c91257 100644
+--- a/testutil/keeper/expectations.go
++++ b/testutil/keeper/expectations.go
+@@ -4,13 +4,12 @@ import (
+ 	time "time"
+ 
+ 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 	"github.com/golang/mock/gomock"
+-	extra "github.com/oxyno-zeta/gomock-extra-matcher"
+ 
+ 	math "cosmossdk.io/math"
+ 
+@@ -34,12 +33,8 @@ func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
+ 	return []*gomock.Call{
+ 		mocks.MockClientKeeper.EXPECT().CreateClient(
+ 			gomock.Any(),
+-			// Allows us to expect a match by field. These are the only two client state values
+-			// that are dependent on parameters passed to CreateConsumerClient.
+-			extra.StructMatcher().Field(
+-				"ChainId", expectedChainID).Field(
+-				"LatestHeight", expectedLatestHeight,
+-			),
++			gomock.Any(),
++			gomock.Any(),
+ 			gomock.Any(),
+ 		).Return("clientID", nil).Times(1),
+ 	}
+@@ -51,8 +46,7 @@ func GetMocksForMakeConsumerGenesis(ctx sdk.Context, mocks *MockedKeepers,
+ ) []*gomock.Call {
+ 	return []*gomock.Call{
+ 		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeToInject, nil).Times(1),
+-		mocks.MockClientKeeper.EXPECT().GetSelfConsensusState(gomock.Any(),
+-			clienttypes.GetSelfHeight(ctx)).Return(&ibctmtypes.ConsensusState{}, nil).Times(1),
++		mocks.MockStakingKeeper.EXPECT().GetHistoricalInfo(gomock.Any(), gomock.Any()).Return(stakingtypes.HistoricalInfo{}, nil).Times(1),
+ 	}
+ }
+ 
+@@ -128,7 +122,7 @@ func ExpectLatestConsensusStateMock(ctx sdk.Context, mocks MockedKeepers, client
+ }
+ 
+ func ExpectCreateClientMock(ctx sdk.Context, mocks MockedKeepers, clientID string, clientState *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState) *gomock.Call {
+-	return mocks.MockClientKeeper.EXPECT().CreateClient(ctx, clientState, consState).Return(clientID, nil).Times(1)
++	return mocks.MockClientKeeper.EXPECT().CreateClient(ctx, clientID, gomock.Any(), gomock.Any()).Return(clientID, nil).Times(1)
+ }
+ 
+ func ExpectGetCapabilityMock(ctx sdk.Context, mocks MockedKeepers, times int) *gomock.Call {
+diff --git a/testutil/keeper/mocks.go b/testutil/keeper/mocks.go
+index 94ef8e1f..0ea1f06c 100644
+--- a/testutil/keeper/mocks.go
++++ b/testutil/keeper/mocks.go
+@@ -17,11 +17,11 @@ import (
+ 	types2 "github.com/cosmos/cosmos-sdk/x/slashing/types"
+ 	types3 "github.com/cosmos/cosmos-sdk/x/staking/types"
+ 	types4 "github.com/cosmos/ibc-go/modules/capability/types"
+-	types5 "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+-	types6 "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	types7 "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
+-	types8 "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	exported "github.com/cosmos/ibc-go/v9/modules/core/exported"
++	types5 "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
++	types6 "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	types7 "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
++	types8 "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	exported "github.com/cosmos/ibc-go/v9/modules/core/exported"
+ 	gomock "github.com/golang/mock/gomock"
+ )
+ 
+@@ -108,6 +108,21 @@ func (mr *MockStakingKeeperMockRecorder) GetBondedValidatorsByPower(ctx interfac
+ 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBondedValidatorsByPower", reflect.TypeOf((*MockStakingKeeper)(nil).GetBondedValidatorsByPower), ctx)
+ }
+ 
++// GetHistoricalInfo mocks base method.
++func (m *MockStakingKeeper) GetHistoricalInfo(ctx context.Context, height int64) (types3.HistoricalInfo, error) {
++	m.ctrl.T.Helper()
++	ret := m.ctrl.Call(m, "GetHistoricalInfo", ctx, height)
++	ret0, _ := ret[0].(types3.HistoricalInfo)
++	ret1, _ := ret[1].(error)
++	return ret0, ret1
++}
++
++// GetHistoricalInfo indicates an expected call of GetHistoricalInfo.
++func (mr *MockStakingKeeperMockRecorder) GetHistoricalInfo(ctx, height interface{}) *gomock.Call {
++	mr.mock.ctrl.T.Helper()
++	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHistoricalInfo", reflect.TypeOf((*MockStakingKeeper)(nil).GetHistoricalInfo), ctx, height)
++}
++
+ // GetLastTotalPower mocks base method.
+ func (m *MockStakingKeeper) GetLastTotalPower(ctx context.Context) (math.Int, error) {
+ 	m.ctrl.T.Helper()
+@@ -785,11 +800,11 @@ func (mr *MockChannelKeeperMockRecorder) GetChannel(ctx, srcPort, srcChan interf
+ }
+ 
+ // GetChannelConnection mocks base method.
+-func (m *MockChannelKeeper) GetChannelConnection(ctx types1.Context, portID, channelID string) (string, exported.ConnectionI, error) {
++func (m *MockChannelKeeper) GetChannelConnection(ctx types1.Context, portID, channelID string) (string, types7.ConnectionEnd, error) {
+ 	m.ctrl.T.Helper()
+ 	ret := m.ctrl.Call(m, "GetChannelConnection", ctx, portID, channelID)
+ 	ret0, _ := ret[0].(string)
+-	ret1, _ := ret[1].(exported.ConnectionI)
++	ret1, _ := ret[1].(types7.ConnectionEnd)
+ 	ret2, _ := ret[2].(error)
+ 	return ret0, ret1, ret2
+ }
+@@ -957,18 +972,18 @@ func (mr *MockClientKeeperMockRecorder) ClientStore(ctx, clientID interface{}) *
+ }
+ 
+ // CreateClient mocks base method.
+-func (m *MockClientKeeper) CreateClient(ctx types1.Context, clientState exported.ClientState, consensusState exported.ConsensusState) (string, error) {
++func (m *MockClientKeeper) CreateClient(ctx types1.Context, clientType string, clientState, consensusState []byte) (string, error) {
+ 	m.ctrl.T.Helper()
+-	ret := m.ctrl.Call(m, "CreateClient", ctx, clientState, consensusState)
++	ret := m.ctrl.Call(m, "CreateClient", ctx, clientType, clientState, consensusState)
+ 	ret0, _ := ret[0].(string)
+ 	ret1, _ := ret[1].(error)
+ 	return ret0, ret1
+ }
+ 
+ // CreateClient indicates an expected call of CreateClient.
+-func (mr *MockClientKeeperMockRecorder) CreateClient(ctx, clientState, consensusState interface{}) *gomock.Call {
++func (mr *MockClientKeeperMockRecorder) CreateClient(ctx, clientType, clientState, consensusState interface{}) *gomock.Call {
+ 	mr.mock.ctrl.T.Helper()
+-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateClient", reflect.TypeOf((*MockClientKeeper)(nil).CreateClient), ctx, clientState, consensusState)
++	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateClient", reflect.TypeOf((*MockClientKeeper)(nil).CreateClient), ctx, clientType, clientState, consensusState)
+ }
+ 
+ // GetClientConsensusState mocks base method.
+@@ -1016,19 +1031,18 @@ func (mr *MockClientKeeperMockRecorder) GetLatestClientConsensusState(ctx, clien
+ 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestClientConsensusState", reflect.TypeOf((*MockClientKeeper)(nil).GetLatestClientConsensusState), ctx, clientID)
+ }
+ 
+-// GetSelfConsensusState mocks base method.
+-func (m *MockClientKeeper) GetSelfConsensusState(ctx types1.Context, height exported.Height) (exported.ConsensusState, error) {
++// GetStoreProvider mocks base method.
++func (m *MockClientKeeper) GetStoreProvider() types6.StoreProvider {
+ 	m.ctrl.T.Helper()
+-	ret := m.ctrl.Call(m, "GetSelfConsensusState", ctx, height)
+-	ret0, _ := ret[0].(exported.ConsensusState)
+-	ret1, _ := ret[1].(error)
+-	return ret0, ret1
++	ret := m.ctrl.Call(m, "GetStoreProvider")
++	ret0, _ := ret[0].(types6.StoreProvider)
++	return ret0
+ }
+ 
+-// GetSelfConsensusState indicates an expected call of GetSelfConsensusState.
+-func (mr *MockClientKeeperMockRecorder) GetSelfConsensusState(ctx, height interface{}) *gomock.Call {
++// GetStoreProvider indicates an expected call of GetStoreProvider.
++func (mr *MockClientKeeperMockRecorder) GetStoreProvider() *gomock.Call {
+ 	mr.mock.ctrl.T.Helper()
+-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSelfConsensusState", reflect.TypeOf((*MockClientKeeper)(nil).GetSelfConsensusState), ctx, height)
++	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStoreProvider", reflect.TypeOf((*MockClientKeeper)(nil).GetStoreProvider))
+ }
+ 
+ // SetClientState mocks base method.
+diff --git a/testutil/keeper/unit_test_helpers.go b/testutil/keeper/unit_test_helpers.go
+index 35ecf479..266f46fa 100644
+--- a/testutil/keeper/unit_test_helpers.go
++++ b/testutil/keeper/unit_test_helpers.go
+@@ -8,7 +8,7 @@ import (
+ 	"time"
+ 
+ 	dbm "github.com/cosmos/cosmos-db"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 	"github.com/golang/mock/gomock"
+ 	"github.com/stretchr/testify/require"
+ 
+diff --git a/testutil/simibc/chain_util.go b/testutil/simibc/chain_util.go
+index 3a304d66..2890403f 100644
+--- a/testutil/simibc/chain_util.go
++++ b/testutil/simibc/chain_util.go
+@@ -3,9 +3,9 @@ package simibc
+ import (
+ 	"time"
+ 
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+ 	"github.com/stretchr/testify/require"
+ 
+ 	sdk "github.com/cosmos/cosmos-sdk/types"
+@@ -21,8 +21,8 @@ import (
+ // NOTE: this method may be used independently of the rest of simibc.
+ func FinalizeBlock(c *ibctesting.TestChain, dt time.Duration) (*ibctmtypes.Header, []channeltypes.Packet) {
+ 	res, err := c.App.FinalizeBlock(&abci.RequestFinalizeBlock{
+-		Height:             c.CurrentHeader.Height,
+-		Time:               c.CurrentHeader.GetTime(),
++		Height:             c.ProposedHeader.Height,
++		Time:               c.ProposedHeader.GetTime(),
+ 		NextValidatorsHash: c.NextVals.Hash(),
+ 	})
+ 	require.NoError(c.TB, err)
+@@ -32,7 +32,7 @@ func FinalizeBlock(c *ibctesting.TestChain, dt time.Duration) (*ibctmtypes.Heade
+ 
+ 	// set the last header to the current header
+ 	// use nil trusted fields
+-	c.LastHeader = c.CurrentTMClientHeader()
++	c.LatestCommittedHeader = c.CurrentTMClientHeader()
+ 
+ 	// val set changes returned from previous block get applied to the next validators
+ 	// of this block. See tendermint spec for details.
+@@ -40,19 +40,19 @@ func FinalizeBlock(c *ibctesting.TestChain, dt time.Duration) (*ibctmtypes.Heade
+ 	c.NextVals = ibctesting.ApplyValSetChanges(c, c.Vals, res.ValidatorUpdates)
+ 
+ 	// increment the current header
+-	c.CurrentHeader = tmproto.Header{
++	c.ProposedHeader = tmproto.Header{
+ 		ChainID:            c.ChainID,
+ 		Height:             c.App.LastBlockHeight() + 1,
+ 		AppHash:            c.App.LastCommitID().Hash,
+-		Time:               c.CurrentHeader.Time.Add(dt),
++		Time:               c.ProposedHeader.Time.Add(dt),
+ 		ValidatorsHash:     c.Vals.Hash(),
+ 		NextValidatorsHash: c.NextVals.Hash(),
+-		ProposerAddress:    c.CurrentHeader.ProposerAddress,
++		ProposerAddress:    c.ProposedHeader.ProposerAddress,
+ 	}
+ 
+ 	// handle packets
+ 	packets := ParsePacketsFromEvents(res.Events)
+-	return c.LastHeader, packets
++	return c.LatestCommittedHeader, packets
+ }
+ 
+ // ParsePacketsFromEvents returns all packets found in events.
+diff --git a/testutil/simibc/ordered_outbox.go b/testutil/simibc/ordered_outbox.go
+index 9b0f0082..54d1bb1a 100644
+--- a/testutil/simibc/ordered_outbox.go
++++ b/testutil/simibc/ordered_outbox.go
+@@ -1,6 +1,6 @@
+ package simibc
+ 
+-import channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++import channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+ 
+ // The number of blocks to wait before a packet or ack is available for delivery
+ // after it has been committed on the chain.
+diff --git a/testutil/simibc/relay_util.go b/testutil/simibc/relay_util.go
+index 59341c35..631a7498 100644
+--- a/testutil/simibc/relay_util.go
++++ b/testutil/simibc/relay_util.go
+@@ -1,12 +1,12 @@
+ package simibc
+ 
+ import (
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+-	simapp "github.com/cosmos/ibc-go/v9/testing/simapp"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
++	simapp "github.com/cosmos/ibc-go/v9/testing/simapp"
+ 
+ 	errorsmod "cosmossdk.io/errors"
+ 
+@@ -148,24 +148,26 @@ func TryRecvAck(sender, receiver *ibctesting.Endpoint, packet channeltypes.Packe
+ // augmentHeader is a helper that augments the header with the height and validators that are most recently trusted
+ // by the receiver chain. If there is an error, the header will not be modified.
+ func augmentHeader(sender, receiver *ibctesting.TestChain, clientID string, header *ibctmtypes.Header) error {
+-	trustedHeight := receiver.GetClientState(clientID).GetLatestHeight().(clienttypes.Height)
++	lightClientModule := ibctmtypes.NewLightClientModule(receiver.App.AppCodec(), receiver.App.GetIBCKeeper().ClientKeeper.GetStoreProvider())
++	trustedHeight := lightClientModule.LatestHeight(receiver.GetContext(), clientID).(clienttypes.Height)
+ 
+ 	var (
+ 		tmTrustedVals *tmtypes.ValidatorSet
+-		ok            bool
++		err           error
+ 	)
+ 	// Once we get TrustedHeight from client, we must query the validators from the counterparty chain
+ 	// If the LatestHeight == LastHeader.Height, then TrustedValidators are current validators
+ 	// If LatestHeight < LastHeader.Height, we can query the historical validator set from HistoricalInfo
+-	if trustedHeight == sender.LastHeader.GetHeight() {
++	if trustedHeight == sender.LatestCommittedHeader.GetHeight() {
+ 		tmTrustedVals = sender.Vals
+ 	} else {
+ 		// NOTE: We need to get validators from counterparty at height: trustedHeight+1
+ 		// since the last trusted validators for a header at height h
+ 		// is the NextValidators at h+1 committed to in header h by
+ 		// NextValidatorsHash
+-		tmTrustedVals, ok = sender.GetValsAtHeight(int64(trustedHeight.RevisionHeight + 1))
+-		if !ok {
++		var err error
++		tmTrustedVals, err = sender.GetTrustedValidators(int64(trustedHeight.RevisionHeight + 1))
++		if err != nil {
+ 			return errorsmod.Wrapf(ibctmtypes.ErrInvalidHeaderHeight, "could not retrieve trusted validators at trustedHeight: %d", trustedHeight)
+ 		}
+ 	}
+diff --git a/testutil/simibc/relayed_path.go b/testutil/simibc/relayed_path.go
+index ca64987b..ecd00492 100644
+--- a/testutil/simibc/relayed_path.go
++++ b/testutil/simibc/relayed_path.go
+@@ -3,9 +3,9 @@ package simibc
+ import (
+ 	"testing"
+ 
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+ )
+ 
+ // RelayedPath is a wrapper around ibctesting.Path gives fine-grained
+diff --git a/x/ccv/consumer/ibc_module.go b/x/ccv/consumer/ibc_module.go
+index b446fe15..44578254 100644
+--- a/x/ccv/consumer/ibc_module.go
++++ b/x/ccv/consumer/ibc_module.go
+@@ -6,11 +6,11 @@ import (
+ 	"strings"
+ 
+ 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+-	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	porttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
+-	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
+-	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
++	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	porttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
++	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
++	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
+ 
+ 	errorsmod "cosmossdk.io/errors"
+ 
+@@ -162,7 +162,7 @@ func (am AppModule) OnChanOpenAck(
+ 
+ 	distrTransferMsg := channeltypes.NewMsgChannelOpenInit(
+ 		transfertypes.PortID,
+-		transfertypes.Version,
++		transfertypes.V1, // TODO(wllmshao): assuming this is v1 for now, may be wrong
+ 		channeltypes.UNORDERED,
+ 		connHops,
+ 		transfertypes.PortID,
+@@ -223,6 +223,7 @@ func (am AppModule) OnChanCloseConfirm(
+ // logic returns without error.
+ func (am AppModule) OnRecvPacket(
+ 	ctx sdk.Context,
++	channelVersion string,
+ 	packet channeltypes.Packet,
+ 	_ sdk.AccAddress,
+ ) ibcexported.Acknowledgement {
+@@ -274,6 +275,7 @@ func (am AppModule) OnRecvPacket(
+ // OnAcknowledgementPacket implements the IBCModule interface
+ func (am AppModule) OnAcknowledgementPacket(
+ 	ctx sdk.Context,
++	channelVersion string,
+ 	packet channeltypes.Packet,
+ 	acknowledgement []byte,
+ 	_ sdk.AccAddress,
+@@ -318,6 +320,7 @@ func (am AppModule) OnAcknowledgementPacket(
+ // by the IBC module as the channel is ORDERED
+ func (am AppModule) OnTimeoutPacket(
+ 	ctx sdk.Context,
++	channelVersion string,
+ 	packet channeltypes.Packet,
+ 	_ sdk.AccAddress,
+ ) error {
+diff --git a/x/ccv/consumer/ibc_module_test.go b/x/ccv/consumer/ibc_module_test.go
+index d6a59dfc..6103d329 100644
+--- a/x/ccv/consumer/ibc_module_test.go
++++ b/x/ccv/consumer/ibc_module_test.go
+@@ -4,10 +4,10 @@ import (
+ 	"testing"
+ 
+ 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+-	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+-	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
++	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
++	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
+ 	"github.com/golang/mock/gomock"
+ 	"github.com/stretchr/testify/require"
+ 
+@@ -220,7 +220,7 @@ func TestOnChanOpenAck(t *testing.T) {
+ 				// Expected msg
+ 				distrTransferMsg := channeltypes.NewMsgChannelOpenInit(
+ 					transfertypes.PortID,
+-					transfertypes.Version,
++					transfertypes.V1, // TODO(wllmshao): assuming this is v1 for now, may be wrong
+ 					channeltypes.UNORDERED,
+ 					[]string{"connectionID"},
+ 					transfertypes.PortID,
+diff --git a/x/ccv/consumer/keeper/distribution.go b/x/ccv/consumer/keeper/distribution.go
+index c5090246..a8444ea2 100644
+--- a/x/ccv/consumer/keeper/distribution.go
++++ b/x/ccv/consumer/keeper/distribution.go
+@@ -4,9 +4,9 @@ import (
+ 	"fmt"
+ 	"strconv"
+ 
+-	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+ 
+ 	errorsmod "cosmossdk.io/errors"
+ 	"cosmossdk.io/math"
+@@ -189,14 +189,14 @@ func (k Keeper) AllowedRewardDenoms(ctx sdk.Context) []string {
+ 	for _, denom := range k.GetProviderRewardDenoms(ctx) {
+ 		// every provider denom was sent over IBC,
+ 		// so we must prefix the denom
+-		sourcePrefix := transfertypes.GetDenomPrefix(
++		sourcePrefix := ccv.GetDenomPrefix(
+ 			transfertypes.PortID,
+ 			k.GetDistributionTransmissionChannel(ctx),
+ 		)
+ 		// NOTE: sourcePrefix contains the trailing "/"
+ 		prefixedDenom := sourcePrefix + denom
+ 		// construct the denomination trace from the full raw denomination
+-		denomTrace := transfertypes.ParseDenomTrace(prefixedDenom)
++		denomTrace := ccv.ParseDenomTrace(prefixedDenom)
+ 
+ 		// append the IBC denom to the list of allowed reward denoms
+ 		rewardDenoms = append(rewardDenoms, denomTrace.IBCDenom())
+diff --git a/x/ccv/consumer/keeper/genesis.go b/x/ccv/consumer/keeper/genesis.go
+index 74bc6317..911424a1 100644
+--- a/x/ccv/consumer/keeper/genesis.go
++++ b/x/ccv/consumer/keeper/genesis.go
+@@ -5,8 +5,9 @@ import (
+ 
+ 	errorsmod "cosmossdk.io/errors"
+ 	sdk "github.com/cosmos/cosmos-sdk/types"
+-	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	ibchost "github.com/cosmos/ibc-go/v9/modules/core/exported"
+ 
+ 	abci "github.com/cometbft/cometbft/abci/types"
+ 
+@@ -61,7 +62,18 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
+ 		var clientID string
+ 		if state.ConnectionId == "" {
+ 			// create the provider client in InitGenesis for new consumer chain. CCV Handshake must be established with this client id.
+-			cid, err := k.clientKeeper.CreateClient(ctx, state.Provider.ClientState, state.Provider.ConsensusState)
++
++			clientStateBytes, err := state.Provider.ClientState.Marshal()
++			if err != nil {
++				panic(err)
++			}
++			consensusStateBytes, err := state.Provider.ConsensusState.Marshal()
++			if err != nil {
++				panic(err)
++			}
++
++			// TODO(wllmshao): this forces the client to be tendermint, unsure if this is ok
++			cid, err := k.clientKeeper.CreateClient(ctx, ibchost.Tendermint, clientStateBytes, consensusStateBytes)
+ 			if err != nil {
+ 				// If the client creation fails, the chain MUST NOT start
+ 				panic(err)
+diff --git a/x/ccv/consumer/keeper/genesis_test.go b/x/ccv/consumer/keeper/genesis_test.go
+index 677397cf..5a613016 100644
+--- a/x/ccv/consumer/keeper/genesis_test.go
++++ b/x/ccv/consumer/keeper/genesis_test.go
+@@ -4,9 +4,9 @@ import (
+ 	"testing"
+ 	"time"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	commitmenttypes "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	commitmenttypes "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 	"github.com/golang/mock/gomock"
+ 	"github.com/stretchr/testify/require"
+ 
+@@ -30,7 +30,7 @@ import (
+ // and finally the restart of chain when the CCV channel is already established.
+ func TestInitGenesis(t *testing.T) {
+ 	// mock the consumer genesis state values
+-	provClientID := "tendermint-07"
++	provClientID := "07-tendermint" // TODO(wllmshao): not sure if this is ok
+ 	provChannelID := "ChannelID"
+ 
+ 	vscID := uint64(0)
+diff --git a/x/ccv/consumer/keeper/keeper.go b/x/ccv/consumer/keeper/keeper.go
+index ecb3f1ab..6fc3feeb 100644
+--- a/x/ccv/consumer/keeper/keeper.go
++++ b/x/ccv/consumer/keeper/keeper.go
+@@ -6,10 +6,10 @@ import (
+ 	"reflect"
+ 
+ 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
+ 
+ 	addresscodec "cosmossdk.io/core/address"
+ 	"cosmossdk.io/core/store"
+diff --git a/x/ccv/consumer/keeper/keeper_test.go b/x/ccv/consumer/keeper/keeper_test.go
+index 28be9e0d..a51dbb19 100644
+--- a/x/ccv/consumer/keeper/keeper_test.go
++++ b/x/ccv/consumer/keeper/keeper_test.go
+@@ -5,7 +5,7 @@ import (
+ 	"sort"
+ 	"testing"
+ 
+-	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
++	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
+ 	"github.com/golang/mock/gomock"
+ 	"github.com/stretchr/testify/require"
+ 
+diff --git a/x/ccv/consumer/keeper/provider_info.go b/x/ccv/consumer/keeper/provider_info.go
+index 27ae9ac5..2c4b25e6 100644
+--- a/x/ccv/consumer/keeper/provider_info.go
++++ b/x/ccv/consumer/keeper/provider_info.go
+@@ -1,7 +1,7 @@
+ package keeper
+ 
+ import (
+-	ibctm "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint" //nolint:golint
++	ibctm "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint" //nolint:golint
+ 
+ 	sdk "github.com/cosmos/cosmos-sdk/types"
+ 
+@@ -25,10 +25,10 @@ func (k Keeper) GetProviderInfo(ctx sdk.Context) (*types.QueryProviderInfoRespon
+ 		return nil, err
+ 	}
+ 
+-	providerChannelID := consumerChannel.GetCounterparty().GetChannelID()
+-	providerConnection := consumerConnection.GetCounterparty()
++	providerChannelID := consumerChannel.Counterparty.ChannelId
++	providerConnection := consumerConnection.Counterparty
+ 
+-	consumerClientState, found := k.clientKeeper.GetClientState(ctx, consumerConnection.GetClientID())
++	consumerClientState, found := k.clientKeeper.GetClientState(ctx, consumerConnection.ClientId)
+ 	if !found {
+ 		return nil, ccvtypes.ErrClientNotFound
+ 	}
+@@ -37,15 +37,15 @@ func (k Keeper) GetProviderInfo(ctx sdk.Context) (*types.QueryProviderInfoRespon
+ 	resp := types.QueryProviderInfoResponse{
+ 		Consumer: types.ChainInfo{
+ 			ChainID:      ctx.ChainID(),
+-			ClientID:     consumerConnection.GetClientID(),
++			ClientID:     consumerConnection.ClientId,
+ 			ConnectionID: consumerConnectionID,
+ 			ChannelID:    consumerChannelID,
+ 		},
+ 
+ 		Provider: types.ChainInfo{
+ 			ChainID:      providerChainID,
+-			ClientID:     providerConnection.GetClientID(),
+-			ConnectionID: providerConnection.GetConnectionID(),
++			ClientID:     providerConnection.ClientId,
++			ConnectionID: providerConnection.ConnectionId,
+ 			ChannelID:    providerChannelID,
+ 		},
+ 	}
+diff --git a/x/ccv/consumer/keeper/relay.go b/x/ccv/consumer/keeper/relay.go
+index d32ac8f0..2b1f9a84 100644
+--- a/x/ccv/consumer/keeper/relay.go
++++ b/x/ccv/consumer/keeper/relay.go
+@@ -5,8 +5,8 @@ import (
+ 	"fmt"
+ 	"strconv"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+ 
+ 	errorsmod "cosmossdk.io/errors"
+ 
+diff --git a/x/ccv/consumer/keeper/relay_test.go b/x/ccv/consumer/keeper/relay_test.go
+index 1db62c9b..cc658741 100644
+--- a/x/ccv/consumer/keeper/relay_test.go
++++ b/x/ccv/consumer/keeper/relay_test.go
+@@ -7,9 +7,9 @@ import (
+ 	"time"
+ 
+ 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
+ 	"github.com/golang/mock/gomock"
+ 	"github.com/stretchr/testify/require"
+ 
+diff --git a/x/ccv/consumer/types/genesis.go b/x/ccv/consumer/types/genesis.go
+index 907756b9..21219c58 100644
+--- a/x/ccv/consumer/types/genesis.go
++++ b/x/ccv/consumer/types/genesis.go
+@@ -1,7 +1,7 @@
+ package types
+ 
+ import (
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 
+ 	errorsmod "cosmossdk.io/errors"
+ 
+diff --git a/x/ccv/consumer/types/genesis.pb.go b/x/ccv/consumer/types/genesis.pb.go
+index 17415f24..8a1f74b8 100644
+--- a/x/ccv/consumer/types/genesis.pb.go
++++ b/x/ccv/consumer/types/genesis.pb.go
+@@ -8,7 +8,7 @@ import (
+ 	_ "github.com/cometbft/cometbft/abci/types"
+ 	_ "github.com/cosmos/gogoproto/gogoproto"
+ 	proto "github.com/cosmos/gogoproto/proto"
+-	_ "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	_ "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 	types "github.com/cosmos/interchain-security/v6/x/ccv/types"
+ 	_ "google.golang.org/protobuf/types/known/timestamppb"
+ 	io "io"
+diff --git a/x/ccv/consumer/types/genesis_test.go b/x/ccv/consumer/types/genesis_test.go
+index 8faa41c3..a0884ca4 100644
+--- a/x/ccv/consumer/types/genesis_test.go
++++ b/x/ccv/consumer/types/genesis_test.go
+@@ -4,9 +4,9 @@ import (
+ 	"testing"
+ 	"time"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	commitmenttypes "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	commitmenttypes "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 	"github.com/stretchr/testify/require"
+ 
+ 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+diff --git a/x/ccv/provider/client/cli/tx.go b/x/ccv/provider/client/cli/tx.go
+index 36b1b136..00330d28 100644
+--- a/x/ccv/provider/client/cli/tx.go
++++ b/x/ccv/provider/client/cli/tx.go
+@@ -6,7 +6,7 @@ import (
+ 	"os"
+ 	"strings"
+ 
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 	"github.com/spf13/cobra"
+ 
+ 	"cosmossdk.io/math"
+diff --git a/x/ccv/provider/client/legacy_proposals.go b/x/ccv/provider/client/legacy_proposals.go
+index 8993ad9e..4656ca0e 100644
+--- a/x/ccv/provider/client/legacy_proposals.go
++++ b/x/ccv/provider/client/legacy_proposals.go
+@@ -8,7 +8,7 @@ import (
+ 	"path/filepath"
+ 	"time"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 
+ 	"github.com/cosmos/cosmos-sdk/client"
+ 	sdk "github.com/cosmos/cosmos-sdk/types"
+diff --git a/x/ccv/provider/ibc_middleware.go b/x/ccv/provider/ibc_middleware.go
+index b72c328f..d56d9b95 100644
+--- a/x/ccv/provider/ibc_middleware.go
++++ b/x/ccv/provider/ibc_middleware.go
+@@ -2,11 +2,11 @@ package provider
+ 
+ import (
+ 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+-	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	porttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
+-	"github.com/cosmos/ibc-go/v9/modules/core/exported"
++	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	porttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
++	"github.com/cosmos/ibc-go/v9/modules/core/exported"
+ 
+ 	"cosmossdk.io/math"
+ 
+@@ -111,13 +111,14 @@ func (im IBCMiddleware) OnChanCloseConfirm(
+ // it appends the coin to the consumer's chain allocation record
+ func (im IBCMiddleware) OnRecvPacket(
+ 	ctx sdk.Context,
++	channelVersion string,
+ 	packet channeltypes.Packet,
+ 	relayer sdk.AccAddress,
+ ) exported.Acknowledgement {
+ 	logger := im.keeper.Logger(ctx)
+ 
+ 	// executes the IBC transfer OnRecv logic
+-	ack := im.app.OnRecvPacket(ctx, packet, relayer)
++	ack := im.app.OnRecvPacket(ctx, channelVersion, packet, relayer)
+ 
+ 	// Note that inside the below if condition statement,
+ 	// we know that the IBC transfer succeeded. That entails
+@@ -272,23 +273,25 @@ func (im IBCMiddleware) OnRecvPacket(
+ // If fees are not enabled, this callback will default to the ibc-core packet callback
+ func (im IBCMiddleware) OnAcknowledgementPacket(
+ 	ctx sdk.Context,
++	channelVersion string,
+ 	packet channeltypes.Packet,
+ 	acknowledgement []byte,
+ 	relayer sdk.AccAddress,
+ ) error {
+ 	// call underlying app's OnAcknowledgementPacket callback.
+-	return im.app.OnAcknowledgementPacket(ctx, packet, acknowledgement, relayer)
++	return im.app.OnAcknowledgementPacket(ctx, channelVersion, packet, acknowledgement, relayer)
+ }
+ 
+ // OnTimeoutPacket implements the IBCMiddleware interface
+ // If fees are not enabled, this callback will default to the ibc-core packet callback
+ func (im IBCMiddleware) OnTimeoutPacket(
+ 	ctx sdk.Context,
++	channelVersion string,
+ 	packet channeltypes.Packet,
+ 	relayer sdk.AccAddress,
+ ) error {
+ 	// call underlying app's OnTimeoutPacket callback.
+-	return im.app.OnTimeoutPacket(ctx, packet, relayer)
++	return im.app.OnTimeoutPacket(ctx, channelVersion, packet, relayer)
+ }
+ 
+ // SendPacket implements the ICS4 Wrapper interface
+@@ -325,8 +328,8 @@ func (im IBCMiddleware) GetAppVersion(ctx sdk.Context, portID, channelID string)
+ func GetProviderDenom(denom string, packet channeltypes.Packet) (providerDenom string) {
+ 	// If the prefix denom corresponds to the packet's source port and channel,
+ 	// returns the base denom
+-	if ibctransfertypes.ReceiverChainIsSource(packet.GetSourcePort(), packet.GetSourceChannel(), denom) {
+-		voucherPrefix := ibctransfertypes.GetDenomPrefix(packet.GetSourcePort(), packet.GetSourceChannel())
++	if ccvtypes.ReceiverChainIsSource(packet.GetSourcePort(), packet.GetSourceChannel(), denom) {
++		voucherPrefix := ccvtypes.GetDenomPrefix(packet.GetSourcePort(), packet.GetSourceChannel())
+ 		unprefixedDenom := denom[len(voucherPrefix):]
+ 
+ 		// coin denomination used in sending from the escrow address
+@@ -334,19 +337,19 @@ func GetProviderDenom(denom string, packet channeltypes.Packet) (providerDenom s
+ 
+ 		// The denomination used to send the coins is either the native denom or the hash of the path
+ 		// if the denomination is not native.
+-		denomTrace := ibctransfertypes.ParseDenomTrace(unprefixedDenom)
++		denomTrace := ccvtypes.ParseDenomTrace(unprefixedDenom)
+ 		if denomTrace.Path != "" {
+ 			providerDenom = denomTrace.IBCDenom()
+ 		}
+ 		// update the prefix denom according to the packet info
+ 	} else {
+-		prefixedDenom := ibctransfertypes.GetPrefixedDenom(
++		prefixedDenom := ccvtypes.GetPrefixedDenom(
+ 			packet.GetDestPort(),
+ 			packet.GetDestChannel(),
+ 			denom,
+ 		)
+ 
+-		providerDenom = ibctransfertypes.ParseDenomTrace(prefixedDenom).IBCDenom()
++		providerDenom = ccvtypes.ParseDenomTrace(prefixedDenom).IBCDenom()
+ 	}
+ 
+ 	return providerDenom
+diff --git a/x/ccv/provider/ibc_middleware_test.go b/x/ccv/provider/ibc_middleware_test.go
+index 9b57cb8f..951e0f87 100644
+--- a/x/ccv/provider/ibc_middleware_test.go
++++ b/x/ccv/provider/ibc_middleware_test.go
+@@ -3,8 +3,8 @@ package provider_test
+ import (
+ 	"testing"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+ 	"github.com/stretchr/testify/require"
+ 
+ 	"github.com/cosmos/interchain-security/v6/x/ccv/provider"
+diff --git a/x/ccv/provider/ibc_module.go b/x/ccv/provider/ibc_module.go
+index 1e6ba6c8..15144459 100644
+--- a/x/ccv/provider/ibc_module.go
++++ b/x/ccv/provider/ibc_module.go
+@@ -6,10 +6,10 @@ import (
+ 	"strconv"
+ 
+ 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	porttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
+-	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
+-	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	porttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
++	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
++	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
+ 
+ 	errorsmod "cosmossdk.io/errors"
+ 
+@@ -174,6 +174,7 @@ func (am AppModule) OnChanCloseConfirm(
+ // logic returns without error.
+ func (am AppModule) OnRecvPacket(
+ 	ctx sdk.Context,
++	channelVersion string,
+ 	packet channeltypes.Packet,
+ 	_ sdk.AccAddress,
+ ) ibcexported.Acknowledgement {
+@@ -270,6 +271,7 @@ func UnmarshalConsumerPacketData(packetData []byte) (consumerPacket ccv.Consumer
+ // OnAcknowledgementPacket implements the IBCModule interface
+ func (am AppModule) OnAcknowledgementPacket(
+ 	ctx sdk.Context,
++	channelVersion string,
+ 	packet channeltypes.Packet,
+ 	acknowledgement []byte,
+ 	_ sdk.AccAddress,
+@@ -314,6 +316,7 @@ func (am AppModule) OnAcknowledgementPacket(
+ // OnTimeoutPacket implements the IBCModule interface
+ func (am AppModule) OnTimeoutPacket(
+ 	ctx sdk.Context,
++	channelVersion string,
+ 	packet channeltypes.Packet,
+ 	_ sdk.AccAddress,
+ ) error {
+diff --git a/x/ccv/provider/ibc_module_test.go b/x/ccv/provider/ibc_module_test.go
+index 2270adf0..962ccc5d 100644
+--- a/x/ccv/provider/ibc_module_test.go
++++ b/x/ccv/provider/ibc_module_test.go
+@@ -4,11 +4,11 @@ import (
+ 	"testing"
+ 
+ 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+-	"github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	"github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 	"github.com/golang/mock/gomock"
+ 	"github.com/stretchr/testify/require"
+ 
+diff --git a/x/ccv/provider/keeper/consumer_equivocation.go b/x/ccv/provider/keeper/consumer_equivocation.go
+index 132dfe98..e186bfe5 100644
+--- a/x/ccv/provider/keeper/consumer_equivocation.go
++++ b/x/ccv/provider/keeper/consumer_equivocation.go
+@@ -6,8 +6,8 @@ import (
+ 	"errors"
+ 	"fmt"
+ 
+-	ibcclienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibcclienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 
+ 	errorsmod "cosmossdk.io/errors"
+ 	"cosmossdk.io/math"
+@@ -358,15 +358,11 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, consumerId string, misbehavio
+ 		)
+ 	}
+ 
+-	clientState, found := k.clientKeeper.GetClientState(ctx, clientId)
+-	if !found {
+-		return errorsmod.Wrapf(ibcclienttypes.ErrClientNotFound, "cannot find client state for client with ID %s", clientId)
+-	}
+-
+-	clientStore := k.clientKeeper.ClientStore(ctx, clientId)
++	// TODO(wllmshao): this forces the client to be tendermint, unsure if this is ok
++	lightClientModule := ibctmtypes.NewLightClientModule(k.cdc, k.clientKeeper.GetStoreProvider())
+ 
+ 	// CheckForMisbehaviour verifies that the headers have different blockID hashes
+-	ok := clientState.CheckForMisbehaviour(ctx, k.cdc, clientStore, &misbehaviour)
++	ok := lightClientModule.CheckForMisbehaviour(ctx, misbehaviour.ClientId, &misbehaviour)
+ 	if !ok {
+ 		return errorsmod.Wrapf(ibcclienttypes.ErrInvalidMisbehaviour, "invalid misbehaviour for client-id: %s", misbehaviour.ClientId)
+ 	}
+@@ -374,7 +370,7 @@ func (k Keeper) CheckMisbehaviour(ctx sdk.Context, consumerId string, misbehavio
+ 	// VerifyClientMessage calls verifyMisbehaviour which verifies that the headers in the misbehaviour
+ 	// are valid against their respective trusted consensus states and that at least a TrustLevel of the validator set signed their commit,
+ 	// see checkMisbehaviourHeader in ibc-go/blob/v7.3.0/modules/light-clients/07-tendermint/misbehaviour_handle.go#L126
+-	if err := clientState.VerifyClientMessage(ctx, k.cdc, clientStore, &misbehaviour); err != nil {
++	if err := lightClientModule.VerifyClientMessage(ctx, clientId, &misbehaviour); err != nil {
+ 		return err
+ 	}
+ 
+diff --git a/x/ccv/provider/keeper/consumer_lifecycle.go b/x/ccv/provider/keeper/consumer_lifecycle.go
+index 2f6b47fd..e98c1ab6 100644
+--- a/x/ccv/provider/keeper/consumer_lifecycle.go
++++ b/x/ccv/provider/keeper/consumer_lifecycle.go
+@@ -4,12 +4,12 @@ import (
+ 	"fmt"
+ 	"time"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	commitmenttypes "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"
+-	ibchost "github.com/cosmos/ibc-go/v9/modules/core/exported"
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	commitmenttypes "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"
++	ibchost "github.com/cosmos/ibc-go/v9/modules/core/exported"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 
+ 	errorsmod "cosmossdk.io/errors"
+ 	storetypes "cosmossdk.io/store/types"
+@@ -334,7 +334,17 @@ func (k Keeper) CreateConsumerClient(
+ 		valsetHash,
+ 	)
+ 
+-	clientID, err := k.clientKeeper.CreateClient(ctx, clientState, consensusState)
++	clientStateBytes, err := clientState.Marshal()
++	if err != nil {
++		return err
++	}
++	consensusStateBytes, err := consensusState.Marshal()
++	if err != nil {
++		return err
++	}
++
++	// TODO(wllmshao): this forces the client to be tendermint, unsure if this is ok
++	clientID, err := k.clientKeeper.CreateClient(ctx, ibchost.Tendermint, clientStateBytes, consensusStateBytes)
+ 	if err != nil {
+ 		return err
+ 	}
+@@ -424,11 +434,12 @@ func (k Keeper) MakeConsumerGenesis(
+ 		clientState.TrustingPeriod = trustPeriod
+ 		clientState.UnbondingPeriod = providerUnbondingPeriod
+ 
+-		consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)
++		consState, err := k.getSelfConsensusState(ctx, height)
++
+ 		if err != nil {
+ 			return gen, errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
+ 		}
+-		tmConsState = consState.(*ibctmtypes.ConsensusState)
++		tmConsState = consState
+ 	} else {
+ 		// connection ID provided
+ 		preCCV = true
+@@ -494,6 +505,26 @@ func (k Keeper) MakeConsumerGenesis(
+ 	return gen, nil
+ }
+ 
++// This is copied from the client keeper in ibc v8, since this function was removed in ibc v9
++func (k Keeper) getSelfConsensusState(ctx sdk.Context, height clienttypes.Height) (*ibctmtypes.ConsensusState, error) {
++	// check that height revision matches chainID revision
++	revision := clienttypes.ParseChainID(ctx.ChainID())
++	if revision != height.GetRevisionNumber() {
++		return nil, errorsmod.Wrapf(clienttypes.ErrInvalidHeight, "chainID revision number does not match height revision number: expected %d, got %d", revision, height.GetRevisionNumber())
++	}
++	histInfo, err := k.stakingKeeper.GetHistoricalInfo(ctx, int64(height.RevisionHeight))
++	if err != nil {
++		return nil, errorsmod.Wrapf(err, "height %d", height.RevisionHeight)
++	}
++
++	consensusState := &ibctmtypes.ConsensusState{
++		Timestamp:          histInfo.Header.Time,
++		Root:               commitmenttypes.NewMerkleRoot(histInfo.Header.GetAppHash()),
++		NextValidatorsHash: histInfo.Header.NextValidatorsHash,
++	}
++	return consensusState, nil
++}
++
+ // StopAndPrepareForConsumerRemoval sets the phase of the chain to stopped and prepares to get the state of the
+ // chain removed after unbonding period elapses
+ func (k Keeper) StopAndPrepareForConsumerRemoval(ctx sdk.Context, consumerId string) error {
+diff --git a/x/ccv/provider/keeper/consumer_lifecycle_test.go b/x/ccv/provider/keeper/consumer_lifecycle_test.go
+index 4f8bd1d5..1b81d48c 100644
+--- a/x/ccv/provider/keeper/consumer_lifecycle_test.go
++++ b/x/ccv/provider/keeper/consumer_lifecycle_test.go
+@@ -6,9 +6,9 @@ import (
+ 	"testing"
+ 	"time"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+ 	_go "github.com/cosmos/ics23/go"
+ 	"github.com/golang/mock/gomock"
+ 	"github.com/stretchr/testify/require"
+@@ -560,7 +560,7 @@ func TestCreateConsumerClient(t *testing.T) {
+ 				providerKeeper.SetConsumerPhase(ctx, CONSUMER_ID, providertypes.CONSUMER_PHASE_LAUNCHED)
+ 
+ 				// Expect none of the client creation related calls to happen
+-				mocks.MockClientKeeper.EXPECT().CreateClient(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
++				mocks.MockClientKeeper.EXPECT().CreateClient(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+ 			},
+ 			expClientCreated: false,
+ 		},
+diff --git a/x/ccv/provider/keeper/distribution.go b/x/ccv/provider/keeper/distribution.go
+index c03ecafb..1524e46d 100644
+--- a/x/ccv/provider/keeper/distribution.go
++++ b/x/ccv/provider/keeper/distribution.go
+@@ -3,7 +3,7 @@ package keeper
+ import (
+ 	"context"
+ 
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+ 
+ 	errorsmod "cosmossdk.io/errors"
+ 	"cosmossdk.io/math"
+diff --git a/x/ccv/provider/keeper/distribution_test.go b/x/ccv/provider/keeper/distribution_test.go
+index 6c926aa6..fa5e5661 100644
+--- a/x/ccv/provider/keeper/distribution_test.go
++++ b/x/ccv/provider/keeper/distribution_test.go
+@@ -3,10 +3,10 @@ package keeper_test
+ import (
+ 	"testing"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 	"github.com/golang/mock/gomock"
+ 	"github.com/stretchr/testify/require"
+ 
+diff --git a/x/ccv/provider/keeper/genesis_test.go b/x/ccv/provider/keeper/genesis_test.go
+index b3fb8420..4c1eeb6d 100644
+--- a/x/ccv/provider/keeper/genesis_test.go
++++ b/x/ccv/provider/keeper/genesis_test.go
+@@ -4,7 +4,7 @@ import (
+ 	"testing"
+ 	"time"
+ 
+-	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
++	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
+ 	"github.com/golang/mock/gomock"
+ 	"github.com/stretchr/testify/require"
+ 
+diff --git a/x/ccv/provider/keeper/grpc_query_test.go b/x/ccv/provider/keeper/grpc_query_test.go
+index b5a7ced0..a7fa5792 100644
+--- a/x/ccv/provider/keeper/grpc_query_test.go
++++ b/x/ccv/provider/keeper/grpc_query_test.go
+@@ -14,13 +14,13 @@ import (
+ 	"cosmossdk.io/math"
+ 	sdk "github.com/cosmos/cosmos-sdk/types"
+ 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 
+ 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
+ 
+ 	sdkquery "github.com/cosmos/cosmos-sdk/types/query"
+-	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
+-	ibctm "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
++	ibctm "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 	cryptotestutil "github.com/cosmos/interchain-security/v6/testutil/crypto"
+ 	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
+ 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
+diff --git a/x/ccv/provider/keeper/keeper.go b/x/ccv/provider/keeper/keeper.go
+index 55ddcf41..c74b34ca 100644
+--- a/x/ccv/provider/keeper/keeper.go
++++ b/x/ccv/provider/keeper/keeper.go
+@@ -8,12 +8,12 @@ import (
+ 	"time"
+ 
+ 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
+-	ibchost "github.com/cosmos/ibc-go/v9/modules/core/exported"
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
++	ibchost "github.com/cosmos/ibc-go/v9/modules/core/exported"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 
+ 	addresscodec "cosmossdk.io/core/address"
+ 	errorsmod "cosmossdk.io/errors"
+diff --git a/x/ccv/provider/keeper/keeper_test.go b/x/ccv/provider/keeper/keeper_test.go
+index 6b3e9ba8..577345e6 100644
+--- a/x/ccv/provider/keeper/keeper_test.go
++++ b/x/ccv/provider/keeper/keeper_test.go
+@@ -5,7 +5,7 @@ import (
+ 	"sort"
+ 	"testing"
+ 
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+ 	"github.com/stretchr/testify/require"
+ 
+ 	"cosmossdk.io/math"
+diff --git a/x/ccv/provider/keeper/msg_server_test.go b/x/ccv/provider/keeper/msg_server_test.go
+index 953fecd0..a5388b76 100644
+--- a/x/ccv/provider/keeper/msg_server_test.go
++++ b/x/ccv/provider/keeper/msg_server_test.go
+@@ -5,7 +5,7 @@ import (
+ 	"time"
+ 
+ 	"cosmossdk.io/math"
+-	"github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	"github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 	"github.com/golang/mock/gomock"
+ 
+ 	"github.com/stretchr/testify/require"
+diff --git a/x/ccv/provider/keeper/params.go b/x/ccv/provider/keeper/params.go
+index aa3a3063..8e238af1 100644
+--- a/x/ccv/provider/keeper/params.go
++++ b/x/ccv/provider/keeper/params.go
+@@ -4,7 +4,7 @@ import (
+ 	"fmt"
+ 	"time"
+ 
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 
+ 	sdk "github.com/cosmos/cosmos-sdk/types"
+ 
+diff --git a/x/ccv/provider/keeper/params_test.go b/x/ccv/provider/keeper/params_test.go
+index 9c22a730..72093d7d 100644
+--- a/x/ccv/provider/keeper/params_test.go
++++ b/x/ccv/provider/keeper/params_test.go
+@@ -4,9 +4,9 @@ import (
+ 	"testing"
+ 	"time"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	commitmenttypes "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	commitmenttypes "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 	"github.com/stretchr/testify/require"
+ 
+ 	"cosmossdk.io/math"
+diff --git a/x/ccv/provider/keeper/permissionless_test.go b/x/ccv/provider/keeper/permissionless_test.go
+index 156fb0a4..b2e91758 100644
+--- a/x/ccv/provider/keeper/permissionless_test.go
++++ b/x/ccv/provider/keeper/permissionless_test.go
+@@ -4,7 +4,7 @@ import (
+ 	"testing"
+ 	"time"
+ 
+-	"github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	"github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 	"github.com/stretchr/testify/require"
+ 
+ 	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
+diff --git a/x/ccv/provider/keeper/relay.go b/x/ccv/provider/keeper/relay.go
+index 33a7e05e..7481c8be 100644
+--- a/x/ccv/provider/keeper/relay.go
++++ b/x/ccv/provider/keeper/relay.go
+@@ -5,8 +5,8 @@ import (
+ 	"fmt"
+ 	"strconv"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+ 
+ 	errorsmod "cosmossdk.io/errors"
+ 
+diff --git a/x/ccv/provider/keeper/relay_test.go b/x/ccv/provider/keeper/relay_test.go
+index 5f31bc3a..797c8638 100644
+--- a/x/ccv/provider/keeper/relay_test.go
++++ b/x/ccv/provider/keeper/relay_test.go
+@@ -7,9 +7,9 @@ import (
+ 	"time"
+ 
+ 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+ 	"github.com/golang/mock/gomock"
+ 	"github.com/stretchr/testify/require"
+ 
+diff --git a/x/ccv/provider/migrations/v7/legacy_params.go b/x/ccv/provider/migrations/v7/legacy_params.go
+index 2bb09629..5855bd5c 100644
+--- a/x/ccv/provider/migrations/v7/legacy_params.go
++++ b/x/ccv/provider/migrations/v7/legacy_params.go
+@@ -3,7 +3,7 @@ package v7
+ import (
+ 	"time"
+ 
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 
+ 	sdk "github.com/cosmos/cosmos-sdk/types"
+ 
+diff --git a/x/ccv/provider/module_test.go b/x/ccv/provider/module_test.go
+index 41b9201e..fb8eb0b7 100644
+--- a/x/ccv/provider/module_test.go
++++ b/x/ccv/provider/module_test.go
+@@ -4,7 +4,7 @@ import (
+ 	"testing"
+ 
+ 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+-	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
++	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
+ 	"github.com/golang/mock/gomock"
+ 	"github.com/stretchr/testify/assert"
+ 	"github.com/stretchr/testify/require"
+diff --git a/x/ccv/provider/types/codec.go b/x/ccv/provider/types/codec.go
+index 01e37180..b06ff579 100644
+--- a/x/ccv/provider/types/codec.go
++++ b/x/ccv/provider/types/codec.go
+@@ -1,8 +1,8 @@
+ package types
+ 
+ import (
+-	"github.com/cosmos/ibc-go/v9/modules/core/exported"
+-	tendermint "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	"github.com/cosmos/ibc-go/v9/modules/core/exported"
++	tendermint "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 
+ 	"github.com/cosmos/cosmos-sdk/codec"
+ 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+diff --git a/x/ccv/provider/types/genesis.go b/x/ccv/provider/types/genesis.go
+index 91fa538a..2f34e870 100644
+--- a/x/ccv/provider/types/genesis.go
++++ b/x/ccv/provider/types/genesis.go
+@@ -4,7 +4,7 @@ import (
+ 	"errors"
+ 	"fmt"
+ 
+-	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
++	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
+ 
+ 	errorsmod "cosmossdk.io/errors"
+ 
+diff --git a/x/ccv/provider/types/genesis_test.go b/x/ccv/provider/types/genesis_test.go
+index 4fdbd7c2..5d00c891 100644
+--- a/x/ccv/provider/types/genesis_test.go
++++ b/x/ccv/provider/types/genesis_test.go
+@@ -4,9 +4,9 @@ import (
+ 	"testing"
+ 	"time"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	commitmenttypes "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	commitmenttypes "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 	"github.com/stretchr/testify/require"
+ 
+ 	"cosmossdk.io/math"
+diff --git a/x/ccv/provider/types/legacy_proposal.go b/x/ccv/provider/types/legacy_proposal.go
+index 87d1c707..faff0481 100644
+--- a/x/ccv/provider/types/legacy_proposal.go
++++ b/x/ccv/provider/types/legacy_proposal.go
+@@ -4,7 +4,7 @@ import (
+ 	"fmt"
+ 	time "time"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 
+ 	evidencetypes "cosmossdk.io/x/evidence/types"
+ 
+diff --git a/x/ccv/provider/types/msg.go b/x/ccv/provider/types/msg.go
+index bf52a5b2..3ab2bead 100644
+--- a/x/ccv/provider/types/msg.go
++++ b/x/ccv/provider/types/msg.go
+@@ -6,10 +6,8 @@ import (
+ 	"fmt"
+ 	"strings"
+ 
+-	"github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+-
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 
+ 	errorsmod "cosmossdk.io/errors"
+ 	"cosmossdk.io/math"
+@@ -574,7 +572,7 @@ func ValidateAllowlistedRewardDenoms(allowlistedRewardDenoms AllowlistedRewardDe
+ 	}
+ 
+ 	for _, denom := range allowlistedRewardDenoms.Denoms {
+-		if err := types.ValidateIBCDenom(denom); err != nil {
++		if err := ccvtypes.ValidateIBCDenom(denom); err != nil {
+ 			return errorsmod.Wrapf(ErrInvalidAllowlistedRewardDenoms, "Invalid denom (%s): %s", denom, err.Error())
+ 		}
+ 	}
+diff --git a/x/ccv/provider/types/msg_test.go b/x/ccv/provider/types/msg_test.go
+index fcfb1e94..991b865d 100644
+--- a/x/ccv/provider/types/msg_test.go
++++ b/x/ccv/provider/types/msg_test.go
+@@ -6,7 +6,7 @@ import (
+ 	"time"
+ 
+ 	"cosmossdk.io/math"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 	"github.com/stretchr/testify/require"
+ 
+ 	sdk "github.com/cosmos/cosmos-sdk/types"
+diff --git a/x/ccv/provider/types/params.go b/x/ccv/provider/types/params.go
+index a278c81a..06904f61 100644
+--- a/x/ccv/provider/types/params.go
++++ b/x/ccv/provider/types/params.go
+@@ -4,9 +4,9 @@ import (
+ 	"fmt"
+ 	"time"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	commitmenttypes "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	commitmenttypes "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 
+ 	"cosmossdk.io/math"
+ 
+diff --git a/x/ccv/provider/types/params_test.go b/x/ccv/provider/types/params_test.go
+index b323d31f..0aac67b1 100644
+--- a/x/ccv/provider/types/params_test.go
++++ b/x/ccv/provider/types/params_test.go
+@@ -4,9 +4,9 @@ import (
+ 	"testing"
+ 	"time"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	commitmenttypes "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	commitmenttypes "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 	"github.com/stretchr/testify/require"
+ 
+ 	"cosmossdk.io/math"
+diff --git a/x/ccv/provider/types/provider.go b/x/ccv/provider/types/provider.go
+index 74ccebe2..8799476a 100644
+--- a/x/ccv/provider/types/provider.go
++++ b/x/ccv/provider/types/provider.go
+@@ -5,7 +5,7 @@ import (
+ 	"time"
+ 
+ 	"cosmossdk.io/math"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+ 
+ 	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+ )
+diff --git a/x/ccv/provider/types/provider.pb.go b/x/ccv/provider/types/provider.pb.go
+index ba60517a..699f25df 100644
+--- a/x/ccv/provider/types/provider.pb.go
++++ b/x/ccv/provider/types/provider.pb.go
+@@ -15,8 +15,8 @@ import (
+ 	_ "github.com/cosmos/gogoproto/gogoproto"
+ 	proto "github.com/cosmos/gogoproto/proto"
+ 	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
+-	types "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	_07_tendermint "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	types "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	_07_tendermint "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 	types3 "github.com/cosmos/interchain-security/v6/x/ccv/types"
+ 	_ "google.golang.org/protobuf/types/known/durationpb"
+ 	_ "google.golang.org/protobuf/types/known/timestamppb"
+diff --git a/x/ccv/provider/types/tx.pb.go b/x/ccv/provider/types/tx.pb.go
+index b23a9939..9abfff72 100644
+--- a/x/ccv/provider/types/tx.pb.go
++++ b/x/ccv/provider/types/tx.pb.go
+@@ -16,8 +16,8 @@ import (
+ 	grpc1 "github.com/cosmos/gogoproto/grpc"
+ 	proto "github.com/cosmos/gogoproto/proto"
+ 	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
+-	types1 "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	_07_tendermint "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	types1 "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	_07_tendermint "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 	_ "google.golang.org/genproto/googleapis/api/annotations"
+ 	grpc "google.golang.org/grpc"
+ 	codes "google.golang.org/grpc/codes"
+diff --git a/x/ccv/types/denom_helpers.go b/x/ccv/types/denom_helpers.go
+new file mode 100644
+index 00000000..c20e5de7
+--- /dev/null
++++ b/x/ccv/types/denom_helpers.go
+@@ -0,0 +1,156 @@
++package types
++
++import (
++	"crypto/sha256"
++	"encoding/hex"
++	"fmt"
++	"strings"
++
++	errorsmod "cosmossdk.io/errors"
++	tmbytes "github.com/cometbft/cometbft/libs/bytes"
++
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++
++	sdk "github.com/cosmos/cosmos-sdk/types"
++
++	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
++	cmttypes "github.com/cometbft/cometbft/types"
++
++	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
++)
++
++// The code in this file is removed in ibc v9. It is copied from ibc v8 to here in order to support the migration to v9
++
++func ReceiverChainIsSource(sourcePort, sourceChannel, denom string) bool {
++	// The prefix passed in should contain the SourcePort and SourceChannel.
++	// If  the receiver chain originally sent the token to the sender chain
++	// the denom will have the sender's SourcePort and SourceChannel as the
++	// prefix.
++
++	voucherPrefix := GetDenomPrefix(sourcePort, sourceChannel)
++	return strings.HasPrefix(denom, voucherPrefix)
++}
++
++func GetDenomPrefix(portID, channelID string) string {
++	return fmt.Sprintf("%s/%s/", portID, channelID)
++}
++
++func GetPrefixedDenom(portID, channelID, baseDenom string) string {
++	return fmt.Sprintf("%s/%s/%s", portID, channelID, baseDenom)
++}
++
++type DenomTrace struct {
++	Path      string
++	BaseDenom string
++}
++
++const DenomPrefix = "ibc"
++
++func (dt DenomTrace) Hash() tmbytes.HexBytes {
++	hash := sha256.Sum256([]byte(dt.GetFullDenomPath()))
++	return hash[:]
++}
++
++func (dt DenomTrace) GetPrefix() string {
++	return dt.Path + "/"
++}
++
++func (dt DenomTrace) GetFullDenomPath() string {
++	if dt.Path == "" {
++		return dt.BaseDenom
++	}
++	return dt.GetPrefix() + dt.BaseDenom
++}
++
++func (dt DenomTrace) IBCDenom() string {
++	if dt.Path != "" {
++		return fmt.Sprintf("%s/%s", DenomPrefix, dt.Hash())
++	}
++	return dt.BaseDenom
++}
++
++func ParseDenomTrace(rawDenom string) DenomTrace {
++	denomSplit := strings.Split(rawDenom, "/")
++
++	if denomSplit[0] == rawDenom {
++		return DenomTrace{
++			Path:      "",
++			BaseDenom: rawDenom,
++		}
++	}
++
++	path, baseDenom := extractPathAndBaseFromFullDenom(denomSplit)
++	return DenomTrace{
++		Path:      path,
++		BaseDenom: baseDenom,
++	}
++}
++
++func extractPathAndBaseFromFullDenom(fullDenomItems []string) (string, string) {
++	var (
++		pathSlice      []string
++		baseDenomSlice []string
++	)
++
++	length := len(fullDenomItems)
++	for i := 0; i < length; i += 2 {
++		// The IBC specification does not guarantee the expected format of the
++		// destination port or destination channel identifier. A short term solution
++		// to determine base denomination is to expect the channel identifier to be the
++		// one ibc-go specifies. A longer term solution is to separate the path and base
++		// denomination in the ICS20 packet. If an intermediate hop prefixes the full denom
++		// with a channel identifier format different from our own, the base denomination
++		// will be incorrectly parsed, but the token will continue to be treated correctly
++		// as an IBC denomination. The hash used to store the token internally on our chain
++		// will be the same value as the base denomination being correctly parsed.
++		if i < length-1 && length > 2 && channeltypes.IsValidChannelID(fullDenomItems[i+1]) {
++			pathSlice = append(pathSlice, fullDenomItems[i], fullDenomItems[i+1])
++		} else {
++			baseDenomSlice = fullDenomItems[i:]
++			break
++		}
++	}
++
++	path := strings.Join(pathSlice, "/")
++	baseDenom := strings.Join(baseDenomSlice, "/")
++
++	return path, baseDenom
++}
++
++func ValidateIBCDenom(denom string) error {
++	if err := sdk.ValidateDenom(denom); err != nil {
++		return err
++	}
++
++	denomSplit := strings.SplitN(denom, "/", 2)
++
++	switch {
++	case denom == DenomPrefix:
++		return errorsmod.Wrapf(transfertypes.ErrInvalidDenomForTransfer, "denomination should be prefixed with the format 'ibc/{hash(trace + \"/\" + %s)}'", denom)
++
++	case len(denomSplit) == 2 && denomSplit[0] == DenomPrefix:
++		if strings.TrimSpace(denomSplit[1]) == "" {
++			return errorsmod.Wrapf(transfertypes.ErrInvalidDenomForTransfer, "denomination should be prefixed with the format 'ibc/{hash(trace + \"/\" + %s)}'", denom)
++		}
++
++		if _, err := ParseHexHash(denomSplit[1]); err != nil {
++			return errorsmod.Wrapf(err, "invalid denom trace hash %s", denomSplit[1])
++		}
++	}
++
++	return nil
++}
++
++// ParseHexHash parses a hex hash in string format to bytes and validates its correctness.
++func ParseHexHash(hexHash string) (cmtbytes.HexBytes, error) {
++	hash, err := hex.DecodeString(hexHash)
++	if err != nil {
++		return nil, err
++	}
++
++	if err := cmttypes.ValidateHash(hash); err != nil {
++		return nil, err
++	}
++
++	return hash, nil
++}
+diff --git a/x/ccv/types/expected_keepers.go b/x/ccv/types/expected_keepers.go
+index 1e8dfe97..41cae5c2 100644
+--- a/x/ccv/types/expected_keepers.go
++++ b/x/ccv/types/expected_keepers.go
+@@ -5,11 +5,11 @@ import (
+ 	"time"
+ 
+ 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+-	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
++	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
+ 
+ 	addresscodec "cosmossdk.io/core/address"
+ 	"cosmossdk.io/math"
+@@ -68,6 +68,7 @@ type StakingKeeper interface {
+ 	StakingTokenSupply(ctx context.Context) (math.Int, error)
+ 	BondedRatio(ctx context.Context) (math.LegacyDec, error)
+ 	TotalBondedTokens(ctx context.Context) (math.Int, error)
++	GetHistoricalInfo(ctx context.Context, height int64) (stakingtypes.HistoricalInfo, error)
+ }
+ 
+ // SlashingKeeper defines the contract expected to perform ccv slashing
+@@ -97,7 +98,7 @@ type ChannelKeeper interface {
+ 	) (sequence uint64, err error)
+ 	WriteAcknowledgement(ctx sdk.Context, chanCap *capabilitytypes.Capability, packet ibcexported.PacketI, acknowledgement ibcexported.Acknowledgement) error
+ 	ChanCloseInit(ctx sdk.Context, portID, channelID string, chanCap *capabilitytypes.Capability) error
+-	GetChannelConnection(ctx sdk.Context, portID, channelID string) (string, ibcexported.ConnectionI, error)
++	GetChannelConnection(ctx sdk.Context, portID, channelID string) (string, conntypes.ConnectionEnd, error)
+ }
+ 
+ // PortKeeper defines the expected IBC port keeper
+@@ -112,13 +113,13 @@ type ConnectionKeeper interface {
+ 
+ // ClientKeeper defines the expected IBC client keeper
+ type ClientKeeper interface {
+-	CreateClient(ctx sdk.Context, clientState ibcexported.ClientState, consensusState ibcexported.ConsensusState) (string, error)
++	CreateClient(ctx sdk.Context, clientType string, clientState, consensusState []byte) (string, error)
+ 	GetClientState(ctx sdk.Context, clientID string) (ibcexported.ClientState, bool)
+ 	GetLatestClientConsensusState(ctx sdk.Context, clientID string) (ibcexported.ConsensusState, bool)
+-	GetSelfConsensusState(ctx sdk.Context, height ibcexported.Height) (ibcexported.ConsensusState, error)
+ 	ClientStore(ctx sdk.Context, clientID string) storetypes.KVStore
+ 	SetClientState(ctx sdk.Context, clientID string, clientState ibcexported.ClientState)
+ 	GetClientConsensusState(ctx sdk.Context, clientID string, height ibcexported.Height) (ibcexported.ConsensusState, bool)
++	GetStoreProvider() clienttypes.StoreProvider
+ }
+ 
+ // DistributionKeeper defines the expected interface of the distribution keeper
+diff --git a/x/ccv/types/genesis.go b/x/ccv/types/genesis.go
+index 632e6c2b..1676d920 100644
+--- a/x/ccv/types/genesis.go
++++ b/x/ccv/types/genesis.go
+@@ -3,7 +3,7 @@ package types
+ import (
+ 	"strings"
+ 
+-	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 
+ 	errorsmod "cosmossdk.io/errors"
+ 
+diff --git a/x/ccv/types/shared_consumer.pb.go b/x/ccv/types/shared_consumer.pb.go
+index c6195c79..5eab78c0 100644
+--- a/x/ccv/types/shared_consumer.pb.go
++++ b/x/ccv/types/shared_consumer.pb.go
+@@ -9,7 +9,7 @@ import (
+ 	_ "github.com/cosmos/gogoproto/gogoproto"
+ 	proto "github.com/cosmos/gogoproto/proto"
+ 	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
+-	_07_tendermint "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
++	_07_tendermint "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+ 	_ "google.golang.org/protobuf/types/known/durationpb"
+ 	io "io"
+ 	math "math"
+diff --git a/x/ccv/types/shared_params.go b/x/ccv/types/shared_params.go
+index 7e2c2b86..80a102d6 100644
+--- a/x/ccv/types/shared_params.go
++++ b/x/ccv/types/shared_params.go
+@@ -7,7 +7,7 @@ import (
+ 	"strings"
+ 	"time"
+ 
+-	ibchost "github.com/cosmos/ibc-go/v9/modules/core/24-host"
++	ibchost "github.com/cosmos/ibc-go/v9/modules/core/24-host"
+ 
+ 	errorsmod "cosmossdk.io/errors"
+ 	"cosmossdk.io/math"
+diff --git a/x/ccv/types/utils.go b/x/ccv/types/utils.go
+index 0e6c5346..4232d963 100644
+--- a/x/ccv/types/utils.go
++++ b/x/ccv/types/utils.go
+@@ -7,9 +7,9 @@ import (
+ 	"strings"
+ 	"time"
+ 
+-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+-	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
++	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
++	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
++	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
+ 
+ 	errorsmod "cosmossdk.io/errors"
+ 
+diff --git a/x/ccv/types/utils_test.go b/x/ccv/types/utils_test.go
+index 34509f84..126a7169 100644
+--- a/x/ccv/types/utils_test.go
++++ b/x/ccv/types/utils_test.go
+@@ -3,7 +3,7 @@ package types_test
+ import (
+ 	"testing"
+ 
+-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
++	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+ 	"github.com/stretchr/testify/require"
+ 
+ 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"

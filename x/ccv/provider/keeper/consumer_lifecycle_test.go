@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v9/testing"
 	_go "github.com/cosmos/ics23/go"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -560,7 +560,7 @@ func TestCreateConsumerClient(t *testing.T) {
 				providerKeeper.SetConsumerPhase(ctx, CONSUMER_ID, providertypes.CONSUMER_PHASE_LAUNCHED)
 
 				// Expect none of the client creation related calls to happen
-				mocks.MockClientKeeper.EXPECT().CreateClient(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				mocks.MockClientKeeper.EXPECT().CreateClient(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 			},
 			expClientCreated: false,
 		},

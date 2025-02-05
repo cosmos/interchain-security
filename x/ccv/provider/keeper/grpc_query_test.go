@@ -14,13 +14,13 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	sdkquery "github.com/cosmos/cosmos-sdk/types/query"
-	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
-	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
+	ibctm "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
 	cryptotestutil "github.com/cosmos/interchain-security/v6/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"

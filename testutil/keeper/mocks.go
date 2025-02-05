@@ -17,11 +17,11 @@ import (
 	types2 "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	types3 "github.com/cosmos/cosmos-sdk/x/staking/types"
 	types4 "github.com/cosmos/ibc-go/modules/capability/types"
-	types5 "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	types6 "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	types7 "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
-	types8 "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	exported "github.com/cosmos/ibc-go/v8/modules/core/exported"
+	types5 "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+	types6 "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+	types7 "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
+	types8 "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+	exported "github.com/cosmos/ibc-go/v9/modules/core/exported"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -106,6 +106,21 @@ func (m *MockStakingKeeper) GetBondedValidatorsByPower(ctx context.Context) ([]t
 func (mr *MockStakingKeeperMockRecorder) GetBondedValidatorsByPower(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBondedValidatorsByPower", reflect.TypeOf((*MockStakingKeeper)(nil).GetBondedValidatorsByPower), ctx)
+}
+
+// GetHistoricalInfo mocks base method.
+func (m *MockStakingKeeper) GetHistoricalInfo(ctx context.Context, height int64) (types3.HistoricalInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetHistoricalInfo", ctx, height)
+	ret0, _ := ret[0].(types3.HistoricalInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetHistoricalInfo indicates an expected call of GetHistoricalInfo.
+func (mr *MockStakingKeeperMockRecorder) GetHistoricalInfo(ctx, height interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHistoricalInfo", reflect.TypeOf((*MockStakingKeeper)(nil).GetHistoricalInfo), ctx, height)
 }
 
 // GetLastTotalPower mocks base method.
@@ -785,11 +800,11 @@ func (mr *MockChannelKeeperMockRecorder) GetChannel(ctx, srcPort, srcChan interf
 }
 
 // GetChannelConnection mocks base method.
-func (m *MockChannelKeeper) GetChannelConnection(ctx types1.Context, portID, channelID string) (string, exported.ConnectionI, error) {
+func (m *MockChannelKeeper) GetChannelConnection(ctx types1.Context, portID, channelID string) (string, types7.ConnectionEnd, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetChannelConnection", ctx, portID, channelID)
 	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(exported.ConnectionI)
+	ret1, _ := ret[1].(types7.ConnectionEnd)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
@@ -957,18 +972,18 @@ func (mr *MockClientKeeperMockRecorder) ClientStore(ctx, clientID interface{}) *
 }
 
 // CreateClient mocks base method.
-func (m *MockClientKeeper) CreateClient(ctx types1.Context, clientState exported.ClientState, consensusState exported.ConsensusState) (string, error) {
+func (m *MockClientKeeper) CreateClient(ctx types1.Context, clientType string, clientState, consensusState []byte) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateClient", ctx, clientState, consensusState)
+	ret := m.ctrl.Call(m, "CreateClient", ctx, clientType, clientState, consensusState)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateClient indicates an expected call of CreateClient.
-func (mr *MockClientKeeperMockRecorder) CreateClient(ctx, clientState, consensusState interface{}) *gomock.Call {
+func (mr *MockClientKeeperMockRecorder) CreateClient(ctx, clientType, clientState, consensusState interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateClient", reflect.TypeOf((*MockClientKeeper)(nil).CreateClient), ctx, clientState, consensusState)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateClient", reflect.TypeOf((*MockClientKeeper)(nil).CreateClient), ctx, clientType, clientState, consensusState)
 }
 
 // GetClientConsensusState mocks base method.
@@ -1016,19 +1031,18 @@ func (mr *MockClientKeeperMockRecorder) GetLatestClientConsensusState(ctx, clien
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestClientConsensusState", reflect.TypeOf((*MockClientKeeper)(nil).GetLatestClientConsensusState), ctx, clientID)
 }
 
-// GetSelfConsensusState mocks base method.
-func (m *MockClientKeeper) GetSelfConsensusState(ctx types1.Context, height exported.Height) (exported.ConsensusState, error) {
+// GetStoreProvider mocks base method.
+func (m *MockClientKeeper) GetStoreProvider() types6.StoreProvider {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSelfConsensusState", ctx, height)
-	ret0, _ := ret[0].(exported.ConsensusState)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "GetStoreProvider")
+	ret0, _ := ret[0].(types6.StoreProvider)
+	return ret0
 }
 
-// GetSelfConsensusState indicates an expected call of GetSelfConsensusState.
-func (mr *MockClientKeeperMockRecorder) GetSelfConsensusState(ctx, height interface{}) *gomock.Call {
+// GetStoreProvider indicates an expected call of GetStoreProvider.
+func (mr *MockClientKeeperMockRecorder) GetStoreProvider() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSelfConsensusState", reflect.TypeOf((*MockClientKeeper)(nil).GetSelfConsensusState), ctx, height)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStoreProvider", reflect.TypeOf((*MockClientKeeper)(nil).GetStoreProvider))
 }
 
 // SetClientState mocks base method.

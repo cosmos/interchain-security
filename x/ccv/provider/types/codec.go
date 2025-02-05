@@ -1,8 +1,8 @@
 package types
 
 import (
-	"github.com/cosmos/ibc-go/v8/modules/core/exported"
-	tendermint "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+	"github.com/cosmos/ibc-go/v9/modules/core/exported"
+	tendermint "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"testing"
 
-	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v9/testing"
 	"github.com/stretchr/testify/suite"
 
 	store "cosmossdk.io/store/types"
@@ -258,8 +258,8 @@ func initConsumerChain(
 	bundle.TransferPath = ibctesting.NewPath(bundle.Chain, s.providerChain)
 	bundle.TransferPath.EndpointA.ChannelConfig.PortID = transfertypes.PortID
 	bundle.TransferPath.EndpointB.ChannelConfig.PortID = transfertypes.PortID
-	bundle.TransferPath.EndpointA.ChannelConfig.Version = transfertypes.Version
-	bundle.TransferPath.EndpointB.ChannelConfig.Version = transfertypes.Version
+	bundle.TransferPath.EndpointA.ChannelConfig.Version = transfertypes.V1
+	bundle.TransferPath.EndpointB.ChannelConfig.Version = transfertypes.V1
 
 	// commit state on this consumer chain
 	s.coordinator.CommitBlock(bundle.Chain)

@@ -9,7 +9,7 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 	"golang.org/x/mod/semver"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
 	v5 "github.com/cosmos/interchain-security/v6/tests/e2e/v5"
 )

@@ -3,7 +3,7 @@ package integration
 import (
 	"time"
 
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	ibctesting "github.com/cosmos/ibc-go/v9/testing"
 	"github.com/stretchr/testify/suite"
 
 	"cosmossdk.io/math"
@@ -219,7 +219,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyMsgUpdateParams() {
 	s.Assert().NoError(err)
 	// set current header time to be equal or later than voting end time in order to process proposal from active queue,
 	// once the proposal is added to the chain
-	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(*params.VotingPeriod)
+	s.consumerChain.ProposedHeader.Time = s.consumerChain.ProposedHeader.Time.Add(*params.VotingPeriod)
 
 	s.consumerChain.NextBlock()
 

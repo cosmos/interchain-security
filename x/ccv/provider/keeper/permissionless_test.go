@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	"github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 	"github.com/stretchr/testify/require"
 
 	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"

@@ -1,12 +1,12 @@
 package simibc
 
 import (
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
-	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
-	simapp "github.com/cosmos/ibc-go/v8/testing/simapp"
+	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
+	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+	simapp "github.com/cosmos/ibc-go/v9/testing/simapp"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -148,25 +148,26 @@ func TryRecvAck(sender, receiver *ibctesting.Endpoint, packet channeltypes.Packe
 // augmentHeader is a helper that augments the header with the height and validators that are most recently trusted
 // by the receiver chain. If there is an error, the header will not be modified.
 func augmentHeader(sender, receiver *ibctesting.TestChain, clientID string, header *ibctmtypes.Header) error {
-	trustedHeight := receiver.GetClientState(clientID).GetLatestHeight().(clienttypes.Height)
+	lightClientModule := ibctmtypes.NewLightClientModule(receiver.App.AppCodec(), receiver.App.GetIBCKeeper().ClientKeeper.GetStoreProvider())
+	trustedHeight := lightClientModule.LatestHeight(receiver.GetContext(), clientID).(clienttypes.Height)
 
 	var (
 		tmTrustedVals *tmtypes.ValidatorSet
-		ok            bool
+		err           error
 	)
 	// Once we get TrustedHeight from client, we must query the validators from the counterparty chain
-	// If the LatestHeight == LastHeader.Height, then TrustedValidators are current validators
-	// If LatestHeight < LastHeader.Height, we can query the historical validator set from HistoricalInfo
-	if trustedHeight == sender.LastHeader.GetHeight() {
+	// If the LatestHeight == LatestCommittedHeader.Height, then TrustedValidators are current validators
+	// If LatestHeight < LatestCommittedHeader.Height, we can query the historical validator set from HistoricalInfo
+	if trustedHeight == sender.LatestCommittedHeader.GetHeight() {
 		tmTrustedVals = sender.Vals
 	} else {
 		// NOTE: We need to get validators from counterparty at height: trustedHeight+1
 		// since the last trusted validators for a header at height h
 		// is the NextValidators at h+1 committed to in header h by
 		// NextValidatorsHash
-		tmTrustedVals, ok = sender.GetValsAtHeight(int64(trustedHeight.RevisionHeight + 1))
-		if !ok {
-			return errorsmod.Wrapf(ibctmtypes.ErrInvalidHeaderHeight, "could not retrieve trusted validators at trustedHeight: %d", trustedHeight)
+		tmTrustedVals, err = sender.GetTrustedValidators(int64(trustedHeight.RevisionHeight + 1))
+		if err != nil {
+			return errorsmod.Wrapf(ibctmtypes.ErrInvalidHeaderHeight, "could not retrieve trusted validators at trustedHeight: %d", trustedHeight, err)
 		}
 	}
 	trustedVals, err := tmTrustedVals.ToProto()

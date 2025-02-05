@@ -6,10 +6,10 @@ import (
 	"strconv"
 
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
+	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
+	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -174,6 +174,7 @@ func (am AppModule) OnChanCloseConfirm(
 // logic returns without error.
 func (am AppModule) OnRecvPacket(
 	ctx sdk.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
@@ -270,6 +271,7 @@ func UnmarshalConsumerPacketData(packetData []byte) (consumerPacket ccv.Consumer
 // OnAcknowledgementPacket implements the IBCModule interface
 func (am AppModule) OnAcknowledgementPacket(
 	ctx sdk.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 	_ sdk.AccAddress,
@@ -314,6 +316,7 @@ func (am AppModule) OnAcknowledgementPacket(
 // OnTimeoutPacket implements the IBCModule interface
 func (am AppModule) OnTimeoutPacket(
 	ctx sdk.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) error {

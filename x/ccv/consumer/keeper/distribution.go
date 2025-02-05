@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
-	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
@@ -189,14 +189,14 @@ func (k Keeper) AllowedRewardDenoms(ctx sdk.Context) []string {
 	for _, denom := range k.GetProviderRewardDenoms(ctx) {
 		// every provider denom was sent over IBC,
 		// so we must prefix the denom
-		sourcePrefix := transfertypes.GetDenomPrefix(
+		sourcePrefix := ccv.GetDenomPrefix(
 			transfertypes.PortID,
 			k.GetDistributionTransmissionChannel(ctx),
 		)
 		// NOTE: sourcePrefix contains the trailing "/"
 		prefixedDenom := sourcePrefix + denom
 		// construct the denomination trace from the full raw denomination
-		denomTrace := transfertypes.ParseDenomTrace(prefixedDenom)
+		denomTrace := ccv.ParseDenomTrace(prefixedDenom)
 
 		// append the IBC denom to the list of allowed reward denoms
 		rewardDenoms = append(rewardDenoms, denomTrace.IBCDenom())

@@ -44,20 +44,20 @@ make proto-gen
 ### Steps for upgrading cosmos-sdk and ibc-go
 Key dependencies:
 * `cosmos-sdk@v0.50.4`
-* `ibc-go/v8@v8.1.0`
+* `ibc-go/v9@v8.1.0`
 * `ibc-go/modules/capability@v1.0.0`
 
 ```shell
 go get github.com/cosmos/cosmos-sdk@v0.50.4
-go get github.com/cosmos/ibc-go/v8@v8.1.0
+go get github.com/cosmos/ibc-go/v9@v8.1.0
 go get github.com/cosmos/ibc-go/modules/capability@v1.0.0-rc5
 ```
 
-`ibc-go/v8` is using the `x/capability` module that lives in `github.com/cosmos/ibc-go/modules/capability`.
+`ibc-go/v9` is using the `x/capability` module that lives in `github.com/cosmos/ibc-go/modules/capability`.
 * this module was added after all the file imports were changed for ibc-go (from v7 -> v8) to avoid weird import behaviour
 
 ### Search & replace
-* github.com/cosmos/ibc-go/v7 -> github.com/cosmos/ibc-go/v8
+* github.com/cosmos/ibc-go/v7 -> github.com/cosmos/ibc-go/v9
 * github.com/cosmos/cosmos-sdk/store -> cosmossdk.io/store
 * github.com/cosmos/cosmos-sdk/x/feegrant -> cosmossdk.io/x/feegrant
 * github.com/cosmos/cosmos-sdk/x/evidence -> cosmossdk.io/x/evidence

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
-	"github.com/cosmos/ibc-go/v8/modules/core/exported"
-	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v9/modules/core/23-commitment/types"
+	"github.com/cosmos/ibc-go/v9/modules/core/exported"
+	ibctm "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v9/testing"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
@@ -489,13 +489,13 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 	require.NoError(endpoint.Chain.TB, err)
 	tmConfig.TrustingPeriod = trustPeriod
 
-	height := endpoint.Counterparty.Chain.LastHeader.GetHeight().(clienttypes.Height)
+	height := endpoint.Counterparty.Chain.LatestCommittedHeader.GetHeight().(clienttypes.Height)
 	UpgradePath := []string{"upgrade", "upgradedIBCState"}
 	clientState := ibctm.NewClientState(
 		endpoint.Counterparty.Chain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
 		height, commitmenttypes.GetSDKSpecs(), UpgradePath,
 	)
-	consensusState := endpoint.Counterparty.Chain.LastHeader.ConsensusState()
+	consensusState := endpoint.Counterparty.Chain.LatestCommittedHeader.ConsensusState()
 
 	msg, err := clienttypes.NewMsgCreateClient(
 		clientState, consensusState, endpoint.Chain.SenderAccount.GetAddress().String(),
@@ -523,8 +523,9 @@ func (suite *CCVTestSuite) GetConsumerEndpointClientAndConsState(
 	clientState, found := consumerBundle.App.GetIBCKeeper().ClientKeeper.GetClientState(ctx, clientID)
 	suite.Require().True(found)
 
+	lightClientModule := ibctm.NewLightClientModule(consumerBundle.App.AppCodec(), consumerBundle.App.GetIBCKeeper().ClientKeeper.GetStoreProvider())
 	consState, found := consumerBundle.App.GetIBCKeeper().ClientKeeper.GetClientConsensusState(
-		ctx, clientID, clientState.GetLatestHeight())
+		ctx, clientID, lightClientModule.LatestHeight(ctx, clientID))
 	suite.Require().True(found)
 
 	return clientState, consState
