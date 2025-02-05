@@ -1,8 +1,6 @@
 package integration
 
 import (
-	"github.com/cosmos/cosmos-sdk/testutil/mock"
-
 	"cosmossdk.io/math"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -13,6 +11,8 @@ import (
 	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+
+	cmttypes "github.com/cometbft/cometbft/types"
 )
 
 // TestKeyAssignment tests key assignments relayed from the provider chain to the consumer chain at different times in the protocol lifecycle.
@@ -328,7 +328,7 @@ func generateNewConsumerKey(s *CCVTestSuite, valIndex int) (stakingtypes.Validat
 	validator := s.getVal(s.providerCtx(), valAddr)
 
 	// generate new PrivValidator
-	privVal := mock.NewPV()
+	privVal := cmttypes.NewMockPV()
 	tmPubKey, err := privVal.GetPubKey()
 	s.Require().NoError(err)
 	pubKey, err := tmencoding.PubKeyToProto(tmPubKey)

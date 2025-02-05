@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/testutil/mock"
 	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 	ibctesting "github.com/cosmos/ibc-go/v9/testing"
 
@@ -23,6 +22,8 @@ import (
 	consumerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+
+	cmttypes "github.com/cometbft/cometbft/types"
 )
 
 type (
@@ -260,7 +261,7 @@ func preProposalKeyAssignment(
 		s.Require().NoError(err)
 
 		// generate new PrivValidator
-		privVal := mock.NewPV()
+		privVal := cmttypes.NewMockPV()
 		tmPubKey, err := privVal.GetPubKey()
 		s.Require().NoError(err)
 		consumerKey, err := tmencoding.PubKeyToProto(tmPubKey)
