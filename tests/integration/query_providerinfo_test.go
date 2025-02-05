@@ -1,5 +1,7 @@
 package integration
 
+import "strings"
+
 // TestQueryProviderInfo tests the results of GetProviderInfo method.
 // @Long Description@
 // * Set up a CCV channel and send an empty VSC packet.
@@ -17,6 +19,8 @@ func (s *CCVTestSuite) TestQueryProviderInfo() {
 	s.Require().Equal(chainInfo.Consumer.ClientID, "07-tendermint-0")
 	s.Require().Equal(chainInfo.Provider.ConnectionID, "connection-0")
 	s.Require().Equal(chainInfo.Consumer.ConnectionID, "connection-0")
-	s.Require().Equal(chainInfo.Provider.ChannelID, "channel-0")
-	s.Require().Equal(chainInfo.Consumer.ChannelID, "channel-0")
+	// s.Require().Equal(chainInfo.Provider.ChannelID, "channel-0")
+	// s.Require().Equal(chainInfo.Consumer.ChannelID, "channel-0") // these channels no longer seem to be always channel-0 after ibc v9 upgrade
+	s.Require().True(strings.HasPrefix(chainInfo.Provider.ChannelID, "channel-"))
+	s.Require().True(strings.HasPrefix(chainInfo.Consumer.ChannelID, "channel-"))
 }
