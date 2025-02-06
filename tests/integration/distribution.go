@@ -690,7 +690,6 @@ func (s *CCVTestSuite) TestIBCTransferMiddleware() {
 			s.Require().NoError(err)
 
 			// execute middleware OnRecvPacket logic
-			// TODO(wllmshao): check if this version string is ok
 			ack := cbs.OnRecvPacket(s.providerCtx(), transfertypes.V1, packet, sdk.AccAddress{})
 
 			// compute expected rewards with provider denom

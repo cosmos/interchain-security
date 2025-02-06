@@ -343,7 +343,7 @@ func (k Keeper) CreateConsumerClient(
 		return err
 	}
 
-	// TODO(wllmshao): this forces the client to be tendermint, unsure if this is ok
+	// this means the client must be tendermint
 	clientID, err := k.clientKeeper.CreateClient(ctx, ibchost.Tendermint, clientStateBytes, consensusStateBytes)
 	if err != nil {
 		return err

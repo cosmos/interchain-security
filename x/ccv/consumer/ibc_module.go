@@ -162,7 +162,7 @@ func (am AppModule) OnChanOpenAck(
 
 	distrTransferMsg := channeltypes.NewMsgChannelOpenInit(
 		transfertypes.PortID,
-		transfertypes.V1, // TODO(wllmshao): check if this is correct
+		transfertypes.V1,
 		channeltypes.UNORDERED,
 		connHops,
 		transfertypes.PortID,
