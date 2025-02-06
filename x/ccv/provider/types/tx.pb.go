@@ -125,8 +125,8 @@ func (m *MsgAssignConsumerKeyResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgAssignConsumerKeyResponse proto.InternalMessageInfo
 
-// MsgSubmitConsumerMisbehaviour defines a message that reports a light client attack,
-// also known as a misbehaviour, observed on a consumer chain
+// MsgSubmitConsumerMisbehaviour defines a message that reports a light client
+// attack, also known as a misbehaviour, observed on a consumer chain
 type MsgSubmitConsumerMisbehaviour struct {
 	Submitter string `protobuf:"bytes,1,opt,name=submitter,proto3" json:"submitter,omitempty"`
 	// The Misbehaviour of the consumer chain wrapping
@@ -428,30 +428,39 @@ type MsgConsumerAddition struct {
 	// chain. it is most relevant for chains performing a sovereign to consumer
 	// changeover in order to maintain the existing ibc transfer channel
 	DistributionTransmissionChannel string `protobuf:"bytes,12,opt,name=distribution_transmission_channel,json=distributionTransmissionChannel,proto3" json:"distribution_transmission_channel,omitempty"`
-	// Corresponds to the percentage of validators that have to validate the chain under the Top N case.
-	// For example, 53 corresponds to a Top 53% chain, meaning that the top 53% provider validators by voting power
-	// have to validate the proposed consumer chain. top_N can either be 0 or any value in [50, 100].
-	// A chain can join with top_N == 0 as an Opt In chain, or with top_N ∈ [50, 100] as a Top N chain.
+	// Corresponds to the percentage of validators that have to validate the chain
+	// under the Top N case. For example, 53 corresponds to a Top 53% chain,
+	// meaning that the top 53% provider validators by voting power have to
+	// validate the proposed consumer chain. top_N can either be 0 or any value in
+	// [50, 100]. A chain can join with top_N == 0 as an Opt In chain, or with
+	// top_N ∈ [50, 100] as a Top N chain.
 	Top_N uint32 `protobuf:"varint,13,opt,name=top_N,json=topN,proto3" json:"top_N,omitempty"`
-	// Corresponds to the maximum power (percentage-wise) a validator can have on the consumer chain. For instance, if
-	// `validators_power_cap` is set to 32, it means that no validator can have more than 32% of the voting power on the
-	// consumer chain. Note that this might not be feasible. For example, think of a consumer chain with only
-	// 5 validators and with `validators_power_cap` set to 10%. In such a scenario, at least one validator would need
-	// to have more than 20% of the total voting power. Therefore, `validators_power_cap` operates on a best-effort basis.
+	// Corresponds to the maximum power (percentage-wise) a validator can have on
+	// the consumer chain. For instance, if `validators_power_cap` is set to 32,
+	// it means that no validator can have more than 32% of the voting power on
+	// the consumer chain. Note that this might not be feasible. For example,
+	// think of a consumer chain with only 5 validators and with
+	// `validators_power_cap` set to 10%. In such a scenario, at least one
+	// validator would need to have more than 20% of the total voting power.
+	// Therefore, `validators_power_cap` operates on a best-effort basis.
 	ValidatorsPowerCap uint32 `protobuf:"varint,14,opt,name=validators_power_cap,json=validatorsPowerCap,proto3" json:"validators_power_cap,omitempty"`
-	// Corresponds to the maximum number of validators that can validate a consumer chain.
-	// Only applicable to Opt In chains. Setting `validator_set_cap` on a Top N chain is a no-op.
+	// Corresponds to the maximum number of validators that can validate a
+	// consumer chain. Only applicable to Opt In chains. Setting
+	// `validator_set_cap` on a Top N chain is a no-op.
 	ValidatorSetCap uint32 `protobuf:"varint,15,opt,name=validator_set_cap,json=validatorSetCap,proto3" json:"validator_set_cap,omitempty"`
-	// Corresponds to a list of provider consensus addresses of validators that are the ONLY ones that can validate
-	// the consumer chain.
+	// Corresponds to a list of provider consensus addresses of validators that
+	// are the ONLY ones that can validate the consumer chain.
 	Allowlist []string `protobuf:"bytes,16,rep,name=allowlist,proto3" json:"allowlist,omitempty"`
-	// Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
+	// Corresponds to a list of provider consensus addresses of validators that
+	// CANNOT validate the consumer chain.
 	Denylist []string `protobuf:"bytes,17,rep,name=denylist,proto3" json:"denylist,omitempty"`
 	// signer address
 	Authority string `protobuf:"bytes,18,opt,name=authority,proto3" json:"authority,omitempty"`
-	// Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
+	// Corresponds to the minimal amount of (provider chain) stake required to
+	// validate on the consumer chain.
 	MinStake uint64 `protobuf:"varint,19,opt,name=min_stake,json=minStake,proto3" json:"min_stake,omitempty"`
-	// Corresponds to whether inactive validators are allowed to validate the consumer chain.
+	// Corresponds to whether inactive validators are allowed to validate the
+	// consumer chain.
 	AllowInactiveVals bool `protobuf:"varint,20,opt,name=allow_inactive_vals,json=allowInactiveVals,proto3" json:"allow_inactive_vals,omitempty"`
 }
 
@@ -695,8 +704,9 @@ func (m *MsgConsumerRemoval) GetAuthority() string {
 	return ""
 }
 
-// MsgRemoveConsumer defines the message used to remove (and stop) a consumer chain.
-// If it passes, all the consumer chain's state is eventually removed from the provider chain.
+// MsgRemoveConsumer defines the message used to remove (and stop) a consumer
+// chain. If it passes, all the consumer chain's state is eventually removed
+// from the provider chain.
 type MsgRemoveConsumer struct {
 	// the consumer id of the consumer chain to be stopped
 	ConsumerId string `protobuf:"bytes,1,opt,name=consumer_id,json=consumerId,proto3" json:"consumer_id,omitempty"`
@@ -751,7 +761,8 @@ func (m *MsgRemoveConsumer) GetOwner() string {
 	return ""
 }
 
-// MsgRemoveConsumerResponse defines response type for MsgRemoveConsumer messages
+// MsgRemoveConsumerResponse defines response type for MsgRemoveConsumer
+// messages
 type MsgRemoveConsumerResponse struct {
 }
 
@@ -791,7 +802,8 @@ var xxx_messageInfo_MsgRemoveConsumerResponse proto.InternalMessageInfo
 // ChangeRewardDenomsProposal is a governance proposal on the provider chain to
 // mutate the set of denoms accepted by the provider as rewards.
 //
-// Note: this replaces ChangeRewardDenomsProposal which is deprecated and will be removed soon
+// Note: this replaces ChangeRewardDenomsProposal which is deprecated and will
+// be removed soon
 type MsgChangeRewardDenoms struct {
 	// the list of consumer reward denoms to add
 	DenomsToAdd []string `protobuf:"bytes,1,rep,name=denoms_to_add,json=denomsToAdd,proto3" json:"denoms_to_add,omitempty"`
@@ -855,7 +867,8 @@ func (m *MsgChangeRewardDenoms) GetAuthority() string {
 	return ""
 }
 
-// MsgChangeRewardDenomsResponse defines response type for MsgChangeRewardDenoms messages
+// MsgChangeRewardDenomsResponse defines response type for MsgChangeRewardDenoms
+// messages
 type MsgChangeRewardDenomsResponse struct {
 }
 
@@ -897,10 +910,12 @@ type MsgOptIn struct {
 	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"` // Deprecated: Do not use.
 	// the validator address on the provider
 	ProviderAddr string `protobuf:"bytes,2,opt,name=provider_addr,json=providerAddr,proto3" json:"provider_addr,omitempty" yaml:"address"`
-	// (optional) The consensus public key to use on the consumer in json string format corresponding to proto-any,
-	// for example `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`.
-	// This field is optional and can remain empty (i.e., `consumer_key = ""`). A validator can always change the
-	// consumer public key at a later stage by issuing a `MsgAssignConsumerKey` message.
+	// (optional) The consensus public key to use on the consumer in json string
+	// format corresponding to proto-any, for example
+	// `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`.
+	// This field is optional and can remain empty (i.e., `consumer_key = ""`). A
+	// validator can always change the consumer public key at a later stage by
+	// issuing a `MsgAssignConsumerKey` message.
 	ConsumerKey string `protobuf:"bytes,3,opt,name=consumer_key,json=consumerKey,proto3" json:"consumer_key,omitempty"`
 	// submitter address
 	Signer string `protobuf:"bytes,4,opt,name=signer,proto3" json:"signer,omitempty"`
@@ -1152,30 +1167,39 @@ type MsgConsumerModification struct {
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	// the chain-id of the consumer chain to be modified
 	ChainId string `protobuf:"bytes,3,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	// Corresponds to the percentage of validators that have to validate the chain under the Top N case.
-	// For example, 53 corresponds to a Top 53% chain, meaning that the top 53% provider validators by voting power
-	// have to validate the proposed consumer chain. top_N can either be 0 or any value in [50, 100].
-	// A chain can join with top_N == 0 as an Opt In chain, or with top_N ∈ [50, 100] as a Top N chain.
+	// Corresponds to the percentage of validators that have to validate the chain
+	// under the Top N case. For example, 53 corresponds to a Top 53% chain,
+	// meaning that the top 53% provider validators by voting power have to
+	// validate the proposed consumer chain. top_N can either be 0 or any value in
+	// [50, 100]. A chain can join with top_N == 0 as an Opt In chain, or with
+	// top_N ∈ [50, 100] as a Top N chain.
 	Top_N uint32 `protobuf:"varint,4,opt,name=top_N,json=topN,proto3" json:"top_N,omitempty"`
-	// Corresponds to the maximum power (percentage-wise) a validator can have on the consumer chain. For instance, if
-	// `validators_power_cap` is set to 32, it means that no validator can have more than 32% of the voting power on the
-	// consumer chain. Note that this might not be feasible. For example, think of a consumer chain with only
-	// 5 validators and with `validators_power_cap` set to 10%. In such a scenario, at least one validator would need
-	// to have more than 20% of the total voting power. Therefore, `validators_power_cap` operates on a best-effort basis.
+	// Corresponds to the maximum power (percentage-wise) a validator can have on
+	// the consumer chain. For instance, if `validators_power_cap` is set to 32,
+	// it means that no validator can have more than 32% of the voting power on
+	// the consumer chain. Note that this might not be feasible. For example,
+	// think of a consumer chain with only 5 validators and with
+	// `validators_power_cap` set to 10%. In such a scenario, at least one
+	// validator would need to have more than 20% of the total voting power.
+	// Therefore, `validators_power_cap` operates on a best-effort basis.
 	ValidatorsPowerCap uint32 `protobuf:"varint,5,opt,name=validators_power_cap,json=validatorsPowerCap,proto3" json:"validators_power_cap,omitempty"`
-	// Corresponds to the maximum number of validators that can validate a consumer chain.
-	// Only applicable to Opt In chains. Setting `validator_set_cap` on a Top N chain is a no-op.
+	// Corresponds to the maximum number of validators that can validate a
+	// consumer chain. Only applicable to Opt In chains. Setting
+	// `validator_set_cap` on a Top N chain is a no-op.
 	ValidatorSetCap uint32 `protobuf:"varint,6,opt,name=validator_set_cap,json=validatorSetCap,proto3" json:"validator_set_cap,omitempty"`
-	// Corresponds to a list of provider consensus addresses of validators that are the ONLY ones that can validate
-	// the consumer chain.
+	// Corresponds to a list of provider consensus addresses of validators that
+	// are the ONLY ones that can validate the consumer chain.
 	Allowlist []string `protobuf:"bytes,7,rep,name=allowlist,proto3" json:"allowlist,omitempty"`
-	// Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
+	// Corresponds to a list of provider consensus addresses of validators that
+	// CANNOT validate the consumer chain.
 	Denylist []string `protobuf:"bytes,8,rep,name=denylist,proto3" json:"denylist,omitempty"`
 	// signer address
 	Authority string `protobuf:"bytes,9,opt,name=authority,proto3" json:"authority,omitempty"`
-	// Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
+	// Corresponds to the minimal amount of (provider chain) stake required to
+	// validate on the consumer chain.
 	MinStake uint64 `protobuf:"varint,10,opt,name=min_stake,json=minStake,proto3" json:"min_stake,omitempty"`
-	// Corresponds to whether inactive validators are allowed to validate the consumer chain.
+	// Corresponds to whether inactive validators are allowed to validate the
+	// consumer chain.
 	AllowInactiveVals bool `protobuf:"varint,11,opt,name=allow_inactive_vals,json=allowInactiveVals,proto3" json:"allow_inactive_vals,omitempty"`
 }
 
@@ -1482,11 +1506,13 @@ type MsgUpdateConsumer struct {
 	InitializationParameters *ConsumerInitializationParameters `protobuf:"bytes,5,opt,name=initialization_parameters,json=initializationParameters,proto3" json:"initialization_parameters,omitempty"`
 	// the power-shaping parameters of the consumer when updated
 	PowerShapingParameters *PowerShapingParameters `protobuf:"bytes,6,opt,name=power_shaping_parameters,json=powerShapingParameters,proto3" json:"power_shaping_parameters,omitempty"`
-	// allowlisted reward denoms of the consumer (if provided they overwrite previously set reward denoms)
+	// allowlisted reward denoms of the consumer (if provided they overwrite
+	// previously set reward denoms)
 	AllowlistedRewardDenoms *AllowlistedRewardDenoms `protobuf:"bytes,7,opt,name=allowlisted_reward_denoms,json=allowlistedRewardDenoms,proto3" json:"allowlisted_reward_denoms,omitempty"`
-	// (optional) If the consumer chain has NOT yet launched, the chain id can be updated. After a chain has launched
-	// the chain id CANNOT be updated.
-	// This field is optional and can remain empty (i.e., `new_chain_id = ""`) or correspond to the chain id the chain already has.
+	// (optional) If the consumer chain has NOT yet launched, the chain id can be
+	// updated. After a chain has launched the chain id CANNOT be updated. This
+	// field is optional and can remain empty (i.e., `new_chain_id = ""`) or
+	// correspond to the chain id the chain already has.
 	NewChainId string `protobuf:"bytes,8,opt,name=new_chain_id,json=newChainId,proto3" json:"new_chain_id,omitempty"`
 	// infraction parameters for slashing and jailing
 	InfractionParameters *InfractionParameters `protobuf:"bytes,9,opt,name=infraction_parameters,json=infractionParameters,proto3" json:"infraction_parameters,omitempty"`
@@ -1588,7 +1614,8 @@ func (m *MsgUpdateConsumer) GetInfractionParameters() *InfractionParameters {
 	return nil
 }
 
-// MsgUpdateConsumerResponse defines response type for MsgUpdateConsumer messages
+// MsgUpdateConsumerResponse defines response type for MsgUpdateConsumer
+// messages
 type MsgUpdateConsumerResponse struct {
 }
 

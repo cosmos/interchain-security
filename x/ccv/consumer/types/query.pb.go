@@ -631,7 +631,8 @@ type QueryClient interface {
 	// QueryParams queries the ccv/consumer module parameters.
 	QueryParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
 	QueryProviderInfo(ctx context.Context, in *QueryProviderInfoRequest, opts ...grpc.CallOption) (*QueryProviderInfoResponse, error)
-	// QueryThrottleState returns on-chain state relevant to throttled consumer packets
+	// QueryThrottleState returns on-chain state relevant to throttled consumer
+	// packets
 	QueryThrottleState(ctx context.Context, in *QueryThrottleStateRequest, opts ...grpc.CallOption) (*QueryThrottleStateResponse, error)
 }
 
@@ -687,7 +688,8 @@ type QueryServer interface {
 	// QueryParams queries the ccv/consumer module parameters.
 	QueryParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
 	QueryProviderInfo(context.Context, *QueryProviderInfoRequest) (*QueryProviderInfoResponse, error)
-	// QueryThrottleState returns on-chain state relevant to throttled consumer packets
+	// QueryThrottleState returns on-chain state relevant to throttled consumer
+	// packets
 	QueryThrottleState(context.Context, *QueryThrottleStateRequest) (*QueryThrottleStateResponse, error)
 }
 

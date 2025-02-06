@@ -29,8 +29,8 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // GenesisState defines the CCV consumer genesis state
 //
-// Note: this type is only used on consumer side and references shared types with
-// provider
+// Note: this type is only used on consumer side and references shared types
+// with provider
 type GenesisState struct {
 	// ConsumerParams is a shared type with provider module
 	Params types.ConsumerParams `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
@@ -54,7 +54,8 @@ type GenesisState struct {
 	// The ID of the connection end on the consumer chain on top of which the
 	// CCV channel will be established. If connection_id == "", a new client of
 	// the provider chain and a new connection on top of this client are created.
-	// The new client is initialized using provider.client_state and provider.consensus_state.
+	// The new client is initialized using provider.client_state and
+	// provider.consensus_state.
 	ConnectionId string `protobuf:"bytes,15,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
 }
 

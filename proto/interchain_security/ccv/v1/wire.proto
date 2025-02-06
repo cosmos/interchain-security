@@ -11,9 +11,9 @@ import "tendermint/abci/types.proto";
 
 //
 // Note any type defined in this file is used by both the consumer and provider
-// AND SENT OVER THE WIRE via a ccv channel. Ideally these schemas should never change, or at least 
-// be backwards compatible if ever changed. 
-// 
+// AND SENT OVER THE WIRE via a ccv channel. Ideally these schemas should never
+// change, or at least be backwards compatible if ever changed.
+//
 
 // This packet is sent from provider chain to consumer chain if the validator
 // set for consumer chain changes (due to new bonding/unbonding messages or
@@ -77,14 +77,16 @@ enum ConsumerPacketDataType {
       [ (gogoproto.enumvalue_customname) = "VscMaturedPacket" ];
 }
 
-// Note this type is used during IBC handshake methods for both the consumer and provider
+// Note this type is used during IBC handshake methods for both the consumer and
+// provider
 message HandshakeMetadata {
   string provider_fee_pool_addr = 1;
   string version = 2;
 }
 
 // ConsumerPacketData contains a consumer packet data and a type tag
-// that is compatible with ICS v1 and v2 over the wire. It is not used for internal storage.
+// that is compatible with ICS v1 and v2 over the wire. It is not used for
+// internal storage.
 message ConsumerPacketDataV1 {
   ConsumerPacketDataType type = 1;
 
@@ -114,9 +116,12 @@ enum InfractionType {
   option (gogoproto.goproto_enum_prefix) = false;
 
   // UNSPECIFIED defines an empty infraction type.
-  INFRACTION_TYPE_UNSPECIFIED = 0 [(gogoproto.enumvalue_customname) = "InfractionEmpty"];
+  INFRACTION_TYPE_UNSPECIFIED = 0
+      [ (gogoproto.enumvalue_customname) = "InfractionEmpty" ];
   // DOUBLE_SIGN defines a validator that double-signs a block.
-  INFRACTION_TYPE_DOUBLE_SIGN = 1 [(gogoproto.enumvalue_customname) = "DoubleSign"];
+  INFRACTION_TYPE_DOUBLE_SIGN = 1
+      [ (gogoproto.enumvalue_customname) = "DoubleSign" ];
   // DOWNTIME defines a validator that missed signing too many blocks.
-  INFRACTION_TYPE_DOWNTIME = 2 [(gogoproto.enumvalue_customname) = "Downtime"];
+  INFRACTION_TYPE_DOWNTIME = 2
+      [ (gogoproto.enumvalue_customname) = "Downtime" ];
 }

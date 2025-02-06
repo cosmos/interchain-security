@@ -364,7 +364,8 @@ func (*ConsumerPacketData) XXX_OneofWrappers() []interface{} {
 	}
 }
 
-// Note this type is used during IBC handshake methods for both the consumer and provider
+// Note this type is used during IBC handshake methods for both the consumer and
+// provider
 type HandshakeMetadata struct {
 	ProviderFeePoolAddr string `protobuf:"bytes,1,opt,name=provider_fee_pool_addr,json=providerFeePoolAddr,proto3" json:"provider_fee_pool_addr,omitempty"`
 	Version             string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
@@ -418,7 +419,8 @@ func (m *HandshakeMetadata) GetVersion() string {
 }
 
 // ConsumerPacketData contains a consumer packet data and a type tag
-// that is compatible with ICS v1 and v2 over the wire. It is not used for internal storage.
+// that is compatible with ICS v1 and v2 over the wire. It is not used for
+// internal storage.
 type ConsumerPacketDataV1 struct {
 	Type ConsumerPacketDataType `protobuf:"varint,1,opt,name=type,proto3,enum=interchain_security.ccv.v1.ConsumerPacketDataType" json:"type,omitempty"`
 	// Types that are valid to be assigned to Data:

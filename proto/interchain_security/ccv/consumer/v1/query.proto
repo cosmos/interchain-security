@@ -22,13 +22,18 @@ service Query {
     option (google.api.http).get = "/interchain_security/ccv/consumer/params";
   }
 
-  rpc QueryProviderInfo(QueryProviderInfoRequest) returns (QueryProviderInfoResponse) {
-    option (google.api.http).get = "/interchain_security/ccv/consumer/provider-info";
+  rpc QueryProviderInfo(QueryProviderInfoRequest)
+      returns (QueryProviderInfoResponse) {
+    option (google.api.http).get =
+        "/interchain_security/ccv/consumer/provider-info";
   }
 
-  // QueryThrottleState returns on-chain state relevant to throttled consumer packets
-  rpc QueryThrottleState(QueryThrottleStateRequest) returns (QueryThrottleStateResponse) {
-    option (google.api.http).get = "/interchain_security/ccv/consumer/throttle_state";
+  // QueryThrottleState returns on-chain state relevant to throttled consumer
+  // packets
+  rpc QueryThrottleState(QueryThrottleStateRequest)
+      returns (QueryThrottleStateResponse) {
+    option (google.api.http).get =
+        "/interchain_security/ccv/consumer/throttle_state";
   }
 }
 
@@ -61,7 +66,8 @@ message QueryParamsRequest {}
 // QueryParamsResponse is response type for the Query/Params RPC method.
 message QueryParamsResponse {
   // params holds all the parameters of this module.
-  interchain_security.ccv.v1.ConsumerParams params = 1 [ (gogoproto.nullable) = false ];
+  interchain_security.ccv.v1.ConsumerParams params = 1
+      [ (gogoproto.nullable) = false ];
 }
 
 message QueryProviderInfoRequest {}
@@ -75,9 +81,9 @@ message QueryThrottleStateRequest {}
 
 message QueryThrottleStateResponse {
   SlashRecord slash_record = 1 [ (gogoproto.nullable) = true ];
-  repeated interchain_security.ccv.v1.ConsumerPacketData packet_data_queue = 2 [ (gogoproto.nullable) = false ];
+  repeated interchain_security.ccv.v1.ConsumerPacketData packet_data_queue = 2
+      [ (gogoproto.nullable) = false ];
 }
-
 
 message ChainInfo {
   string chainID = 1;

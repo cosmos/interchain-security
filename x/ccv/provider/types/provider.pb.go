@@ -44,18 +44,20 @@ type ConsumerPhase int32
 const (
 	// UNSPECIFIED defines an empty phase.
 	CONSUMER_PHASE_UNSPECIFIED ConsumerPhase = 0
-	// REGISTERED defines the phase in which a consumer chain has been assigned a unique consumer id.
-	// A chain in this phase cannot yet launch.
+	// REGISTERED defines the phase in which a consumer chain has been assigned a
+	// unique consumer id. A chain in this phase cannot yet launch.
 	CONSUMER_PHASE_REGISTERED ConsumerPhase = 1
-	// INITIALIZED defines the phase in which a consumer chain has set all the needed parameters to launch but
-	// has not yet launched (e.g., because the `spawnTime` of the consumer chain has not yet been reached).
+	// INITIALIZED defines the phase in which a consumer chain has set all the
+	// needed parameters to launch but has not yet launched (e.g., because the
+	// `spawnTime` of the consumer chain has not yet been reached).
 	CONSUMER_PHASE_INITIALIZED ConsumerPhase = 2
-	// LAUNCHED defines the phase in which a consumer chain is running and consuming a subset of the validator
-	// set of the provider.
+	// LAUNCHED defines the phase in which a consumer chain is running and
+	// consuming a subset of the validator set of the provider.
 	CONSUMER_PHASE_LAUNCHED ConsumerPhase = 3
 	// STOPPED defines the phase in which a previously-launched chain has stopped.
 	CONSUMER_PHASE_STOPPED ConsumerPhase = 4
-	// DELETED defines the phase in which the state of a stopped chain has been deleted.
+	// DELETED defines the phase in which the state of a stopped chain has been
+	// deleted.
 	CONSUMER_PHASE_DELETED ConsumerPhase = 5
 )
 
@@ -145,28 +147,37 @@ type ConsumerAdditionProposal struct {
 	// chain. It is most relevant for chains performing a standalone to consumer
 	// changeover in order to maintain the existing ibc transfer channel
 	DistributionTransmissionChannel string `protobuf:"bytes,14,opt,name=distribution_transmission_channel,json=distributionTransmissionChannel,proto3" json:"distribution_transmission_channel,omitempty"`
-	// Corresponds to the percentage of validators that have to validate the chain under the Top N case.
-	// For example, 53 corresponds to a Top 53% chain, meaning that the top 53% provider validators by voting power
-	// have to validate the proposed consumer chain. top_N can either be 0 or any value in [50, 100].
-	// A chain can join with top_N == 0 as an Opt In chain, or with top_N ∈ [50, 100] as a Top N chain.
+	// Corresponds to the percentage of validators that have to validate the chain
+	// under the Top N case. For example, 53 corresponds to a Top 53% chain,
+	// meaning that the top 53% provider validators by voting power have to
+	// validate the proposed consumer chain. top_N can either be 0 or any value in
+	// [50, 100]. A chain can join with top_N == 0 as an Opt In chain, or with
+	// top_N ∈ [50, 100] as a Top N chain.
 	Top_N uint32 `protobuf:"varint,15,opt,name=top_N,json=topN,proto3" json:"top_N,omitempty"`
-	// Corresponds to the maximum power (percentage-wise) a validator can have on the consumer chain. For instance, if
-	// `validators_power_cap` is set to 32, it means that no validator can have more than 32% of the voting power on the
-	// consumer chain. Note that this might not be feasible. For example, think of a consumer chain with only
-	// 5 validators and with `validators_power_cap` set to 10%. In such a scenario, at least one validator would need
-	// to have more than 20% of the total voting power. Therefore, `validators_power_cap` operates on a best-effort basis.
+	// Corresponds to the maximum power (percentage-wise) a validator can have on
+	// the consumer chain. For instance, if `validators_power_cap` is set to 32,
+	// it means that no validator can have more than 32% of the voting power on
+	// the consumer chain. Note that this might not be feasible. For example,
+	// think of a consumer chain with only 5 validators and with
+	// `validators_power_cap` set to 10%. In such a scenario, at least one
+	// validator would need to have more than 20% of the total voting power.
+	// Therefore, `validators_power_cap` operates on a best-effort basis.
 	ValidatorsPowerCap uint32 `protobuf:"varint,16,opt,name=validators_power_cap,json=validatorsPowerCap,proto3" json:"validators_power_cap,omitempty"`
-	// Corresponds to the maximum number of validators that can validate a consumer chain.
-	// Only applicable to Opt In chains. Setting `validator_set_cap` on a Top N chain is a no-op.
+	// Corresponds to the maximum number of validators that can validate a
+	// consumer chain. Only applicable to Opt In chains. Setting
+	// `validator_set_cap` on a Top N chain is a no-op.
 	ValidatorSetCap uint32 `protobuf:"varint,17,opt,name=validator_set_cap,json=validatorSetCap,proto3" json:"validator_set_cap,omitempty"`
-	// Corresponds to a list of provider consensus addresses of validators that are the ONLY ones that can validate
-	// the consumer chain.
+	// Corresponds to a list of provider consensus addresses of validators that
+	// are the ONLY ones that can validate the consumer chain.
 	Allowlist []string `protobuf:"bytes,18,rep,name=allowlist,proto3" json:"allowlist,omitempty"`
-	// Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
+	// Corresponds to a list of provider consensus addresses of validators that
+	// CANNOT validate the consumer chain.
 	Denylist []string `protobuf:"bytes,19,rep,name=denylist,proto3" json:"denylist,omitempty"`
-	// Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
+	// Corresponds to the minimal amount of (provider chain) stake required to
+	// validate on the consumer chain.
 	MinStake uint64 `protobuf:"varint,20,opt,name=min_stake,json=minStake,proto3" json:"min_stake,omitempty"`
-	// Corresponds to whether inactive validators are allowed to validate the consumer chain.
+	// Corresponds to whether inactive validators are allowed to validate the
+	// consumer chain.
 	AllowInactiveVals bool `protobuf:"varint,21,opt,name=allow_inactive_vals,json=allowInactiveVals,proto3" json:"allow_inactive_vals,omitempty"`
 }
 
@@ -284,8 +295,9 @@ func (m *ConsumerRemovalProposal) GetStopTime() time.Time {
 }
 
 // WARNING: This message is deprecated in favor of `MsgUpdateConsumer`.
-// ConsumerModificationProposal is a governance proposal on the provider chain to modify parameters of a running
-// consumer chain. If it passes, the consumer chain's state is updated to take into account the newest params.
+// ConsumerModificationProposal is a governance proposal on the provider chain
+// to modify parameters of a running consumer chain. If it passes, the consumer
+// chain's state is updated to take into account the newest params.
 //
 // Deprecated: Do not use.
 type ConsumerModificationProposal struct {
@@ -295,28 +307,37 @@ type ConsumerModificationProposal struct {
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	// the chain-id of the consumer chain to be modified
 	ChainId string `protobuf:"bytes,3,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	// Corresponds to the percentage of validators that have to validate the chain under the Top N case.
-	// For example, 53 corresponds to a Top 53% chain, meaning that the top 53% provider validators by voting power
-	// have to validate the proposed consumer chain. top_N can either be 0 or any value in [50, 100].
-	// A chain can join with top_N == 0 as an Opt In chain, or with top_N ∈ [50, 100] as a Top N chain.
+	// Corresponds to the percentage of validators that have to validate the chain
+	// under the Top N case. For example, 53 corresponds to a Top 53% chain,
+	// meaning that the top 53% provider validators by voting power have to
+	// validate the proposed consumer chain. top_N can either be 0 or any value in
+	// [50, 100]. A chain can join with top_N == 0 as an Opt In chain, or with
+	// top_N ∈ [50, 100] as a Top N chain.
 	Top_N uint32 `protobuf:"varint,4,opt,name=top_N,json=topN,proto3" json:"top_N,omitempty"`
-	// Corresponds to the maximum power (percentage-wise) a validator can have on the consumer chain. For instance, if
-	// `validators_power_cap` is set to 32, it means that no validator can have more than 32% of the voting power on the
-	// consumer chain. Note that this might not be feasible. For example, think of a consumer chain with only
-	// 5 validators and with `validators_power_cap` set to 10%. In such a scenario, at least one validator would need
-	// to have more than 20% of the total voting power. Therefore, `validators_power_cap` operates on a best-effort basis.
+	// Corresponds to the maximum power (percentage-wise) a validator can have on
+	// the consumer chain. For instance, if `validators_power_cap` is set to 32,
+	// it means that no validator can have more than 32% of the voting power on
+	// the consumer chain. Note that this might not be feasible. For example,
+	// think of a consumer chain with only 5 validators and with
+	// `validators_power_cap` set to 10%. In such a scenario, at least one
+	// validator would need to have more than 20% of the total voting power.
+	// Therefore, `validators_power_cap` operates on a best-effort basis.
 	ValidatorsPowerCap uint32 `protobuf:"varint,5,opt,name=validators_power_cap,json=validatorsPowerCap,proto3" json:"validators_power_cap,omitempty"`
-	// Corresponds to the maximum number of validators that can validate a consumer chain.
-	// Only applicable to Opt In chains. Setting `validator_set_cap` on a Top N chain is a no-op.
+	// Corresponds to the maximum number of validators that can validate a
+	// consumer chain. Only applicable to Opt In chains. Setting
+	// `validator_set_cap` on a Top N chain is a no-op.
 	ValidatorSetCap uint32 `protobuf:"varint,6,opt,name=validator_set_cap,json=validatorSetCap,proto3" json:"validator_set_cap,omitempty"`
-	// Corresponds to a list of provider consensus addresses of validators that are the ONLY ones that can validate
-	// the consumer chain.
+	// Corresponds to a list of provider consensus addresses of validators that
+	// are the ONLY ones that can validate the consumer chain.
 	Allowlist []string `protobuf:"bytes,7,rep,name=allowlist,proto3" json:"allowlist,omitempty"`
-	// Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
+	// Corresponds to a list of provider consensus addresses of validators that
+	// CANNOT validate the consumer chain.
 	Denylist []string `protobuf:"bytes,8,rep,name=denylist,proto3" json:"denylist,omitempty"`
-	// Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
+	// Corresponds to the minimal amount of (provider chain) stake required to
+	// validate on the consumer chain.
 	MinStake uint64 `protobuf:"varint,9,opt,name=min_stake,json=minStake,proto3" json:"min_stake,omitempty"`
-	// Corresponds to whether inactive validators are allowed to validate the consumer chain.
+	// Corresponds to whether inactive validators are allowed to validate the
+	// consumer chain.
 	AllowInactiveVals bool `protobuf:"varint,10,opt,name=allow_inactive_vals,json=allowInactiveVals,proto3" json:"allow_inactive_vals,omitempty"`
 }
 
@@ -428,7 +449,8 @@ func (m *ConsumerModificationProposal) GetAllowInactiveVals() bool {
 //
 // This type is only used internally to the consumer CCV module.
 // WARNING: This message is deprecated now that equivocations can be submitted
-// and verified automatically on the provider. (see SubmitConsumerDoubleVoting in proto/interchain-security/ccv/provider/v1/tx.proto).
+// and verified automatically on the provider. (see SubmitConsumerDoubleVoting
+// in proto/interchain-security/ccv/provider/v1/tx.proto).
 //
 // Deprecated: Do not use.
 type EquivocationProposal struct {
@@ -668,7 +690,8 @@ type Params struct {
 	ConsumerRewardDenomRegistrationFee types2.Coin `protobuf:"bytes,9,opt,name=consumer_reward_denom_registration_fee,json=consumerRewardDenomRegistrationFee,proto3" json:"consumer_reward_denom_registration_fee"`
 	// The number of blocks that comprise an epoch.
 	BlocksPerEpoch int64 `protobuf:"varint,10,opt,name=blocks_per_epoch,json=blocksPerEpoch,proto3" json:"blocks_per_epoch,omitempty"`
-	// The number of epochs a validator has to validate a consumer chain in order to start receiving rewards from that chain.
+	// The number of epochs a validator has to validate a consumer chain in order
+	// to start receiving rewards from that chain.
 	NumberOfEpochsToStartReceivingRewards int64 `protobuf:"varint,11,opt,name=number_of_epochs_to_start_receiving_rewards,json=numberOfEpochsToStartReceivingRewards,proto3" json:"number_of_epochs_to_start_receiving_rewards,omitempty"`
 	// The maximal number of validators that will be passed
 	// to the consensus engine on the provider.
@@ -1244,7 +1267,8 @@ func (m *ValidatorByConsumerAddr) GetProviderAddr() []byte {
 }
 
 // Used to serialize the ConsumerAddrsToPruneV2 index from key assignment
-// ConsumerAddrsToPruneV2: (chainID, pruneTs time.Time) -> consumerAddrs AddressList
+// ConsumerAddrsToPruneV2: (chainID, pruneTs time.Time) -> consumerAddrs
+// AddressList
 type ConsumerAddrsToPruneV2 struct {
 	ChainId       string       `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	PruneTs       time.Time    `protobuf:"bytes,2,opt,name=prune_ts,json=pruneTs,proto3,stdtime" json:"prune_ts"`
@@ -1318,9 +1342,11 @@ type ConsensusValidator struct {
 	// public key the validator uses on the consumer chain during this epoch
 	PublicKey *crypto.PublicKey `protobuf:"bytes,3,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
 	// height the validator had when it FIRST became a consumer validator
-	// If a validator becomes a consumer validator at height `H` and is continuously a consumer validator for all the upcoming
-	// epochs, then the height of the validator SHOULD remain `H`. This height only resets to a different height if a validator
-	// stops being a consumer validator during an epoch and later becomes again a consumer validator.
+	// If a validator becomes a consumer validator at height `H` and is
+	// continuously a consumer validator for all the upcoming epochs, then the
+	// height of the validator SHOULD remain `H`. This height only resets to a
+	// different height if a validator stops being a consumer validator during an
+	// epoch and later becomes again a consumer validator.
 	JoinHeight int64 `protobuf:"varint,4,opt,name=join_height,json=joinHeight,proto3" json:"join_height,omitempty"`
 }
 
@@ -1386,8 +1412,8 @@ func (m *ConsensusValidator) GetJoinHeight() int64 {
 }
 
 // ConsumerRewardsAllocation stores the rewards allocated by a consumer chain
-// to the consumer rewards pool. It is used to allocate the tokens to the consumer
-// opted-in validators and the community pool during BeginBlock.
+// to the consumer rewards pool. It is used to allocate the tokens to the
+// consumer opted-in validators and the community pool during BeginBlock.
 type ConsumerRewardsAllocation struct {
 	Rewards github_com_cosmos_cosmos_sdk_types.DecCoins `protobuf:"bytes,1,rep,name=rewards,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.DecCoins" json:"rewards"`
 }
@@ -1545,7 +1571,8 @@ type ConsumerInitializationParameters struct {
 	// channel will be established. If connection_id == "", a new client of the
 	// consumer chain and a new connection on top of this client are created.
 	// Note that a standalone chain can transition to a consumer chain while
-	// maintaining existing IBC channels to other chains by providing a valid connection_id.
+	// maintaining existing IBC channels to other chains by providing a valid
+	// connection_id.
 	ConnectionId string `protobuf:"bytes,12,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
 }
 
@@ -1666,57 +1693,82 @@ func (m *ConsumerInitializationParameters) GetConnectionId() string {
 	return ""
 }
 
-// PowerShapingParameters contains parameters that shape the validator set that we send to the consumer chain
+// PowerShapingParameters contains parameters that shape the validator set that
+// we send to the consumer chain
 type PowerShapingParameters struct {
-	// Corresponds to the percentage of validators that have to validate the chain under the Top N case.
-	// For example, 53 corresponds to a Top 53% chain, meaning that the top 53% provider validators by voting power
-	// have to validate the proposed consumer chain. top_N can either be 0 or any value in [50, 100].
-	// A chain can join with top_N == 0 as an Opt In chain, or with top_N ∈ [50, 100] as a Top N chain.
+	// Corresponds to the percentage of validators that have to validate the chain
+	// under the Top N case. For example, 53 corresponds to a Top 53% chain,
+	// meaning that the top 53% provider validators by voting power have to
+	// validate the proposed consumer chain. top_N can either be 0 or any value in
+	// [50, 100]. A chain can join with top_N == 0 as an Opt In chain, or with
+	// top_N ∈ [50, 100] as a Top N chain.
 	Top_N uint32 `protobuf:"varint,1,opt,name=top_N,json=topN,proto3" json:"top_N,omitempty"`
-	// `validators_power_cap` corresponds to the maximum power (percentage-wise) a validator can have on the consumer chain.
-	// For instance, if `validators_power_cap` is set to 32, no validator can have more than 32% of the total voting power of the
-	// consumer chain. The power cap is intended as a safeguard against a validator having too much power on the consumer
-	// chain and hence "taking over" the consumer chain.
+	// `validators_power_cap` corresponds to the maximum power (percentage-wise) a
+	// validator can have on the consumer chain. For instance, if
+	// `validators_power_cap` is set to 32, no validator can have more than 32% of
+	// the total voting power of the consumer chain. The power cap is intended as
+	// a safeguard against a validator having too much power on the consumer chain
+	// and hence "taking over" the consumer chain.
 	//
-	// To respect this power cap, the voting powers of the validators that run the consumer chain are decremented or
-	// incremented accordingly. It is important to note that the voting powers of validators on the provider do **not** change.
-	// For example, assume that the provider chain has among others, validators `A`, `B`, `C`, and `D` with voting powers
-	// 100, 1, 1, 1 respectively. Assume that only those 4 validators opt in on a consumer chain. Without a power cap set,
-	// validator `A` would have 100 / (100 + 1 + 1 + 1) = ~97% of the total voting power on the consumer chain, while
-	// validators `B`, `C`, and `D` would have 1 /(100 + 1 + 1 + 1) = ~1% of the total voting power on the consumer chain.
-	// If `validators_power_cap` is set to 30%, then the voting power of `A` would be reduced from 100 to 30 on the consumer
-	// chain, the voting power of `B` would be increased from 1 to 25, and the power of `C` and `D` would be increased from
-	// 1 to 24. After those modifications, `A` would have 30 / (30 + 25 + 24 + 24) = ~29% of the total voting power of the
-	// consumer chain, `B` would have 25 / (30 + 25 + 24 + 24) = ~25%, and `C` and `D` would both have 24 / (30 + 25 + 24 + 24) = ~23%.
-	// Naturally, there are many ways to change the voting powers of validators to respect the power cap, and ICS chooses
-	// one of them (see the `NoMoreThanPercentOfTheSum` function).
+	// To respect this power cap, the voting powers of the validators that run the
+	// consumer chain are decremented or incremented accordingly. It is important
+	// to note that the voting powers of validators on the provider do **not**
+	// change. For example, assume that the provider chain has among others,
+	// validators `A`, `B`, `C`, and `D` with voting powers 100, 1, 1, 1
+	// respectively. Assume that only those 4 validators opt in on a consumer
+	// chain. Without a power cap set, validator `A` would have 100 / (100 + 1 + 1
+	// + 1) = ~97% of the total voting power on the consumer chain, while
+	// validators `B`, `C`, and `D` would have 1 /(100 + 1 + 1 + 1) = ~1% of the
+	// total voting power on the consumer chain. If `validators_power_cap` is set
+	// to 30%, then the voting power of `A` would be reduced from 100 to 30 on the
+	// consumer chain, the voting power of `B` would be increased from 1 to 25,
+	// and the power of `C` and `D` would be increased from 1 to 24. After those
+	// modifications, `A` would have 30 / (30 + 25 + 24 + 24) = ~29% of the total
+	// voting power of the consumer chain, `B` would have 25 / (30 + 25 + 24 + 24)
+	// = ~25%, and `C` and `D` would both have 24 / (30 + 25 + 24 + 24) = ~23%.
+	// Naturally, there are many ways to change the voting powers of validators to
+	// respect the power cap, and ICS chooses one of them (see the
+	// `NoMoreThanPercentOfTheSum` function).
 	//
-	// Note that respecting `validators_power_cap` might NOT always be possible. For example, if we have a consumer
-	// chain with only 5 validators and `validators_power_cap` is set to 10%, then it is not possible to respect the
-	// `validators_power_cap`. If the voting power of each validator is capped to a maximum of 10% of the total consumer
-	// chain's voting power, then the total voting power of the consumer chain would add up to 50% which obviously does not
-	// make sense (percentages should add up to 100%). In cases where it is not feasible to respect the power cap, all
-	// validators on the consumer chain will have equal voting power in order to minimize the power of a single validator.
-	// Thus, in the example of 5 validators and a `validators_power_cap` set to 10%, all validators would end up having 20%
-	// of the total voting power on the consumer chain. Therefore, `validators_power_cap` operates on a best-effort basis.
-	// For more information on the power cap and other power-shaping parameters, please refer to the ICS docs and
-	// specifically `interchain-security/docs/docs/features/power-shaping.md`.
+	// Note that respecting `validators_power_cap` might NOT always be possible.
+	// For example, if we have a consumer chain with only 5 validators and
+	// `validators_power_cap` is set to 10%, then it is not possible to respect
+	// the `validators_power_cap`. If the voting power of each validator is capped
+	// to a maximum of 10% of the total consumer chain's voting power, then the
+	// total voting power of the consumer chain would add up to 50% which
+	// obviously does not make sense (percentages should add up to 100%). In cases
+	// where it is not feasible to respect the power cap, all validators on the
+	// consumer chain will have equal voting power in order to minimize the power
+	// of a single validator. Thus, in the example of 5 validators and a
+	// `validators_power_cap` set to 10%, all validators would end up having 20%
+	// of the total voting power on the consumer chain. Therefore,
+	// `validators_power_cap` operates on a best-effort basis. For more
+	// information on the power cap and other power-shaping parameters, please
+	// refer to the ICS docs and specifically
+	// `interchain-security/docs/docs/features/power-shaping.md`.
 	ValidatorsPowerCap uint32 `protobuf:"varint,2,opt,name=validators_power_cap,json=validatorsPowerCap,proto3" json:"validators_power_cap,omitempty"`
-	// Corresponds to the maximum number of validators that can validate a consumer chain.
-	// Only applicable to Opt In chains. Setting `validator_set_cap` on a Top N chain is a no-op.
+	// Corresponds to the maximum number of validators that can validate a
+	// consumer chain. Only applicable to Opt In chains. Setting
+	// `validator_set_cap` on a Top N chain is a no-op.
 	ValidatorSetCap uint32 `protobuf:"varint,3,opt,name=validator_set_cap,json=validatorSetCap,proto3" json:"validator_set_cap,omitempty"`
-	// corresponds to a list of provider consensus addresses of validators that are the ONLY ones that can validate the consumer chain
+	// corresponds to a list of provider consensus addresses of validators that
+	// are the ONLY ones that can validate the consumer chain
 	Allowlist []string `protobuf:"bytes,4,rep,name=allowlist,proto3" json:"allowlist,omitempty"`
-	// corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain
+	// corresponds to a list of provider consensus addresses of validators that
+	// CANNOT validate the consumer chain
 	Denylist []string `protobuf:"bytes,5,rep,name=denylist,proto3" json:"denylist,omitempty"`
-	// Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
+	// Corresponds to the minimal amount of (provider chain) stake required to
+	// validate on the consumer chain.
 	MinStake uint64 `protobuf:"varint,6,opt,name=min_stake,json=minStake,proto3" json:"min_stake,omitempty"`
-	// Corresponds to whether inactive validators are allowed to validate the consumer chain.
+	// Corresponds to whether inactive validators are allowed to validate the
+	// consumer chain.
 	AllowInactiveVals bool `protobuf:"varint,7,opt,name=allow_inactive_vals,json=allowInactiveVals,proto3" json:"allow_inactive_vals,omitempty"`
-	// Corresponds to a list of provider consensus addresses of validators that should have PRIORITY to validate on the consumer chain,
-	// meaning as long as they are eligible/opted in to validate on the consumer chain, the validator set will be
-	// filled with these validators first, and other validators will be added to the validator set only if there are
-	// not enough eligible priority validators.
+	// Corresponds to a list of provider consensus addresses of validators that
+	// should have PRIORITY to validate on the consumer chain, meaning as long as
+	// they are eligible/opted in to validate on the consumer chain, the validator
+	// set will be filled with these validators first, and other validators will
+	// be added to the validator set only if there are not enough eligible
+	// priority validators.
 	Prioritylist []string `protobuf:"bytes,8,rep,name=prioritylist,proto3" json:"prioritylist,omitempty"`
 }
 
@@ -1855,7 +1907,8 @@ func (m *ConsumerIds) GetIds() []string {
 	return nil
 }
 
-// AllowlistedRewardDenoms corresponds to the denoms allowlisted by a specific consumer id
+// AllowlistedRewardDenoms corresponds to the denoms allowlisted by a specific
+// consumer id
 type AllowlistedRewardDenoms struct {
 	Denoms []string `protobuf:"bytes,1,rep,name=denoms,proto3" json:"denoms,omitempty"`
 }
@@ -1954,7 +2007,8 @@ func (m *InfractionParameters) GetDowntime() *SlashJailParameters {
 
 type SlashJailParameters struct {
 	SlashFraction cosmossdk_io_math.LegacyDec `protobuf:"bytes,1,opt,name=slash_fraction,json=slashFraction,proto3,customtype=cosmossdk.io/math.LegacyDec" json:"slash_fraction"`
-	// for permanent jailing use 9223372036854775807 which is the largest value a time.Duration can hold (approximately 292 years)
+	// for permanent jailing use 9223372036854775807 which is the largest value a
+	// time.Duration can hold (approximately 292 years)
 	JailDuration time.Duration `protobuf:"bytes,2,opt,name=jail_duration,json=jailDuration,proto3,stdduration" json:"jail_duration"`
 	// Indicates whether the validator should be tombstoned when slashed
 	Tombstone bool `protobuf:"varint,3,opt,name=tombstone,proto3" json:"tombstone,omitempty"`

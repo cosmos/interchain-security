@@ -237,34 +237,41 @@ type Chain struct {
 	ChainId  string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	ClientId string `protobuf:"bytes,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
 	Top_N    uint32 `protobuf:"varint,3,opt,name=top_N,json=topN,proto3" json:"top_N,omitempty"`
-	// If the chain is a Top-N chain, this is the minimum power required to be in the top N.
-	// Otherwise, this is -1.
+	// If the chain is a Top-N chain, this is the minimum power required to be in
+	// the top N. Otherwise, this is -1.
 	MinPowerInTop_N int64 `protobuf:"varint,4,opt,name=min_power_in_top_N,json=minPowerInTopN,proto3" json:"min_power_in_top_N,omitempty"`
-	// Corresponds to the maximum power (percentage-wise) a validator can have on the consumer chain.
-	ValidatorsPowerCap uint32 `protobuf:"varint,5,opt,name=validators_power_cap,json=validatorsPowerCap,proto3" json:"validators_power_cap,omitempty"`
-	// Corresponds to the maximum number of validators that can validate a consumer chain.
-	// Only applicable to Opt In chains. Setting `validator_set_cap` on a Top N chain is a no-op.
-	ValidatorSetCap uint32 `protobuf:"varint,6,opt,name=validator_set_cap,json=validatorSetCap,proto3" json:"validator_set_cap,omitempty"`
-	// Corresponds to a list of provider consensus addresses of validators that are the ONLY ones that can validate
+	// Corresponds to the maximum power (percentage-wise) a validator can have on
 	// the consumer chain.
+	ValidatorsPowerCap uint32 `protobuf:"varint,5,opt,name=validators_power_cap,json=validatorsPowerCap,proto3" json:"validators_power_cap,omitempty"`
+	// Corresponds to the maximum number of validators that can validate a
+	// consumer chain. Only applicable to Opt In chains. Setting
+	// `validator_set_cap` on a Top N chain is a no-op.
+	ValidatorSetCap uint32 `protobuf:"varint,6,opt,name=validator_set_cap,json=validatorSetCap,proto3" json:"validator_set_cap,omitempty"`
+	// Corresponds to a list of provider consensus addresses of validators that
+	// are the ONLY ones that can validate the consumer chain.
 	Allowlist []string `protobuf:"bytes,7,rep,name=allowlist,proto3" json:"allowlist,omitempty"`
-	// Corresponds to a list of provider consensus addresses of validators that CANNOT validate the consumer chain.
+	// Corresponds to a list of provider consensus addresses of validators that
+	// CANNOT validate the consumer chain.
 	Denylist []string `protobuf:"bytes,8,rep,name=denylist,proto3" json:"denylist,omitempty"`
 	// The phase the consumer chain
 	Phase string `protobuf:"bytes,9,opt,name=phase,proto3" json:"phase,omitempty"`
 	// The metadata of the consumer chain
 	Metadata ConsumerMetadata `protobuf:"bytes,10,opt,name=metadata,proto3" json:"metadata"`
-	// Corresponds to the minimal amount of (provider chain) stake required to validate on the consumer chain.
+	// Corresponds to the minimal amount of (provider chain) stake required to
+	// validate on the consumer chain.
 	MinStake uint64 `protobuf:"varint,11,opt,name=min_stake,json=minStake,proto3" json:"min_stake,omitempty"`
-	// Corresponds to whether inactive validators are allowed to validate the consumer chain.
+	// Corresponds to whether inactive validators are allowed to validate the
+	// consumer chain.
 	AllowInactiveVals bool   `protobuf:"varint,12,opt,name=allow_inactive_vals,json=allowInactiveVals,proto3" json:"allow_inactive_vals,omitempty"`
 	ConsumerId        string `protobuf:"bytes,13,opt,name=consumer_id,json=consumerId,proto3" json:"consumer_id,omitempty"`
 	// the reward denoms allowlisted by this consumer chain
 	AllowlistedRewardDenoms *AllowlistedRewardDenoms `protobuf:"bytes,14,opt,name=allowlisted_reward_denoms,json=allowlistedRewardDenoms,proto3" json:"allowlisted_reward_denoms,omitempty"`
-	// Corresponds to a list of provider consensus addresses of validators that should have PRIORITY to validate on the consumer chain,
-	// meaning as long as they are eligible/opted in to validate on the consumer chain, the validator set will be
-	// filled with these validators first, and other validators will be added to the validator set only if there are
-	// not enough eligible priority validators.
+	// Corresponds to a list of provider consensus addresses of validators that
+	// should have PRIORITY to validate on the consumer chain, meaning as long as
+	// they are eligible/opted in to validate on the consumer chain, the validator
+	// set will be filled with these validators first, and other validators will
+	// be added to the validator set only if there are not enough eligible
+	// priority validators.
 	Prioritylist []string `protobuf:"bytes,15,rep,name=prioritylist,proto3" json:"prioritylist,omitempty"`
 	// Infraction parameters for slashing and jailing
 	InfractionParameters *InfractionParameters `protobuf:"bytes,16,opt,name=infraction_parameters,json=infractionParameters,proto3" json:"infraction_parameters,omitempty"`
@@ -1173,7 +1180,8 @@ type QueryConsumerValidatorsValidator struct {
 	Description types1.Description `protobuf:"bytes,8,opt,name=description,proto3" json:"description"`
 	// provider_operator_address defines the address of the validator's operator
 	ProviderOperatorAddress string `protobuf:"bytes,9,opt,name=provider_operator_address,json=providerOperatorAddress,proto3" json:"provider_operator_address,omitempty"`
-	// jailed defined whether the validator has been jailed from bonded status or not.
+	// jailed defined whether the validator has been jailed from bonded status or
+	// not.
 	Jailed bool `protobuf:"varint,10,opt,name=jailed,proto3" json:"jailed,omitempty"`
 	// status is the validator status (bonded/unbonding/unbonded).
 	Status types1.BondStatus `protobuf:"varint,11,opt,name=status,proto3,enum=cosmos.staking.v1beta1.BondStatus" json:"status,omitempty"`
@@ -1181,7 +1189,8 @@ type QueryConsumerValidatorsValidator struct {
 	ProviderTokens cosmossdk_io_math.Int `protobuf:"bytes,12,opt,name=provider_tokens,json=providerTokens,proto3,customtype=cosmossdk.io/math.Int" json:"provider_tokens"`
 	// The power of the validator used on the provider chain
 	ProviderPower int64 `protobuf:"varint,13,opt,name=provider_power,json=providerPower,proto3" json:"provider_power,omitempty"`
-	// validates_current_epoch defines whether the validator has to validate for the current epoch or not
+	// validates_current_epoch defines whether the validator has to validate for
+	// the current epoch or not
 	ValidatesCurrentEpoch bool `protobuf:"varint,14,opt,name=validates_current_epoch,json=validatesCurrentEpoch,proto3" json:"validates_current_epoch,omitempty"`
 }
 
@@ -1612,7 +1621,8 @@ func (m *QueryBlocksUntilNextEpochResponse) GetBlocksUntilNextEpoch() uint64 {
 
 type QueryConsumerIdFromClientIdRequest struct {
 	// the client id (on the provider) that is tracking the consumer chain
-	// the client id can be found from the consumer chain by querying (i.e., `query ccvconsumer provider-info`)
+	// the client id can be found from the consumer chain by querying (i.e.,
+	// `query ccvconsumer provider-info`)
 	ClientId string `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
 }
 
@@ -2179,13 +2189,13 @@ type QueryClient interface {
 	// QueryRegisteredConsumerRewardDenoms returns a list of consumer reward
 	// denoms that are registered
 	QueryRegisteredConsumerRewardDenoms(ctx context.Context, in *QueryRegisteredConsumerRewardDenomsRequest, opts ...grpc.CallOption) (*QueryRegisteredConsumerRewardDenomsResponse, error)
-	// QueryAllPairsValConsAddrByConsumer returns a list of pair valconsensus address
-	// between provider and consumer chain
+	// QueryAllPairsValConsAddrByConsumer returns a list of pair valconsensus
+	// address between provider and consumer chain
 	QueryAllPairsValConsAddrByConsumer(ctx context.Context, in *QueryAllPairsValConsAddrByConsumerRequest, opts ...grpc.CallOption) (*QueryAllPairsValConsAddrByConsumerResponse, error)
 	// QueryParams returns all current values of provider parameters
 	QueryParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
-	// QueryConsumerChainOptedInValidators returns a list of validators consensus addresses
-	// that opted-in to the given consumer chain
+	// QueryConsumerChainOptedInValidators returns a list of validators consensus
+	// addresses that opted-in to the given consumer chain
 	QueryConsumerChainOptedInValidators(ctx context.Context, in *QueryConsumerChainOptedInValidatorsRequest, opts ...grpc.CallOption) (*QueryConsumerChainOptedInValidatorsResponse, error)
 	// QueryConsumerChainsValidatorHasToValidate returns a list of consumer chains
 	// that a given validator must validate
@@ -2193,9 +2203,10 @@ type QueryClient interface {
 	// QueryValidatorConsumerCommissionRate returns the commission rate a given
 	// validator charges on a given consumer chain
 	QueryValidatorConsumerCommissionRate(ctx context.Context, in *QueryValidatorConsumerCommissionRateRequest, opts ...grpc.CallOption) (*QueryValidatorConsumerCommissionRateResponse, error)
-	// QueryConsumerValidators returns the latest set consumer-validator set for a given consumer ID
-	// Note that this does not necessarily mean that the consumer chain is using this validator set at this exact moment
-	// because a VSCPacket could be delayed to be delivered on the consumer chain.
+	// QueryConsumerValidators returns the latest set consumer-validator set for a
+	// given consumer ID Note that this does not necessarily mean that the consumer
+	// chain is using this validator set at this exact moment because a VSCPacket
+	// could be delayed to be delivered on the consumer chain.
 	QueryConsumerValidators(ctx context.Context, in *QueryConsumerValidatorsRequest, opts ...grpc.CallOption) (*QueryConsumerValidatorsResponse, error)
 	// QueryBlocksUntilNextEpoch returns the number of blocks until the next epoch
 	// starts and validator updates are sent to the consumer chains
@@ -2383,13 +2394,13 @@ type QueryServer interface {
 	// QueryRegisteredConsumerRewardDenoms returns a list of consumer reward
 	// denoms that are registered
 	QueryRegisteredConsumerRewardDenoms(context.Context, *QueryRegisteredConsumerRewardDenomsRequest) (*QueryRegisteredConsumerRewardDenomsResponse, error)
-	// QueryAllPairsValConsAddrByConsumer returns a list of pair valconsensus address
-	// between provider and consumer chain
+	// QueryAllPairsValConsAddrByConsumer returns a list of pair valconsensus
+	// address between provider and consumer chain
 	QueryAllPairsValConsAddrByConsumer(context.Context, *QueryAllPairsValConsAddrByConsumerRequest) (*QueryAllPairsValConsAddrByConsumerResponse, error)
 	// QueryParams returns all current values of provider parameters
 	QueryParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
-	// QueryConsumerChainOptedInValidators returns a list of validators consensus addresses
-	// that opted-in to the given consumer chain
+	// QueryConsumerChainOptedInValidators returns a list of validators consensus
+	// addresses that opted-in to the given consumer chain
 	QueryConsumerChainOptedInValidators(context.Context, *QueryConsumerChainOptedInValidatorsRequest) (*QueryConsumerChainOptedInValidatorsResponse, error)
 	// QueryConsumerChainsValidatorHasToValidate returns a list of consumer chains
 	// that a given validator must validate
@@ -2397,9 +2408,10 @@ type QueryServer interface {
 	// QueryValidatorConsumerCommissionRate returns the commission rate a given
 	// validator charges on a given consumer chain
 	QueryValidatorConsumerCommissionRate(context.Context, *QueryValidatorConsumerCommissionRateRequest) (*QueryValidatorConsumerCommissionRateResponse, error)
-	// QueryConsumerValidators returns the latest set consumer-validator set for a given consumer ID
-	// Note that this does not necessarily mean that the consumer chain is using this validator set at this exact moment
-	// because a VSCPacket could be delayed to be delivered on the consumer chain.
+	// QueryConsumerValidators returns the latest set consumer-validator set for a
+	// given consumer ID Note that this does not necessarily mean that the consumer
+	// chain is using this validator set at this exact moment because a VSCPacket
+	// could be delayed to be delivered on the consumer chain.
 	QueryConsumerValidators(context.Context, *QueryConsumerValidatorsRequest) (*QueryConsumerValidatorsResponse, error)
 	// QueryBlocksUntilNextEpoch returns the number of blocks until the next epoch
 	// starts and validator updates are sent to the consumer chains

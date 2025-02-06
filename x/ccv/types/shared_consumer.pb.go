@@ -65,7 +65,8 @@ type ConsumerParams struct {
 	// Unbonding period for the consumer,
 	// which should be smaller than that of the provider in general.
 	UnbondingPeriod time.Duration `protobuf:"bytes,9,opt,name=unbonding_period,json=unbondingPeriod,proto3,stdduration" json:"unbonding_period"`
-	// !!! DEPRECATED !!! soft_opt_out_threshold is deprecated. see docs/docs/adrs/adr-015-partial-set-security.md
+	// !!! DEPRECATED !!! soft_opt_out_threshold is deprecated. see
+	// docs/docs/adrs/adr-015-partial-set-security.md
 	SoftOptOutThreshold string `protobuf:"bytes,10,opt,name=soft_opt_out_threshold,json=softOptOutThreshold,proto3" json:"soft_opt_out_threshold,omitempty"` // Deprecated: Do not use.
 	// Reward denoms. These are the denominations which are allowed to be sent to
 	// the provider as rewards.
@@ -301,11 +302,11 @@ func (m *ConsumerGenesisState) GetConnectionId() string {
 // ProviderInfo defines all information a consumer needs from a provider
 // Shared data type between provider and consumer
 type ProviderInfo struct {
-	// The client state for the provider client filled in on new chain, nil on restart.
-	// If connection_id != "", then client_state is ignored.
+	// The client state for the provider client filled in on new chain, nil on
+	// restart. If connection_id != "", then client_state is ignored.
 	ClientState *_07_tendermint.ClientState `protobuf:"bytes,1,opt,name=client_state,json=clientState,proto3" json:"client_state,omitempty"`
-	// The consensus state for the provider client filled in on new chain, nil on restart.
-	// If connection_id != "", then consensus_state is ignored.
+	// The consensus state for the provider client filled in on new chain, nil on
+	// restart. If connection_id != "", then consensus_state is ignored.
 	ConsensusState *_07_tendermint.ConsensusState `protobuf:"bytes,2,opt,name=consensus_state,json=consensusState,proto3" json:"consensus_state,omitempty"`
 	// InitialValset filled in on new chain and on restart.
 	InitialValSet []types.ValidatorUpdate `protobuf:"bytes,3,rep,name=initial_val_set,json=initialValSet,proto3" json:"initial_val_set"`

@@ -12,17 +12,14 @@ import "interchain_security/ccv/v1/wire.proto";
 import "google/protobuf/timestamp.proto";
 import "tendermint/abci/types.proto";
 
-
-
-
 // GenesisState defines the CCV consumer genesis state
 //
-// Note: this type is only used on consumer side and references shared types with
-// provider
+// Note: this type is only used on consumer side and references shared types
+// with provider
 message GenesisState {
   // Reserve 5th slot for removed provider_client_state field
   reserved 5;
- 
+
   // Reserve 6th slot for removed provider_consensus_state field
   reserved 6;
 
@@ -57,10 +54,11 @@ message GenesisState {
   bool preCCV = 13;
   interchain_security.ccv.v1.ProviderInfo provider = 14
       [ (gogoproto.nullable) = false ];
-  // The ID of the connection end on the consumer chain on top of which the 
-  // CCV channel will be established. If connection_id == "", a new client of 
+  // The ID of the connection end on the consumer chain on top of which the
+  // CCV channel will be established. If connection_id == "", a new client of
   // the provider chain and a new connection on top of this client are created.
-  // The new client is initialized using provider.client_state and provider.consensus_state.
+  // The new client is initialized using provider.client_state and
+  // provider.consensus_state.
   string connection_id = 15;
 }
 
