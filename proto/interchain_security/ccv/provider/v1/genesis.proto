@@ -68,7 +68,7 @@ message ConsumerState {
   string channel_id = 2;
   // ClientID defines the IBC client ID for the consumer chain
   string client_id = 3;
-  // InitalHeight defines the initial block height for the consumer chain
+  // InitialHeight defines the initial block height for the consumer chain
   uint64 initial_height = 4;
   // ConsumerGenesis defines the initial consumer chain genesis states
   interchain_security.ccv.v1.ConsumerGenesisState consumer_genesis = 5
