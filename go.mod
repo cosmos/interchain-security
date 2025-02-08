@@ -1,8 +1,7 @@
 module github.com/cosmos/interchain-security/v6
 
 go 1.22.7
-
-toolchain go1.22.9
+toolchain go1.23.6
 
 require (
 	cosmossdk.io/errors v1.0.1
@@ -38,7 +37,7 @@ require (
 	cloud.google.com/go/iam v1.1.9 // indirect
 	cloud.google.com/go/storage v1.41.0 // indirect
 	cosmossdk.io/api v0.7.6
-	cosmossdk.io/core v0.11.1
+	cosmossdk.io/core v1.0.0
 	cosmossdk.io/depinject v1.1.0 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
@@ -166,6 +165,7 @@ require (
 	cloud.google.com/go/auth v0.6.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
 	cosmossdk.io/collections v0.4.0 // indirect
+	cosmossdk.io/schema v1.0.0 // indirect
 	cosmossdk.io/x/circuit v0.1.1 // indirect
 	github.com/DataDog/datadog-go v3.2.0+incompatible // indirect
 	github.com/DataDog/zstd v1.5.5 // indirect
