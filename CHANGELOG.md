@@ -788,7 +788,7 @@ May 17, 2024
     consumer and provider dedicated types where possible.
     ([\#1350](https://github.com/cosmos/interchain-security/pull/1350))
 - [Provider](x/ccv/provider)
-  - Add `QueryAllPairsValConAddrByConsumerChainID` method to get list of all pairs `valConsensus` address by `Consummer chainID`. ([\#1503](https://github.com/cosmos/interchain-security/pull/1503))
+  - Add `QueryAllPairsValConAddrByConsumerChainID` method to get list of all pairs `valConsensus` address by `Consumer chainID`. ([\#1503](https://github.com/cosmos/interchain-security/pull/1503))
 
 ### STATE BREAKING
 

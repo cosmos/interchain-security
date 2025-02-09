@@ -11,7 +11,7 @@ Consumer chains have the option of sharing _a portion of_ their block rewards (i
 These rewards are periodically sent from the consumer to the provider according to [consumer chain parameters](../build/modules/03-consumer.md#parameters) using an IBC transfer channel.
 This channel is created during consumer chain initialization, unless it is provided when creating a new consumer chain (see the [DistributionTransmissionChannel param](../build/modules/03-consumer.md#distributiontransmissionchannel)). 
 
-Providing an IBC transfer channel enables a consumer chain to re-use one of the existing channels to the provider for consumer chain rewards distribution. 
+Providing an IBC transfer channel enables a consumer chain to reuse one of the existing channels to the provider for consumer chain rewards distribution. 
 This will preserve the `ibc denom` that may already be in use. 
 This is especially important for standalone chains transitioning to become consumer chains. 
 For more details, see the [changeover procedure](../consumer-development/changeover-procedure.md).
