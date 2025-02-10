@@ -158,7 +158,7 @@ require (
 	github.com/cosmos/ibc-go/v8 v8.5.2
 	github.com/informalsystems/itf-go v0.0.1
 	github.com/spf13/viper v1.19.0
-	golang.org/x/mod v0.22.0
+	golang.org/x/mod v0.23.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20241015192408-796eee8c2d53
 )
 
