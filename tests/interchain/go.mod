@@ -9,8 +9,8 @@ require (
 	cosmossdk.io/x/upgrade v0.1.4
 	github.com/cometbft/cometbft v0.38.15
 	github.com/cosmos/cosmos-sdk v0.50.10
-	github.com/cosmos/ibc-go/v8 v8.5.2
-	github.com/cosmos/interchain-security/v6 v6.3.0
+	github.com/cosmos/ibc-go/v9 v9.0.0-20250212192332-093b08e42682
+	github.com/cosmos/interchain-security/v7 v7
 	github.com/docker/docker v25.0.6+incompatible
 	github.com/strangelove-ventures/interchaintest/v8 v8.7.1
 	github.com/stretchr/testify v1.9.0
@@ -288,7 +288,7 @@ replace (
 	github.com/ChainSafe/go-schnorrkel => github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d
 	github.com/ChainSafe/go-schnorrkel/1 => github.com/ChainSafe/go-schnorrkel v1.0.0
 	github.com/btcsuite/btcd/btcec/v2 => github.com/btcsuite/btcd/btcec/v2 v2.3.3
-	github.com/cosmos/interchain-security/v6 => github.com/cosmos/interchain-security/v6 v6.0.0-20241203112553-01f9698b4450
+	github.com/cosmos/interchain-security/v7 => ../
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	// Remove this when strangelove-ventures updates the interchain tests to import ICS v6
 	github.com/strangelove-ventures/interchaintest/v8 => github.com/stana-miric/interchaintest/v8 v8.0.0-20241213083053-58af9adbcc58

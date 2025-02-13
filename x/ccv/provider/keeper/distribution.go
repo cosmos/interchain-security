@@ -3,7 +3,7 @@ package keeper
 import (
 	"context"
 
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
@@ -13,7 +13,7 @@ import (
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )
 
 // BeginBlockRD executes BeginBlock logic for the Reward Distribution sub-protocol.

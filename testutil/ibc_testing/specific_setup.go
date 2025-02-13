@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 
 	db "github.com/cosmos/cosmos-db"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	ibctesting "github.com/cosmos/ibc-go/v9/testing"
 
 	"cosmossdk.io/log"
 
@@ -18,11 +18,11 @@ import (
 
 	"github.com/cometbft/cometbft/abci/types"
 
-	appConsumer "github.com/cosmos/interchain-security/v6/app/consumer"
-	appConsumerDemocracy "github.com/cosmos/interchain-security/v6/app/consumer-democracy"
-	appProvider "github.com/cosmos/interchain-security/v6/app/provider"
-	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
-	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	appConsumer "github.com/cosmos/interchain-security/v7/app/consumer"
+	appConsumerDemocracy "github.com/cosmos/interchain-security/v7/app/consumer-democracy"
+	appProvider "github.com/cosmos/interchain-security/v7/app/provider"
+	consumertypes "github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
+	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 var (

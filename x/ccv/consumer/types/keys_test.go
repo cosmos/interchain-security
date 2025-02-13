@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
 )
 
 // Tests that all singular keys, or prefixes to fully resolves keys are non duplicate byte values.

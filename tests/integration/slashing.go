@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
 
 	"cosmossdk.io/core/comet"
 	"cosmossdk.io/math"
@@ -22,10 +22,10 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v6/testutil/integration"
-	keepertestutil "github.com/cosmos/interchain-security/v6/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	"github.com/cosmos/interchain-security/v7/testutil/integration"
+	keepertestutil "github.com/cosmos/interchain-security/v7/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // TestRelayAndApplyDowntimePacket tests that downtime slash packets can be properly relayed from consumer to provider,

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 	"github.com/strangelove-ventures/interchaintest/v8/testutil"
 	"github.com/stretchr/testify/suite"
 )

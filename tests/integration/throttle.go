@@ -3,7 +3,7 @@ package integration
 import (
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 
 	"cosmossdk.io/math"
 
@@ -12,10 +12,10 @@ import (
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	icstestingutils "github.com/cosmos/interchain-security/v6/testutil/ibc_testing"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v7/testutil/ibc_testing"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 const fullSlashMeterString = "1.0"

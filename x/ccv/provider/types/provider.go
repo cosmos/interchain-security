@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 
-	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 func DefaultConsumerInitializationParameters() ConsumerInitializationParameters {

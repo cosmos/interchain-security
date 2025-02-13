@@ -1,8 +1,8 @@
 package app
 
 import (
-	ibcante "github.com/cosmos/ibc-go/v8/modules/core/ante"
-	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
+	ibcante "github.com/cosmos/ibc-go/v9/modules/core/ante"
+	ibckeeper "github.com/cosmos/ibc-go/v9/modules/core/keeper"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -10,8 +10,8 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 
-	consumerante "github.com/cosmos/interchain-security/v6/app/consumer/ante"
-	ibcconsumerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
+	consumerante "github.com/cosmos/interchain-security/v7/app/consumer/ante"
+	ibcconsumerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/consumer/keeper"
 )
 
 // HandlerOptions extend the SDK's AnteHandler options by requiring the IBC

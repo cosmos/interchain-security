@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	tendermint "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	tendermint "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v9/testing"
 	"github.com/stretchr/testify/require"
 
 	sdkmath "cosmossdk.io/math"
@@ -23,13 +23,13 @@ import (
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	appConsumer "github.com/cosmos/interchain-security/v6/app/consumer"
-	appProvider "github.com/cosmos/interchain-security/v6/app/provider"
-	simibc "github.com/cosmos/interchain-security/v6/testutil/simibc"
-	consumerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
-	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v6/x/ccv/types"
+	appConsumer "github.com/cosmos/interchain-security/v7/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/v7/app/provider"
+	simibc "github.com/cosmos/interchain-security/v7/testutil/simibc"
+	consumerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
+	providerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // Define a new type for ChainIds to be more explicit

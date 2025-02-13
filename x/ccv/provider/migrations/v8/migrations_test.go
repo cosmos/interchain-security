@@ -8,8 +8,8 @@ import (
 
 	"cosmossdk.io/math"
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
-	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v6/x/ccv/types"
+	providerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v7/x/ccv/types"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -18,8 +18,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	testutil "github.com/cosmos/interchain-security/v6/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	testutil "github.com/cosmos/interchain-security/v7/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )
 
 func legacyConsumerAddrsToPruneKey(chainID string, vscID uint64) []byte {

@@ -6,7 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	types "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	types "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )
 
 // RegisterInvariants registers all staking invariants

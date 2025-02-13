@@ -14,7 +14,7 @@ import "ibc/lightclients/tendermint/v1/tendermint.proto";
 import "interchain_security/ccv/v1/wire.proto";
 import "tendermint/crypto/keys.proto";
 
-option go_package = "github.com/cosmos/interchain-security/v6/x/ccv/provider/types";
+option go_package = "github.com/cosmos/interchain-security/v7/x/ccv/provider/types";
 
 //
 // Note any type defined in this file is ONLY used internally to the provider CCV module.

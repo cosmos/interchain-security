@@ -1,36 +1,34 @@
 package consumer
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
+	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
+	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
 
 	errorsmod "cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	"github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/v6/x/ccv/types"
+	"github.com/cosmos/interchain-security/v7/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // OnChanOpenInit implements the IBCModule interface
 // this function is called by the relayer.
 func (am AppModule) OnChanOpenInit(
-	ctx sdk.Context,
+	ctx context.Context,
 	order channeltypes.Order,
 	connectionHops []string,
 	portID string,
 	channelID string,
-	chanCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
 	version string,
 ) (string, error) {
@@ -59,13 +57,6 @@ func (am AppModule) OnChanOpenInit(
 			"invalid counterparty port: %s, expected %s", counterparty.PortId, types.ProviderPortID)
 	}
 
-	// Claim channel capability passed back by IBC module
-	if err := am.keeper.ClaimCapability(
-		ctx, chanCap, host.ChannelCapabilityPath(portID, channelID),
-	); err != nil {
-		return "", err
-	}
-
 	if err := am.keeper.VerifyProviderChain(ctx, connectionHops); err != nil {
 		return "", err
 	}
@@ -75,7 +66,7 @@ func (am AppModule) OnChanOpenInit(
 
 // validateCCVChannelParams validates a ccv channel
 func validateCCVChannelParams(
-	ctx sdk.Context,
+	ctx context.Context,
 	keeper keeper.Keeper,
 	order channeltypes.Order,
 	portID string,
@@ -101,12 +92,11 @@ func validateCCVChannelParams(
 
 // OnChanOpenTry implements the IBCModule interface
 func (am AppModule) OnChanOpenTry(
-	ctx sdk.Context,
+	ctx context.Context,
 	order channeltypes.Order,
 	connectionHops []string,
 	portID,
 	channelID string,
-	chanCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (string, error) {
@@ -115,7 +105,7 @@ func (am AppModule) OnChanOpenTry(
 
 // OnChanOpenAck implements the IBCModule interface
 func (am AppModule) OnChanOpenAck(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 	_ string, // Counter party channel ID is unused per spec
@@ -162,7 +152,7 @@ func (am AppModule) OnChanOpenAck(
 
 	distrTransferMsg := channeltypes.NewMsgChannelOpenInit(
 		transfertypes.PortID,
-		transfertypes.Version,
+		transfertypes.V1,
 		channeltypes.UNORDERED,
 		connHops,
 		transfertypes.PortID,
@@ -189,7 +179,7 @@ func (am AppModule) OnChanOpenAck(
 
 // OnChanOpenConfirm implements the IBCModule interface
 func (am AppModule) OnChanOpenConfirm(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 ) error {
@@ -198,7 +188,7 @@ func (am AppModule) OnChanOpenConfirm(
 
 // OnChanCloseInit implements the IBCModule interface
 func (am AppModule) OnChanCloseInit(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 ) error {
@@ -211,7 +201,7 @@ func (am AppModule) OnChanCloseInit(
 
 // OnChanCloseConfirm implements the IBCModule interface
 func (am AppModule) OnChanCloseConfirm(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 ) error {
@@ -222,7 +212,8 @@ func (am AppModule) OnChanCloseConfirm(
 // is returned if the packet data is successfully decoded and the receive application
 // logic returns without error.
 func (am AppModule) OnRecvPacket(
-	ctx sdk.Context,
+	ctx context.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
@@ -273,7 +264,8 @@ func (am AppModule) OnRecvPacket(
 
 // OnAcknowledgementPacket implements the IBCModule interface
 func (am AppModule) OnAcknowledgementPacket(
-	ctx sdk.Context,
+	ctx context.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 	_ sdk.AccAddress,
@@ -317,7 +309,8 @@ func (am AppModule) OnAcknowledgementPacket(
 // the CCV channel state is changed to CLOSED
 // by the IBC module as the channel is ORDERED
 func (am AppModule) OnTimeoutPacket(
-	ctx sdk.Context,
+	ctx context.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) error {

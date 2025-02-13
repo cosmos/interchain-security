@@ -3,7 +3,7 @@ package ante_test
 import (
 	"testing"
 
-	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 	"github.com/stretchr/testify/require"
 
 	evidencetypes "cosmossdk.io/x/evidence/types"
@@ -13,8 +13,8 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 
-	"github.com/cosmos/interchain-security/v6/app/consumer/ante"
-	appencoding "github.com/cosmos/interchain-security/v6/app/encoding"
+	"github.com/cosmos/interchain-security/v7/app/consumer/ante"
+	appencoding "github.com/cosmos/interchain-security/v7/app/encoding"
 )
 
 func TestDisabledModulesDecorator(t *testing.T) {

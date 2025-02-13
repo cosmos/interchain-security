@@ -9,7 +9,7 @@ import (
 
 	"golang.org/x/mod/semver"
 
-	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
+	e2e "github.com/cosmos/interchain-security/v7/tests/e2e/testlib"
 )
 
 type (

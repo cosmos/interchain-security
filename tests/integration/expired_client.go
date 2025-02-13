@@ -3,10 +3,10 @@ package integration
 import (
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
-	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
+	ibctm "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v9/testing"
 
 	"cosmossdk.io/math"
 
@@ -15,7 +15,7 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // TestVSCPacketSendExpiredClient tests queueing of VSCPackets when the consumer client is expired.

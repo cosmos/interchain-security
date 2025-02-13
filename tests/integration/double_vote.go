@@ -9,8 +9,8 @@ import (
 	tmcrypto "github.com/cometbft/cometbft/crypto"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	testutil "github.com/cosmos/interchain-security/v6/testutil/crypto"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	testutil "github.com/cosmos/interchain-security/v7/testutil/crypto"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )
 
 // TestHandleConsumerDoubleVoting tests the handling of double voting evidence from the consumer chain.

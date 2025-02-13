@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )

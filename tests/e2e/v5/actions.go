@@ -18,10 +18,10 @@ import (
 	"github.com/tidwall/gjson"
 	"golang.org/x/mod/semver"
 
-	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/client"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	e2e "github.com/cosmos/interchain-security/v7/tests/e2e/testlib"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/client"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 const (

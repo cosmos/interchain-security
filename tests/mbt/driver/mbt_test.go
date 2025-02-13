@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	ibctesting "github.com/cosmos/ibc-go/v9/testing"
 	"github.com/informalsystems/itf-go/itf"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/stretchr/testify/require"
@@ -23,9 +23,9 @@ import (
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v6/testutil/integration"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/v6/x/ccv/types"
+	"github.com/cosmos/interchain-security/v7/testutil/integration"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 const verbose = false

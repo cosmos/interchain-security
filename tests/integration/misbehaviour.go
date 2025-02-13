@@ -3,7 +3,7 @@ package integration
 import (
 	"time"
 
-	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
 
 	"cosmossdk.io/math"
 
@@ -11,8 +11,8 @@ import (
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	testutil "github.com/cosmos/interchain-security/v6/testutil/crypto"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	testutil "github.com/cosmos/interchain-security/v7/testutil/crypto"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )
 
 // TestHandleConsumerMisbehaviour tests the handling of consumer misbehavior.

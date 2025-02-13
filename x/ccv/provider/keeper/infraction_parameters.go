@@ -7,7 +7,7 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )
 
 // GetInfractionParameters returns the slashing and jailing infraction parameters associated with this consumer id

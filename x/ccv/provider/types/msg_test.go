@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	cryptoutil "github.com/cosmos/interchain-security/v6/testutil/crypto"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	cryptoutil "github.com/cosmos/interchain-security/v7/testutil/crypto"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )
 
 func TestValidateStringField(t *testing.T) {

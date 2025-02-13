@@ -11,13 +11,13 @@ import (
 	"strconv"
 	"strings"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
 
-	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	e2e "github.com/cosmos/interchain-security/v7/tests/e2e/testlib"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )
 
 // Commands contains a collection of commands which can executed

@@ -9,11 +9,11 @@ import (
 
 	"cosmossdk.io/math"
 
-	appConsumer "github.com/cosmos/interchain-security/v6/app/consumer"
-	appProvider "github.com/cosmos/interchain-security/v6/app/provider"
-	icstestingutils "github.com/cosmos/interchain-security/v6/testutil/ibc_testing"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	appConsumer "github.com/cosmos/interchain-security/v7/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/v7/app/provider"
+	icstestingutils "github.com/cosmos/interchain-security/v7/testutil/ibc_testing"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // we need a stake multiplier because tokens do not directly correspond to voting power

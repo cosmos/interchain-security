@@ -37,8 +37,8 @@ import (
 
 	cmtcfg "github.com/cometbft/cometbft/config"
 
-	appEncoding "github.com/cosmos/interchain-security/v6/app/encoding"
-	providerApp "github.com/cosmos/interchain-security/v6/app/provider"
+	appEncoding "github.com/cosmos/interchain-security/v7/app/encoding"
+	providerApp "github.com/cosmos/interchain-security/v7/app/provider"
 )
 
 // NewRootCmd creates a new root command for simd. It is called once in the

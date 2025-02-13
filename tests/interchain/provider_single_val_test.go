@@ -7,7 +7,7 @@ import (
 	"time"
 
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 	"github.com/strangelove-ventures/interchaintest/v8/testutil"
 
