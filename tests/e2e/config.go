@@ -576,6 +576,7 @@ func PermissionlessTestConfig() TestConfig {
 	tr.Initialize()
 	return tr
 }
+
 func InactiveProviderValsTestConfig() TestConfig {
 	tr := DefaultTestConfig()
 	tr.Name = "InactiveValsConfig"

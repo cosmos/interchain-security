@@ -231,7 +231,8 @@ func StoreChainDataUsingChainIdAsKey(ctx sdk.Context, store storetypes.KVStore, 
 // GetChainDataUsingStringId retrieves the store data under key `id` that can be either a `chainId` or a `consumerId`.
 // If `stopEarly` is set, the code will return an error if it finds an inconsistency in the retrieved chain data.
 func GetChainDataUsingStringId(ctx sdk.Context, providerKeeper providerkeeper.Keeper, id string,
-	providerAddr providertypes.ProviderConsAddress, consumerAddr providertypes.ConsumerConsAddress, stopEarly bool) (ChainData, error) {
+	providerAddr providertypes.ProviderConsAddress, consumerAddr providertypes.ConsumerConsAddress, stopEarly bool,
+) (ChainData, error) {
 	data := ChainData{}
 	data.ChainId, _ = providerKeeper.GetConsumerChainId(ctx, id)
 	data.ClientId, _ = providerKeeper.GetConsumerClientId(ctx, id)

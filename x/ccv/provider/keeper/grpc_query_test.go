@@ -477,7 +477,8 @@ func TestGetConsumerChain(t *testing.T) {
 		{}, // no denoms
 		{Denoms: []string{"ibc/1", "ibc/2"}},
 		{Denoms: []string{"ibc/3", "ibc/4", "ibc/5"}},
-		{Denoms: []string{"ibc/6"}}}
+		{Denoms: []string{"ibc/6"}},
+	}
 
 	expectedGetAllOrder := []types.Chain{}
 	for i, consumerID := range consumerIDs {

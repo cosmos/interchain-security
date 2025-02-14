@@ -113,8 +113,6 @@ func TestInitGenesis(t *testing.T) {
 				params,
 			),
 			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
-				assertConsumerPortIsBound(t, ctx, &ck)
-
 				assertProviderClientID(t, ctx, &ck, provClientID)
 				assertHeightValsetUpdateIDs(t, ctx, &ck, defaultHeightValsetUpdateIDs)
 
@@ -139,8 +137,6 @@ func TestInitGenesis(t *testing.T) {
 				params,
 			),
 			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
-				assertConsumerPortIsBound(t, ctx, &ck)
-
 				obtainedPendingPackets := ck.GetPendingPackets(ctx)
 				for idx, expectedPacketData := range pendingDataPackets.List {
 					require.Equal(t, expectedPacketData.Type, obtainedPendingPackets[idx].Type)
@@ -176,8 +172,6 @@ func TestInitGenesis(t *testing.T) {
 				params,
 			),
 			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
-				assertConsumerPortIsBound(t, ctx, &ck)
-
 				gotChannelID, ok := ck.GetProviderChannel(ctx)
 				require.True(t, ok)
 				require.Equal(t, provChannelID, gotChannelID)
@@ -356,13 +350,6 @@ func TestExportGenesis(t *testing.T) {
 			require.EqualValues(t, tc.expGenesis, gotGen)
 		})
 	}
-}
-
-// assert that the default CCV consumer port ID is stored and bounded
-func assertConsumerPortIsBound(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper) {
-	t.Helper()
-	require.Equal(t, ck.GetPort(ctx), string(ccv.ConsumerPortID))
-	require.True(t, ck.IsBound(ctx, ccv.ConsumerPortID))
 }
 
 // assert that the given client ID matches the provider client ID in the store

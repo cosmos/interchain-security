@@ -128,7 +128,6 @@ func extractDocstrings(filePath string, out *os.File) []string {
 				fmt.Fprintf(out, " %s | %s |\n", link, description)
 			} else {
 				functionsMissingDocstrings = append(functionsMissingDocstrings, fn.Name.Name)
-
 			}
 		}
 	}

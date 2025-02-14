@@ -2,8 +2,9 @@ package interchain
 
 import (
 	"context"
-	"cosmos/interchain-security/tests/interchain/chainsuite"
 	"strconv"
+
+	"cosmos/interchain-security/tests/interchain/chainsuite"
 
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 	"github.com/stretchr/testify/suite"

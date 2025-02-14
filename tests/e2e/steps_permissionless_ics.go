@@ -83,7 +83,8 @@ func stepsPermissionlessICS() []Step {
 			[]string{"cons1", "cons2"}, // show up both consumer chains as proposed chains
 			[]ValidatorID{
 				ValidatorID("bob"),
-				ValidatorID("alice")}, // alice already validating 'cons2'
+				ValidatorID("alice"),
+			}, // alice already validating 'cons2'
 			0),
 
 		[]Step{

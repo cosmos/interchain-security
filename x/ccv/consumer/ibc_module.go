@@ -24,7 +24,7 @@ import (
 // OnChanOpenInit implements the IBCModule interface
 // this function is called by the relayer.
 func (am AppModule) OnChanOpenInit(
-	ctx context.Context,
+	ctx sdk.Context,
 	order channeltypes.Order,
 	connectionHops []string,
 	portID string,
@@ -66,7 +66,7 @@ func (am AppModule) OnChanOpenInit(
 
 // validateCCVChannelParams validates a ccv channel
 func validateCCVChannelParams(
-	ctx context.Context,
+	ctx sdk.Context,
 	keeper keeper.Keeper,
 	order channeltypes.Order,
 	portID string,
@@ -92,7 +92,7 @@ func validateCCVChannelParams(
 
 // OnChanOpenTry implements the IBCModule interface
 func (am AppModule) OnChanOpenTry(
-	ctx context.Context,
+	ctx sdk.Context,
 	order channeltypes.Order,
 	connectionHops []string,
 	portID,
@@ -105,7 +105,7 @@ func (am AppModule) OnChanOpenTry(
 
 // OnChanOpenAck implements the IBCModule interface
 func (am AppModule) OnChanOpenAck(
-	ctx context.Context,
+	ctx sdk.Context,
 	portID,
 	channelID string,
 	_ string, // Counter party channel ID is unused per spec
@@ -179,7 +179,7 @@ func (am AppModule) OnChanOpenAck(
 
 // OnChanOpenConfirm implements the IBCModule interface
 func (am AppModule) OnChanOpenConfirm(
-	ctx context.Context,
+	ctx sdk.Context,
 	portID,
 	channelID string,
 ) error {
@@ -188,7 +188,7 @@ func (am AppModule) OnChanOpenConfirm(
 
 // OnChanCloseInit implements the IBCModule interface
 func (am AppModule) OnChanCloseInit(
-	ctx context.Context,
+	ctx sdk.Context,
 	portID,
 	channelID string,
 ) error {
@@ -212,8 +212,7 @@ func (am AppModule) OnChanCloseConfirm(
 // is returned if the packet data is successfully decoded and the receive application
 // logic returns without error.
 func (am AppModule) OnRecvPacket(
-	ctx context.Context,
-	channelVersion string,
+	ctx sdk.Context,
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
@@ -264,8 +263,7 @@ func (am AppModule) OnRecvPacket(
 
 // OnAcknowledgementPacket implements the IBCModule interface
 func (am AppModule) OnAcknowledgementPacket(
-	ctx context.Context,
-	channelVersion string,
+	ctx sdk.Context,
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 	_ sdk.AccAddress,
@@ -309,8 +307,7 @@ func (am AppModule) OnAcknowledgementPacket(
 // the CCV channel state is changed to CLOSED
 // by the IBC module as the channel is ORDERED
 func (am AppModule) OnTimeoutPacket(
-	ctx context.Context,
-	channelVersion string,
+	ctx sdk.Context,
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) error {

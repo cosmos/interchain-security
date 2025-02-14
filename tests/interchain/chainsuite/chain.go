@@ -24,8 +24,10 @@ import (
 )
 
 // This moniker is hardcoded into interchaintest
-const ValidatorMoniker = "validator"
-const TestMonikerPrefix = "testAccount"
+const (
+	ValidatorMoniker  = "validator"
+	TestMonikerPrefix = "testAccount"
+)
 
 type Chain struct {
 	*cosmos.CosmosChain
@@ -243,7 +245,6 @@ func (p *Chain) GetUnusedTestingAddresss() (formattedAddress string, keyName str
 
 // UpdateAndVerifyStakeChange updates the staking amount on the provider chain and verifies that the change is reflected on the consumer side
 func (p *Chain) UpdateAndVerifyStakeChange(ctx context.Context, consumer *Chain, relayer *Relayer, amount, valIdx int) error {
-
 	providerAddress := p.ValidatorWallets[valIdx]
 
 	providerHex, err := p.GetValidatorHexAddress(ctx, valIdx)
@@ -360,7 +361,6 @@ func (c *Chain) VoteForProposal(ctx context.Context, proposalID string, vote str
 }
 
 func (c *Chain) SubmitAndVoteForProposal(ctx context.Context, prop cosmos.TxProposalv1, vote string) (string, error) {
-
 	propTx, err := c.SubmitProposal(ctx, ValidatorMoniker, prop)
 	if err != nil {
 		return "", err

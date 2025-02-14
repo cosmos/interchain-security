@@ -118,7 +118,6 @@ func (td *DefaultDriver) getTargetDriver(chainID ChainID) Chain {
 }
 
 func (td *DefaultDriver) getChainDriver(chainID ChainID) e2e.ChainIF {
-
 	var target e2e.ChainIF
 
 	icsVersion := td.getIcsVersion(chainID)
@@ -325,7 +324,7 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		target := td.getTargetDriver(action.Chain)
 		target.voteGovProposal(action, td.verbose)
 	case StartConsumerChainAction:
-		//target := td.getTargetDriver(action.ProviderChain)
+		// target := td.getTargetDriver(action.ProviderChain)
 		target := td.getChainDriver(action.ProviderChain)
 		target.StartConsumerChain(action, td.verbose)
 	case AddChainToRelayerAction:
@@ -356,7 +355,7 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		target := td.getTargetDriver("")
 		target.relayRewardPacketsToProvider(action, td.verbose)
 	case DelegateTokensAction:
-		//target := td.getTargetDriver(action.Chain)
+		// target := td.getTargetDriver(action.Chain)
 		target := td.getChainDriver(action.Chain)
 		target.DelegateTokens(action, td.verbose)
 	case UnbondTokensAction:
@@ -392,7 +391,7 @@ func (td *DefaultDriver) runAction(action interface{}) error {
 		target.registerRepresentative(action, td.verbose)
 	case e2e.AssignConsumerPubKeyAction:
 		target := td.getChainDriver(ChainID("provi"))
-		//target := td.getTargetDriver(ChainID("provi"))
+		// target := td.getTargetDriver(ChainID("provi"))
 		target.AssignConsumerPubKey(action, td.verbose)
 	case SlashMeterReplenishmentAction:
 		target := td.getTargetDriver(ChainID("provi"))

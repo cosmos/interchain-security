@@ -2,10 +2,13 @@ package interchain
 
 import (
 	"context"
-	"cosmos/interchain-security/tests/interchain/chainsuite"
 	"fmt"
 	"testing"
 	"time"
+
+	"cosmos/interchain-security/tests/interchain/chainsuite"
+
+	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 
 	sdkmath "cosmossdk.io/math"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
@@ -14,7 +17,6 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 
-	transfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
 	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 	"github.com/strangelove-ventures/interchaintest/v8"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
@@ -129,7 +131,8 @@ func (s *ProviderConsumersSuite) TestRewards() {
 	transferCh, err := s.Relayer.GetTransferChannel(s.GetContext(), s.Provider, s.Consumer)
 	s.Require().NoError(err)
 	s.Require().True(transferCh != nil)
-	rewardDenom := transfertypes.ParseDenomTrace(transfertypes.GetPrefixedDenom("transfer", transferCh.ChannelID, s.Consumer.Config().Denom)).IBCDenom()
+	rewardDenom := ccvtypes.ParseDenomTrace(ccvtypes.GetPrefixedDenom("transfer", transferCh.ChannelID,
+		s.Consumer.Config().Denom)).IBCDenom()
 
 	govAuthority, err := s.Provider.GetGovernanceAddress(s.GetContext())
 	s.Require().NoError(err)

@@ -1949,7 +1949,7 @@ func stepsValidatorsPrioritylistedChain() []Step {
 					TopN:            0,
 					ValidatorSetCap: 2,
 					Prioritylist: []string{
-						"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq", //alice
+						"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq", // alice
 					},
 				},
 			},

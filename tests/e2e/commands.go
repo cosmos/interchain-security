@@ -837,7 +837,6 @@ func (tr Commands) CreateConsumer(
 	initParams *types.ConsumerInitializationParameters,
 	powerShapingParams *types.PowerShapingParameters,
 ) ([]byte, error) {
-
 	msg := types.MsgCreateConsumer{
 		ChainId:                  string(consumerChain),
 		Metadata:                 metadata,

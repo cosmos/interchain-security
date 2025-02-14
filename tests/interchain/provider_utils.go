@@ -1,10 +1,11 @@
 package interchain
 
 import (
-	"cosmos/interchain-security/tests/interchain/chainsuite"
 	"fmt"
 	"strings"
 	"time"
+
+	"cosmos/interchain-security/tests/interchain/chainsuite"
 
 	"cosmossdk.io/math"
 	sdkmath "cosmossdk.io/math"
@@ -17,7 +18,8 @@ func msgCreateConsumer(
 	initParams *providertypes.ConsumerInitializationParameters,
 	powerParams *providertypes.PowerShapingParameters,
 	infractionParams *providertypes.InfractionParameters,
-	submiter string) *providertypes.MsgCreateConsumer {
+	submiter string,
+) *providertypes.MsgCreateConsumer {
 	consumerMetadata := providertypes.ConsumerMetadata{
 		Name:        chainId,
 		Description: "description",

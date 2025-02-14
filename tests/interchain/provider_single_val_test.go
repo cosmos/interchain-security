@@ -1,10 +1,11 @@
 package interchain
 
 import (
-	"cosmos/interchain-security/tests/interchain/chainsuite"
 	"fmt"
 	"testing"
 	"time"
+
+	"cosmos/interchain-security/tests/interchain/chainsuite"
 
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
@@ -341,7 +342,7 @@ func (s *SingleValidatorProviderSuite) TestProviderTransformOptInToTopN() {
 	s.Require().Equal(providertypes.CONSUMER_PHASE_LAUNCHED.String(), updatedChain.Phase)
 	s.Require().Equal(50, updatedChain.PowerShapingParams.TopN)
 
-	//Confirm that the chain can be updated to a higher TopN
+	// Confirm that the chain can be updated to a higher TopN
 	powerShapingParams.Top_N = 100
 	upgradeMsg = &providertypes.MsgUpdateConsumer{
 		Owner:                  chainsuite.ProviderGovModuleAddress,
@@ -425,7 +426,7 @@ func (s *SingleValidatorProviderSuite) TestOptOut() {
 	consumerChain, err := s.Provider.GetConsumerChain(s.GetContext(), consumerId)
 	s.Require().NoError(err)
 
-	//OptIn
+	// OptIn
 	s.Require().NoError(s.Provider.OptIn(s.GetContext(), consumerChain.ConsumerID, 0))
 	consumerInitParams.SpawnTime = time.Now()
 	upgradeMsg := &providertypes.MsgUpdateConsumer{
@@ -447,7 +448,7 @@ func (s *SingleValidatorProviderSuite) TestOptOut() {
 	s.Require().NoError(err)
 	s.Require().Equal(valConsAddr, optInVals.ValidatorsProviderAddresses[0])
 
-	//OptOut
+	// OptOut
 	s.Require().NoError(s.Provider.OptOut(s.GetContext(), consumerChain.ConsumerID, 0))
 	s.Require().NoError(testutil.WaitForBlocks(s.GetContext(), 1, s.Provider))
 	optInVals, err = s.Provider.GetOptInValidators(s.GetContext(), consumerChain.ConsumerID)

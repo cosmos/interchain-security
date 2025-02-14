@@ -392,7 +392,6 @@ func TestFilterValidatorsConsiderOnlyOptIn(t *testing.T) {
 	validators, err := providerKeeper.FilterValidators(ctx, consumerID, []stakingtypes.Validator{},
 		func(providerAddr types.ProviderConsAddress) (bool, error) {
 			return providerKeeper.IsOptedIn(ctx, consumerID, providerAddr), nil
-
 		})
 	require.NoError(t, err)
 	require.Empty(t, validators)

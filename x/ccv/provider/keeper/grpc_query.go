@@ -78,7 +78,6 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 		}
 		return true, nil
 	})
-
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

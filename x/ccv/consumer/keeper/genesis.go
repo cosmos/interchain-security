@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"fmt"
-
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
@@ -42,18 +40,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 	}
 
 	k.SetPort(ctx, ccv.ConsumerPortID)
-
-	// Only try to bind to port if it is not already bound, since we may already own
-	// port capability from capability InitGenesis
-	if !k.IsBound(ctx, ccv.ConsumerPortID) {
-		// transfer module binds to the transfer port on InitChain
-		// and claims the returned capability
-		err := k.BindPort(ctx, ccv.ConsumerPortID)
-		if err != nil {
-			// If the binding fails, the chain MUST NOT start
-			panic(fmt.Sprintf("could not claim port capability: %v", err))
-		}
-	}
 
 	// initialValSet is checked in NewChain case by ValidateGenesis
 	// start a new chain

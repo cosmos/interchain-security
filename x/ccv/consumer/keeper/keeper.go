@@ -211,7 +211,7 @@ func (k Keeper) SetProviderChannel(ctx sdk.Context, channelID string) {
 }
 
 // GetProviderChannel gets the channelID for the channel to the provider.
-func (k Keeper) GetProviderChannel(ctx context.Context) (string, bool) {
+func (k Keeper) GetProviderChannel(ctx sdk.Context) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
 	channelIdBytes := store.Get(types.ProviderChannelIDKey())
 	if len(channelIdBytes) == 0 {

@@ -706,7 +706,6 @@ func (tr Commands) SubmitConsumerAdditionProposal(
 	action e2e.SubmitConsumerAdditionProposalAction,
 	verbose bool,
 ) ([]byte, error) {
-
 	spawnTime := tr.ContainerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
 	params := ccvtypes.DefaultParams()
 	prop := client.ConsumerAdditionProposalJSON{

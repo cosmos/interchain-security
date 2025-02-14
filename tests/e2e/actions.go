@@ -282,7 +282,6 @@ type PowerShapingParameters struct {
 }
 
 func (tr Chain) updateConsumerChain(action UpdateConsumerChainAction, verbose bool) {
-
 	var initParams *types.ConsumerInitializationParameters
 	if action.InitParams != nil {
 		spawnTime := tr.testConfig.ContainerConfig.Now.Add(time.Duration(action.InitParams.SpawnTime) * time.Millisecond)
@@ -464,7 +463,6 @@ func (tr Chain) removeConsumerChain(action RemoveConsumerChainAction, verbose bo
 	}
 
 	tr.waitBlocks(action.Chain, 2, 10*time.Second)
-
 }
 
 // submitConsumerAdditionProposal initializes a consumer chain and submits a governance proposal
@@ -473,7 +471,7 @@ func (tr Chain) SubmitConsumerAdditionProposal(
 	verbose bool,
 ) {
 	params := ccvtypes.DefaultParams()
-	testCfg := tr.testConfig //tr.GetTestConfig()
+	testCfg := tr.testConfig // tr.GetTestConfig()
 	spawnTime := testCfg.ContainerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
 	consumerChainCfg := tr.testConfig.ChainConfigs[action.ConsumerChain]
 	providerChainCfg := tr.testConfig.ChainConfigs[action.Chain]
@@ -1756,7 +1754,7 @@ func (tr Chain) UnbondTokens(
 
 	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 	tr.waitForTx(action.Chain, bz, 20*time.Second)
-	//tr.waitBlocks(action.Chain, 2, 20*time.Second)
+	// tr.waitBlocks(action.Chain, 2, 20*time.Second)
 }
 
 type CancelUnbondTokensAction struct {

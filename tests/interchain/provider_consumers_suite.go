@@ -2,9 +2,10 @@ package interchain
 
 import (
 	"context"
-	"cosmos/interchain-security/tests/interchain/chainsuite"
 	"strconv"
 	"time"
+
+	"cosmos/interchain-security/tests/interchain/chainsuite"
 
 	sdkmath "cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"

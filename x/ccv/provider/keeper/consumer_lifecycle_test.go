@@ -508,7 +508,8 @@ func TestHasActiveValidatorOptedIn(t *testing.T) {
 	// consumer chain has only non-active validators
 	err := providerKeeper.SetConsumerValSet(ctx, consumerId, []providertypes.ConsensusValidator{
 		{ProviderConsAddr: consensusAddresses[3]},
-		{ProviderConsAddr: consensusAddresses[4]}})
+		{ProviderConsAddr: consensusAddresses[4]},
+	})
 	require.NoError(t, err)
 	hasActiveValidatorOptedIn, err := providerKeeper.HasActiveConsumerValidator(ctx, consumerId, activeValidators)
 	require.NoError(t, err)
@@ -516,7 +517,8 @@ func TestHasActiveValidatorOptedIn(t *testing.T) {
 
 	// consumer chain has one active validator
 	err = providerKeeper.SetConsumerValSet(ctx, consumerId, []providertypes.ConsensusValidator{
-		{ProviderConsAddr: consensusAddresses[2]}})
+		{ProviderConsAddr: consensusAddresses[2]},
+	})
 	require.NoError(t, err)
 	hasActiveValidatorOptedIn, err = providerKeeper.HasActiveConsumerValidator(ctx, consumerId, activeValidators)
 	require.NoError(t, err)
@@ -526,7 +528,8 @@ func TestHasActiveValidatorOptedIn(t *testing.T) {
 	err = providerKeeper.SetConsumerValSet(ctx, consumerId, []providertypes.ConsensusValidator{
 		{ProviderConsAddr: consensusAddresses[3]},
 		{ProviderConsAddr: consensusAddresses[4]},
-		{ProviderConsAddr: consensusAddresses[1]}})
+		{ProviderConsAddr: consensusAddresses[1]},
+	})
 	require.NoError(t, err)
 	hasActiveValidatorOptedIn, err = providerKeeper.HasActiveConsumerValidator(ctx, consumerId, activeValidators)
 	require.NoError(t, err)

@@ -111,7 +111,7 @@ func TestPreserveBytePrefix(t *testing.T) {
 	require.Equal(t, byte(37), providertypes.DenylistKeyPrefix())
 	i++
 	// DEPRECATED
-	//require.Equal(t, byte(38), providertypes.ConsumerRewardsAllocationKey("13")[0])
+	// require.Equal(t, byte(38), providertypes.ConsumerRewardsAllocationKey("13")[0])
 	i++
 	require.Equal(t, byte(39), providertypes.ConsumerCommissionRateKeyPrefix())
 	i++
