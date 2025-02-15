@@ -67,6 +67,7 @@ type StakingKeeper interface {
 	StakingTokenSupply(ctx context.Context) (math.Int, error)
 	BondedRatio(ctx context.Context) (math.LegacyDec, error)
 	TotalBondedTokens(ctx context.Context) (math.Int, error)
+	GetHistoricalInfo(ctx context.Context, height int64) (stakingtypes.HistoricalInfo, error)
 }
 
 // SlashingKeeper defines the contract expected to perform ccv slashing
@@ -108,8 +109,11 @@ type ClientKeeper interface {
 	CreateClient(ctx sdk.Context, clientType string, clientState []byte, consensusState []byte) (string, error)
 	GetClientState(ctx sdk.Context, clientID string) (ibcexported.ClientState, bool)
 	GetLatestClientConsensusState(ctx sdk.Context, clientID string) (ibcexported.ConsensusState, bool)
+	GetClientConsensusState(ctx sdk.Context, clientID string, height ibcexported.Height) (ibcexported.ConsensusState,
+		bool)
 	ClientStore(ctx sdk.Context, clientID string) storetypes.KVStore
 	SetClientState(ctx sdk.Context, clientID string, clientState ibcexported.ClientState)
+	GetStoreProvider() clienttypes.StoreProvider
 }
 
 // DistributionKeeper defines the expected interface of the distribution keeper
