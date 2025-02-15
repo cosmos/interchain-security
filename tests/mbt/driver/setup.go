@@ -287,12 +287,11 @@ func newChain(
 		Coordinator: coord,
 		ChainID:     chainID,
 		App:         app,
-		CurrentHeader: cmtproto.Header{
+		ProposedHeader: cmtproto.Header{
 			ChainID: chainID,
 			Height:  1,
 			Time:    coord.CurrentTime.UTC(),
 		},
-		QueryServer:    app.GetIBCKeeper(),
 		TxConfig:       app.GetTxConfig(),
 		Codec:          app.AppCodec(),
 		Vals:           validators,
@@ -343,7 +342,7 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 
 	consumerClientState := ibctmtypes.NewClientState(
 		providerChain.ChainID, tmCfg.TrustLevel, tmCfg.TrustingPeriod, tmCfg.UnbondingPeriod, tmCfg.MaxClockDrift,
-		providerChain.LastHeader.GetHeight().(clienttypes.Height), commitmenttypes.GetSDKSpecs(),
+		providerChain.LatestCommittedHeader.GetHeight().(clienttypes.Height), commitmenttypes.GetSDKSpecs(),
 		[]string{"upgrade", "upgradedIBCState"},
 	)
 
@@ -428,7 +427,7 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 }
 
 func (s *Driver) providerHeader() *ibctmtypes.Header {
-	return s.coordinator.Chains["provider"].LastHeader
+	return s.coordinator.Chains["provider"].LatestCommittedHeader
 }
 
 func (s *Driver) setupProvider(
@@ -489,7 +488,7 @@ func (s *Driver) setupConsumer(
 }
 
 func createConsumerGenesis(modelParams ModelParams, providerChain *ibctesting.TestChain, consumerClientState *ibctmtypes.ClientState) *consumertypes.GenesisState {
-	providerConsState := providerChain.LastHeader.ConsensusState()
+	providerConsState := providerChain.LatestCommittedHeader.ConsensusState()
 
 	valUpdates := cmttypes.TM2PB.ValidatorUpdates(providerChain.Vals)
 	params := ccvtypes.NewParams(

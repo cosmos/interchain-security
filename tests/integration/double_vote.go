@@ -30,12 +30,12 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVoting() {
 		s.setDefaultValSigningInfo(*v)
 	}
 
-	consuValSet, err := tmtypes.ValidatorSetFromProto(s.consumerChain.LastHeader.ValidatorSet)
+	consuValSet, err := tmtypes.ValidatorSetFromProto(s.consumerChain.LatestCommittedHeader.ValidatorSet)
 	s.Require().NoError(err)
 	consuVal := consuValSet.Validators[0]
 	consuSigner := s.consumerChain.Signers[consuVal.Address.String()]
 
-	provValSet, err := tmtypes.ValidatorSetFromProto(s.providerChain.LastHeader.ValidatorSet)
+	provValSet, err := tmtypes.ValidatorSetFromProto(s.providerChain.LatestCommittedHeader.ValidatorSet)
 	s.Require().NoError(err)
 
 	provVal := provValSet.Validators[0]
@@ -292,7 +292,7 @@ func (s *CCVTestSuite) TestHandleConsumerDoubleVotingSlashesUndelegationsAndRele
 		s.setDefaultValSigningInfo(*v)
 	}
 
-	consuValSet, err := tmtypes.ValidatorSetFromProto(s.consumerChain.LastHeader.ValidatorSet)
+	consuValSet, err := tmtypes.ValidatorSetFromProto(s.consumerChain.LatestCommittedHeader.ValidatorSet)
 	s.Require().NoError(err)
 	consuVal := consuValSet.Validators[0]
 	consuVal2 := consuValSet.Validators[1]

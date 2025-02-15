@@ -32,6 +32,7 @@ func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
 	return []*gomock.Call{
 		mocks.MockClientKeeper.EXPECT().CreateClient(
 			gomock.Any(),
+			gomock.Any(),
 			// Allows us to expect a match by field. These are the only two client state values
 			// that are dependent on parameters passed to CreateConsumerClient.
 			extra.StructMatcher().Field(
@@ -49,8 +50,6 @@ func GetMocksForMakeConsumerGenesis(ctx sdk.Context, mocks *MockedKeepers,
 ) []*gomock.Call {
 	return []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeToInject, nil).Times(1),
-		mocks.MockClientKeeper.EXPECT().GetSelfConsensusState(gomock.Any(),
-			clienttypes.GetSelfHeight(ctx)).Return(&ibctmtypes.ConsensusState{}, nil).Times(1),
 	}
 }
 
@@ -123,8 +122,10 @@ func ExpectLatestConsensusStateMock(ctx sdk.Context, mocks MockedKeepers, client
 		GetLatestClientConsensusState(ctx, clientID).Return(consState, true).Times(1)
 }
 
-func ExpectCreateClientMock(ctx sdk.Context, mocks MockedKeepers, clientID string, clientState *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState) *gomock.Call {
-	return mocks.MockClientKeeper.EXPECT().CreateClient(ctx, clientState, consState).Return(clientID, nil).Times(1)
+func ExpectCreateClientMock(ctx sdk.Context, mocks MockedKeepers, clientType string, clientID string,
+	clientState *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState) *gomock.Call {
+	return mocks.MockClientKeeper.EXPECT().CreateClient(ctx, clientType, clientState, consState).Return(clientID,
+		nil).Times(1)
 }
 
 func GetMocksForSendIBCPacket(ctx sdk.Context, mocks MockedKeepers, channelID string, times int) []*gomock.Call {

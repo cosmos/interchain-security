@@ -33,7 +33,7 @@ func (s *CCVTestSuite) TestHandleConsumerMisbehaviour() {
 
 	altTime := s.providerCtx().BlockTime().Add(time.Minute)
 
-	clientHeight := s.consumerChain.LastHeader.TrustedHeight
+	clientHeight := s.consumerChain.LatestCommittedHeader.TrustedHeight
 	clientTMValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators)
 	clientSigners := s.consumerChain.Signers
 
@@ -107,7 +107,7 @@ func (s *CCVTestSuite) TestGetByzantineValidators() {
 	altTime := s.providerCtx().BlockTime().Add(time.Minute)
 
 	// Get the consumer client validator set
-	clientHeight := s.consumerChain.LastHeader.TrustedHeight
+	clientHeight := s.consumerChain.LatestCommittedHeader.TrustedHeight
 	clientTMValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators)
 	clientSigners := s.consumerChain.Signers
 
@@ -411,7 +411,7 @@ func (s *CCVTestSuite) TestCheckMisbehaviour() {
 	headerTs := s.providerCtx().BlockTime().Add(time.Minute)
 
 	// get trusted validators and height
-	clientHeight := s.consumerChain.LastHeader.TrustedHeight
+	clientHeight := s.consumerChain.LatestCommittedHeader.TrustedHeight
 	clientTMValset := tmtypes.NewValidatorSet(s.consumerChain.Vals.Validators)
 	clientSigners := s.consumerChain.Signers
 

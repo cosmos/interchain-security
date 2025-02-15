@@ -32,6 +32,7 @@ func TestInitGenesis(t *testing.T) {
 	// mock the consumer genesis state values
 	provClientID := "tendermint-07"
 	provChannelID := "ChannelID"
+	provClientType := "07-tendermint"
 
 	vscID := uint64(0)
 	blockHeight := uint64(0)
@@ -101,9 +102,8 @@ func TestInitGenesis(t *testing.T) {
 			"start a new chain",
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers) {
 				gomock.InOrder(
-					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 1),
-					testkeeper.ExpectCreateClientMock(ctx, mocks, provClientID, provClientState, provConsState),
-					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 1),
+					testkeeper.ExpectCreateClientMock(ctx, mocks, provClientType, provClientID, provClientState,
+						provConsState),
 				)
 			},
 			consumertypes.NewInitialGenesisState(
@@ -122,9 +122,6 @@ func TestInitGenesis(t *testing.T) {
 		}, {
 			"restart a chain without an established CCV channel",
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers) {
-				gomock.InOrder(
-					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 2),
-				)
 			},
 			consumertypes.NewRestartGenesisState(
 				provClientID,
@@ -154,9 +151,7 @@ func TestInitGenesis(t *testing.T) {
 				// simulate a CCV channel handshake completion
 				params.DistributionTransmissionChannel = "distribution-channel"
 				params.ProviderFeePoolAddrStr = "provider-fee-pool-address"
-				gomock.InOrder(
-					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 2),
-				)
+				gomock.InOrder()
 			},
 			// create a genesis for a restarted chain
 			consumertypes.NewRestartGenesisState(

@@ -137,7 +137,7 @@ func TestMinStake(t *testing.T) {
 			}
 
 			// check the validator set on the consumer chain is the original one
-			consuValSet := s.consumerChain.LastHeader.ValidatorSet
+			consuValSet := s.consumerChain.LatestCommittedHeader.ValidatorSet
 			s.Require().Equal(len(consuValSet.Validators), 4)
 
 			// get just the powers of the consu val set
@@ -181,7 +181,7 @@ func TestMinStake(t *testing.T) {
 			s.consumerChain.NextBlock()
 
 			// construct the new val powers
-			newConsuValSet := s.consumerChain.LastHeader.ValidatorSet
+			newConsuValSet := s.consumerChain.LatestCommittedHeader.ValidatorSet
 			newConsuValPowers := make([]int64, len(newConsuValSet.Validators))
 			for i, consuVal := range newConsuValSet.Validators {
 				// voting power corresponds to staked tokens at a 1:stake_multiplier ratio

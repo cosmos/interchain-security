@@ -39,7 +39,6 @@ func TestOnChanOpenInit(t *testing.T) {
 		[]string{"connection-1"},
 		ccv.ProviderPortID,
 		"channel-1",
-		nil,
 		channeltypes.NewCounterparty(ccv.ConsumerPortID, "channel-1"),
 		ccv.Version,
 	)
@@ -158,7 +157,6 @@ func TestOnChanOpenTry(t *testing.T) {
 			params.connectionHops,
 			params.portID,
 			params.channelID,
-			params.chanCap,
 			params.counterparty,
 			params.counterpartyVersion,
 		)
