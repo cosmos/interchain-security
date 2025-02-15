@@ -168,7 +168,6 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, consumerId, channelId str
 		// send packet over IBC
 		err := ccv.SendIBCPacket(
 			ctx,
-			k.scopedKeeper,
 			k.channelKeeper,
 			channelId,          // source channel id
 			ccv.ProviderPortID, // source port id

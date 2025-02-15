@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -94,9 +93,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 	defer ctrl.Finish()
 
 	gomock.InOrder(
-		mocks.MockScopedKeeper.EXPECT().GetCapability(
-			ctx, host.PortPath(ccv.ProviderPortID),
-		).Return(nil, true).Times(1),
 		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
 			ctx).Return(math.NewInt(100), nil).Times(1), // Return total voting power as 100
 	)

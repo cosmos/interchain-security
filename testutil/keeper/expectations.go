@@ -3,11 +3,9 @@ package keeper
 import (
 	time "time"
 
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
 	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
 	"github.com/golang/mock/gomock"
 	extra "github.com/oxyno-zeta/gomock-extra-matcher"
@@ -79,13 +77,11 @@ func GetMocksForSetConsumerChain(ctx sdk.Context, mocks *MockedKeepers,
 
 // GetMocksForDeleteConsumerChain returns mock expectations needed to call `DeleteConsumerChain`
 func GetMocksForDeleteConsumerChain(ctx sdk.Context, mocks *MockedKeepers) []*gomock.Call {
-	dummyCap := &capabilitytypes.Capability{}
 	return []*gomock.Call{
 		mocks.MockChannelKeeper.EXPECT().GetChannel(gomock.Any(), types.ProviderPortID, "channelID").Return(
 			channeltypes.Channel{State: channeltypes.OPEN}, true,
 		).Times(1),
-		mocks.MockScopedKeeper.EXPECT().GetCapability(gomock.Any(), gomock.Any()).Return(dummyCap, true).Times(1),
-		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(gomock.Any(), types.ProviderPortID, "channelID", dummyCap).Times(1),
+		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(gomock.Any(), types.ProviderPortID, "channelID").Times(1),
 	}
 }
 
@@ -131,21 +127,11 @@ func ExpectCreateClientMock(ctx sdk.Context, mocks MockedKeepers, clientID strin
 	return mocks.MockClientKeeper.EXPECT().CreateClient(ctx, clientState, consState).Return(clientID, nil).Times(1)
 }
 
-func ExpectGetCapabilityMock(ctx sdk.Context, mocks MockedKeepers, times int) *gomock.Call {
-	return mocks.MockScopedKeeper.EXPECT().GetCapability(
-		ctx, host.PortPath(types.ConsumerPortID),
-	).Return(nil, true).Times(times)
-}
-
 func GetMocksForSendIBCPacket(ctx sdk.Context, mocks MockedKeepers, channelID string, times int) []*gomock.Call {
 	return []*gomock.Call{
 		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, types.ConsumerPortID,
 			"consumerCCVChannelID").Return(channeltypes.Channel{}, true).Times(times),
-		mocks.MockScopedKeeper.EXPECT().GetCapability(ctx,
-			host.ChannelCapabilityPath(types.ConsumerPortID, "consumerCCVChannelID")).Return(
-			capabilitytypes.NewCapability(1), true).Times(times),
 		mocks.MockChannelKeeper.EXPECT().SendPacket(ctx,
-			capabilitytypes.NewCapability(1),
 			types.ConsumerPortID,
 			"consumerCCVChannelID",
 			gomock.Any(),

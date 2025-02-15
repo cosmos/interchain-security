@@ -7,7 +7,6 @@ import (
 	"github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
 	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -142,8 +141,6 @@ func TestOnChanOpenTry(t *testing.T) {
 
 		// Number of calls is not asserted, since not all code paths are hit for failures
 		gomock.InOrder(
-			mocks.MockScopedKeeper.EXPECT().ClaimCapability(
-				params.ctx, params.chanCap, host.ChannelCapabilityPath(params.portID, params.channelID)).AnyTimes(),
 			mocks.MockConnectionKeeper.EXPECT().GetConnection(ctx, "connectionIDToConsumer").Return(
 				conntypes.ConnectionEnd{ClientId: "clientIdToConsumer"}, true,
 			).AnyTimes(),

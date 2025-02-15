@@ -83,9 +83,7 @@ func NewInMemKeeperParams(tb testing.TB) InMemKeeperParams {
 
 // A struct holding pointers to any mocked external keeper needed for provider/consumer keeper setup.
 type MockedKeepers struct {
-	*MockScopedKeeper
 	*MockChannelKeeper
-	*MockPortKeeper
 	*MockConnectionKeeper
 	*MockClientKeeper
 	*MockStakingKeeper
@@ -101,9 +99,7 @@ type MockedKeepers struct {
 // NewMockedKeepers instantiates a struct with pointers to properly instantiated mocked keepers.
 func NewMockedKeepers(ctrl *gomock.Controller) MockedKeepers {
 	return MockedKeepers{
-		MockScopedKeeper:       NewMockScopedKeeper(ctrl),
 		MockChannelKeeper:      NewMockChannelKeeper(ctrl),
-		MockPortKeeper:         NewMockPortKeeper(ctrl),
 		MockConnectionKeeper:   NewMockConnectionKeeper(ctrl),
 		MockClientKeeper:       NewMockClientKeeper(ctrl),
 		MockStakingKeeper:      NewMockStakingKeeper(ctrl),
@@ -122,9 +118,7 @@ func NewInMemProviderKeeper(params InMemKeeperParams, mocks MockedKeepers) provi
 		params.Cdc,
 		params.StoreKey,
 		*params.ParamsSubspace,
-		mocks.MockScopedKeeper,
 		mocks.MockChannelKeeper,
-		mocks.MockPortKeeper,
 		mocks.MockConnectionKeeper,
 		mocks.MockClientKeeper,
 		mocks.MockStakingKeeper,
@@ -147,9 +141,7 @@ func NewInMemConsumerKeeper(params InMemKeeperParams, mocks MockedKeepers) consu
 		params.Cdc,
 		params.StoreKey,
 		*params.ParamsSubspace,
-		mocks.MockScopedKeeper,
 		mocks.MockChannelKeeper,
-		mocks.MockPortKeeper,
 		mocks.MockConnectionKeeper,
 		mocks.MockClientKeeper,
 		mocks.MockSlashingKeeper,

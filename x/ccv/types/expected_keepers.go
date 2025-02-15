@@ -83,35 +83,33 @@ type SlashingKeeper interface {
 
 // ChannelKeeper defines the expected IBC channel keeper
 type ChannelKeeper interface {
-	GetChannel(ctx context.Context, srcPort, srcChan string) (channel channeltypes.Channel, found bool)
-	GetNextSequenceSend(ctx context.Context, portID, channelID string) (uint64, bool)
+	GetChannel(ctx sdk.Context, srcPort, srcChan string) (channel channeltypes.Channel, found bool)
+	GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (uint64, bool)
 	SendPacket(
-		ctx context.Context,
+		ctx sdk.Context,
 		sourcePort string,
 		sourceChannel string,
 		timeoutHeight clienttypes.Height,
 		timeoutTimestamp uint64,
 		data []byte,
 	) (sequence uint64, err error)
-	WriteAcknowledgement(ctx context.Context, packet ibcexported.PacketI, acknowledgement ibcexported.Acknowledgement) error
-	ChanCloseInit(ctx context.Context, portID, channelID string) error
-	GetChannelConnection(ctx context.Context, portID, channelID string) (string, conntypes.ConnectionEnd, error)
+	WriteAcknowledgement(ctx sdk.Context, packet ibcexported.PacketI, acknowledgement ibcexported.Acknowledgement) error
+	ChanCloseInit(ctx sdk.Context, portID, channelID string) error
+	GetChannelConnection(ctx sdk.Context, portID, channelID string) (string, conntypes.ConnectionEnd, error)
 }
 
 // ConnectionKeeper defines the expected IBC connection keeper
 type ConnectionKeeper interface {
-	GetConnection(ctx context.Context, connectionID string) (conntypes.ConnectionEnd, bool)
+	GetConnection(ctx sdk.Context, connectionID string) (conntypes.ConnectionEnd, bool)
 }
 
 // ClientKeeper defines the expected IBC client keeper
 type ClientKeeper interface {
-	CreateClient(ctx context.Context, clientState ibcexported.ClientState, consensusState ibcexported.ConsensusState) (string, error)
-	GetClientState(ctx context.Context, clientID string) (ibcexported.ClientState, bool)
-	GetLatestClientConsensusState(ctx context.Context, clientID string) (ibcexported.ConsensusState, bool)
-	GetSelfConsensusState(ctx context.Context, height ibcexported.Height) (ibcexported.ConsensusState, error)
-	ClientStore(ctx context.Context, clientID string) storetypes.KVStore
-	SetClientState(ctx context.Context, clientID string, clientState ibcexported.ClientState)
-	GetClientConsensusState(ctx context.Context, clientID string, height ibcexported.Height) (ibcexported.ConsensusState, bool)
+	CreateClient(ctx sdk.Context, clientType string, clientState []byte, consensusState []byte) (string, error)
+	GetClientState(ctx sdk.Context, clientID string) (ibcexported.ClientState, bool)
+	GetLatestClientConsensusState(ctx sdk.Context, clientID string) (ibcexported.ConsensusState, bool)
+	ClientStore(ctx sdk.Context, clientID string) storetypes.KVStore
+	SetClientState(ctx sdk.Context, clientID string, clientState ibcexported.ClientState)
 }
 
 // DistributionKeeper defines the expected interface of the distribution keeper
