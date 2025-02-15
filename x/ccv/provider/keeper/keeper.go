@@ -7,11 +7,9 @@ import (
 	"reflect"
 	"time"
 
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v9/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
 	ibchost "github.com/cosmos/ibc-go/v9/modules/core/exported"
 	ibctmtypes "github.com/cosmos/ibc-go/v9/modules/light-clients/07-tendermint"
 
@@ -39,9 +37,7 @@ type Keeper struct {
 	storeKey storetypes.StoreKey
 
 	cdc                codec.BinaryCodec
-	scopedKeeper       ccv.ScopedKeeper
 	channelKeeper      ccv.ChannelKeeper
-	portKeeper         ccv.PortKeeper
 	connectionKeeper   ccv.ConnectionKeeper
 	accountKeeper      ccv.AccountKeeper
 	clientKeeper       ccv.ClientKeeper
@@ -58,8 +54,8 @@ type Keeper struct {
 
 // NewKeeper creates a new provider Keeper instance
 func NewKeeper(
-	cdc codec.BinaryCodec, key storetypes.StoreKey, paramSpace paramtypes.Subspace, scopedKeeper ccv.ScopedKeeper,
-	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
+	cdc codec.BinaryCodec, key storetypes.StoreKey, paramSpace paramtypes.Subspace,
+	channelKeeper ccv.ChannelKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
 	accountKeeper ccv.AccountKeeper,
@@ -73,9 +69,7 @@ func NewKeeper(
 		cdc:                   cdc,
 		storeKey:              key,
 		authority:             authority,
-		scopedKeeper:          scopedKeeper,
 		channelKeeper:         channelKeeper,
-		portKeeper:            portKeeper,
 		connectionKeeper:      connectionKeeper,
 		clientKeeper:          clientKeeper,
 		stakingKeeper:         stakingKeeper,
@@ -122,9 +116,7 @@ func (k Keeper) mustValidateFields() {
 
 	ccv.PanicIfZeroOrNil(k.cdc, "cdc")                                     // 1
 	ccv.PanicIfZeroOrNil(k.storeKey, "storeKey")                           // 2
-	ccv.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")                   // 3
 	ccv.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")                 // 4
-	ccv.PanicIfZeroOrNil(k.portKeeper, "portKeeper")                       // 5
 	ccv.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")           // 6
 	ccv.PanicIfZeroOrNil(k.accountKeeper, "accountKeeper")                 // 7
 	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")                   // 8
@@ -151,19 +143,6 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 	return sdkCtx.Logger().With("module", "x/"+ibchost.ModuleName+"-"+types.ModuleName)
 }
 
-// IsBound checks if the CCV module is already bound to the desired port
-func (k Keeper) IsBound(ctx sdk.Context, portID string) bool {
-	_, ok := k.scopedKeeper.GetCapability(ctx, host.PortPath(portID))
-	return ok
-}
-
-// BindPort defines a wrapper function for the port Keeper's function in
-// order to expose it to module's InitGenesis function
-func (k Keeper) BindPort(ctx sdk.Context, portID string) error {
-	cap := k.portKeeper.BindPort(ctx, portID)
-	return k.ClaimCapability(ctx, cap, host.PortPath(portID))
-}
-
 // GetPort returns the portID for the CCV module. Used in ExportGenesis
 func (k Keeper) GetPort(ctx sdk.Context) string {
 	store := ctx.KVStore(k.storeKey)
@@ -174,17 +153,6 @@ func (k Keeper) GetPort(ctx sdk.Context) string {
 func (k Keeper) SetPort(ctx sdk.Context, portID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.PortKey(), []byte(portID))
-}
-
-// AuthenticateCapability wraps the scopedKeeper's AuthenticateCapability function
-func (k Keeper) AuthenticateCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) bool {
-	return k.scopedKeeper.AuthenticateCapability(ctx, cap, name)
-}
-
-// ClaimCapability allows the transfer module that can claim a capability that IBC module
-// passes to it
-func (k Keeper) ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) error {
-	return k.scopedKeeper.ClaimCapability(ctx, cap, name)
 }
 
 // SetConsumerIdToChannelId sets the mapping from a consumer id to the CCV channel id for that consumer chain.
@@ -421,12 +389,7 @@ func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (
 
 // chanCloseInit defines a wrapper function for the channel Keeper's function
 func (k Keeper) chanCloseInit(ctx sdk.Context, channelID string) error {
-	capName := host.ChannelCapabilityPath(ccv.ProviderPortID, channelID)
-	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
-	if !ok {
-		return errorsmod.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
-	}
-	return k.channelKeeper.ChanCloseInit(ctx, ccv.ProviderPortID, channelID, chanCap)
+	return k.channelKeeper.ChanCloseInit(ctx, ccv.ProviderPortID, channelID)
 }
 
 func (k Keeper) IncrementValidatorSetUpdateId(ctx sdk.Context) {

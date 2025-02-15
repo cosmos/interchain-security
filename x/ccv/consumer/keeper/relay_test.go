@@ -9,7 +9,6 @@ import (
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -381,17 +380,11 @@ func TestOnAcknowledgementPacketError(t *testing.T) {
 	dummyCap := &capabilitytypes.Capability{}
 	gomock.InOrder(
 
-		mocks.MockScopedKeeper.EXPECT().GetCapability(
-			ctx, host.ChannelCapabilityPath(types.ConsumerPortID, channelIDToDestChain),
-		).Return(dummyCap, true).Times(1),
 		// Due to input error ack, ChanCloseInit is called on channel to destination chain
 		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(
 			ctx, types.ConsumerPortID, channelIDToDestChain, dummyCap,
 		).Return(nil).Times(1),
 
-		mocks.MockScopedKeeper.EXPECT().GetCapability(
-			ctx, host.ChannelCapabilityPath(types.ConsumerPortID, channelIDToProvider),
-		).Return(dummyCap, true).Times(1),
 		// Due to input error ack and existence of established channel to provider,
 		// ChanCloseInit is called on channel to provider
 		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(

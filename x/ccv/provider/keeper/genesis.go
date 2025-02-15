@@ -15,18 +15,6 @@ import (
 func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) []abci.ValidatorUpdate {
 	k.SetPort(ctx, ccv.ProviderPortID)
 
-	// Only try to bind to port if it is not already bound, since we may already own
-	// port capability from capability InitGenesis
-	if !k.IsBound(ctx, ccv.ProviderPortID) {
-		// CCV module binds to the provider port on InitChain
-		// and claims the returned capability
-		err := k.BindPort(ctx, ccv.ProviderPortID)
-		if err != nil {
-			// If the binding fails, the chain MUST NOT start
-			panic(fmt.Errorf("could not claim port capability: %w", err))
-		}
-	}
-
 	k.SetValidatorSetUpdateId(ctx, genState.ValsetUpdateId)
 	for _, v2h := range genState.ValsetUpdateIdToHeight {
 		k.SetValsetUpdateBlockHeight(ctx, v2h.ValsetUpdateId, v2h.Height)

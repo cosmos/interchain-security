@@ -25,10 +25,10 @@ func (k Keeper) GetProviderInfo(ctx sdk.Context) (*types.QueryProviderInfoRespon
 		return nil, err
 	}
 
-	providerChannelID := consumerChannel.GetCounterparty().GetChannelID()
-	providerConnection := consumerConnection.GetCounterparty()
+	providerChannelID := consumerChannel.Counterparty.ChannelId
+	providerConnection := consumerConnection.Counterparty
 
-	consumerClientState, found := k.clientKeeper.GetClientState(ctx, consumerConnection.GetClientID())
+	consumerClientState, found := k.clientKeeper.GetClientState(ctx, consumerConnection.ClientId)
 	if !found {
 		return nil, ccvtypes.ErrClientNotFound
 	}
@@ -37,15 +37,15 @@ func (k Keeper) GetProviderInfo(ctx sdk.Context) (*types.QueryProviderInfoRespon
 	resp := types.QueryProviderInfoResponse{
 		Consumer: types.ChainInfo{
 			ChainID:      ctx.ChainID(),
-			ClientID:     consumerConnection.GetClientID(),
+			ClientID:     consumerConnection.ClientId,
 			ConnectionID: consumerConnectionID,
 			ChannelID:    consumerChannelID,
 		},
 
 		Provider: types.ChainInfo{
 			ChainID:      providerChainID,
-			ClientID:     providerConnection.GetClientID(),
-			ConnectionID: providerConnection.GetConnectionID(),
+			ClientID:     providerConnection.ClientId,
+			ConnectionID: providerConnection.ConnectionId,
 			ChannelID:    providerChannelID,
 		},
 	}
