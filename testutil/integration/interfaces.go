@@ -62,7 +62,7 @@ type ConsumerApp interface {
 	// BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock
 	GetConsumerKeeper() consumerkeeper.Keeper
 	GetSubspace(moduleName string) paramstypes.Subspace
-	GetStakingKeeper() TestStakingKeeper
+	GetStakingKeeper() *consumerkeeper.Keeper
 
 	//
 	// Keeper getters

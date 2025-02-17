@@ -4,8 +4,9 @@ import (
 	"context"
 	"time"
 
-	"cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+
+	"cosmossdk.io/math"
 
 	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )

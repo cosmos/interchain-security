@@ -7,9 +7,10 @@ import (
 	"strings"
 	"time"
 
-	errorsmod "cosmossdk.io/errors"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+
+	errorsmod "cosmossdk.io/errors"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"

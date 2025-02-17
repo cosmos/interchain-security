@@ -6,20 +6,20 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/math"
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
-	providerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v7/x/ccv/types"
-
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
+	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
+
 	testutil "github.com/cosmos/interchain-security/v7/testutil/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 func legacyConsumerAddrsToPruneKey(chainID string, vscID uint64) []byte {
@@ -316,7 +316,7 @@ func GetChainDataUsingStringId(ctx sdk.Context, providerKeeper providerkeeper.Ke
 	return data, nil
 }
 
-func CreateTestChainData(chainId string, clientId string, channelId string) ChainData {
+func CreateTestChainData(chainId, clientId, channelId string) ChainData {
 	return ChainData{
 		ChainId:   chainId,
 		ClientId:  clientId,

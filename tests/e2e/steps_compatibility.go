@@ -4,8 +4,9 @@ package main
 // sanity checks across different ICS versions.
 
 import (
-	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+
+	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 
 	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )

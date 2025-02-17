@@ -6,17 +6,16 @@ import (
 	"fmt"
 	"strings"
 
-	errorsmod "cosmossdk.io/errors"
-	tmbytes "github.com/cometbft/cometbft/libs/bytes"
-
+	transfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+
+	errorsmod "cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
+	tmbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmttypes "github.com/cometbft/cometbft/types"
-
-	transfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 )
 
 // The code in this file is removed in ibc v9. It is copied from ibc v8 to here in order to support the migration to v9

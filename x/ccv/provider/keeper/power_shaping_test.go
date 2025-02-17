@@ -8,15 +8,17 @@ import (
 	"sort"
 	"testing"
 
-	"cosmossdk.io/math"
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"pgregory.net/rapid"
 
+	"cosmossdk.io/math"
+
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"
 	"github.com/cosmos/interchain-security/v7/x/ccv/provider/keeper"

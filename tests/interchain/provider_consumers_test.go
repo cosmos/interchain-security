@@ -2,11 +2,10 @@ package interchain
 
 import (
 	"context"
+	"cosmos/interchain-security/tests/interchain/chainsuite"
 	"fmt"
 	"testing"
 	"time"
-
-	"cosmos/interchain-security/tests/interchain/chainsuite"
 
 	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 

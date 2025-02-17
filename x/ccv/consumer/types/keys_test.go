@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	consumertypes "github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
 )
 

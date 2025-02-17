@@ -1606,7 +1606,7 @@ func (tr Chain) invokeDowntimeSlash(action DowntimeSlashAction, verbose bool) {
 }
 
 // Sets validator downtime by setting the virtual ethernet interface of a node to "up" or "down"
-func (tr Chain) setValidatorDowntime(chain ChainID, validator ValidatorID, down bool, verbose bool) {
+func (tr Chain) setValidatorDowntime(chain ChainID, validator ValidatorID, down, verbose bool) {
 	var lastArg string
 	if down {
 		lastArg = "down"

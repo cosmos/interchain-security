@@ -8,6 +8,7 @@ import (
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+
 	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )
 
@@ -119,8 +120,8 @@ type ChainCommands interface {
 
 	CreateConsumer(providerChain, consumerChain ChainID, validator ValidatorID, metadata types.ConsumerMetadata, initParams *types.ConsumerInitializationParameters, powerShapingParams *types.PowerShapingParameters) ([]byte, error)
 	UpdateConsumer(providerChain ChainID, validator ValidatorID, update types.MsgUpdateConsumer, verbose bool) ([]byte, error)
-	SubmitGovProposal(chain ChainID, from ValidatorID, command string, proposal string, verbose bool) ([]byte, error)
-	AssignConsumerPubKey(identifier string, pubKey string, from ValidatorID, gas, home, node string, verbose bool) ([]byte, error)
+	SubmitGovProposal(chain ChainID, from ValidatorID, command, proposal string, verbose bool) ([]byte, error)
+	AssignConsumerPubKey(identifier, pubKey string, from ValidatorID, gas, home, node string, verbose bool) ([]byte, error)
 }
 
 type ActionCommands interface {

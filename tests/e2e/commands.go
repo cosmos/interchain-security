@@ -786,7 +786,7 @@ func (tr Commands) GetConsumerCommissionRate(consumerChain ChainID, validator Va
 	return rate
 }
 
-// QueryTransaction returns the content of the transaction or an error e.g. when a transaction coudl
+// QueryTransaction returns the content of the transaction or an error e.g. when a transaction could
 func (tr Commands) QueryTransaction(chain ChainID, txhash string) ([]byte, error) {
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	cmd := tr.Target.ExecCommand(binaryName,
@@ -798,7 +798,7 @@ func (tr Commands) QueryTransaction(chain ChainID, txhash string) ([]byte, error
 }
 
 // SubmitGovProposal sends a gov proposal transaction with given command and proposal content
-func (tr Commands) SubmitGovProposal(chain ChainID, from ValidatorID, command string, proposal string, verbose bool) ([]byte, error) {
+func (tr Commands) SubmitGovProposal(chain ChainID, from ValidatorID, command, proposal string, verbose bool) ([]byte, error) {
 	// #nosec G204 -- bypass unsafe quoting warning (no production code)
 	proposalFile := "/temp-proposal.json"
 	bz, err := tr.Target.ExecCommand(
@@ -903,7 +903,7 @@ func (tr Commands) UpdateConsumer(providerChain ChainID, validator ValidatorID, 
 	return cmd.CombinedOutput()
 }
 
-func (tr Commands) AssignConsumerPubKey(identifier string, pubKey string, from ValidatorID, gas, home, node string, verbose bool) ([]byte, error) {
+func (tr Commands) AssignConsumerPubKey(identifier, pubKey string, from ValidatorID, gas, home, node string, verbose bool) ([]byte, error) {
 	consumerId := identifier
 	binaryName := tr.ChainConfigs[ChainID("provi")].BinaryName
 	cmd := tr.Target.ExecCommand(

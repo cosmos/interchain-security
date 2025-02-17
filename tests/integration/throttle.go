@@ -616,7 +616,7 @@ func (s *CCVTestSuite) TestSlashMeterAllowanceChanges() {
 // Note: This edge case should not occur in practice, but it is useful to validate that
 // the slash meter can allow any number of slash packets to be handled in a single block when
 // its allowance is set to "1.0".
-func (s *CCVTestSuite) TestSlashAllValidators() { //nolint:govet // this is a test so we can copy locks
+func (s *CCVTestSuite) TestSlashAllValidators() { 
 
 	s.SetupAllCCVChannels()
 

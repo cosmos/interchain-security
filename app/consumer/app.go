@@ -22,7 +22,6 @@ import (
 	ibckeeper "github.com/cosmos/ibc-go/v10/modules/core/keeper"
 	ibctm "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v10/testing"
-
 	"github.com/spf13/cast"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
@@ -758,8 +757,8 @@ func (app *App) GetBaseApp() *baseapp.BaseApp {
 }
 
 // GetStakingKeeper implements the TestingApp interface.
-func (app *App) GetStakingKeeper() testutil.TestStakingKeeper {
-	return app.ConsumerKeeper
+func (app *App) GetStakingKeeper() *ibcconsumerkeeper.Keeper {
+	return &app.ConsumerKeeper
 }
 
 // GetIBCKeeper implements the TestingApp interface.

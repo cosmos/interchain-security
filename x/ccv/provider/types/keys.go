@@ -811,7 +811,7 @@ func ConsumerRewardsAllocationByDenomKeyPrefix() byte {
 }
 
 // ConsumerRewardsAllocationByDenomKey returns the key used to store the ICS rewards per consumer chain
-func ConsumerRewardsAllocationByDenomKey(consumerId string, denom string) []byte {
+func ConsumerRewardsAllocationByDenomKey(consumerId, denom string) []byte {
 	return append(StringIdWithLenKey(ConsumerRewardsAllocationByDenomKeyPrefix(), consumerId), []byte(denom)...)
 }
 

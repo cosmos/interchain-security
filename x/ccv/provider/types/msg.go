@@ -308,7 +308,7 @@ func IsReservedChainId(chainId string) bool {
 // ValidateChainId validates that the chain id is valid and is not reserved.
 // Can be called for the `MsgUpdateConsumer.NewChainId` field as well, so this method takes the `field` as an argument
 // to return more appropriate error messages in case the validation fails.
-func ValidateChainId(field string, chainId string) error {
+func ValidateChainId(field, chainId string) error {
 	if err := ValidateStringField(field, chainId, cmttypes.MaxChainIDLen); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "%s: %s", field, err.Error())
 	}

@@ -122,8 +122,9 @@ func ExpectLatestConsensusStateMock(ctx sdk.Context, mocks MockedKeepers, client
 		GetLatestClientConsensusState(ctx, clientID).Return(consState, true).Times(1)
 }
 
-func ExpectCreateClientMock(ctx sdk.Context, mocks MockedKeepers, clientType string, clientID string,
-	clientState *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState) *gomock.Call {
+func ExpectCreateClientMock(ctx sdk.Context, mocks MockedKeepers, clientType, clientID string,
+	clientState *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
+) *gomock.Call {
 	return mocks.MockClientKeeper.EXPECT().CreateClient(ctx, clientType, clientState, consState).Return(clientID,
 		nil).Times(1)
 }
