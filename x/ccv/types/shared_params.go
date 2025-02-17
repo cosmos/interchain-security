@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	ibchost "github.com/cosmos/ibc-go/v9/modules/core/24-host"
+	ibchost "github.com/cosmos/ibc-go/v10/modules/core/24-host"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"

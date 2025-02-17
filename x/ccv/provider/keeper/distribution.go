@@ -3,7 +3,7 @@ package keeper
 import (
 	"context"
 
-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"

@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 
 	db "github.com/cosmos/cosmos-db"
-	ibctesting "github.com/cosmos/ibc-go/v9/testing"
+	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 
 	"cosmossdk.io/log"
 

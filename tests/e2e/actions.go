@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	ibctransfertypes "github.com/cosmos/ibc-go/v9/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	e2e "github.com/cosmos/interchain-security/v7/tests/e2e/testlib"
 	"github.com/cosmos/interchain-security/v7/x/ccv/provider/client"
 	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"

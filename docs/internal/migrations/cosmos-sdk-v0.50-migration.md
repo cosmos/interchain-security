@@ -49,7 +49,7 @@ Key dependencies:
 
 ```shell
 go get github.com/cosmos/cosmos-sdk@v0.50.4
-go get github.com/cosmos/ibc-go/v9@v8.1.0
+go get github.com/cosmos/ibc-go/v10@v8.1.0
 go get github.com/cosmos/ibc-go/modules/capability@v1.0.0-rc5
 ```
 
@@ -57,7 +57,7 @@ go get github.com/cosmos/ibc-go/modules/capability@v1.0.0-rc5
 * this module was added after all the file imports were changed for ibc-go (from v7 -> v8) to avoid weird import behaviour
 
 ### Search & replace
-* github.com/cosmos/ibc-go/v7 -> github.com/cosmos/ibc-go/v9
+* github.com/cosmos/ibc-go/v7 -> github.com/cosmos/ibc-go/v10
 * github.com/cosmos/cosmos-sdk/store -> cosmossdk.io/store
 * github.com/cosmos/cosmos-sdk/x/feegrant -> cosmossdk.io/x/feegrant
 * github.com/cosmos/cosmos-sdk/x/evidence -> cosmossdk.io/x/evidence
