@@ -1,10 +1,11 @@
 package interchain
 
 import (
-	"cosmos/interchain-security/tests/interchain/chainsuite"
 	"fmt"
 	"testing"
 	"time"
+
+	"cosmos/interchain-security/tests/interchain/chainsuite"
 
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
