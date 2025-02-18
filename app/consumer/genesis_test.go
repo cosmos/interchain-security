@@ -376,6 +376,7 @@ func TestConsumerGenesisTransformationV64xToV6xx(t *testing.T) {
 // CheckGenesisTransform checks that the transformation of consumer genesis data
 // from a given source version to a target version is successful
 func CheckGenesisTransform(t *testing.T, sourceVersion, targetVersion string) {
+	t.Helper()
 	filePath := createConsumerDataGenesisFile(t, sourceVersion)
 	defer os.Remove(filePath)
 

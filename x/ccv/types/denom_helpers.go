@@ -14,7 +14,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
-	tmbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmttypes "github.com/cometbft/cometbft/types"
 )
 
@@ -84,7 +83,7 @@ func ParseDenomTrace(rawDenom string) DenomTrace {
 // Hash returns the hex bytes of the SHA256 hash of the DenomTrace fields using the following formula:
 //
 // hash = sha256(tracePath + "/" + baseDenom)
-func (dt DenomTrace) Hash() tmbytes.HexBytes {
+func (dt DenomTrace) Hash() cmtbytes.HexBytes {
 	hash := sha256.Sum256([]byte(dt.GetFullDenomPath()))
 	return hash[:]
 }

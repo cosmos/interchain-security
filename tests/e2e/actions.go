@@ -26,12 +26,17 @@ import (
 )
 
 const (
-	done = "done!!!!!!!!"
+	done      = "done!!!!!!!!"
+	metadata  = "ipfs://CID"
+	authority = "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
 
 	VLatest = "latest"
 	V630    = "v6.3.0"
 	V620    = "v6.2.0"
 )
+
+// Note: to get error response reported back from this command '--gas auto' needs to be set.
+var gas = "auto"
 
 // type aliases
 type (
@@ -407,7 +412,7 @@ func (tr Chain) createConsumerChain(action CreateConsumerChainAction, verbose bo
 	}
 
 	if verbose {
-		fmt.Println("Created consumer chain", string(consumerChainCfg.ChainId), " with consumer-id", string(consumerId))
+		fmt.Println("Created consumer chain", string(consumerChainCfg.ChainId), " with consumer-id", consumerId)
 	}
 
 	// Set the new created consumer-id on the chain's config
@@ -522,14 +527,13 @@ func (tr Chain) SubmitConsumerAdditionProposal(
 			consumerChainCfg.ChainId, txResponse.Events)
 	}
 
-	authority := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
 	// Set the new created consumer-id on the chain's config
 	consumerChainCfg.ConsumerId = ConsumerID(consumerId)
 	tr.testConfig.ChainConfigs[action.ConsumerChain] = consumerChainCfg
 
 	// Update consumer to change owner to governance before submitting the proposal
 	update := &types.MsgUpdateConsumer{
-		ConsumerId:      string(consumerId),
+		ConsumerId:      consumerId,
 		NewOwnerAddress: authority,
 	}
 	// For the MsgUpdateConsumer sent in the proposal
@@ -564,7 +568,6 @@ func (tr Chain) SubmitConsumerAdditionProposal(
 	description := "description of the consumer modification proposal"
 	summary := "Gonna be a great chain"
 	expedited := false
-	metadata := "ipfs://CID"
 	deposit := fmt.Sprintf("%dstake", action.Deposit)
 	jsonStr := e2e.GenerateGovProposalContent(title, summary, metadata, deposit, description, expedited, update)
 	bz, err = tr.target.SubmitGovProposal(providerChainCfg.ChainId, action.From, "", jsonStr, verbose)
@@ -594,9 +597,7 @@ func (tr Chain) SubmitConsumerRemovalProposal(
 	description := "stop consumer chain"
 	summary := "It was a great chain"
 	expedited := false
-	metadata := "ipfs://CID"
 	deposit := fmt.Sprintf("%dstake", action.Deposit)
-	authority := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
 
 	msg := types.MsgRemoveConsumer{
 		ConsumerId: consumerId,
@@ -645,53 +646,6 @@ func (tr Chain) SubmitConsumerRemovalProposal(
 	tr.waitForTx(ChainID("provi"), bz, 30*time.Second)
 }
 
-func (tr Chain) submitConsumerRemovalLegacyProposal(
-	action SubmitConsumerRemovalProposalAction,
-	verbose bool,
-) {
-	prop := client.ConsumerRemovalProposalJSON{
-		Title:   fmt.Sprintf("Stop the %v chain", action.ConsumerChain),
-		Summary: "It was a great chain",
-		ChainId: string(tr.testConfig.ChainConfigs[action.ConsumerChain].ChainId),
-		Deposit: fmt.Sprint(action.Deposit) + `stake`,
-	}
-
-	bz, err := json.Marshal(prop)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	jsonStr := string(bz)
-	if strings.Contains(jsonStr, "'") {
-		log.Fatal("prop json contains single quote")
-	}
-
-	bz, err = tr.target.ExecCommand(
-		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json")).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	bz, err = tr.target.ExecCommand(
-		tr.testConfig.ChainConfigs[action.Chain].BinaryName,
-		"tx", "gov", "submit-legacy-proposal", "consumer-removal",
-		"/temp-proposal.json",
-		`--from`, `validator`+fmt.Sprint(action.From),
-		`--chain-id`, string(tr.testConfig.ChainConfigs[action.Chain].ChainId),
-		`--home`, tr.getValidatorHome(action.Chain, action.From),
-		`--node`, tr.getValidatorNode(action.Chain, action.From),
-		`--gas`, "900000",
-		`--keyring-backend`, `test`,
-		`-y`,
-	).CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
-	tr.waitBlocks(ChainID("provi"), 2, 20*time.Second)
-}
-
 type SubmitConsumerModificationProposalAction struct {
 	Chain              ChainID
 	From               ValidatorID
@@ -717,9 +671,7 @@ func (tr Chain) submitConsumerModificationProposal(
 	description := "description of the consumer modification proposal"
 	summary := "summary of a modification proposal"
 	expedited := false
-	metadata := "ipfs://CID"
 	deposit := fmt.Sprintf("%dstake", action.Deposit)
-	authority := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
 
 	msg := types.MsgUpdateConsumer{
 		Owner:           authority,
@@ -865,7 +817,6 @@ func (tr Chain) submitEnableTransfersProposalAction(
 	description := "update IBC params"
 	summary := "Enable transfer send/receive"
 	expedited := false
-	metadata := "ipfs://CID"
 	deposit := fmt.Sprintf("%dstake", action.Deposit)
 	jsonStr := e2e.GenerateGovProposalContent(action.Title, summary, metadata, deposit, description, expedited, &msgUpdateParams)
 
@@ -994,7 +945,6 @@ func (tr *Chain) getConsumerGenesis(providerChain, consumerChain ChainID) string
 		time.Sleep(2 * time.Second)
 	}
 
-	targetVersion := "v5.x" // default to v5.x in case transformation is required
 	needsTransform, targetVersion := needsGenesisTransform(*tr.testConfig)
 	if tr.testConfig.TransformGenesis || needsTransform {
 		return string(tr.transformConsumerGenesis(targetVersion, bz))
@@ -2125,7 +2075,7 @@ func (tr Chain) submitChangeRewardDenomsProposal(action SubmitChangeRewardDenoms
 	changeRewMsg := types.MsgChangeRewardDenoms{
 		DenomsToAdd:    action.Denoms,
 		DenomsToRemove: []string{"stake"},
-		Authority:      "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn",
+		Authority:      authority,
 	}
 
 	// Generate proposal content
@@ -2133,7 +2083,6 @@ func (tr Chain) submitChangeRewardDenomsProposal(action SubmitChangeRewardDenoms
 	description := "change reward denoms"
 	summary := "Proposal to change reward denoms"
 	expedited := false
-	metadata := "ipfs://CID"
 	deposit := fmt.Sprintf("%dstake", action.Deposit)
 	jsonStr := e2e.GenerateGovProposalContent(title, summary, metadata, deposit, description, expedited, &changeRewMsg)
 
@@ -2348,8 +2297,6 @@ func (tr Chain) AssignConsumerPubKey(action e2e.AssignConsumerPubKeyAction, verb
 	valCfg := tr.testConfig.ValidatorConfigs[action.Validator]
 	chainCfg := tr.testConfig.ChainConfigs
 
-	// Note: to get error response reported back from this command '--gas auto' needs to be set.
-	gas := "auto"
 	// Unfortunately, --gas auto does not work with CometMock. so when using CometMock, just use --gas 9000000 then
 	if tr.testConfig.UseCometmock {
 		gas = "9000000"
@@ -2624,7 +2571,6 @@ func (tr Chain) detectConsumerEvidence(
 			}
 
 			// submit consumer equivocation to provider
-			gas := "auto"
 			submitEquivocation := fmt.Sprintf(
 				`%s tx provider submit-consumer-double-voting %s %s %s --from validator%s --chain-id %s --home %s --node %s --gas %s --keyring-backend test -y -o json`,
 				tr.testConfig.ChainConfigs[ChainID("provi")].BinaryName,
@@ -2667,8 +2613,6 @@ type OptInAction struct {
 }
 
 func (tr Chain) optIn(action OptInAction, verbose bool) {
-	// Note: to get error response reported back from this command '--gas auto' needs to be set.
-	gas := "auto"
 	// Unfortunately, --gas auto does not work with CometMock. so when using CometMock, just use --gas 9000000 then
 	if tr.testConfig.UseCometmock {
 		gas = "9000000"
@@ -2724,8 +2668,6 @@ type OptOutAction struct {
 }
 
 func (tr Chain) optOut(action OptOutAction, verbose bool) {
-	// Note: to get error response reported back from this command '--gas auto' needs to be set.
-	gas := "auto"
 	// Unfortunately, --gas auto does not work with CometMock. so when using CometMock, just use --gas 9000000 then
 	if tr.testConfig.UseCometmock {
 		gas = "9000000"
@@ -2783,8 +2725,6 @@ type SetConsumerCommissionRateAction struct {
 }
 
 func (tr Chain) setConsumerCommissionRate(action SetConsumerCommissionRateAction, verbose bool) {
-	// Note: to get error response reported back from this command '--gas auto' needs to be set.
-	gas := "auto"
 	// Unfortunately, --gas auto does not work with CometMock. so when using CometMock, just use --gas 9000000 then
 	if tr.testConfig.UseCometmock {
 		gas = "9000000"
@@ -2931,9 +2871,6 @@ func (tr Chain) transferIbcToken(
 	action TransferIbcTokenAction,
 	verbose bool,
 ) {
-	// Note: to get error response reported back from this command '--gas auto' needs to be set.
-	gas := "auto"
-
 	transferCmd := fmt.Sprintf(
 		`%s tx ibc-transfer transfer transfer \
 %s %s %s --memo %q --from validator%s --chain-id %s \

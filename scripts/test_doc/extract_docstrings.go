@@ -12,6 +12,10 @@ import (
 )
 
 func main() {
+	os.Exit(mainFunc())
+}
+
+func mainFunc() int {
 	// Define the directory to traverse and the output markdown file
 	dir := "../../tests/integration"
 	outputFile := "test_documentation.md"
@@ -48,14 +52,17 @@ func main() {
 		return nil
 	})
 	if err != nil {
-		log.Fatalf("Error walking the path %q: %v\n", dir, err)
+		fmt.Printf("Error walking the path %q: %v\n", dir, err)
+		return 1
 	}
 
 	fmt.Printf("Documentation generated successfully in %s\n", outputFile)
 
 	if errorStatusCode {
-		os.Exit(1)
+		return 1
 	}
+
+	return 0
 }
 
 // extractDocstrings extracts the docstrings from the Go source file and writes them to the output file

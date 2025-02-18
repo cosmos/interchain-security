@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"context"
 	"fmt"
 
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
@@ -9,12 +8,10 @@ import (
 
 	"cosmossdk.io/core/comet"
 	"cosmossdk.io/math"
-	evidencetypes "cosmossdk.io/x/evidence/types"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkaddress "github.com/cosmos/cosmos-sdk/types/address"
-	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -22,7 +19,6 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v7/testutil/integration"
 	keepertestutil "github.com/cosmos/interchain-security/v7/testutil/keeper"
 	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
@@ -362,6 +358,7 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	err = providerKeeper.SetConsumerValidator(ctx, firstBundle.ConsumerId, providertypes.ConsensusValidator{
 		ProviderConsAddr: validAddress,
 	})
+	suite.Require().NoError(err)
 	ackResult, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
 	suite.Require().NoError(err)
 	suite.Require().Equal(ccv.SlashPacketBouncedResult, ackResult, "expected bounced result")
@@ -378,6 +375,7 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	providerKeeper.SetConsumerPhase(suite.providerCtx(), firstBundle.ConsumerId, providertypes.CONSUMER_PHASE_LAUNCHED)
 	providerKeeper.DeleteConsumerValidator(ctx, firstBundle.ConsumerId, providertypes.NewProviderConsAddress(sdk.ConsAddress(validAddress)))
 	ackResult, err = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashPacketData)
+	suite.Require().NoError(err)
 	suite.Require().Equal(ccv.SlashPacketHandledResult, ackResult, "expected successful ack")
 
 	// Also test what happens if the chain is launched but we have a consumer validator. In this case the check that the
@@ -656,90 +654,4 @@ func (suite *CCVTestSuite) TestCISBeforeCCVEstablished() {
 	// Slash record should now be found (slash sent)
 	_, found = consumerKeeper.GetSlashRecord(suite.consumerCtx())
 	suite.Require().True(found)
-}
-
-// copy of the function from slashing/keeper.go
-// in cosmos-sdk v0.50.x the function HandleEquivocationEvidence is not exposed (it was exposed for versions <= v0.47.x)
-// https://github.com/cosmos/cosmos-sdk/blob/v0.50.4/x/evidence/keeper/infraction.go#L27
-func handleEquivocationEvidence(ctx context.Context, k integration.ConsumerApp, evidence *evidencetypes.Equivocation) error {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	slashingKeeper := k.GetTestSlashingKeeper().(slashingkeeper.Keeper)
-	evidenceKeeper := k.GetTestEvidenceKeeper()
-	consAddr := evidence.GetConsensusAddress(k.GetConsumerKeeper().ConsensusAddressCodec())
-
-	validator, err := k.GetConsumerKeeper().ValidatorByConsAddr(ctx, consAddr)
-	if err != nil {
-		return err
-	}
-	if validator == nil || validator.IsUnbonded() {
-		return nil
-	}
-
-	if len(validator.GetOperator()) != 0 {
-		if _, err := slashingKeeper.GetPubkey(ctx, consAddr.Bytes()); err != nil {
-			return nil
-		}
-	}
-
-	// calculate the age of the evidence
-	infractionHeight := evidence.GetHeight()
-	infractionTime := evidence.GetTime()
-	ageDuration := sdkCtx.BlockHeader().Time.Sub(infractionTime)
-	ageBlocks := sdkCtx.BlockHeader().Height - infractionHeight
-
-	// Reject evidence if the double-sign is too old. Evidence is considered stale
-	// if the difference in time and number of blocks is greater than the allowed
-	// parameters defined.
-	cp := sdkCtx.ConsensusParams()
-	if cp.Evidence != nil {
-		if ageDuration > cp.Evidence.MaxAgeDuration && ageBlocks > cp.Evidence.MaxAgeNumBlocks {
-			return nil
-		}
-	}
-
-	if ok := slashingKeeper.HasValidatorSigningInfo(ctx, consAddr); !ok {
-		panic(fmt.Sprintf("expected signing info for validator %s but not found", consAddr))
-	}
-
-	// ignore if the validator is already tombstoned
-	if slashingKeeper.IsTombstoned(ctx, consAddr) {
-		return nil
-	}
-
-	distributionHeight := infractionHeight - sdk.ValidatorUpdateDelay
-	slashFractionDoubleSign, err := slashingKeeper.SlashFractionDoubleSign(ctx)
-	if err != nil {
-		return err
-	}
-
-	err = slashingKeeper.SlashWithInfractionReason(
-		ctx,
-		consAddr,
-		slashFractionDoubleSign,
-		evidence.GetValidatorPower(), distributionHeight,
-		stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN,
-	)
-	if err != nil {
-		return err
-	}
-
-	// Jail the validator if not already jailed. This will begin unbonding the
-	// validator if not already unbonding (tombstoned).
-	if !validator.IsJailed() {
-		err = slashingKeeper.Jail(ctx, consAddr)
-		if err != nil {
-			return err
-		}
-	}
-
-	err = slashingKeeper.JailUntil(ctx, consAddr, evidencetypes.DoubleSignJailEndTime)
-	if err != nil {
-		return err
-	}
-
-	err = slashingKeeper.Tombstone(ctx, consAddr)
-	if err != nil {
-		return err
-	}
-	return evidenceKeeper.Evidences.Set(ctx, evidence.Hash(), evidence)
 }

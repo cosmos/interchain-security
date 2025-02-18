@@ -26,6 +26,11 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
+const (
+	valAddrB = "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
+	valAddrC = "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"
+)
+
 func TestHasMinPower(t *testing.T) {
 	pk, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -253,8 +258,6 @@ func TestCapValidatorSet(t *testing.T) {
 	defer ctrl.Finish()
 
 	valAddrA := "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6"
-	valAddrB := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
-	valAddrC := "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"
 	valAddrD := "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk"
 
 	validatorA := providertypes.ConsensusValidator{ProviderConsAddr: consAddressFromBech32(valAddrA), Power: 1, PublicKey: &crypto.PublicKey{}}
@@ -780,8 +783,8 @@ func TestConsumerPowerShapingParameters(t *testing.T) {
 		"cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
 		"cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
 		"cosmosvalcons1muys5jyqk4xd27e208nym85kn0t4zjcfeu63fe",
-		"cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
-		"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
+		valAddrB,
+		valAddrC,
 		"cosmosvalcons1uuec3cjxajv5te08p220usrjhkfhg9wyvqn0tm",
 	}
 	providerConsAddr := []providertypes.ProviderConsAddress{}
@@ -885,9 +888,9 @@ func TestUpdateAllowlist(t *testing.T) {
 
 	consumerId := "0"
 
-	providerConsAddr1 := "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"
+	providerConsAddr1 := valAddrC
 	consAddr1, _ := sdk.ConsAddressFromBech32(providerConsAddr1)
-	providerConsAddr2 := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
+	providerConsAddr2 := valAddrB
 	consAddr2, _ := sdk.ConsAddressFromBech32(providerConsAddr2)
 
 	providerKeeper.UpdateAllowlist(ctx, consumerId, []string{providerConsAddr1, providerConsAddr2})
@@ -933,9 +936,9 @@ func TestUpdateDenylist(t *testing.T) {
 
 	consumerId := "0"
 
-	providerConsAddr1 := "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"
+	providerConsAddr1 := valAddrC
 	consAddr1, _ := sdk.ConsAddressFromBech32(providerConsAddr1)
-	providerConsAddr2 := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
+	providerConsAddr2 := valAddrB
 	consAddr2, _ := sdk.ConsAddressFromBech32(providerConsAddr2)
 
 	providerKeeper.UpdateDenylist(ctx, consumerId, []string{providerConsAddr1, providerConsAddr2})
@@ -1110,9 +1113,9 @@ func TestUpdatePrioritylist(t *testing.T) {
 
 	consumerId := "0"
 
-	providerConsAddr1 := "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq"
+	providerConsAddr1 := valAddrC
 	consAddr1, _ := sdk.ConsAddressFromBech32(providerConsAddr1)
-	providerConsAddr2 := "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39"
+	providerConsAddr2 := valAddrB
 	consAddr2, _ := sdk.ConsAddressFromBech32(providerConsAddr2)
 
 	providerKeeper.UpdatePrioritylist(ctx, consumerId, []string{providerConsAddr1, providerConsAddr2})

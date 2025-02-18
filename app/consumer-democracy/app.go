@@ -438,7 +438,6 @@ func New(
 	app.ConsumerKeeper = consumerkeeper.NewNonZeroKeeper(
 		appCodec,
 		keys[consumertypes.StoreKey],
-		app.GetSubspace(consumertypes.ModuleName),
 	)
 
 	app.IBCKeeper = ibckeeper.NewKeeper(
@@ -453,7 +452,6 @@ func New(
 	app.ConsumerKeeper = consumerkeeper.NewKeeper(
 		appCodec,
 		keys[consumertypes.StoreKey],
-		app.GetSubspace(consumertypes.ModuleName),
 		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.ConnectionKeeper,
 		app.IBCKeeper.ClientKeeper,

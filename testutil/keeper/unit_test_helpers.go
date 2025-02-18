@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/binary"
 	"testing"
 	"time"
@@ -140,7 +139,6 @@ func NewInMemConsumerKeeper(params InMemKeeperParams, mocks MockedKeepers) consu
 	return consumerkeeper.NewKeeper(
 		params.Cdc,
 		params.StoreKey,
-		*params.ParamsSubspace,
 		mocks.MockChannelKeeper,
 		mocks.MockConnectionKeeper,
 		mocks.MockClientKeeper,
@@ -318,37 +316,6 @@ func GetTestPowerShapingParameters() providertypes.PowerShapingParameters {
 		MinStake:           0,
 		AllowInactiveVals:  false,
 		Prioritylist:       nil,
-	}
-}
-
-func GetTestMsgUpdateConsumer() providertypes.MsgUpdateConsumer {
-	return providertypes.MsgUpdateConsumer{
-		Owner:           "owner",
-		ConsumerId:      "consumerId",
-		NewOwnerAddress: "newOwnerAddress",
-	}
-}
-
-func GetTestMsgConsumerAddition() providertypes.MsgConsumerAddition {
-	return providertypes.MsgConsumerAddition{
-		ChainId:                           "a ChainId",
-		InitialHeight:                     clienttypes.NewHeight(0, 5),
-		GenesisHash:                       []byte(base64.StdEncoding.EncodeToString([]byte("gen_hash"))),
-		BinaryHash:                        []byte(base64.StdEncoding.EncodeToString([]byte("bin_hash"))),
-		SpawnTime:                         time.Now(),
-		UnbondingPeriod:                   types.DefaultConsumerUnbondingPeriod,
-		CcvTimeoutPeriod:                  types.DefaultCCVTimeoutPeriod,
-		TransferTimeoutPeriod:             types.DefaultTransferTimeoutPeriod,
-		ConsumerRedistributionFraction:    types.DefaultConsumerRedistributeFrac,
-		BlocksPerDistributionTransmission: types.DefaultBlocksPerDistributionTransmission,
-		HistoricalEntries:                 types.DefaultHistoricalEntries,
-		DistributionTransmissionChannel:   "",
-		Top_N:                             10,
-		ValidatorsPowerCap:                0,
-		ValidatorSetCap:                   0,
-		Allowlist:                         nil,
-		Denylist:                          nil,
-		Authority:                         authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	}
 }
 

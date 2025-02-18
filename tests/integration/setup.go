@@ -377,7 +377,7 @@ func (suite *CCVTestSuite) SetupAllTransferChannels() {
 	}
 }
 
-func (s *CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestingutils.ConsumerBundle) { 
+func (s *CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestingutils.ConsumerBundle) {
 	consumerKeeper := consumerBundle.GetKeeper()
 	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 

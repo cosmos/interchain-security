@@ -260,27 +260,6 @@ func relayAllCommittedPackets(
 	}
 }
 
-// incrementTimeByUnbondingPeriod increments the overall time by
-//   - if chainType == Provider, the unbonding period on the provider.
-//   - otherwise, the unbonding period on the consumer.
-//
-// Note that it is expected for the provider unbonding period
-// to be one day larger than the consumer unbonding period.
-// TODO (mpoke) get rid of consumer unbonding period
-func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
-	// Get unboding periods
-	providerUnbondingPeriod, err := s.providerApp.GetTestStakingKeeper().UnbondingTime(s.providerCtx())
-	s.Require().NoError(err)
-	consumerUnbondingPeriod := s.consumerApp.GetConsumerKeeper().GetUnbondingPeriod(s.consumerCtx())
-	var jumpPeriod time.Duration
-	if chainType == Provider {
-		jumpPeriod = providerUnbondingPeriod
-	} else {
-		jumpPeriod = consumerUnbondingPeriod
-	}
-	incrementTime(s, jumpPeriod)
-}
-
 func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, msgAndArgs ...interface{}) {
 	stakingUnbondingOp, wasFound := getStakingUnbondingDelegationEntry(s.providerCtx(), s.providerApp.GetTestStakingKeeper(), id)
 	s.Require().Equal(

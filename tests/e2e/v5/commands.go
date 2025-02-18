@@ -20,7 +20,6 @@ import (
 
 	e2e "github.com/cosmos/interchain-security/v7/tests/e2e/testlib"
 	"github.com/cosmos/interchain-security/v7/x/ccv/provider/client"
-	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
@@ -281,7 +280,7 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 	deposit := gjson.Get(propRaw, `proposal.total_deposit.#(denom=="stake").amount`).Uint()
 	status := gjson.Get(propRaw, `proposal.status`).String()
 
-	x, err := strconv.Atoi(status)
+	x, err := strconv.ParseInt(status, 10, 16)
 	if err != nil {
 		panic("error converting proposal status:" + err.Error())
 	}
@@ -768,7 +767,10 @@ func (tr Commands) GetInflationRate(
 	panic("'GetInflationRate' is not implemented in this version")
 }
 
-func (tr Commands) CreateConsumer(providerChain, consumerChain ChainID, validator ValidatorID, metadata providertypes.ConsumerMetadata, initParams *types.ConsumerInitializationParameters, powerShapingParams *types.PowerShapingParameters) ([]byte, error) {
+func (tr Commands) CreateConsumer(providerChain, consumerChain ChainID, validator ValidatorID,
+	metadata providertypes.ConsumerMetadata, initParams *providertypes.ConsumerInitializationParameters,
+	powerShapingParams *providertypes.PowerShapingParameters,
+) ([]byte, error) {
 	panic("'CreateConsumer' is not implemented in this version")
 }
 

@@ -126,7 +126,7 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 				1: IBCTransferParamsProposal{
 					Deposit: 10000001,
 					Status:  gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
-					Params:  IBCTransferParams{true, true},
+					Params:  IBCTransferParams{SendEnabled: true, ReceiveEnabled: true},
 				},
 			},
 		}},

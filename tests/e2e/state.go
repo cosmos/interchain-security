@@ -39,10 +39,7 @@ type Chain struct {
 // waitForTx waits until a transaction is seen in a block or panics if a timeout occurs
 func (tr Chain) waitForTx(chain ChainID, txResponse []byte, timeout time.Duration) TxResponse {
 	// remove any gas estimate as when command is run with gas=auto the output contains gas estimation mixed with json output
-	re, err := regexp.Compile("gas estimate: [0-9]+")
-	if err != nil {
-		panic(fmt.Sprintf("error compiling regexp: %s", err.Error()))
-	}
+	re := regexp.MustCompile("gas estimate: [0-9]+")
 	txResponse = re.ReplaceAll(txResponse, []byte{})
 
 	// check transaction
@@ -233,12 +230,4 @@ func (tr Chain) GetConsumerCommissionRates(chain ChainID, modelState map[Validat
 	}
 
 	return actualState
-}
-
-func uintPtr(i uint) *uint {
-	return &i
-}
-
-func intPtr(i int) *int {
-	return &i
 }

@@ -389,6 +389,7 @@ func TestConsumerRewardsAllocationByDenom(t *testing.T) {
 	}
 
 	err = providerKeeper.SetConsumerRewardsAllocationByDenom(ctx, consumerId, denom, rewardAllocation)
+	require.NoError(t, err)
 	rewards, err = providerKeeper.GetConsumerRewardsAllocationByDenom(ctx, consumerId, denom)
 	require.Equal(t, rewardAllocation, rewards)
 	require.NoError(t, err)

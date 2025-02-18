@@ -11,14 +11,12 @@ import (
 	host "github.com/cosmos/ibc-go/v10/modules/core/24-host"
 
 	addresscodec "cosmossdk.io/core/address"
-	"cosmossdk.io/core/store"
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	tmtypes "github.com/cometbft/cometbft/abci/types"
@@ -34,7 +32,6 @@ type Keeper struct {
 	authority string
 
 	storeKey         storetypes.StoreKey
-	storeService     store.KVStoreService
 	cdc              codec.BinaryCodec
 	channelKeeper    ccv.ChannelKeeper
 	connectionKeeper ccv.ConnectionKeeper
@@ -59,7 +56,7 @@ type Keeper struct {
 // NOTE: the feeCollectorName is in reference to the consumer-chain fee
 // collector (and not the provider chain)
 func NewKeeper(
-	cdc codec.BinaryCodec, key storetypes.StoreKey, paramSpace paramtypes.Subspace,
+	cdc codec.BinaryCodec, key storetypes.StoreKey,
 	channelKeeper ccv.ChannelKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	slashingKeeper ccv.SlashingKeeper, bankKeeper ccv.BankKeeper, accountKeeper ccv.AccountKeeper,
@@ -67,11 +64,6 @@ func NewKeeper(
 	feeCollectorName, authority string, validatorAddressCodec,
 	consensusAddressCodec addresscodec.Codec,
 ) Keeper {
-	// set KeyTable if it has not already been set
-	if !paramSpace.HasKeyTable() {
-		paramSpace = paramSpace.WithKeyTable(ccv.ParamKeyTable())
-	}
-
 	k := Keeper{
 		authority:               authority,
 		storeKey:                key,
@@ -99,9 +91,9 @@ func (k Keeper) GetAuthority() string {
 	return k.authority
 }
 
-// Returns a keeper with cdc, key and paramSpace set it does not raise any panics during registration (eg with IBCKeeper).
+// Returns a keeper with cdc and key set it does not raise any panics during registration (eg with IBCKeeper).
 // Used only in testing.
-func NewNonZeroKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey, paramSpace paramtypes.Subspace) Keeper {
+func NewNonZeroKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey) Keeper {
 	return Keeper{
 		storeKey: key,
 		cdc:      cdc,
