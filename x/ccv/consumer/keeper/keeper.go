@@ -125,7 +125,7 @@ func (k *Keeper) SetStandaloneStakingKeeper(sk ccv.StakingKeeper) {
 func (k Keeper) mustValidateFields() {
 	// Ensures no fields are missed in this validation
 	if reflect.ValueOf(k).NumField() != 19 {
-		panic("number of fields in consumer keeper is not 16")
+		panic("number of fields in consumer keeper is not 19")
 	}
 
 	// Note 116 / 16 fields will be validated,
