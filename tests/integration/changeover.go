@@ -46,7 +46,7 @@ func (suite *CCVTestSuite) TestRecycleTransferChannel() {
 	suite.consumerApp.GetConsumerKeeper().SetDistributionTransmissionChannel(suite.consumerCtx(), resp.ChannelId)
 
 	// Now finish setting up CCV channel
-	suite.ExecuteCCVChannelHandshake(suite.path)
+	suite.path.CreateChannels()
 
 	// Confirm transfer channel is now persisted with expected channel id from open init response
 	transChan = consumerKeeper.GetDistributionTransmissionChannel(suite.consumerCtx())

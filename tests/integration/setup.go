@@ -289,26 +289,8 @@ func (suite *CCVTestSuite) SetupAllCCVChannels() {
 }
 
 func (suite *CCVTestSuite) SetupCCVChannel(path *ibctesting.Path) {
-	suite.coordinator.CreateConnections(path)
-	suite.ExecuteCCVChannelHandshake(path)
-}
-
-func (suite *CCVTestSuite) ExecuteCCVChannelHandshake(path *ibctesting.Path) {
-	err := path.EndpointA.ChanOpenInit()
-	suite.Require().NoError(err)
-
-	err = path.EndpointB.ChanOpenTry()
-	suite.Require().NoError(err)
-
-	err = path.EndpointA.ChanOpenAck()
-	suite.Require().NoError(err)
-
-	err = path.EndpointB.ChanOpenConfirm()
-	suite.Require().NoError(err)
-
-	// ensure counterparty is up to date
-	err = path.EndpointA.UpdateClient()
-	suite.Require().NoError(err)
+	path.CreateConnections()
+	path.CreateChannels()
 }
 
 // TODO: Make SetupTransferChannel functional for multiple consumers by pattern matching SetupCCVChannel.

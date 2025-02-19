@@ -530,10 +530,8 @@ func New(
 
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
-	clientKeeper := app.IBCKeeper.ClientKeeper
-	storeProvider := clientKeeper.GetStoreProvider()
-
-	tmLightClientModule := ibctm.NewLightClientModule(appCodec, storeProvider)
+	tmLightClientModule := ibctm.NewLightClientModule(appCodec, app.IBCKeeper.ClientKeeper.GetStoreProvider())
+	app.IBCKeeper.ClientKeeper.AddRoute(ibctm.ModuleName, tmLightClientModule)
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
