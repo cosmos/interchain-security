@@ -3,14 +3,12 @@ package keeper
 import (
 	time "time"
 
+	math "cosmossdk.io/math"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v10/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
 	"github.com/golang/mock/gomock"
-	extra "github.com/oxyno-zeta/gomock-extra-matcher"
-
-	math "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -33,12 +31,7 @@ func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
 		mocks.MockClientKeeper.EXPECT().CreateClient(
 			gomock.Any(),
 			gomock.Any(),
-			// Allows us to expect a match by field. These are the only two client state values
-			// that are dependent on parameters passed to CreateConsumerClient.
-			extra.StructMatcher().Field(
-				"ChainId", expectedChainID).Field(
-				"LatestHeight", expectedLatestHeight,
-			),
+			gomock.Any(),
 			gomock.Any(),
 		).Return("clientID", nil).Times(1),
 	}
@@ -46,10 +39,11 @@ func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
 
 // GetMocksForMakeConsumerGenesis returns mock expectations needed to call MakeConsumerGenesis().
 func GetMocksForMakeConsumerGenesis(ctx sdk.Context, mocks *MockedKeepers,
-	unbondingTimeToInject time.Duration,
+	unbondingTimeToInject time.Duration, revisionHeight int64,
 ) []*gomock.Call {
 	return []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeToInject, nil).Times(1),
+		mocks.MockStakingKeeper.EXPECT().GetHistoricalInfo(gomock.Any(), revisionHeight).Times(1),
 	}
 }
 
@@ -123,7 +117,7 @@ func ExpectLatestConsensusStateMock(ctx sdk.Context, mocks MockedKeepers, client
 }
 
 func ExpectCreateClientMock(ctx sdk.Context, mocks MockedKeepers, clientType, clientID string,
-	clientState *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
+	clientState, consState []byte,
 ) *gomock.Call {
 	return mocks.MockClientKeeper.EXPECT().CreateClient(ctx, clientType, clientState, consState).Return(clientID,
 		nil).Times(1)

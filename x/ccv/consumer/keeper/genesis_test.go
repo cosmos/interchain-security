@@ -101,9 +101,13 @@ func TestInitGenesis(t *testing.T) {
 		{
 			"start a new chain",
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers) {
+				clientStateBytes, err := provClientState.Marshal()
+				require.NoError(t, err)
+				consStateBytes, err := provConsState.Marshal()
+				require.NoError(t, err)
 				gomock.InOrder(
-					testkeeper.ExpectCreateClientMock(ctx, mocks, provClientType, provClientID, provClientState,
-						provConsState),
+					testkeeper.ExpectCreateClientMock(ctx, mocks, provClientType, provClientID, clientStateBytes,
+						consStateBytes),
 				)
 			},
 			consumertypes.NewInitialGenesisState(

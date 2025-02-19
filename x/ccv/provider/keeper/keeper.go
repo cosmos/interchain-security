@@ -106,8 +106,8 @@ func (k Keeper) ConsensusAddressCodec() addresscodec.Codec {
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
 	// Ensures no fields are missed in this validation
-	if reflect.ValueOf(k).NumField() != 17 {
-		panic(fmt.Sprintf("number of fields in provider keeper is not 18 - have %d", reflect.ValueOf(k).NumField()))
+	if reflect.ValueOf(k).NumField() != 15 {
+		panic(fmt.Sprintf("number of fields in provider keeper is not 15 - have %d", reflect.ValueOf(k).NumField()))
 	}
 
 	if k.validatorAddressCodec == nil || k.consensusAddressCodec == nil {

@@ -291,11 +291,11 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 	providerKeeper.SetOptedIn(ctx, "3", providertypes.NewProviderConsAddress(consAddr))
 
 	// Expect genesis and client creation for only the first, second, and fifth chains (spawn time already passed and valid)
-	expectedCalls := testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, time.Hour)
+	expectedCalls := testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, time.Hour, 0)
 	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain0", clienttypes.NewHeight(0, 4))...)
-	expectedCalls = append(expectedCalls, testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, time.Hour)...)
+	expectedCalls = append(expectedCalls, testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, time.Hour, 0)...)
 	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain1", clienttypes.NewHeight(0, 4))...)
-	expectedCalls = append(expectedCalls, testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, time.Hour)...)
+	expectedCalls = append(expectedCalls, testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, time.Hour, 0)...)
 	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain3", clienttypes.NewHeight(0, 4))...)
 
 	gomock.InOrder(expectedCalls...)
@@ -691,7 +691,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 	//
 	ctx = ctx.WithChainID(providerChainId)            // consumerId is obtained from ctx
 	ctx = ctx.WithBlockHeight(providerRevisionHeight) // RevisionHeight obtained from ctx
-	gomock.InOrder(testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, providerUnbondingPeriod)...)
+	gomock.InOrder(testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, providerUnbondingPeriod, providerRevisionHeight)...)
 
 	providerKeeper.SetConsumerChainId(ctx, CONSUMER_ID, CONSUMER_CHAIN_ID)
 	err := providerKeeper.SetConsumerInitializationParameters(ctx, CONSUMER_ID, initializationParameters)
