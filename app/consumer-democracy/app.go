@@ -116,6 +116,7 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
 	ccvdistr "github.com/cosmos/interchain-security/v7/x/ccv/democracy/distribution"
 	ccvstaking "github.com/cosmos/interchain-security/v7/x/ccv/democracy/staking"
+	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 const (
@@ -499,7 +500,7 @@ func New(
 	// create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ibcmodule)
-	ibcRouter.AddRoute(consumertypes.ModuleName, consumerModule)
+	ibcRouter.AddRoute(ccvtypes.ConsumerPortID, consumerModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	// create evidence keeper with router
