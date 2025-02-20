@@ -131,6 +131,9 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	if err := cfg.RegisterMigration(consumertypes.ModuleName, 2, m.Migrate2to3); err != nil {
 		panic(fmt.Sprintf("failed to register migrator for %s: %s -- from 2 -> 3", consumertypes.ModuleName, err))
 	}
+	if err := cfg.RegisterMigration(consumertypes.ModuleName, 3, m.Migrate3to4); err != nil {
+		panic(fmt.Sprintf("failed to register migrator for %s: %s -- from 3 -> 4", consumertypes.ModuleName, err))
+	}
 }
 
 // InitGenesis performs genesis initialization for the consumer module. It returns
