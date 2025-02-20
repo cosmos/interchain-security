@@ -44,16 +44,16 @@ func MakeAndSignVote(
 	}
 	addr := pubKey.Address()
 	idx, _ := valSet.GetByAddress(addr)
-	vote, err := tmtypes.MakeVote(
-		signer,
-		chainID,
-		idx,                   // val index
-		blockHeight,           // height
-		0,                     // round
-		tmproto.PrecommitType, // type (does not work if set to sth else)
-		blockID,
-		blockTime,
-	)
+	vote := &tmtypes.Vote{
+		ValidatorAddress: addr,
+		ValidatorIndex:   idx,
+		Height:           blockHeight,
+		Round:            0,
+		Type:             tmproto.PrecommitType,
+		BlockID:          blockID,
+		Timestamp:        blockTime,
+	}
+	_, err = tmtypes.SignAndCheckVote(vote, signer, chainID, false)
 	if err != nil {
 		panic(err)
 	}
