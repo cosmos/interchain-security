@@ -543,7 +543,7 @@ func PendingVSCsKey(consumerId string) []byte {
 	return append([]byte{mustGetKeyPrefix(PendingVSCsKeyName)}, []byte(consumerId)...)
 }
 
-// ConsumerValidatorsKey returns the key for storing the validator assigned keys for every consumer chain
+// ConsumerValidatorsKeyPrefix returns the key for storing the validator assigned keys for every consumer chain
 func ConsumerValidatorsKeyPrefix() byte {
 	return mustGetKeyPrefix(ConsumerValidatorsKeyName)
 }

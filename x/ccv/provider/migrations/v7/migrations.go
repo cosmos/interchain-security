@@ -7,7 +7,7 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
 )
 
-// MigrateParams migrates the provider module's parameters from the x/params to self store.
+// MigrateLegacyParams migrates the provider module's parameters from the x/params to self store.
 func MigrateLegacyParams(ctx sdk.Context, keeper providerkeeper.Keeper, legacyParamspace ccvtypes.LegacyParamSubspace) error {
 	ctx.Logger().Info("starting provider legacy params migration")
 	params := GetParamsLegacy(ctx, legacyParamspace)
