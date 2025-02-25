@@ -3,9 +3,11 @@ package main
 import (
 	"time"
 
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
+
+	e2e "github.com/cosmos/interchain-security/v7/tests/e2e/testlib"
 )
 
 // stepsPermissionlessICS tests
@@ -83,7 +85,8 @@ func stepsPermissionlessICS() []Step {
 			[]string{"cons1", "cons2"}, // show up both consumer chains as proposed chains
 			[]ValidatorID{
 				ValidatorID("bob"),
-				ValidatorID("alice")}, // alice already validating 'cons2'
+				ValidatorID("alice"),
+			}, // alice already validating 'cons2'
 			0),
 
 		[]Step{

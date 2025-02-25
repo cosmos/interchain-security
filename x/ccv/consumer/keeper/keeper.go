@@ -5,27 +5,24 @@ import (
 	"fmt"
 	"reflect"
 
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v10/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v10/modules/core/24-host"
 
 	addresscodec "cosmossdk.io/core/address"
-	"cosmossdk.io/core/store"
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	tmtypes "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	"github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // Keeper defines the Cross-Chain Validation Consumer Keeper
@@ -35,11 +32,8 @@ type Keeper struct {
 	authority string
 
 	storeKey         storetypes.StoreKey
-	storeService     store.KVStoreService
 	cdc              codec.BinaryCodec
-	scopedKeeper     ccv.ScopedKeeper
 	channelKeeper    ccv.ChannelKeeper
-	portKeeper       ccv.PortKeeper
 	connectionKeeper ccv.ConnectionKeeper
 	clientKeeper     ccv.ClientKeeper
 	// standaloneStakingKeeper is the staking keeper that managed proof of stake for a previously standalone chain,
@@ -62,27 +56,19 @@ type Keeper struct {
 // NOTE: the feeCollectorName is in reference to the consumer-chain fee
 // collector (and not the provider chain)
 func NewKeeper(
-	cdc codec.BinaryCodec, key storetypes.StoreKey, paramSpace paramtypes.Subspace,
-	scopedKeeper ccv.ScopedKeeper,
-	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
+	cdc codec.BinaryCodec, key storetypes.StoreKey,
+	channelKeeper ccv.ChannelKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	slashingKeeper ccv.SlashingKeeper, bankKeeper ccv.BankKeeper, accountKeeper ccv.AccountKeeper,
 	ibcTransferKeeper ccv.IBCTransferKeeper, ibcCoreKeeper ccv.IBCCoreKeeper,
 	feeCollectorName, authority string, validatorAddressCodec,
 	consensusAddressCodec addresscodec.Codec,
 ) Keeper {
-	// set KeyTable if it has not already been set
-	if !paramSpace.HasKeyTable() {
-		paramSpace = paramSpace.WithKeyTable(ccv.ParamKeyTable())
-	}
-
 	k := Keeper{
 		authority:               authority,
 		storeKey:                key,
 		cdc:                     cdc,
-		scopedKeeper:            scopedKeeper,
 		channelKeeper:           channelKeeper,
-		portKeeper:              portKeeper,
 		connectionKeeper:        connectionKeeper,
 		clientKeeper:            clientKeeper,
 		slashingKeeper:          slashingKeeper,
@@ -105,9 +91,9 @@ func (k Keeper) GetAuthority() string {
 	return k.authority
 }
 
-// Returns a keeper with cdc, key and paramSpace set it does not raise any panics during registration (eg with IBCKeeper).
+// Returns a keeper with cdc and key set it does not raise any panics during registration (eg with IBCKeeper).
 // Used only in testing.
-func NewNonZeroKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey, paramSpace paramtypes.Subspace) Keeper {
+func NewNonZeroKeeper(cdc codec.BinaryCodec, key storetypes.StoreKey) Keeper {
 	return Keeper{
 		storeKey: key,
 		cdc:      cdc,
@@ -124,7 +110,7 @@ func (k *Keeper) SetStandaloneStakingKeeper(sk ccv.StakingKeeper) {
 // non-nil values for all its fields. Otherwise this method will panic.
 func (k Keeper) mustValidateFields() {
 	// Ensures no fields are missed in this validation
-	if reflect.ValueOf(k).NumField() != 19 {
+	if reflect.ValueOf(k).NumField() != 16 {
 		panic("number of fields in consumer keeper is not 16")
 	}
 
@@ -134,9 +120,7 @@ func (k Keeper) mustValidateFields() {
 
 	ccv.PanicIfZeroOrNil(k.storeKey, "storeKey")                           // 1
 	ccv.PanicIfZeroOrNil(k.cdc, "cdc")                                     // 2
-	ccv.PanicIfZeroOrNil(k.scopedKeeper, "scopedKeeper")                   // 3
 	ccv.PanicIfZeroOrNil(k.channelKeeper, "channelKeeper")                 // 4
-	ccv.PanicIfZeroOrNil(k.portKeeper, "portKeeper")                       // 5
 	ccv.PanicIfZeroOrNil(k.connectionKeeper, "connectionKeeper")           // 6
 	ccv.PanicIfZeroOrNil(k.clientKeeper, "clientKeeper")                   // 7
 	ccv.PanicIfZeroOrNil(k.slashingKeeper, "slashingKeeper")               // 8
@@ -180,25 +164,7 @@ func (k *Keeper) SetHooks(sh ccv.ConsumerHooks) *Keeper {
 // ChanCloseInit defines a wrapper function for the channel Keeper's function
 // Following ICS 004: https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics#closing-handshake
 func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
-	capName := host.ChannelCapabilityPath(portID, channelID)
-	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
-	if !ok {
-		return errorsmod.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
-	}
-	return k.channelKeeper.ChanCloseInit(ctx, portID, channelID, chanCap)
-}
-
-// IsBound checks if the transfer module is already bound to the desired port
-func (k Keeper) IsBound(ctx sdk.Context, portID string) bool {
-	_, ok := k.scopedKeeper.GetCapability(ctx, host.PortPath(portID))
-	return ok
-}
-
-// BindPort defines a wrapper function for the ort Keeper's function in
-// order to expose it to module's InitGenesis function
-func (k Keeper) BindPort(ctx sdk.Context, portID string) error {
-	cap := k.portKeeper.BindPort(ctx, portID)
-	return k.ClaimCapability(ctx, cap, host.PortPath(portID))
+	return k.channelKeeper.ChanCloseInit(ctx, portID, channelID)
 }
 
 // GetPort returns the portID for the transfer module. Used in ExportGenesis
@@ -211,16 +177,6 @@ func (k Keeper) GetPort(ctx sdk.Context) string {
 func (k Keeper) SetPort(ctx sdk.Context, portID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.PortKey(), []byte(portID))
-}
-
-// AuthenticateCapability wraps the scopedKeeper's AuthenticateCapability function
-func (k Keeper) AuthenticateCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) bool {
-	return k.scopedKeeper.AuthenticateCapability(ctx, cap, name)
-}
-
-// ClaimCapability claims a capability that the IBC module passes to it
-func (k Keeper) ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) error {
-	return k.scopedKeeper.ClaimCapability(ctx, cap, name)
 }
 
 // SetProviderClientID sets the clientID for the client to the provider.

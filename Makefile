@@ -176,7 +176,7 @@ sim-full-no-inactive-vals:
 ###                                Linting                                  ###
 ###############################################################################
 golangci_lint_cmd=golangci-lint
-golangci_version=v1.60.1
+golangci_version=v1.64.5
 
 lint:
 	@echo "--> Running linter"

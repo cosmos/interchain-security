@@ -5,7 +5,7 @@ import (
 	"sort"
 	"testing"
 
-	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
+	conntypes "github.com/cosmos/ibc-go/v10/modules/core/03-connection/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -16,10 +16,10 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v6/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
-	"github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	"github.com/cosmos/interchain-security/v7/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"
+	"github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // TestProviderClientID tests getter and setter functionality for the client ID stored on consumer keeper

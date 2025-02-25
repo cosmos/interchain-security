@@ -3,22 +3,19 @@ package keeper
 import (
 	time "time"
 
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
-	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v10/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
 	"github.com/golang/mock/gomock"
-	extra "github.com/oxyno-zeta/gomock-extra-matcher"
 
 	math "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/v6/x/ccv/types"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 //
@@ -34,12 +31,8 @@ func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
 	return []*gomock.Call{
 		mocks.MockClientKeeper.EXPECT().CreateClient(
 			gomock.Any(),
-			// Allows us to expect a match by field. These are the only two client state values
-			// that are dependent on parameters passed to CreateConsumerClient.
-			extra.StructMatcher().Field(
-				"ChainId", expectedChainID).Field(
-				"LatestHeight", expectedLatestHeight,
-			),
+			gomock.Any(),
+			gomock.Any(),
 			gomock.Any(),
 		).Return("clientID", nil).Times(1),
 	}
@@ -47,12 +40,11 @@ func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
 
 // GetMocksForMakeConsumerGenesis returns mock expectations needed to call MakeConsumerGenesis().
 func GetMocksForMakeConsumerGenesis(ctx sdk.Context, mocks *MockedKeepers,
-	unbondingTimeToInject time.Duration,
+	unbondingTimeToInject time.Duration, revisionHeight int64,
 ) []*gomock.Call {
 	return []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Return(unbondingTimeToInject, nil).Times(1),
-		mocks.MockClientKeeper.EXPECT().GetSelfConsensusState(gomock.Any(),
-			clienttypes.GetSelfHeight(ctx)).Return(&ibctmtypes.ConsensusState{}, nil).Times(1),
+		mocks.MockStakingKeeper.EXPECT().GetHistoricalInfo(gomock.Any(), revisionHeight).Times(1),
 	}
 }
 
@@ -79,13 +71,11 @@ func GetMocksForSetConsumerChain(ctx sdk.Context, mocks *MockedKeepers,
 
 // GetMocksForDeleteConsumerChain returns mock expectations needed to call `DeleteConsumerChain`
 func GetMocksForDeleteConsumerChain(ctx sdk.Context, mocks *MockedKeepers) []*gomock.Call {
-	dummyCap := &capabilitytypes.Capability{}
 	return []*gomock.Call{
 		mocks.MockChannelKeeper.EXPECT().GetChannel(gomock.Any(), types.ProviderPortID, "channelID").Return(
 			channeltypes.Channel{State: channeltypes.OPEN}, true,
 		).Times(1),
-		mocks.MockScopedKeeper.EXPECT().GetCapability(gomock.Any(), gomock.Any()).Return(dummyCap, true).Times(1),
-		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(gomock.Any(), types.ProviderPortID, "channelID", dummyCap).Times(1),
+		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(gomock.Any(), types.ProviderPortID, "channelID").Times(1),
 	}
 }
 
@@ -127,25 +117,18 @@ func ExpectLatestConsensusStateMock(ctx sdk.Context, mocks MockedKeepers, client
 		GetLatestClientConsensusState(ctx, clientID).Return(consState, true).Times(1)
 }
 
-func ExpectCreateClientMock(ctx sdk.Context, mocks MockedKeepers, clientID string, clientState *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState) *gomock.Call {
-	return mocks.MockClientKeeper.EXPECT().CreateClient(ctx, clientState, consState).Return(clientID, nil).Times(1)
-}
-
-func ExpectGetCapabilityMock(ctx sdk.Context, mocks MockedKeepers, times int) *gomock.Call {
-	return mocks.MockScopedKeeper.EXPECT().GetCapability(
-		ctx, host.PortPath(types.ConsumerPortID),
-	).Return(nil, true).Times(times)
+func ExpectCreateClientMock(ctx sdk.Context, mocks MockedKeepers, clientType, clientID string,
+	clientState, consState []byte,
+) *gomock.Call {
+	return mocks.MockClientKeeper.EXPECT().CreateClient(ctx, clientType, clientState, consState).Return(clientID,
+		nil).Times(1)
 }
 
 func GetMocksForSendIBCPacket(ctx sdk.Context, mocks MockedKeepers, channelID string, times int) []*gomock.Call {
 	return []*gomock.Call{
 		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, types.ConsumerPortID,
 			"consumerCCVChannelID").Return(channeltypes.Channel{}, true).Times(times),
-		mocks.MockScopedKeeper.EXPECT().GetCapability(ctx,
-			host.ChannelCapabilityPath(types.ConsumerPortID, "consumerCCVChannelID")).Return(
-			capabilitytypes.NewCapability(1), true).Times(times),
 		mocks.MockChannelKeeper.EXPECT().SendPacket(ctx,
-			capabilitytypes.NewCapability(1),
 			types.ConsumerPortID,
 			"consumerCCVChannelID",
 			gomock.Any(),

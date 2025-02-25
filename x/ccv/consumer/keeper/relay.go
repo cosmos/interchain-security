@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -15,8 +15,8 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	"github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // OnRecvVSCPacket sets the pending validator set changes that will be flushed to ABCI on Endblock
@@ -166,7 +166,6 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 		// Send packet over IBC
 		err := ccv.SendIBCPacket(
 			ctx,
-			k.scopedKeeper,
 			k.channelKeeper,
 			channelID,          // source channel id
 			ccv.ConsumerPortID, // source port id

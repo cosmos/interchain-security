@@ -5,20 +5,18 @@ import (
 	"fmt"
 	"strconv"
 
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
+	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
 
 	errorsmod "cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // OnChanOpenInit implements the IBCModule interface
@@ -31,7 +29,6 @@ func (am AppModule) OnChanOpenInit(
 	connectionHops []string,
 	portID string,
 	channelID string,
-	channelCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
 	version string,
 ) (string, error) {
@@ -48,7 +45,6 @@ func (am AppModule) OnChanOpenTry(
 	connectionHops []string,
 	portID,
 	channelID string,
-	chanCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (metadata string, err error) {
@@ -70,13 +66,6 @@ func (am AppModule) OnChanOpenTry(
 		return "", errorsmod.Wrapf(
 			ccv.ErrInvalidVersion, "invalid counterparty version: got: %s, expected %s",
 			counterpartyVersion, ccv.Version)
-	}
-
-	// Claim channel capability
-	if err := am.keeper.ClaimCapability(
-		ctx, chanCap, host.ChannelCapabilityPath(portID, channelID),
-	); err != nil {
-		return "", err
 	}
 
 	if err := am.keeper.VerifyConsumerChain(
@@ -174,6 +163,7 @@ func (am AppModule) OnChanCloseConfirm(
 // logic returns without error.
 func (am AppModule) OnRecvPacket(
 	ctx sdk.Context,
+	_ string,
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
@@ -270,6 +260,7 @@ func UnmarshalConsumerPacketData(packetData []byte) (consumerPacket ccv.Consumer
 // OnAcknowledgementPacket implements the IBCModule interface
 func (am AppModule) OnAcknowledgementPacket(
 	ctx sdk.Context,
+	_ string,
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 	_ sdk.AccAddress,
@@ -314,6 +305,7 @@ func (am AppModule) OnAcknowledgementPacket(
 // OnTimeoutPacket implements the IBCModule interface
 func (am AppModule) OnTimeoutPacket(
 	ctx sdk.Context,
+	_ string,
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) error {

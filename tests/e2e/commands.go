@@ -11,13 +11,13 @@ import (
 	"strconv"
 	"strings"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
 
-	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	e2e "github.com/cosmos/interchain-security/v7/tests/e2e/testlib"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )
 
 // Commands contains a collection of commands which can executed
@@ -786,7 +786,7 @@ func (tr Commands) GetConsumerCommissionRate(consumerChain ChainID, validator Va
 	return rate
 }
 
-// QueryTransaction returns the content of the transaction or an error e.g. when a transaction coudl
+// QueryTransaction returns the content of the transaction or an error e.g. when a transaction could
 func (tr Commands) QueryTransaction(chain ChainID, txhash string) ([]byte, error) {
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	cmd := tr.Target.ExecCommand(binaryName,
@@ -798,7 +798,7 @@ func (tr Commands) QueryTransaction(chain ChainID, txhash string) ([]byte, error
 }
 
 // SubmitGovProposal sends a gov proposal transaction with given command and proposal content
-func (tr Commands) SubmitGovProposal(chain ChainID, from ValidatorID, command string, proposal string, verbose bool) ([]byte, error) {
+func (tr Commands) SubmitGovProposal(chain ChainID, from ValidatorID, command, proposal string, verbose bool) ([]byte, error) {
 	// #nosec G204 -- bypass unsafe quoting warning (no production code)
 	proposalFile := "/temp-proposal.json"
 	bz, err := tr.Target.ExecCommand(
@@ -837,7 +837,6 @@ func (tr Commands) CreateConsumer(
 	initParams *types.ConsumerInitializationParameters,
 	powerShapingParams *types.PowerShapingParameters,
 ) ([]byte, error) {
-
 	msg := types.MsgCreateConsumer{
 		ChainId:                  string(consumerChain),
 		Metadata:                 metadata,
@@ -904,7 +903,7 @@ func (tr Commands) UpdateConsumer(providerChain ChainID, validator ValidatorID, 
 	return cmd.CombinedOutput()
 }
 
-func (tr Commands) AssignConsumerPubKey(identifier string, pubKey string, from ValidatorID, gas, home, node string, verbose bool) ([]byte, error) {
+func (tr Commands) AssignConsumerPubKey(identifier, pubKey string, from ValidatorID, gas, home, node string, verbose bool) ([]byte, error) {
 	consumerId := identifier
 	binaryName := tr.ChainConfigs[ChainID("provi")].BinaryName
 	cmd := tr.Target.ExecCommand(

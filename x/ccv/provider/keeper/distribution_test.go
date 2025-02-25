@@ -3,10 +3,10 @@ package keeper_test
 import (
 	"testing"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v10/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -16,8 +16,8 @@ import (
 
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )
 
 func TestComputeConsumerTotalVotingPower(t *testing.T) {
@@ -389,6 +389,7 @@ func TestConsumerRewardsAllocationByDenom(t *testing.T) {
 	}
 
 	err = providerKeeper.SetConsumerRewardsAllocationByDenom(ctx, consumerId, denom, rewardAllocation)
+	require.NoError(t, err)
 	rewards, err = providerKeeper.GetConsumerRewardsAllocationByDenom(ctx, consumerId, denom)
 	require.Equal(t, rewardAllocation, rewards)
 	require.NoError(t, err)

@@ -148,7 +148,6 @@ func (s *TestConfig) ValidateStringLiterals() {
 // If provided version is before v1.6.0 then a configuration based on template for v1.4.x is returned
 // otherwise the returned configuration is based on template v1.4.
 func GetHermesConfig(hermesVersion, queryNodeIP string, chainCfg ChainConfig, isConsumer bool) string {
-
 	ChainId := chainCfg.ChainId
 	keyName := "query"
 	rpcAddr := "http://" + queryNodeIP + ":26658"

@@ -13,8 +13,8 @@ import (
 
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // ParseConsumerKey parses the ED25519 PubKey`consumerKey` from a JSON string

@@ -5,13 +5,14 @@ import (
 	"sort"
 
 	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // GetConsumerChainConsensusValidatorsKey returns the store key for consumer validators of the consumer chain with `consumerId`

@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v10/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
 	"github.com/stretchr/testify/require"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -14,9 +14,9 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v6/testutil/crypto"
-	"github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	"github.com/cosmos/interchain-security/v7/testutil/crypto"
+	"github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 const (

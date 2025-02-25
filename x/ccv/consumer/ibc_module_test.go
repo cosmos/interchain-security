@@ -3,20 +3,18 @@ package consumer_test
 import (
 	"testing"
 
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
+	transfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
+	conntypes "github.com/cosmos/ibc-go/v10/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
-	"github.com/cosmos/interchain-security/v6/x/ccv/consumer"
-	consumerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
-	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"
+	"github.com/cosmos/interchain-security/v7/x/ccv/consumer"
+	consumerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/consumer/keeper"
+	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // TestOnChanOpenInit validates the consumer's OnChanOpenInit implementation against the spec.
@@ -32,7 +30,6 @@ func TestOnChanOpenInit(t *testing.T) {
 		connectionHops []string
 		portID         string
 		channelID      string
-		chanCap        *capabilitytypes.Capability
 		counterparty   channeltypes.Counterparty
 		version        string
 	}
@@ -46,9 +43,6 @@ func TestOnChanOpenInit(t *testing.T) {
 		{
 			"success", func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
 				gomock.InOrder(
-					mocks.MockScopedKeeper.EXPECT().ClaimCapability(
-						params.ctx, params.chanCap, host.ChannelCapabilityPath(
-							params.portID, params.channelID)).Return(nil).Times(1),
 					mocks.MockConnectionKeeper.EXPECT().GetConnection(
 						params.ctx, "connectionIDToProvider").Return(
 						conntypes.ConnectionEnd{ClientId: "clientIDToProvider"}, true).Times(1),
@@ -59,9 +53,6 @@ func TestOnChanOpenInit(t *testing.T) {
 			"should succeed when IBC module version isn't provided", func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
 				params.version = ""
 				gomock.InOrder(
-					mocks.MockScopedKeeper.EXPECT().ClaimCapability(
-						params.ctx, params.chanCap, host.ChannelCapabilityPath(
-							params.portID, params.channelID)).Return(nil).Times(1),
 					mocks.MockConnectionKeeper.EXPECT().GetConnection(
 						params.ctx, "connectionIDToProvider").Return(
 						conntypes.ConnectionEnd{ClientId: "clientIDToProvider"}, true).Times(1),
@@ -108,9 +99,6 @@ func TestOnChanOpenInit(t *testing.T) {
 			"invalid clientID to provider",
 			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
 				gomock.InOrder(
-					mocks.MockScopedKeeper.EXPECT().ClaimCapability(
-						params.ctx, params.chanCap, host.ChannelCapabilityPath(
-							params.portID, params.channelID)).Return(nil).Times(1),
 					mocks.MockConnectionKeeper.EXPECT().GetConnection(
 						params.ctx, "connectionIDToProvider").Return(
 						conntypes.ConnectionEnd{ClientId: "unexpectedClientID"}, true).Times(1), // unexpected clientID
@@ -137,7 +125,6 @@ func TestOnChanOpenInit(t *testing.T) {
 			connectionHops: []string{"connectionIDToProvider"},
 			portID:         ccv.ConsumerPortID,
 			channelID:      "consumerChannelID",
-			chanCap:        &capabilitytypes.Capability{},
 			counterparty:   channeltypes.NewCounterparty(ccv.ProviderPortID, "providerChannelID"),
 			version:        ccv.Version,
 		}
@@ -150,7 +137,6 @@ func TestOnChanOpenInit(t *testing.T) {
 			params.connectionHops,
 			params.portID,
 			params.channelID,
-			params.chanCap,
 			params.counterparty,
 			params.version,
 		)
@@ -187,7 +173,6 @@ func TestOnChanOpenTry(t *testing.T) {
 		[]string{"connection-1"},
 		ccv.ConsumerPortID,
 		"channel-1",
-		nil,
 		channeltypes.NewCounterparty(ccv.ProviderPortID, "channel-1"),
 		ccv.Version,
 	)
@@ -220,7 +205,7 @@ func TestOnChanOpenAck(t *testing.T) {
 				// Expected msg
 				distrTransferMsg := channeltypes.NewMsgChannelOpenInit(
 					transfertypes.PortID,
-					transfertypes.Version,
+					transfertypes.V1,
 					channeltypes.UNORDERED,
 					[]string{"connectionID"},
 					transfertypes.PortID,

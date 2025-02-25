@@ -9,9 +9,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	cryptoutil "github.com/cosmos/interchain-security/v6/testutil/crypto"
-	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	cryptoutil "github.com/cosmos/interchain-security/v7/testutil/crypto"
+	providerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )
 
 // Tests that all singular keys, or prefixes to fully resolves keys are non duplicate byte values.
@@ -111,7 +111,7 @@ func TestPreserveBytePrefix(t *testing.T) {
 	require.Equal(t, byte(37), providertypes.DenylistKeyPrefix())
 	i++
 	// DEPRECATED
-	//require.Equal(t, byte(38), providertypes.ConsumerRewardsAllocationKey("13")[0])
+	// require.Equal(t, byte(38), providertypes.ConsumerRewardsAllocationKey("13")[0])
 	i++
 	require.Equal(t, byte(39), providertypes.ConsumerCommissionRateKeyPrefix())
 	i++

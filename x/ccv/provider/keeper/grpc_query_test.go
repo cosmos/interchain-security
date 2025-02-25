@@ -8,24 +8,25 @@ import (
 	"testing"
 	"time"
 
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
+	ibctm "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkquery "github.com/cosmos/cosmos-sdk/types/query"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 
-	sdkquery "github.com/cosmos/cosmos-sdk/types/query"
-	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
-	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	cryptotestutil "github.com/cosmos/interchain-security/v6/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	cryptotestutil "github.com/cosmos/interchain-security/v7/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 func TestQueryAllPairsValConsAddrByConsumer(t *testing.T) {
@@ -477,7 +478,8 @@ func TestGetConsumerChain(t *testing.T) {
 		{}, // no denoms
 		{Denoms: []string{"ibc/1", "ibc/2"}},
 		{Denoms: []string{"ibc/3", "ibc/4", "ibc/5"}},
-		{Denoms: []string{"ibc/6"}}}
+		{Denoms: []string{"ibc/6"}},
+	}
 
 	expectedGetAllOrder := []types.Chain{}
 	for i, consumerID := range consumerIDs {

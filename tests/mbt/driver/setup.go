@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v10/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
@@ -30,12 +30,12 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	icstestingutils "github.com/cosmos/interchain-security/v6/testutil/ibc_testing"
-	"github.com/cosmos/interchain-security/v6/testutil/integration"
-	simibc "github.com/cosmos/interchain-security/v6/testutil/simibc"
-	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v7/testutil/ibc_testing"
+	"github.com/cosmos/interchain-security/v7/testutil/integration"
+	simibc "github.com/cosmos/interchain-security/v7/testutil/simibc"
+	consumertypes "github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 const (
@@ -287,12 +287,11 @@ func newChain(
 		Coordinator: coord,
 		ChainID:     chainID,
 		App:         app,
-		CurrentHeader: cmtproto.Header{
+		ProposedHeader: cmtproto.Header{
 			ChainID: chainID,
 			Height:  1,
 			Time:    coord.CurrentTime.UTC(),
 		},
-		QueryServer:    app.GetIBCKeeper(),
 		TxConfig:       app.GetTxConfig(),
 		Codec:          app.AppCodec(),
 		Vals:           validators,
@@ -343,7 +342,7 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 
 	consumerClientState := ibctmtypes.NewClientState(
 		providerChain.ChainID, tmCfg.TrustLevel, tmCfg.TrustingPeriod, tmCfg.UnbondingPeriod, tmCfg.MaxClockDrift,
-		providerChain.LastHeader.GetHeight().(clienttypes.Height), commitmenttypes.GetSDKSpecs(),
+		providerChain.LatestCommittedHeader.GetHeight().(clienttypes.Height), commitmenttypes.GetSDKSpecs(),
 		[]string{"upgrade", "upgradedIBCState"},
 	)
 
@@ -428,7 +427,7 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 }
 
 func (s *Driver) providerHeader() *ibctmtypes.Header {
-	return s.coordinator.Chains["provider"].LastHeader
+	return s.coordinator.Chains["provider"].LatestCommittedHeader
 }
 
 func (s *Driver) setupProvider(
@@ -489,7 +488,7 @@ func (s *Driver) setupConsumer(
 }
 
 func createConsumerGenesis(modelParams ModelParams, providerChain *ibctesting.TestChain, consumerClientState *ibctmtypes.ClientState) *consumertypes.GenesisState {
-	providerConsState := providerChain.LastHeader.ConsensusState()
+	providerConsState := providerChain.LatestCommittedHeader.ConsensusState()
 
 	valUpdates := cmttypes.TM2PB.ValidatorUpdates(providerChain.Vals)
 	params := ccvtypes.NewParams(

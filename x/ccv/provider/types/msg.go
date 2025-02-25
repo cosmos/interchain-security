@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
@@ -19,7 +17,7 @@ import (
 	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 const (
@@ -310,7 +308,7 @@ func IsReservedChainId(chainId string) bool {
 // ValidateChainId validates that the chain id is valid and is not reserved.
 // Can be called for the `MsgUpdateConsumer.NewChainId` field as well, so this method takes the `field` as an argument
 // to return more appropriate error messages in case the validation fails.
-func ValidateChainId(field string, chainId string) error {
+func ValidateChainId(field, chainId string) error {
 	if err := ValidateStringField(field, chainId, cmttypes.MaxChainIDLen); err != nil {
 		return errorsmod.Wrapf(ErrInvalidMsgCreateConsumer, "%s: %s", field, err.Error())
 	}
@@ -574,7 +572,7 @@ func ValidateAllowlistedRewardDenoms(allowlistedRewardDenoms AllowlistedRewardDe
 	}
 
 	for _, denom := range allowlistedRewardDenoms.Denoms {
-		if err := types.ValidateIBCDenom(denom); err != nil {
+		if err := ccvtypes.ValidateIBCDenom(denom); err != nil {
 			return errorsmod.Wrapf(ErrInvalidAllowlistedRewardDenoms, "Invalid denom (%s): %s", denom, err.Error())
 		}
 	}

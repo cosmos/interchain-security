@@ -146,7 +146,6 @@ func (tr *TestRunner) CleanUp() error {
 }
 
 func CreateTestRunner(config TestConfig, stepChoice StepChoice, target ExecutionTarget, verbose bool) TestRunner {
-
 	return TestRunner{
 		target:     target,
 		stepChoice: stepChoice,

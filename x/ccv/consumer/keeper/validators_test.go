@@ -15,10 +15,10 @@ import (
 	tmrand "github.com/cometbft/cometbft/libs/rand"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v6/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
-	"github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
-	"github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v7/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"
+	"github.com/cosmos/interchain-security/v7/x/ccv/consumer/keeper"
+	"github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
 )
 
 // TestApplyCCValidatorChanges tests the ApplyCCValidatorChanges method for a consumer keeper

@@ -9,11 +9,11 @@ import (
 
 	"cosmossdk.io/math"
 
-	appConsumer "github.com/cosmos/interchain-security/v6/app/consumer"
-	appProvider "github.com/cosmos/interchain-security/v6/app/provider"
-	icstestingutils "github.com/cosmos/interchain-security/v6/testutil/ibc_testing"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	appConsumer "github.com/cosmos/interchain-security/v7/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/v7/app/provider"
+	icstestingutils "github.com/cosmos/interchain-security/v7/testutil/ibc_testing"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // we need a stake multiplier because tokens do not directly correspond to voting power
@@ -137,7 +137,7 @@ func TestMinStake(t *testing.T) {
 			}
 
 			// check the validator set on the consumer chain is the original one
-			consuValSet := s.consumerChain.LastHeader.ValidatorSet
+			consuValSet := s.consumerChain.LatestCommittedHeader.ValidatorSet
 			s.Require().Equal(len(consuValSet.Validators), 4)
 
 			// get just the powers of the consu val set
@@ -181,7 +181,7 @@ func TestMinStake(t *testing.T) {
 			s.consumerChain.NextBlock()
 
 			// construct the new val powers
-			newConsuValSet := s.consumerChain.LastHeader.ValidatorSet
+			newConsuValSet := s.consumerChain.LatestCommittedHeader.ValidatorSet
 			newConsuValPowers := make([]int64, len(newConsuValSet.Validators))
 			for i, consuVal := range newConsuValSet.Validators {
 				// voting power corresponds to staked tokens at a 1:stake_multiplier ratio

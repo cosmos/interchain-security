@@ -5,20 +5,20 @@ import (
 	"fmt"
 	"testing"
 
-	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	transfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 	"github.com/stretchr/testify/suite"
 
 	store "cosmossdk.io/store/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	icstestingutils "github.com/cosmos/interchain-security/v6/testutil/ibc_testing"
-	testutil "github.com/cosmos/interchain-security/v6/testutil/integration"
-	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v7/testutil/ibc_testing"
+	testutil "github.com/cosmos/interchain-security/v7/testutil/integration"
+	consumertypes "github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // Callback for instantiating a new coordinator with a provider test chains
@@ -258,8 +258,8 @@ func initConsumerChain(
 	bundle.TransferPath = ibctesting.NewPath(bundle.Chain, s.providerChain)
 	bundle.TransferPath.EndpointA.ChannelConfig.PortID = transfertypes.PortID
 	bundle.TransferPath.EndpointB.ChannelConfig.PortID = transfertypes.PortID
-	bundle.TransferPath.EndpointA.ChannelConfig.Version = transfertypes.Version
-	bundle.TransferPath.EndpointB.ChannelConfig.Version = transfertypes.Version
+	bundle.TransferPath.EndpointA.ChannelConfig.Version = transfertypes.V1
+	bundle.TransferPath.EndpointB.ChannelConfig.Version = transfertypes.V1
 
 	// commit state on this consumer chain
 	s.coordinator.CommitBlock(bundle.Chain)
@@ -289,26 +289,8 @@ func (suite *CCVTestSuite) SetupAllCCVChannels() {
 }
 
 func (suite *CCVTestSuite) SetupCCVChannel(path *ibctesting.Path) {
-	suite.coordinator.CreateConnections(path)
-	suite.ExecuteCCVChannelHandshake(path)
-}
-
-func (suite *CCVTestSuite) ExecuteCCVChannelHandshake(path *ibctesting.Path) {
-	err := path.EndpointA.ChanOpenInit()
-	suite.Require().NoError(err)
-
-	err = path.EndpointB.ChanOpenTry()
-	suite.Require().NoError(err)
-
-	err = path.EndpointA.ChanOpenAck()
-	suite.Require().NoError(err)
-
-	err = path.EndpointB.ChanOpenConfirm()
-	suite.Require().NoError(err)
-
-	// ensure counterparty is up to date
-	err = path.EndpointA.UpdateClient()
-	suite.Require().NoError(err)
+	path.CreateConnections()
+	path.CreateChannels()
 }
 
 // TODO: Make SetupTransferChannel functional for multiple consumers by pattern matching SetupCCVChannel.
@@ -377,7 +359,7 @@ func (suite *CCVTestSuite) SetupAllTransferChannels() {
 	}
 }
 
-func (s *CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestingutils.ConsumerBundle) { //nolint:govet // this is a test so we can copy locks
+func (s *CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestingutils.ConsumerBundle) {
 	consumerKeeper := consumerBundle.GetKeeper()
 	providerStakingKeeper := s.providerApp.GetTestStakingKeeper()
 

@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v10/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -18,11 +18,11 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v6/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
-	consumerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	"github.com/cosmos/interchain-security/v7/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"
+	consumerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // TestInitGenesis tests that a consumer chain is correctly initialised from genesis.
@@ -32,6 +32,7 @@ func TestInitGenesis(t *testing.T) {
 	// mock the consumer genesis state values
 	provClientID := "tendermint-07"
 	provChannelID := "ChannelID"
+	provClientType := "07-tendermint"
 
 	vscID := uint64(0)
 	blockHeight := uint64(0)
@@ -100,10 +101,13 @@ func TestInitGenesis(t *testing.T) {
 		{
 			"start a new chain",
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers) {
+				clientStateBytes, err := provClientState.Marshal()
+				require.NoError(t, err)
+				consStateBytes, err := provConsState.Marshal()
+				require.NoError(t, err)
 				gomock.InOrder(
-					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 1),
-					testkeeper.ExpectCreateClientMock(ctx, mocks, provClientID, provClientState, provConsState),
-					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 1),
+					testkeeper.ExpectCreateClientMock(ctx, mocks, provClientType, provClientID, clientStateBytes,
+						consStateBytes),
 				)
 			},
 			consumertypes.NewInitialGenesisState(
@@ -113,8 +117,6 @@ func TestInitGenesis(t *testing.T) {
 				params,
 			),
 			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
-				assertConsumerPortIsBound(t, ctx, &ck)
-
 				assertProviderClientID(t, ctx, &ck, provClientID)
 				assertHeightValsetUpdateIDs(t, ctx, &ck, defaultHeightValsetUpdateIDs)
 
@@ -124,9 +126,6 @@ func TestInitGenesis(t *testing.T) {
 		}, {
 			"restart a chain without an established CCV channel",
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers) {
-				gomock.InOrder(
-					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 2),
-				)
 			},
 			consumertypes.NewRestartGenesisState(
 				provClientID,
@@ -139,8 +138,6 @@ func TestInitGenesis(t *testing.T) {
 				params,
 			),
 			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
-				assertConsumerPortIsBound(t, ctx, &ck)
-
 				obtainedPendingPackets := ck.GetPendingPackets(ctx)
 				for idx, expectedPacketData := range pendingDataPackets.List {
 					require.Equal(t, expectedPacketData.Type, obtainedPendingPackets[idx].Type)
@@ -158,9 +155,7 @@ func TestInitGenesis(t *testing.T) {
 				// simulate a CCV channel handshake completion
 				params.DistributionTransmissionChannel = "distribution-channel"
 				params.ProviderFeePoolAddrStr = "provider-fee-pool-address"
-				gomock.InOrder(
-					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 2),
-				)
+				gomock.InOrder()
 			},
 			// create a genesis for a restarted chain
 			consumertypes.NewRestartGenesisState(
@@ -176,8 +171,6 @@ func TestInitGenesis(t *testing.T) {
 				params,
 			),
 			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
-				assertConsumerPortIsBound(t, ctx, &ck)
-
 				gotChannelID, ok := ck.GetProviderChannel(ctx)
 				require.True(t, ok)
 				require.Equal(t, provChannelID, gotChannelID)
@@ -356,13 +349,6 @@ func TestExportGenesis(t *testing.T) {
 			require.EqualValues(t, tc.expGenesis, gotGen)
 		})
 	}
-}
-
-// assert that the default CCV consumer port ID is stored and bounded
-func assertConsumerPortIsBound(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper) {
-	t.Helper()
-	require.Equal(t, ck.GetPort(ctx), string(ccv.ConsumerPortID))
-	require.True(t, ck.IsBound(ctx, ccv.ConsumerPortID))
 }
 
 // assert that the given client ID matches the provider client ID in the store

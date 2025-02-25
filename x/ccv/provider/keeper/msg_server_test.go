@@ -4,17 +4,17 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/math"
-	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	"github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	"github.com/golang/mock/gomock"
-
 	"github.com/stretchr/testify/require"
+
+	"cosmossdk.io/math"
 
 	"github.com/cosmos/cosmos-sdk/codec/address"
 
-	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )
 
 func TestCreateConsumer(t *testing.T) {

@@ -13,17 +13,18 @@ import (
 	"github.com/cosmos/ibc-go/modules/capability"
 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-	"github.com/cosmos/ibc-go/v8/modules/apps/transfer"
-	ibctransferkeeper "github.com/cosmos/ibc-go/v8/modules/apps/transfer/keeper"
-	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	ibc "github.com/cosmos/ibc-go/v8/modules/core"
-	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
-	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
-	ibchost "github.com/cosmos/ibc-go/v8/modules/core/exported"
-	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
-	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
-	ibctestingtypes "github.com/cosmos/ibc-go/v8/testing/types"
+	"github.com/cosmos/ibc-go/v10/modules/apps/transfer"
+	ibctransferkeeper "github.com/cosmos/ibc-go/v10/modules/apps/transfer/keeper"
+	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
+	ibc "github.com/cosmos/ibc-go/v10/modules/core"
+	ibcconnectiontypes "github.com/cosmos/ibc-go/v10/modules/core/03-connection/types"
+	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
+	ibchost "github.com/cosmos/ibc-go/v10/modules/core/exported"
+	ibckeeper "github.com/cosmos/ibc-go/v10/modules/core/keeper"
+	ibctm "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v10/testing"
+	// TODO eric
+	// ibctestingtypes "github.com/cosmos/ibc-go/v10/testing/types"
 	"github.com/spf13/cast"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
@@ -38,7 +39,6 @@ import (
 	"cosmossdk.io/x/feegrant"
 	feegrantkeeper "cosmossdk.io/x/feegrant/keeper"
 	feegrantmodule "cosmossdk.io/x/feegrant/module"
-
 	// add mint
 	"cosmossdk.io/x/upgrade"
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
@@ -109,13 +109,14 @@ import (
 	tmjson "github.com/cometbft/cometbft/libs/json"
 	tmos "github.com/cometbft/cometbft/libs/os"
 
-	appencoding "github.com/cosmos/interchain-security/v6/app/encoding"
-	testutil "github.com/cosmos/interchain-security/v6/testutil/integration"
-	consumer "github.com/cosmos/interchain-security/v6/x/ccv/consumer"
-	consumerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
-	ccvdistr "github.com/cosmos/interchain-security/v6/x/ccv/democracy/distribution"
-	ccvstaking "github.com/cosmos/interchain-security/v6/x/ccv/democracy/staking"
+	appencoding "github.com/cosmos/interchain-security/v7/app/encoding"
+	testutil "github.com/cosmos/interchain-security/v7/testutil/integration"
+	consumer "github.com/cosmos/interchain-security/v7/x/ccv/consumer"
+	consumerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
+	ccvdistr "github.com/cosmos/interchain-security/v7/x/ccv/democracy/distribution"
+	ccvstaking "github.com/cosmos/interchain-security/v7/x/ccv/democracy/staking"
+	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 const (
@@ -438,26 +439,13 @@ func New(
 	app.ConsumerKeeper = consumerkeeper.NewNonZeroKeeper(
 		appCodec,
 		keys[consumertypes.StoreKey],
-		app.GetSubspace(consumertypes.ModuleName),
 	)
 
 	app.IBCKeeper = ibckeeper.NewKeeper(
 		appCodec,
-		keys[ibchost.StoreKey],
+		runtime.NewKVStoreService(keys[ibchost.StoreKey]),
 		app.GetSubspace(ibchost.ModuleName),
-		app.ConsumerKeeper,
 		app.UpgradeKeeper,
-		scopedIBCKeeper,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
-
-	app.IBCKeeper = ibckeeper.NewKeeper(
-		appCodec,
-		keys[ibchost.StoreKey],
-		app.GetSubspace(ibchost.ModuleName),
-		&app.ConsumerKeeper,
-		app.UpgradeKeeper,
-		scopedIBCKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
@@ -465,10 +453,7 @@ func New(
 	app.ConsumerKeeper = consumerkeeper.NewKeeper(
 		appCodec,
 		keys[consumertypes.StoreKey],
-		app.GetSubspace(consumertypes.ModuleName),
-		scopedIBCConsumerKeeper,
 		app.IBCKeeper.ChannelKeeper,
-		app.IBCKeeper.PortKeeper,
 		app.IBCKeeper.ConnectionKeeper,
 		app.IBCKeeper.ClientKeeper,
 		app.SlashingKeeper,
@@ -501,14 +486,12 @@ func New(
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec,
-		keys[ibctransfertypes.StoreKey],
+		runtime.NewKVStoreService(keys[ibctransfertypes.StoreKey]),
 		app.GetSubspace(ibctransfertypes.ModuleName),
 		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.ChannelKeeper,
-		app.IBCKeeper.PortKeeper,
 		app.AccountKeeper,
 		app.BankKeeper,
-		scopedTransferKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
@@ -517,7 +500,7 @@ func New(
 	// create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ibcmodule)
-	ibcRouter.AddRoute(consumertypes.ModuleName, consumerModule)
+	ibcRouter.AddRoute(ccvtypes.ConsumerPortID, consumerModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	// create evidence keeper with router
@@ -533,6 +516,9 @@ func New(
 	app.EvidenceKeeper = *evidenceKeeper
 
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
+
+	tmLightClientModule := ibctm.NewLightClientModule(appCodec, app.IBCKeeper.ClientKeeper.GetStoreProvider())
+	app.IBCKeeper.ClientKeeper.AddRoute(ibctm.ModuleName, tmLightClientModule)
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
@@ -559,7 +545,7 @@ func New(
 		params.NewAppModule(app.ParamsKeeper),
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		ibc.NewAppModule(app.IBCKeeper),
-		ibctm.NewAppModule(),
+		ibctm.NewAppModule(tmLightClientModule),
 		transferModule,
 		consumerModule,
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
@@ -933,8 +919,8 @@ func (app *App) GetBaseApp() *baseapp.BaseApp {
 }
 
 // GetStakingKeeper implements the TestingApp interface.
-func (app *App) GetStakingKeeper() ibctestingtypes.StakingKeeper {
-	return app.ConsumerKeeper
+func (app *App) GetStakingKeeper() *consumerkeeper.Keeper {
+	return &app.ConsumerKeeper
 }
 
 // GetIBCKeeper implements the TestingApp interface.

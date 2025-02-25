@@ -12,7 +12,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
+	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"
 )
 
 // TestStakingKeeperInterface tests

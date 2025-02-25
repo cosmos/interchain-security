@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,11 +13,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/cosmos/interchain-security/v6/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	"github.com/cosmos/interchain-security/v7/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )
 
 // Tests the provider's InitGenesis implementation against the spec.
@@ -113,29 +111,6 @@ func TestInitGenesis(t *testing.T) {
 		cdc := keeperParams.Cdc
 		jsonBytes := cdc.MustMarshalJSON(genState)
 
-		//
-		// Assert mocked logic before method executes
-		//
-		orderedCalls := []*gomock.Call{
-			mocks.MockScopedKeeper.EXPECT().GetCapability(
-				ctx, host.PortPath(ccv.ProviderPortID),
-			).Return(
-				&capabilitytypes.Capability{},
-				tc.isBound, // Capability is returned successfully if port capability is already bound to this module.
-			),
-		}
-
-		// If port capability is not already bound, port will be bound and capability claimed.
-		if !tc.isBound {
-			dummyCap := &capabilitytypes.Capability{}
-
-			orderedCalls = append(orderedCalls,
-				mocks.MockPortKeeper.EXPECT().BindPort(ctx, ccv.ProviderPortID).Return(dummyCap),
-				mocks.MockScopedKeeper.EXPECT().ClaimCapability(
-					ctx, dummyCap, host.PortPath(ccv.ProviderPortID)).Return(tc.errFromClaimCap),
-			)
-		}
-
 		// Last total power is queried in InitGenesis, only if method has not
 		// already panicked from unowned capability.
 		if !tc.expPanic {
@@ -145,55 +120,55 @@ func TestInitGenesis(t *testing.T) {
 			valAddr, err := sdk.ValAddressFromBech32(validator.GetOperator())
 			require.NoError(t, err)
 
-			orderedCalls = append(orderedCalls,
+			orderedCalls := []*gomock.Call{
 				mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
 					ctx).Return(math.NewInt(100), nil).Times(1), // Return total voting power as 100
 				mocks.MockStakingKeeper.EXPECT().GetBondedValidatorsByPower(
 					ctx).Return([]stakingtypes.Validator{validator}, nil).Times(1), // Return a single validator
 				mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
 					ctx, valAddr).Return(int64(100), nil).Times(1), // Return total power as power of the single validator
-			)
+			}
+
+			gomock.InOrder(orderedCalls...)
+
+			//
+			// Execute method, then assert expected results
+			//
+			if tc.expPanic {
+				require.Panics(t, assert.PanicTestFunc(func() {
+					appModule.InitGenesis(ctx, cdc, jsonBytes)
+				}), tc.name)
+				continue // Nothing else to verify
+			}
+
+			appModule.InitGenesis(ctx, cdc, jsonBytes)
+
+			numStatesCounted := 0
+			for _, state := range tc.consumerStates {
+				numStatesCounted += 1
+				channelID, found := providerKeeper.GetConsumerIdToChannelId(ctx, state.ChainId)
+				require.True(t, found)
+				require.Equal(t, state.ChannelId, channelID)
+
+				chainID, found := providerKeeper.GetChannelIdToConsumerId(ctx, state.ChannelId)
+				require.True(t, found)
+				require.Equal(t, state.ChainId, chainID)
+			}
+			require.Equal(t, len(tc.consumerStates), numStatesCounted)
+
+			// Expect slash meter to be initialized to it's allowance value
+			// (replenish fraction * mocked value defined above)
+			slashMeter := providerKeeper.GetSlashMeter(ctx)
+			replenishFraction, err := math.LegacyNewDecFromStr(providerKeeper.GetParams(ctx).SlashMeterReplenishFraction)
+			require.NoError(t, err)
+			expectedSlashMeterValue := math.NewInt(replenishFraction.MulInt(math.NewInt(100)).RoundInt64())
+			require.Equal(t, expectedSlashMeterValue, slashMeter)
+
+			// Expect slash meter replenishment time candidate to be set to the current block time + replenish period
+			expectedNextReplenishTime := ctx.BlockTime().Add(providerKeeper.GetSlashMeterReplenishPeriod(ctx))
+			require.Equal(t, expectedNextReplenishTime, providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
+
+			ctrl.Finish()
 		}
-
-		gomock.InOrder(orderedCalls...)
-
-		//
-		// Execute method, then assert expected results
-		//
-		if tc.expPanic {
-			require.Panics(t, assert.PanicTestFunc(func() {
-				appModule.InitGenesis(ctx, cdc, jsonBytes)
-			}), tc.name)
-			continue // Nothing else to verify
-		}
-
-		appModule.InitGenesis(ctx, cdc, jsonBytes)
-
-		numStatesCounted := 0
-		for _, state := range tc.consumerStates {
-			numStatesCounted += 1
-			channelID, found := providerKeeper.GetConsumerIdToChannelId(ctx, state.ChainId)
-			require.True(t, found)
-			require.Equal(t, state.ChannelId, channelID)
-
-			chainID, found := providerKeeper.GetChannelIdToConsumerId(ctx, state.ChannelId)
-			require.True(t, found)
-			require.Equal(t, state.ChainId, chainID)
-		}
-		require.Equal(t, len(tc.consumerStates), numStatesCounted)
-
-		// Expect slash meter to be initialized to it's allowance value
-		// (replenish fraction * mocked value defined above)
-		slashMeter := providerKeeper.GetSlashMeter(ctx)
-		replenishFraction, err := math.LegacyNewDecFromStr(providerKeeper.GetParams(ctx).SlashMeterReplenishFraction)
-		require.NoError(t, err)
-		expectedSlashMeterValue := math.NewInt(replenishFraction.MulInt(math.NewInt(100)).RoundInt64())
-		require.Equal(t, expectedSlashMeterValue, slashMeter)
-
-		// Expect slash meter replenishment time candidate to be set to the current block time + replenish period
-		expectedNextReplenishTime := ctx.BlockTime().Add(providerKeeper.GetSlashMeterReplenishPeriod(ctx))
-		require.Equal(t, expectedNextReplenishTime, providerKeeper.GetSlashMeterReplenishTimeCandidate(ctx))
-
-		ctrl.Finish()
 	}
 }
