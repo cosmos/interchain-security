@@ -264,6 +264,6 @@ replace (
 	github.com/cosmos/interchain-security/v7 => ../../
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	// Remove this when strangelove-ventures updates the interchain tests to support ibc-go v10
-	github.com/strangelove-ventures/interchaintest/v8 => github.com/Eric-Warehime/interchaintest/v8 v8.0.0-20250224162529-535379c62c73
+	github.com/strangelove-ventures/interchaintest/v8 => github.com/cosmos/interchaintest/v8 v8.8.2-0.20250224162529-535379c62c73
 	github.com/vedhavyas/go-subkey => github.com/strangelove-ventures/go-subkey v1.0.7
 )

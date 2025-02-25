@@ -230,8 +230,6 @@ github.com/DataDog/datadog-go v4.8.3+incompatible h1:fNGaYSuObuQb5nzeTQqowRAd9bp
 github.com/DataDog/datadog-go v4.8.3+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/zstd v1.5.5 h1:oWf5W7GtOLgp6bciQYDmhHHjdhYkALu6S/5Ni9ZgSvQ=
 github.com/DataDog/zstd v1.5.5/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwSAmyw=
-github.com/Eric-Warehime/interchaintest/v8 v8.0.0-20250224162529-535379c62c73 h1:hiyrvUWtRUpeDO6UW7NevYMMtwGfjDbgM2RbV5BdUBQ=
-github.com/Eric-Warehime/interchaintest/v8 v8.0.0-20250224162529-535379c62c73/go.mod h1:KNWCIEW8CxiqoDEXJTXcAfd83+NOx7B4H4RuFsj+yDc=
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
@@ -396,6 +394,8 @@ github.com/cosmos/ibc-go/v10 v10.0.0-beta.0.0.20250218182351-fcb6809d58dd h1:s/5
 github.com/cosmos/ibc-go/v10 v10.0.0-beta.0.0.20250218182351-fcb6809d58dd/go.mod h1:ikF0o+cl0V7jwwe74fceRD5N2T7yfpRZju2fVJDdcu8=
 github.com/cosmos/ics23/go v0.11.0 h1:jk5skjT0TqX5e5QJbEnwXIS2yI2vnmLOgpQPeM5RtnU=
 github.com/cosmos/ics23/go v0.11.0/go.mod h1:A8OjxPE67hHST4Icw94hOxxFEJMBG031xIGF/JHNIY0=
+github.com/cosmos/interchaintest/v8 v8.8.2-0.20250224162529-535379c62c73 h1:cIWTHr2fXdqNrVaFHz92g28SeYKDkF1PN6/Tm+kZMdQ=
+github.com/cosmos/interchaintest/v8 v8.8.2-0.20250224162529-535379c62c73/go.mod h1:KNWCIEW8CxiqoDEXJTXcAfd83+NOx7B4H4RuFsj+yDc=
 github.com/cosmos/ledger-cosmos-go v0.13.3 h1:7ehuBGuyIytsXbd4MP43mLeoN2LTOEnk5nvue4rK+yM=
 github.com/cosmos/ledger-cosmos-go v0.13.3/go.mod h1:HENcEP+VtahZFw38HZ3+LS3Iv5XV6svsnkk9vdJtLr8=
 github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsrgA7czyZG/E6dU=
