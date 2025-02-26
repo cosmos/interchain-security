@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	tendermint "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	tendermint "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 	"github.com/stretchr/testify/require"
 
 	sdkmath "cosmossdk.io/math"
@@ -23,13 +23,13 @@ import (
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	appConsumer "github.com/cosmos/interchain-security/v6/app/consumer"
-	appProvider "github.com/cosmos/interchain-security/v6/app/provider"
-	simibc "github.com/cosmos/interchain-security/v6/testutil/simibc"
-	consumerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
-	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v6/x/ccv/types"
+	appConsumer "github.com/cosmos/interchain-security/v7/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/v7/app/provider"
+	simibc "github.com/cosmos/interchain-security/v7/testutil/simibc"
+	consumerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
+	providerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // Define a new type for ChainIds to be more explicit
@@ -79,7 +79,7 @@ func (s *Driver) providerChain() *ibctesting.TestChain {
 }
 
 func (s *Driver) providerHeight() int64 {
-	return s.providerChain().CurrentHeader.Height
+	return s.providerChain().ProposedHeader.Height
 }
 
 func (s *Driver) providerCtx() sdk.Context {
@@ -109,13 +109,13 @@ func (s *Driver) consumerCtx(chain ChainId) sdk.Context {
 // runningTime returns the timestamp of the current header of chain
 func (s *Driver) runningTime(chain ChainId) time.Time {
 	testChain := s.chain(chain)
-	return testChain.CurrentHeader.Time
+	return testChain.ProposedHeader.Time
 }
 
 // lastTime returns the timestamp of the last header of chain
 func (s *Driver) lastTime(chain ChainId) time.Time {
 	testChain := s.chain(chain)
-	return testChain.LastHeader.Header.Time
+	return testChain.LatestCommittedHeader.Header.Time
 }
 
 // delegator retrieves the address for the delegator account
@@ -380,7 +380,7 @@ func (s *Driver) setTime(chain ChainId, newTime time.Time) {
 	testChain, found := s.coordinator.Chains[string(chain)]
 	require.True(s.t, found, "chain %s not found", chain)
 
-	testChain.CurrentHeader.Time = newTime
+	testChain.ProposedHeader.Time = newTime
 }
 
 func (s *Driver) AssignKey(chain ChainId, valIndex int64, value crypto.PublicKey) error {

@@ -13,8 +13,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // ComputeMinPowerInTopN returns the minimum power needed for a validator (from the bonded validators)
@@ -630,7 +630,6 @@ func (k Keeper) UpdatePrioritylist(ctx sdk.Context, consumerId string, priorityl
 // PartitionBasedOnPriorityList filters the priority list to include only validators that can validate the chain
 // and splits the validators into priority and non-priority sets.
 func (k Keeper) PartitionBasedOnPriorityList(ctx sdk.Context, consumerId string, nextValidators []types.ConsensusValidator) ([]types.ConsensusValidator, []types.ConsensusValidator) {
-
 	priorityValidators := make([]types.ConsensusValidator, 0)
 	nonPriorityValidators := make([]types.ConsensusValidator, 0)
 

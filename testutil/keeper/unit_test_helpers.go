@@ -2,13 +2,12 @@ package keeper
 
 import (
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/binary"
 	"testing"
 	"time"
 
 	dbm "github.com/cosmos/cosmos-db"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -34,11 +33,11 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
-	consumerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
-	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/v6/x/ccv/types"
+	consumerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
+	providerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // Parameters needed to instantiate an in-memory keeper
@@ -83,9 +82,7 @@ func NewInMemKeeperParams(tb testing.TB) InMemKeeperParams {
 
 // A struct holding pointers to any mocked external keeper needed for provider/consumer keeper setup.
 type MockedKeepers struct {
-	*MockScopedKeeper
 	*MockChannelKeeper
-	*MockPortKeeper
 	*MockConnectionKeeper
 	*MockClientKeeper
 	*MockStakingKeeper
@@ -101,9 +98,7 @@ type MockedKeepers struct {
 // NewMockedKeepers instantiates a struct with pointers to properly instantiated mocked keepers.
 func NewMockedKeepers(ctrl *gomock.Controller) MockedKeepers {
 	return MockedKeepers{
-		MockScopedKeeper:       NewMockScopedKeeper(ctrl),
 		MockChannelKeeper:      NewMockChannelKeeper(ctrl),
-		MockPortKeeper:         NewMockPortKeeper(ctrl),
 		MockConnectionKeeper:   NewMockConnectionKeeper(ctrl),
 		MockClientKeeper:       NewMockClientKeeper(ctrl),
 		MockStakingKeeper:      NewMockStakingKeeper(ctrl),
@@ -122,9 +117,7 @@ func NewInMemProviderKeeper(params InMemKeeperParams, mocks MockedKeepers) provi
 		params.Cdc,
 		params.StoreKey,
 		*params.ParamsSubspace,
-		mocks.MockScopedKeeper,
 		mocks.MockChannelKeeper,
-		mocks.MockPortKeeper,
 		mocks.MockConnectionKeeper,
 		mocks.MockClientKeeper,
 		mocks.MockStakingKeeper,
@@ -146,10 +139,7 @@ func NewInMemConsumerKeeper(params InMemKeeperParams, mocks MockedKeepers) consu
 	return consumerkeeper.NewKeeper(
 		params.Cdc,
 		params.StoreKey,
-		*params.ParamsSubspace,
-		mocks.MockScopedKeeper,
 		mocks.MockChannelKeeper,
-		mocks.MockPortKeeper,
 		mocks.MockConnectionKeeper,
 		mocks.MockClientKeeper,
 		mocks.MockSlashingKeeper,
@@ -326,37 +316,6 @@ func GetTestPowerShapingParameters() providertypes.PowerShapingParameters {
 		MinStake:           0,
 		AllowInactiveVals:  false,
 		Prioritylist:       nil,
-	}
-}
-
-func GetTestMsgUpdateConsumer() providertypes.MsgUpdateConsumer {
-	return providertypes.MsgUpdateConsumer{
-		Owner:           "owner",
-		ConsumerId:      "consumerId",
-		NewOwnerAddress: "newOwnerAddress",
-	}
-}
-
-func GetTestMsgConsumerAddition() providertypes.MsgConsumerAddition {
-	return providertypes.MsgConsumerAddition{
-		ChainId:                           "a ChainId",
-		InitialHeight:                     clienttypes.NewHeight(0, 5),
-		GenesisHash:                       []byte(base64.StdEncoding.EncodeToString([]byte("gen_hash"))),
-		BinaryHash:                        []byte(base64.StdEncoding.EncodeToString([]byte("bin_hash"))),
-		SpawnTime:                         time.Now(),
-		UnbondingPeriod:                   types.DefaultConsumerUnbondingPeriod,
-		CcvTimeoutPeriod:                  types.DefaultCCVTimeoutPeriod,
-		TransferTimeoutPeriod:             types.DefaultTransferTimeoutPeriod,
-		ConsumerRedistributionFraction:    types.DefaultConsumerRedistributeFrac,
-		BlocksPerDistributionTransmission: types.DefaultBlocksPerDistributionTransmission,
-		HistoricalEntries:                 types.DefaultHistoricalEntries,
-		DistributionTransmissionChannel:   "",
-		Top_N:                             10,
-		ValidatorsPowerCap:                0,
-		ValidatorSetCap:                   0,
-		Allowlist:                         nil,
-		Denylist:                          nil,
-		Authority:                         authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	}
 }
 

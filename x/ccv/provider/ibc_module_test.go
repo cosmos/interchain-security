@@ -4,22 +4,21 @@ import (
 	"testing"
 
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	conntypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
-	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
+	"github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v10/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider"
-	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider"
+	providerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // TestOnChanOpenInit tests the provider's OnChanOpenInit method against spec.
@@ -40,7 +39,6 @@ func TestOnChanOpenInit(t *testing.T) {
 		[]string{"connection-1"},
 		ccv.ProviderPortID,
 		"channel-1",
-		nil,
 		channeltypes.NewCounterparty(ccv.ConsumerPortID, "channel-1"),
 		ccv.Version,
 	)
@@ -142,8 +140,6 @@ func TestOnChanOpenTry(t *testing.T) {
 
 		// Number of calls is not asserted, since not all code paths are hit for failures
 		gomock.InOrder(
-			mocks.MockScopedKeeper.EXPECT().ClaimCapability(
-				params.ctx, params.chanCap, host.ChannelCapabilityPath(params.portID, params.channelID)).AnyTimes(),
 			mocks.MockConnectionKeeper.EXPECT().GetConnection(ctx, "connectionIDToConsumer").Return(
 				conntypes.ConnectionEnd{ClientId: "clientIdToConsumer"}, true,
 			).AnyTimes(),
@@ -161,7 +157,6 @@ func TestOnChanOpenTry(t *testing.T) {
 			params.connectionHops,
 			params.portID,
 			params.channelID,
-			params.chanCap,
 			params.counterparty,
 			params.counterpartyVersion,
 		)

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -15,8 +15,8 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // OnAcknowledgementPacket handles acknowledgments for sent VSC packets
@@ -168,7 +168,6 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, consumerId, channelId str
 		// send packet over IBC
 		err := ccv.SendIBCPacket(
 			ctx,
-			k.scopedKeeper,
 			k.channelKeeper,
 			channelId,          // source channel id
 			ccv.ProviderPortID, // source port id
@@ -489,14 +488,14 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, consumerId string, data ccv.S
 		_, err = k.stakingKeeper.SlashWithInfractionReason(ctx, providerConsAddr.ToSdkConsAddr(), int64(infractionHeight),
 			data.Validator.Power, infractionParams.Downtime.SlashFraction, stakingtypes.Infraction_INFRACTION_DOWNTIME)
 		if err != nil {
-			k.Logger(ctx).Error("failed to slash vaidator", providerConsAddr.ToSdkConsAddr().String(), "err", err.Error())
+			k.Logger(ctx).Error("failed to slash validator", providerConsAddr.ToSdkConsAddr().String(), "err", err.Error())
 			return
 		}
 
 		// jail validator
 		err := k.stakingKeeper.Jail(ctx, providerConsAddr.ToSdkConsAddr())
 		if err != nil {
-			k.Logger(ctx).Error("failed to jail vaidator", providerConsAddr.ToSdkConsAddr().String(), "err", err.Error())
+			k.Logger(ctx).Error("failed to jail validator", providerConsAddr.ToSdkConsAddr().String(), "err", err.Error())
 			return
 		}
 		k.Logger(ctx).Info("HandleSlashPacket - validator jailed", "provider cons addr", providerConsAddr.String())

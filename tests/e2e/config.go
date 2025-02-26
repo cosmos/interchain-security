@@ -9,7 +9,7 @@ import (
 
 	"golang.org/x/mod/semver"
 
-	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
+	e2e "github.com/cosmos/interchain-security/v7/tests/e2e/testlib"
 )
 
 type (
@@ -515,7 +515,7 @@ func DemocracyTestConfig(allowReward bool) TestConfig {
 	return tr
 }
 
-// PermissionlessTestConfig contains a provider chain and 2 cosumer chains with the same chain identifier
+// PermissionlessTestConfig contains a provider chain and 2 consumer chains with the same chain identifier
 func PermissionlessTestConfig() TestConfig {
 	tr := TestConfig{
 		Name: string(PermissionlessTestCfg),
@@ -576,6 +576,7 @@ func PermissionlessTestConfig() TestConfig {
 	tr.Initialize()
 	return tr
 }
+
 func InactiveProviderValsTestConfig() TestConfig {
 	tr := DefaultTestConfig()
 	tr.Name = "InactiveValsConfig"

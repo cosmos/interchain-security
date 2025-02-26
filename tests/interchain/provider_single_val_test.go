@@ -1,13 +1,14 @@
 package interchain
 
 import (
-	"cosmos/interchain-security/tests/interchain/chainsuite"
 	"fmt"
 	"testing"
 	"time"
 
+	"cosmos/interchain-security/tests/interchain/chainsuite"
+
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
 	"github.com/strangelove-ventures/interchaintest/v8/testutil"
 
@@ -35,7 +36,7 @@ func TestSingleProviderSuite(t *testing.T) {
 // Confirm that a chain can be created with initialization parameters that do not contain a spawn time
 // Confirm that if there are no opted-in validators at spawn time, the chain fails to launch and moves back to its Registered phase having reset its spawn time
 func (s *SingleValidatorProviderSuite) TestProviderCreateConsumer() {
-	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	testAcc, testAccKey, err := s.Provider.GetUnusedTestingAddresss()
 	s.Require().NoError(err)
 
 	// Confirm that a chain can be created with the minimum params (metadata)
@@ -89,7 +90,7 @@ func (s *SingleValidatorProviderSuite) TestProviderCreateConsumer() {
 // Confirm that a chain without the minimum params (metadata) is rejected
 // Confirm that a chain voted 'no' is rejected
 func (s *SingleValidatorProviderSuite) TestProviderCreateConsumerRejection() {
-	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	testAcc, testAccKey, err := s.Provider.GetUnusedTestingAddresss()
 	s.Require().NoError(err)
 
 	chainName := "rejectConsumer-1"
@@ -111,7 +112,7 @@ func (s *SingleValidatorProviderSuite) TestProviderCreateConsumerRejection() {
 // Scenario 1: Validators opted in, MsgUpdateConsumer called to set spawn time in the past -> chain should start.
 // Scenario 2: Validators opted in, spawn time is in the future, the chain starts after the spawn time.
 func (s *SingleValidatorProviderSuite) TestProviderValidatorOptIn() {
-	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	testAcc, testAccKey, err := s.Provider.GetUnusedTestingAddresss()
 	s.Require().NoError(err)
 
 	// Scenario 1: Validators opted in, MsgUpdateConsumer called to set spawn time in the past -> chain should start.
@@ -165,7 +166,7 @@ func (s *SingleValidatorProviderSuite) TestProviderValidatorOptIn() {
 // -> Check that consumer chain genesis is available and contains the correct validator key
 // If possible, confirm that a validator can change their key assignment (from hub key to consumer chain key and/or vice versa)
 func (s *SingleValidatorProviderSuite) TestProviderValidatorOptInWithKeyAssignment() {
-	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	testAcc, testAccKey, err := s.Provider.GetUnusedTestingAddresss()
 	s.Require().NoError(err)
 
 	valConsumerKeyVal := "Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="
@@ -232,7 +233,7 @@ func (s *SingleValidatorProviderSuite) TestProviderValidatorOptInWithKeyAssignme
 // If there are no opted-in validators and the spawn time is in the past, the chain should not start.
 // Confirm that a chain remains in the Registered phase unless all the initialization parameters are set for it
 func (s *SingleValidatorProviderSuite) TestProviderUpdateConsumer() {
-	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	testAcc, testAccKey, err := s.Provider.GetUnusedTestingAddresss()
 	s.Require().NoError(err)
 
 	chainName := "updateConsumer-1"
@@ -294,7 +295,7 @@ func (s *SingleValidatorProviderSuite) TestProviderUpdateConsumer() {
 // Confirm that the chain can be updated to a higher TopN
 // Confirm that the owner of the chain cannot change as long as it remains a Top N chain
 func (s *SingleValidatorProviderSuite) TestProviderTransformOptInToTopN() {
-	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	testAcc, testAccKey, err := s.Provider.GetUnusedTestingAddresss()
 	s.Require().NoError(err)
 
 	// Create an opt-in chain, owner is testAcc1
@@ -341,7 +342,7 @@ func (s *SingleValidatorProviderSuite) TestProviderTransformOptInToTopN() {
 	s.Require().Equal(providertypes.CONSUMER_PHASE_LAUNCHED.String(), updatedChain.Phase)
 	s.Require().Equal(50, updatedChain.PowerShapingParams.TopN)
 
-	//Confirm that the chain can be updated to a higher TopN
+	// Confirm that the chain can be updated to a higher TopN
 	powerShapingParams.Top_N = 100
 	upgradeMsg = &providertypes.MsgUpdateConsumer{
 		Owner:                  chainsuite.ProviderGovModuleAddress,
@@ -367,7 +368,7 @@ func (s *SingleValidatorProviderSuite) TestProviderTransformOptInToTopN() {
 // Create a Top N chain, and transform it to an opt-in via `tx gov submit-proposal` using MsgUpdateConsumer
 // Confirm that the chain is now not owned by governance
 func (s *SingleValidatorProviderSuite) TestProviderTransformTopNtoOptIn() {
-	testAcc, _, err := s.GetUnusedTestingAddresss()
+	testAcc, _, err := s.Provider.GetUnusedTestingAddresss()
 	s.Require().NoError(err)
 
 	chainName := "transformTopNtoOptIn-1"
@@ -411,7 +412,7 @@ func (s *SingleValidatorProviderSuite) TestProviderTransformTopNtoOptIn() {
 
 // TestOptOut tests removing validator from consumer-opted-in-validators
 func (s *SingleValidatorProviderSuite) TestOptOut() {
-	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	testAcc, testAccKey, err := s.Provider.GetUnusedTestingAddresss()
 	s.Require().NoError(err)
 
 	// Add consumer chain
@@ -425,7 +426,7 @@ func (s *SingleValidatorProviderSuite) TestOptOut() {
 	consumerChain, err := s.Provider.GetConsumerChain(s.GetContext(), consumerId)
 	s.Require().NoError(err)
 
-	//OptIn
+	// OptIn
 	s.Require().NoError(s.Provider.OptIn(s.GetContext(), consumerChain.ConsumerID, 0))
 	consumerInitParams.SpawnTime = time.Now()
 	upgradeMsg := &providertypes.MsgUpdateConsumer{
@@ -447,7 +448,7 @@ func (s *SingleValidatorProviderSuite) TestOptOut() {
 	s.Require().NoError(err)
 	s.Require().Equal(valConsAddr, optInVals.ValidatorsProviderAddresses[0])
 
-	//OptOut
+	// OptOut
 	s.Require().NoError(s.Provider.OptOut(s.GetContext(), consumerChain.ConsumerID, 0))
 	s.Require().NoError(testutil.WaitForBlocks(s.GetContext(), 1, s.Provider))
 	optInVals, err = s.Provider.GetOptInValidators(s.GetContext(), consumerChain.ConsumerID)
@@ -460,7 +461,7 @@ func (s *SingleValidatorProviderSuite) TestOptOut() {
 // Confirm that after unbonding period, the chain moves to the Deleted phase and things like consumer id to client id
 // associations are deleted, but the chain metadata and the chain id are not deleted
 func (s *SingleValidatorProviderSuite) TestProviderRemoveConsumer() {
-	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	testAcc, testAccKey, err := s.Provider.GetUnusedTestingAddresss()
 	s.Require().NoError(err)
 
 	// Test removing a chain
@@ -516,9 +517,9 @@ func (s *SingleValidatorProviderSuite) TestProviderRemoveConsumer() {
 // Confirm that only the owner can send MsgUpdateConsumer, MsgRemoveConsumer
 // Confirm that ownership can be transferred to a different address -> results in the "old" owner losing ownership
 func (s *SingleValidatorProviderSuite) TestProviderOwnerChecks() {
-	testAcc1, testAccKey1, err := s.GetUnusedTestingAddresss()
+	testAcc1, testAccKey1, err := s.Provider.GetUnusedTestingAddresss()
 	s.Require().NoError(err)
-	testAcc2, testAccKey2, err := s.GetUnusedTestingAddresss()
+	testAcc2, testAccKey2, err := s.Provider.GetUnusedTestingAddresss()
 	s.Require().NoError(err)
 	// Create an opt-in chain
 	chainName := "providerOwnerChecks-1"
@@ -627,7 +628,7 @@ func (s *SingleValidatorProviderSuite) TestProviderOwnerChecks() {
 // Confirms that existing queued parameters, scheduled for update after the unbonding period, can be canceled if a new MsgUpdateConsumer
 // is sent with values identical to the current infraction parameters for that chain.
 func (s *SingleValidatorProviderSuite) TestInfractionParameters() {
-	testAcc, testAccKey, err := s.GetUnusedTestingAddresss()
+	testAcc, testAccKey, err := s.Provider.GetUnusedTestingAddresss()
 	s.Require().NoError(err)
 	defaultInfractionParams := defaultInfractionParams()
 

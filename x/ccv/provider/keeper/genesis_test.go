@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -13,11 +12,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/cosmos/interchain-security/v6/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	"github.com/cosmos/interchain-security/v7/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // TestInitAndExportGenesis tests the export and the initialisation of a provider chain genesis
@@ -94,9 +93,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 	defer ctrl.Finish()
 
 	gomock.InOrder(
-		mocks.MockScopedKeeper.EXPECT().GetCapability(
-			ctx, host.PortPath(ccv.ProviderPortID),
-		).Return(nil, true).Times(1),
 		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
 			ctx).Return(math.NewInt(100), nil).Times(1), // Return total voting power as 100
 	)

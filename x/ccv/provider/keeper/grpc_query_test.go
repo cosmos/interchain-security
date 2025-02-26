@@ -8,24 +8,25 @@ import (
 	"testing"
 	"time"
 
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
+	ibctm "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkquery "github.com/cosmos/cosmos-sdk/types/query"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 
-	sdkquery "github.com/cosmos/cosmos-sdk/types/query"
-	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
-	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	cryptotestutil "github.com/cosmos/interchain-security/v6/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	cryptotestutil "github.com/cosmos/interchain-security/v7/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 func TestQueryAllPairsValConsAddrByConsumer(t *testing.T) {
@@ -191,7 +192,7 @@ func TestQueryConsumerValidators(t *testing.T) {
 	require.NoError(t, err)
 
 	// expect both opted-in and topN validator
-	expRes := types.QueryConsumerValidatorsResponse{
+	express := types.QueryConsumerValidatorsResponse{
 		Validators: []*types.QueryConsumerValidatorsValidator{
 			{
 				ProviderAddress:         providerAddr1.String(),
@@ -225,22 +226,22 @@ func TestQueryConsumerValidators(t *testing.T) {
 	}
 
 	// sort the address of the validators by ascending lexical order as they were persisted to the store
-	sort.Slice(expRes.Validators, func(i, j int) bool {
+	sort.Slice(express.Validators, func(i, j int) bool {
 		return bytes.Compare(
-			expRes.Validators[i].ConsumerKey.GetEd25519(),
-			expRes.Validators[j].ConsumerKey.GetEd25519(),
+			express.Validators[i].ConsumerKey.GetEd25519(),
+			express.Validators[j].ConsumerKey.GetEd25519(),
 		) == -1
 	})
 
 	res, err = pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
-	require.Equal(t, &expRes, res)
+	require.Equal(t, &express, res)
 
 	// expect same result when consumer is in "initialized" phase
 	pk.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_INITIALIZED)
 	res, err = pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
-	require.Equal(t, &expRes, res)
+	require.Equal(t, &express, res)
 
 	// set consumer to the "launched" phase
 	pk.SetConsumerPhase(ctx, consumerId, types.CONSUMER_PHASE_LAUNCHED)
@@ -259,7 +260,7 @@ func TestQueryConsumerValidators(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	expRes.Validators = append(expRes.Validators, &types.QueryConsumerValidatorsValidator{
+	express.Validators = append(express.Validators, &types.QueryConsumerValidatorsValidator{
 		ProviderAddress:         providerAddr3.String(),
 		ConsumerKey:             &pk3,
 		ConsumerPower:           3,
@@ -275,16 +276,16 @@ func TestQueryConsumerValidators(t *testing.T) {
 	})
 
 	// sort the address of the validators by ascending lexical order as they were persisted to the store
-	sort.Slice(expRes.Validators, func(i, j int) bool {
+	sort.Slice(express.Validators, func(i, j int) bool {
 		return bytes.Compare(
-			expRes.Validators[i].ConsumerKey.GetEd25519(),
-			expRes.Validators[j].ConsumerKey.GetEd25519(),
+			express.Validators[i].ConsumerKey.GetEd25519(),
+			express.Validators[j].ConsumerKey.GetEd25519(),
 		) == -1
 	})
 
 	res, err = pk.QueryConsumerValidators(ctx, &req)
 	require.NoError(t, err)
-	require.Equal(t, &expRes, res)
+	require.Equal(t, &express, res)
 
 	// validator with no set consumer commission rate
 	pk.DeleteConsumerCommissionRate(ctx, consumerId, providerAddr1)
@@ -477,7 +478,8 @@ func TestGetConsumerChain(t *testing.T) {
 		{}, // no denoms
 		{Denoms: []string{"ibc/1", "ibc/2"}},
 		{Denoms: []string{"ibc/3", "ibc/4", "ibc/5"}},
-		{Denoms: []string{"ibc/6"}}}
+		{Denoms: []string{"ibc/6"}},
+	}
 
 	expectedGetAllOrder := []types.Chain{}
 	for i, consumerID := range consumerIDs {
@@ -597,7 +599,7 @@ func TestQueryConsumerChain(t *testing.T) {
 	require.NoError(t, err)
 	providerKeeper.SetConsumerClientId(ctx, consumerId, clientId)
 
-	expRes := types.QueryConsumerChainResponse{
+	express := types.QueryConsumerChainResponse{
 		ChainId:              chainId,
 		ConsumerId:           consumerId,
 		OwnerAddress:         providerKeeper.GetAuthority(),
@@ -612,7 +614,7 @@ func TestQueryConsumerChain(t *testing.T) {
 	// expect no error when neither the consumer init and power shaping params are set
 	res, err := providerKeeper.QueryConsumerChain(ctx, &req)
 	require.NoError(t, err)
-	require.Equal(t, &expRes, res)
+	require.Equal(t, &express, res)
 
 	err = providerKeeper.SetConsumerInitializationParameters(
 		ctx,
@@ -628,13 +630,13 @@ func TestQueryConsumerChain(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	expRes.InitParams = &types.ConsumerInitializationParameters{SpawnTime: ctx.BlockTime()}
-	expRes.PowerShapingParams = &types.PowerShapingParameters{Top_N: uint32(50)}
+	express.InitParams = &types.ConsumerInitializationParameters{SpawnTime: ctx.BlockTime()}
+	express.PowerShapingParams = &types.PowerShapingParameters{Top_N: uint32(50)}
 
 	// expect no error
 	res, err = providerKeeper.QueryConsumerChain(ctx, &req)
 	require.NoError(t, err)
-	require.Equal(t, &expRes, res)
+	require.Equal(t, &express, res)
 }
 
 func TestQueryConsumerIdFromClientId(t *testing.T) {

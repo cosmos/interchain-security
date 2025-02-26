@@ -17,8 +17,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	app "github.com/cosmos/interchain-security/v6/app/consumer"
-	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	app "github.com/cosmos/interchain-security/v7/app/consumer"
+	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 const (
@@ -375,7 +375,8 @@ func TestConsumerGenesisTransformationV64xToV6xx(t *testing.T) {
 
 // CheckGenesisTransform checks that the transformation of consumer genesis data
 // from a given source version to a target version is successful
-func CheckGenesisTransform(t *testing.T, sourceVersion string, targetVersion string) {
+func CheckGenesisTransform(t *testing.T, sourceVersion, targetVersion string) {
+	t.Helper()
 	filePath := createConsumerDataGenesisFile(t, sourceVersion)
 	defer os.Remove(filePath)
 

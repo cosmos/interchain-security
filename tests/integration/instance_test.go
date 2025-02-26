@@ -5,11 +5,11 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	appConsumer "github.com/cosmos/interchain-security/v6/app/consumer"
-	appConsumerDemocracy "github.com/cosmos/interchain-security/v6/app/consumer-democracy"
-	appProvider "github.com/cosmos/interchain-security/v6/app/provider"
-	intg "github.com/cosmos/interchain-security/v6/tests/integration"
-	icstestingutils "github.com/cosmos/interchain-security/v6/testutil/ibc_testing"
+	appConsumer "github.com/cosmos/interchain-security/v7/app/consumer"
+	appConsumerDemocracy "github.com/cosmos/interchain-security/v7/app/consumer-democracy"
+	appProvider "github.com/cosmos/interchain-security/v7/app/provider"
+	intg "github.com/cosmos/interchain-security/v7/tests/integration"
+	icstestingutils "github.com/cosmos/interchain-security/v7/testutil/ibc_testing"
 )
 
 // This file can be used as an example integration testing instance for any provider/consumer applications.

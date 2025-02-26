@@ -8,7 +8,6 @@ linters:
   disable-all: true
   enable:
     - dogsled
-    - exportloopref
     - gci
     - goconst
     - gocritic
@@ -31,6 +30,9 @@ linters:
 issues:
   exclude-rules:
     - text: 'Use of weak random number generator'
+      linters:
+        - gosec
+    - text: 'G115:'
       linters:
         - gosec
     - text: 'ST1003:'

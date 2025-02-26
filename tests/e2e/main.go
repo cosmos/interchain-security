@@ -471,7 +471,7 @@ func createTestConfigs(cfgType TestConfigType, providerVersions, consumerVersion
 			config.UseGorelayer = *useGorelayer
 
 			runnerId++
-			config.ContainerConfig.ContainerName = config.ContainerConfig.ContainerName + fmt.Sprintf("-%d", runnerId)
+			config.ContainerConfig.ContainerName += fmt.Sprintf("-%d", runnerId)
 
 			configs = append(configs, config)
 		}

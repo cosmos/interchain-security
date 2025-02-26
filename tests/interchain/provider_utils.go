@@ -1,12 +1,16 @@
 package interchain
 
 import (
-	"cosmos/interchain-security/tests/interchain/chainsuite"
+	"fmt"
+	"strings"
 	"time"
 
+	"cosmos/interchain-security/tests/interchain/chainsuite"
+
 	"cosmossdk.io/math"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	sdkmath "cosmossdk.io/math"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )
 
 func msgCreateConsumer(
@@ -14,7 +18,8 @@ func msgCreateConsumer(
 	initParams *providertypes.ConsumerInitializationParameters,
 	powerParams *providertypes.PowerShapingParameters,
 	infractionParams *providertypes.InfractionParameters,
-	submiter string) *providertypes.MsgCreateConsumer {
+	submiter string,
+) *providertypes.MsgCreateConsumer {
 	consumerMetadata := providertypes.ConsumerMetadata{
 		Name:        chainId,
 		Description: "description",
@@ -104,4 +109,13 @@ func convertJsonToInfractionParameters(jsonParams chainsuite.InfractionParams) *
 			JailDuration:  downtimeJailDuration,
 		},
 	}
+}
+
+func StrToSDKInt(s string) (sdkmath.Int, error) {
+	s, _, _ = strings.Cut(s, ".")
+	i, ok := sdkmath.NewIntFromString(s)
+	if !ok {
+		return sdkmath.Int{}, fmt.Errorf("s: %s", s)
+	}
+	return i, nil
 }

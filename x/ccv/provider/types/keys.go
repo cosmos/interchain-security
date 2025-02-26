@@ -9,7 +9,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 type Status int
@@ -811,7 +811,7 @@ func ConsumerRewardsAllocationByDenomKeyPrefix() byte {
 }
 
 // ConsumerRewardsAllocationByDenomKey returns the key used to store the ICS rewards per consumer chain
-func ConsumerRewardsAllocationByDenomKey(consumerId string, denom string) []byte {
+func ConsumerRewardsAllocationByDenomKey(consumerId, denom string) []byte {
 	return append(StringIdWithLenKey(ConsumerRewardsAllocationByDenomKeyPrefix(), consumerId), []byte(denom)...)
 }
 

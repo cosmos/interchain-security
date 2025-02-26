@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 
 	"cosmossdk.io/core/comet"
 	"cosmossdk.io/math"
@@ -24,9 +24,9 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	consumerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	consumerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/consumer/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/provider/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // The interface that any provider app must implement to be compatible with ccv integration tests.
@@ -62,6 +62,7 @@ type ConsumerApp interface {
 	// BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock
 	GetConsumerKeeper() consumerkeeper.Keeper
 	GetSubspace(moduleName string) paramstypes.Subspace
+	GetStakingKeeper() *consumerkeeper.Keeper
 
 	//
 	// Keeper getters

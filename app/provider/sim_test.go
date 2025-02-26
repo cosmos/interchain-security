@@ -19,7 +19,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/simulation"
 	simcli "github.com/cosmos/cosmos-sdk/x/simulation/client/cli"
 
-	providerapp "github.com/cosmos/interchain-security/v6/app/provider"
+	providerapp "github.com/cosmos/interchain-security/v7/app/provider"
 )
 
 func init() {

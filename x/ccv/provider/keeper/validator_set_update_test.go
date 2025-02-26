@@ -15,10 +15,10 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 
-	cryptotestutil "github.com/cosmos/interchain-security/v6/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	cryptotestutil "github.com/cosmos/interchain-security/v7/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )
 
 // TestConsumerValidator tests the `SetConsumerValidator`, `IsConsumerValidator`, and `DeleteConsumerValidator` methods
@@ -392,7 +392,6 @@ func TestFilterValidatorsConsiderOnlyOptIn(t *testing.T) {
 	validators, err := providerKeeper.FilterValidators(ctx, consumerID, []stakingtypes.Validator{},
 		func(providerAddr types.ProviderConsAddress) (bool, error) {
 			return providerKeeper.IsOptedIn(ctx, consumerID, providerAddr), nil
-
 		})
 	require.NoError(t, err)
 	require.Empty(t, validators)

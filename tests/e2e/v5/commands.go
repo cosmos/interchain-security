@@ -11,19 +11,17 @@ import (
 	"strings"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
-
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
 
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 
-	e2e "github.com/cosmos/interchain-security/v6/tests/e2e/testlib"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/client"
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	e2e "github.com/cosmos/interchain-security/v7/tests/e2e/testlib"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/client"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 type (
@@ -282,7 +280,7 @@ func (tr Commands) GetProposal(chain ChainID, proposal uint) Proposal {
 	deposit := gjson.Get(propRaw, `proposal.total_deposit.#(denom=="stake").amount`).Uint()
 	status := gjson.Get(propRaw, `proposal.status`).String()
 
-	x, err := strconv.Atoi(status)
+	x, err := strconv.ParseInt(status, 10, 16)
 	if err != nil {
 		panic("error converting proposal status:" + err.Error())
 	}
@@ -648,7 +646,7 @@ func (tr Commands) GetProposedConsumerChains(chain ChainID) []string {
 	return chains
 }
 
-func (tr Commands) AssignConsumerPubKey(chain string, pubKey string, from ValidatorID, gas, home, node string, verbose bool) ([]byte, error) {
+func (tr Commands) AssignConsumerPubKey(chain, pubKey string, from ValidatorID, gas, home, node string, verbose bool) ([]byte, error) {
 	binaryName := tr.ChainConfigs[ChainID("provi")].BinaryName
 	cmd := tr.Target.ExecCommand(
 		binaryName,
@@ -674,7 +672,7 @@ func (tr Commands) AssignConsumerPubKey(chain string, pubKey string, from Valida
 }
 
 // SubmitGovProposal sends a gov legacy-proposal transaction with given command and proposal content
-func (tr Commands) SubmitGovProposal(chain ChainID, from ValidatorID, command string, proposal string, verbose bool) ([]byte, error) {
+func (tr Commands) SubmitGovProposal(chain ChainID, from ValidatorID, command, proposal string, verbose bool) ([]byte, error) {
 	//#nosec G204 -- bypass unsafe quoting warning (no production code)
 	cmd := tr.Target.ExecCommand(
 		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, proposal, "/temp-proposal.json"))
@@ -706,7 +704,6 @@ func (tr Commands) SubmitConsumerAdditionProposal(
 	action e2e.SubmitConsumerAdditionProposalAction,
 	verbose bool,
 ) ([]byte, error) {
-
 	spawnTime := tr.ContainerConfig.Now.Add(time.Duration(action.SpawnTime) * time.Millisecond)
 	params := ccvtypes.DefaultParams()
 	prop := client.ConsumerAdditionProposalJSON{
@@ -770,7 +767,10 @@ func (tr Commands) GetInflationRate(
 	panic("'GetInflationRate' is not implemented in this version")
 }
 
-func (tr Commands) CreateConsumer(providerChain, consumerChain ChainID, validator ValidatorID, metadata providertypes.ConsumerMetadata, initParams *types.ConsumerInitializationParameters, powerShapingParams *types.PowerShapingParameters) ([]byte, error) {
+func (tr Commands) CreateConsumer(providerChain, consumerChain ChainID, validator ValidatorID,
+	metadata providertypes.ConsumerMetadata, initParams *providertypes.ConsumerInitializationParameters,
+	powerShapingParams *providertypes.PowerShapingParameters,
+) ([]byte, error) {
 	panic("'CreateConsumer' is not implemented in this version")
 }
 
@@ -778,7 +778,7 @@ func (tr Commands) UpdateConsumer(providerChain ChainID, validator ValidatorID, 
 	panic("'UpdateConsumer' is not implemented in this version")
 }
 
-// QueryTransaction returns the content of the transaction or an error e.g. when a transaction coudl
+// QueryTransaction returns the content of the transaction or an error e.g. when a transaction could
 func (tr Commands) QueryTransaction(chain ChainID, txhash string) ([]byte, error) {
 	binaryName := tr.ChainConfigs[chain].BinaryName
 	cmd := tr.Target.ExecCommand(binaryName,

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	"github.com/google/go-cmp/cmp"
 
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
@@ -126,7 +126,7 @@ func TestMarshalAndUnmarshalChainState(t *testing.T) {
 				1: IBCTransferParamsProposal{
 					Deposit: 10000001,
 					Status:  gov.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD.String(),
-					Params:  IBCTransferParams{true, true},
+					Params:  IBCTransferParams{SendEnabled: true, ReceiveEnabled: true},
 				},
 			},
 		}},

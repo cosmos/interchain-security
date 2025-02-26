@@ -6,10 +6,8 @@ import (
 	"testing"
 	"time"
 
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -21,11 +19,11 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/bytes"
 
-	"github.com/cosmos/interchain-security/v6/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
-	consumerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/consumer/keeper"
-	consumertypes "github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/v6/x/ccv/types"
+	"github.com/cosmos/interchain-security/v7/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"
+	consumerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // TestOnRecvVSCPacket tests the behavior of OnRecvVSCPacket over various packet scenarios
@@ -378,24 +376,17 @@ func TestOnAcknowledgementPacketError(t *testing.T) {
 
 	// Still expect no error returned from OnAcknowledgementPacket,
 	// but the input error ack will be handled with appropriate ChanCloseInit calls
-	dummyCap := &capabilitytypes.Capability{}
 	gomock.InOrder(
 
-		mocks.MockScopedKeeper.EXPECT().GetCapability(
-			ctx, host.ChannelCapabilityPath(types.ConsumerPortID, channelIDToDestChain),
-		).Return(dummyCap, true).Times(1),
 		// Due to input error ack, ChanCloseInit is called on channel to destination chain
 		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(
-			ctx, types.ConsumerPortID, channelIDToDestChain, dummyCap,
+			ctx, types.ConsumerPortID, channelIDToDestChain,
 		).Return(nil).Times(1),
 
-		mocks.MockScopedKeeper.EXPECT().GetCapability(
-			ctx, host.ChannelCapabilityPath(types.ConsumerPortID, channelIDToProvider),
-		).Return(dummyCap, true).Times(1),
 		// Due to input error ack and existence of established channel to provider,
 		// ChanCloseInit is called on channel to provider
 		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(
-			ctx, types.ConsumerPortID, channelIDToProvider, dummyCap,
+			ctx, types.ConsumerPortID, channelIDToProvider,
 		).Return(nil).Times(1),
 	)
 

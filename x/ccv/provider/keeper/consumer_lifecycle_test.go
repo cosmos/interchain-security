@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 	_go "github.com/cosmos/ics23/go"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -22,11 +22,11 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
-	cryptotestutil "github.com/cosmos/interchain-security/v6/testutil/crypto"
-	testkeeper "github.com/cosmos/interchain-security/v6/testutil/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/v6/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	cryptotestutil "github.com/cosmos/interchain-security/v7/testutil/crypto"
+	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 func TestPrepareConsumerForLaunch(t *testing.T) {
@@ -291,11 +291,11 @@ func TestBeginBlockLaunchConsumers(t *testing.T) {
 	providerKeeper.SetOptedIn(ctx, "3", providertypes.NewProviderConsAddress(consAddr))
 
 	// Expect genesis and client creation for only the first, second, and fifth chains (spawn time already passed and valid)
-	expectedCalls := testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, time.Hour)
+	expectedCalls := testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, time.Hour, 0)
 	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain0", clienttypes.NewHeight(0, 4))...)
-	expectedCalls = append(expectedCalls, testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, time.Hour)...)
+	expectedCalls = append(expectedCalls, testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, time.Hour, 0)...)
 	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain1", clienttypes.NewHeight(0, 4))...)
-	expectedCalls = append(expectedCalls, testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, time.Hour)...)
+	expectedCalls = append(expectedCalls, testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, time.Hour, 0)...)
 	expectedCalls = append(expectedCalls, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chain3", clienttypes.NewHeight(0, 4))...)
 
 	gomock.InOrder(expectedCalls...)
@@ -508,7 +508,8 @@ func TestHasActiveValidatorOptedIn(t *testing.T) {
 	// consumer chain has only non-active validators
 	err := providerKeeper.SetConsumerValSet(ctx, consumerId, []providertypes.ConsensusValidator{
 		{ProviderConsAddr: consensusAddresses[3]},
-		{ProviderConsAddr: consensusAddresses[4]}})
+		{ProviderConsAddr: consensusAddresses[4]},
+	})
 	require.NoError(t, err)
 	hasActiveValidatorOptedIn, err := providerKeeper.HasActiveConsumerValidator(ctx, consumerId, activeValidators)
 	require.NoError(t, err)
@@ -516,7 +517,8 @@ func TestHasActiveValidatorOptedIn(t *testing.T) {
 
 	// consumer chain has one active validator
 	err = providerKeeper.SetConsumerValSet(ctx, consumerId, []providertypes.ConsensusValidator{
-		{ProviderConsAddr: consensusAddresses[2]}})
+		{ProviderConsAddr: consensusAddresses[2]},
+	})
 	require.NoError(t, err)
 	hasActiveValidatorOptedIn, err = providerKeeper.HasActiveConsumerValidator(ctx, consumerId, activeValidators)
 	require.NoError(t, err)
@@ -526,7 +528,8 @@ func TestHasActiveValidatorOptedIn(t *testing.T) {
 	err = providerKeeper.SetConsumerValSet(ctx, consumerId, []providertypes.ConsensusValidator{
 		{ProviderConsAddr: consensusAddresses[3]},
 		{ProviderConsAddr: consensusAddresses[4]},
-		{ProviderConsAddr: consensusAddresses[1]}})
+		{ProviderConsAddr: consensusAddresses[1]},
+	})
 	require.NoError(t, err)
 	hasActiveValidatorOptedIn, err = providerKeeper.HasActiveConsumerValidator(ctx, consumerId, activeValidators)
 	require.NoError(t, err)
@@ -560,7 +563,8 @@ func TestCreateConsumerClient(t *testing.T) {
 				providerKeeper.SetConsumerPhase(ctx, CONSUMER_ID, providertypes.CONSUMER_PHASE_LAUNCHED)
 
 				// Expect none of the client creation related calls to happen
-				mocks.MockClientKeeper.EXPECT().CreateClient(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				mocks.MockClientKeeper.EXPECT().CreateClient(gomock.Any(), gomock.Any(), gomock.Any(),
+					gomock.Any()).Times(0)
 			},
 			expClientCreated: false,
 		},
@@ -687,7 +691,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 	//
 	ctx = ctx.WithChainID(providerChainId)            // consumerId is obtained from ctx
 	ctx = ctx.WithBlockHeight(providerRevisionHeight) // RevisionHeight obtained from ctx
-	gomock.InOrder(testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, providerUnbondingPeriod)...)
+	gomock.InOrder(testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, providerUnbondingPeriod, providerRevisionHeight)...)
 
 	providerKeeper.SetConsumerChainId(ctx, CONSUMER_ID, CONSUMER_CHAIN_ID)
 	err := providerKeeper.SetConsumerInitializationParameters(ctx, CONSUMER_ID, initializationParameters)
