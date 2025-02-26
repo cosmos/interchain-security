@@ -71,7 +71,7 @@ func (k Keeper) GetValidatorConsumerPubKey(
 	providerAddr types.ProviderConsAddress,
 ) (consumerKey tmprotocrypto.PublicKey, found bool) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ConsumerValidatorsKey(consumerId, providerAddr))
+	bz := store.Get(types.ConsumerAssignedValidatorsKey(consumerId, providerAddr))
 	if bz == nil {
 		return consumerKey, false
 	}
@@ -98,7 +98,7 @@ func (k Keeper) SetValidatorConsumerPubKey(
 		// the consumer key is obtained from GetValidatorConsumerPubKey, called from
 		panic(fmt.Sprintf("failed to marshal consumer key: %v", err))
 	}
-	store.Set(types.ConsumerValidatorsKey(consumerId, providerAddr), bz)
+	store.Set(types.ConsumerAssignedValidatorsKey(consumerId, providerAddr), bz)
 }
 
 // GetAllValidatorConsumerPubKeys gets all the validators public keys assigned for a consumer chain
@@ -112,19 +112,19 @@ func (k Keeper) SetValidatorConsumerPubKey(
 func (k Keeper) GetAllValidatorConsumerPubKeys(ctx sdk.Context, consumerId *string) (validatorConsumerPubKeys []types.ValidatorConsumerPubKey) {
 	store := ctx.KVStore(k.storeKey)
 	var prefix []byte
-	consumerValidatorsKeyPrefix := types.ConsumerValidatorsKeyPrefix()
+	consumerAssignedValidatorsKeyPrefix := types.ConsumerAssignedValidatorsKeyPrefix()
 	if consumerId == nil {
 		// iterate over the validators public keys assigned for all consumer chains
-		prefix = []byte{consumerValidatorsKeyPrefix}
+		prefix = []byte{consumerAssignedValidatorsKeyPrefix}
 	} else {
 		// iterate over the validators public keys assigned for consumerId
-		prefix = types.StringIdWithLenKey(consumerValidatorsKeyPrefix, *consumerId)
+		prefix = types.StringIdWithLenKey(consumerAssignedValidatorsKeyPrefix, *consumerId)
 	}
 	iterator := storetypes.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		// TODO: store consumerId and provider cons address in value bytes, marshaled as protobuf type
-		consumerId, providerAddrTmp, err := types.ParseStringIdAndConsAddrKey(consumerValidatorsKeyPrefix, iterator.Key())
+		consumerId, providerAddrTmp, err := types.ParseStringIdAndConsAddrKey(consumerAssignedValidatorsKeyPrefix, iterator.Key())
 		if err != nil {
 			// An error here would indicate something is very wrong,
 			// the store key is assumed to be correctly serialized in SetValidatorConsumerPubKey.
@@ -152,7 +152,7 @@ func (k Keeper) GetAllValidatorConsumerPubKeys(ctx sdk.Context, consumerId *stri
 // DeleteValidatorConsumerPubKey deletes a validator's public key assigned for a consumer chain
 func (k Keeper) DeleteValidatorConsumerPubKey(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ConsumerValidatorsKey(consumerId, providerAddr))
+	store.Delete(types.ConsumerAssignedValidatorsKey(consumerId, providerAddr))
 }
 
 // GetValidatorByConsumerAddr returns a validator's consensus address on the provider
