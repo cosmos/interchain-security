@@ -3,11 +3,11 @@ package integration
 import (
 	"time"
 
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // TestSlashRetries tests the throttling v2 retry logic at an integration level.

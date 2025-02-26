@@ -17,8 +17,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 var _ types.QueryServer = Keeper{}
@@ -78,7 +78,6 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 		}
 		return true, nil
 	})
-
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -649,6 +648,8 @@ func (k Keeper) QueryConsumerChain(goCtx context.Context, req *types.QueryConsum
 //	QueryConsumerGenesisTime returns the genesis time
 //
 // of the consumer chain associated with the provided consumer id
+// Deprecated: QueryConsumerGenesisTime is deprecated since the underlying ClientKeeper interface is deprecating
+// access of the ConsensusState::GetTimestamp call.
 func (k Keeper) QueryConsumerGenesisTime(goCtx context.Context, req *types.QueryConsumerGenesisTimeRequest) (*types.QueryConsumerGenesisTimeResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
@@ -699,6 +700,6 @@ func (k Keeper) QueryConsumerGenesisTime(goCtx context.Context, req *types.Query
 	}
 
 	return &types.QueryConsumerGenesisTimeResponse{
-		GenesisTime: time.Unix(0, int64(cs.GetTimestamp())),
+		GenesisTime: time.Unix(0, int64(cs.GetTimestamp())), // nolint:staticcheck
 	}, nil
 }

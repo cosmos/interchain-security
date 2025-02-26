@@ -13,7 +13,7 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	"github.com/cosmos/interchain-security/v6/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
 )
 
 //

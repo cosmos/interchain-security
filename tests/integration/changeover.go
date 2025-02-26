@@ -1,8 +1,8 @@
 package integration
 
 import (
-	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	transfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 )
 
 // TestRecycleTransferChannel tests that an existing transfer channel can be reused when transitioning from
@@ -27,7 +27,7 @@ func (suite *CCVTestSuite) TestRecycleTransferChannel() {
 	// Create transfer channel manually
 	distrTransferMsg := channeltypes.NewMsgChannelOpenInit(
 		transfertypes.PortID,
-		transfertypes.Version,
+		transfertypes.V1,
 		channeltypes.UNORDERED,
 		[]string{suite.path.EndpointA.ConnectionID},
 		transfertypes.PortID,
@@ -46,7 +46,7 @@ func (suite *CCVTestSuite) TestRecycleTransferChannel() {
 	suite.consumerApp.GetConsumerKeeper().SetDistributionTransmissionChannel(suite.consumerCtx(), resp.ChannelId)
 
 	// Now finish setting up CCV channel
-	suite.ExecuteCCVChannelHandshake(suite.path)
+	suite.path.CreateChannels()
 
 	// Confirm transfer channel is now persisted with expected channel id from open init response
 	transChan = consumerKeeper.GetDistributionTransmissionChannel(suite.consumerCtx())

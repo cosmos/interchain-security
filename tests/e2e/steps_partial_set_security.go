@@ -3,7 +3,7 @@ package main
 import (
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 )
@@ -1949,7 +1949,7 @@ func stepsValidatorsPrioritylistedChain() []Step {
 					TopN:            0,
 					ValidatorSetCap: 2,
 					Prioritylist: []string{
-						"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq", //alice
+						"cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq", // alice
 					},
 				},
 			},

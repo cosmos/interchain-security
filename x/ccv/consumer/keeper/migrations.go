@@ -4,9 +4,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	v2 "github.com/cosmos/interchain-security/v6/x/ccv/consumer/migrations/v2"
-	v3 "github.com/cosmos/interchain-security/v6/x/ccv/consumer/migrations/v3"
-	v4 "github.com/cosmos/interchain-security/v6/x/ccv/consumer/migrations/v4"
+	v2 "github.com/cosmos/interchain-security/v7/x/ccv/consumer/migrations/v2"
+	v3 "github.com/cosmos/interchain-security/v7/x/ccv/consumer/migrations/v3"
+	v4 "github.com/cosmos/interchain-security/v7/x/ccv/consumer/migrations/v4"
 )
 
 // Migrator is a struct for handling in-place store migrations.

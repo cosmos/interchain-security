@@ -7,9 +7,8 @@ import (
 	"strings"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -65,7 +64,6 @@ func TMCryptoPublicKeyToConsAddr(k tmprotocrypto.PublicKey) (sdk.ConsAddress, er
 // over the source channelID and portID
 func SendIBCPacket(
 	ctx sdk.Context,
-	scopedKeeper ScopedKeeper,
 	channelKeeper ChannelKeeper,
 	sourceChannelID string,
 	sourcePortID string,
@@ -76,13 +74,8 @@ func SendIBCPacket(
 	if !ok {
 		return errorsmod.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", sourceChannelID)
 	}
-	channelCap, ok := scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(sourcePortID, sourceChannelID))
-	if !ok {
-		return errorsmod.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
-	}
 
 	_, err := channelKeeper.SendPacket(ctx,
-		channelCap,
 		sourcePortID,
 		sourceChannelID,
 		clienttypes.Height{}, //  timeout height disabled

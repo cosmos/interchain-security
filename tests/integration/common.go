@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
-	"github.com/cosmos/ibc-go/v8/modules/core/exported"
-	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v10/modules/core/23-commitment/types"
+	"github.com/cosmos/ibc-go/v10/modules/core/exported"
+	ibctm "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
@@ -22,10 +22,10 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmtypes "github.com/cometbft/cometbft/types"
 
-	icstestingutils "github.com/cosmos/interchain-security/v6/testutil/ibc_testing"
-	testutil "github.com/cosmos/interchain-security/v6/testutil/integration"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	icstestingutils "github.com/cosmos/interchain-security/v7/testutil/ibc_testing"
+	testutil "github.com/cosmos/interchain-security/v7/testutil/integration"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 // ChainType defines the type of chain (either provider or consumer)
@@ -260,27 +260,6 @@ func relayAllCommittedPackets(
 	}
 }
 
-// incrementTimeByUnbondingPeriod increments the overall time by
-//   - if chainType == Provider, the unbonding period on the provider.
-//   - otherwise, the unbonding period on the consumer.
-//
-// Note that it is expected for the provider unbonding period
-// to be one day larger than the consumer unbonding period.
-// TODO (mpoke) get rid of consumer unbonding period
-func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
-	// Get unboding periods
-	providerUnbondingPeriod, err := s.providerApp.GetTestStakingKeeper().UnbondingTime(s.providerCtx())
-	s.Require().NoError(err)
-	consumerUnbondingPeriod := s.consumerApp.GetConsumerKeeper().GetUnbondingPeriod(s.consumerCtx())
-	var jumpPeriod time.Duration
-	if chainType == Provider {
-		jumpPeriod = providerUnbondingPeriod
-	} else {
-		jumpPeriod = consumerUnbondingPeriod
-	}
-	incrementTime(s, jumpPeriod)
-}
-
 func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, msgAndArgs ...interface{}) {
 	stakingUnbondingOp, wasFound := getStakingUnbondingDelegationEntry(s.providerCtx(), s.providerApp.GetTestStakingKeeper(), id)
 	s.Require().Equal(
@@ -355,7 +334,7 @@ func (suite *CCVTestSuite) commitConsumerPacket(ctx sdk.Context, packetData ccv.
 
 	packet := suite.newPacketFromConsumer(packetData.GetBytes(), 1, suite.path, clienttypes.Height{}, timeout)
 
-	return channeltypes.CommitPacket(suite.consumerChain.App.AppCodec(), packet)
+	return channeltypes.CommitPacket(packet)
 }
 
 // constructSlashPacketFromConsumer constructs an IBC packet embedding
@@ -489,13 +468,13 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 	require.NoError(endpoint.Chain.TB, err)
 	tmConfig.TrustingPeriod = trustPeriod
 
-	height := endpoint.Counterparty.Chain.LastHeader.GetHeight().(clienttypes.Height)
+	height := endpoint.Counterparty.Chain.LatestCommittedHeader.GetHeight().(clienttypes.Height)
 	UpgradePath := []string{"upgrade", "upgradedIBCState"}
 	clientState := ibctm.NewClientState(
 		endpoint.Counterparty.Chain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
 		height, commitmenttypes.GetSDKSpecs(), UpgradePath,
 	)
-	consensusState := endpoint.Counterparty.Chain.LastHeader.ConsensusState()
+	consensusState := endpoint.Counterparty.Chain.LatestCommittedHeader.ConsensusState()
 
 	msg, err := clienttypes.NewMsgCreateClient(
 		clientState, consensusState, endpoint.Chain.SenderAccount.GetAddress().String(),
@@ -523,8 +502,9 @@ func (suite *CCVTestSuite) GetConsumerEndpointClientAndConsState(
 	clientState, found := consumerBundle.App.GetIBCKeeper().ClientKeeper.GetClientState(ctx, clientID)
 	suite.Require().True(found)
 
+	lightClientModule := ibctm.NewLightClientModule(consumerBundle.App.AppCodec(), consumerBundle.App.GetIBCKeeper().ClientKeeper.GetStoreProvider())
 	consState, found := consumerBundle.App.GetIBCKeeper().ClientKeeper.GetClientConsensusState(
-		ctx, clientID, clientState.GetLatestHeight())
+		ctx, clientID, lightClientModule.LatestHeight(ctx, clientID))
 	suite.Require().True(found)
 
 	return clientState, consState

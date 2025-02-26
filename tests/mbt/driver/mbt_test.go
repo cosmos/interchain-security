@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 	"github.com/informalsystems/itf-go/itf"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/stretchr/testify/require"
@@ -23,9 +23,9 @@ import (
 	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
 	cmttypes "github.com/cometbft/cometbft/types"
 
-	"github.com/cosmos/interchain-security/v6/testutil/integration"
-	providertypes "github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/v6/x/ccv/types"
+	"github.com/cosmos/interchain-security/v7/testutil/integration"
+	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 const verbose = false
@@ -240,7 +240,7 @@ func RunItfTrace(t *testing.T, path string) {
 	t.Log("Reading the trace...")
 
 	for index, state := range trace.States {
-		t.Log("Height modulo epoch length:", driver.providerChain().CurrentHeader.Height%blocksPerEpoch)
+		t.Log("Height modulo epoch length:", driver.providerChain().ProposedHeader.Height%blocksPerEpoch)
 		t.Log("Model height modulo epoch length:", ProviderHeight(state.VarValues["currentState"].Value.(itf.MapExprType))%modelBlocksPerEpoch)
 		t.Logf("Reading state %v of trace %v", index, path)
 
@@ -382,7 +382,7 @@ func RunItfTrace(t *testing.T, path string) {
 
 			// as in EndAndBeginBlockForProvider, we need to produce 2 blocks,
 			// while still honoring the time advancement
-			headerBefore := driver.chain(ChainId(consumerChain)).LastHeader
+			headerBefore := driver.chain(ChainId(consumerChain)).LatestCommittedHeader
 			_ = headerBefore
 
 			driver.endAndBeginBlock(ChainId(consumerChain), 1*time.Nanosecond)
@@ -594,7 +594,7 @@ func UpdateProviderClientOnConsumer(t *testing.T, driver *Driver, consumerChainI
 
 func UpdateConsumerClientOnProvider(t *testing.T, driver *Driver, consumerChain string) {
 	t.Helper()
-	consumerHeader := driver.chain(ChainId(consumerChain)).LastHeader
+	consumerHeader := driver.chain(ChainId(consumerChain)).LatestCommittedHeader
 	driver.path(ChainId(consumerChain)).AddClientHeader(consumerChain, consumerHeader)
 	err := driver.path(ChainId(consumerChain)).UpdateClient(PROVIDER, false)
 	require.True(t, err == nil, "Error updating client from %v on provider: %v", consumerChain, err)

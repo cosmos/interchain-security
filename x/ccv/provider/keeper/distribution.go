@@ -3,7 +3,7 @@ package keeper
 import (
 	"context"
 
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
@@ -13,7 +13,7 @@ import (
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/cosmos/interchain-security/v6/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )
 
 // BeginBlockRD executes BeginBlock logic for the Reward Distribution sub-protocol.
@@ -107,7 +107,7 @@ func (k Keeper) UpdateAllowlistedRewardDenoms(ctx sdk.Context, consumerId string
 }
 
 // GetConsumerRewardsAllocationByDenom returns the consumer rewards allocation for the given consumer id and denom
-func (k Keeper) GetConsumerRewardsAllocationByDenom(ctx sdk.Context, consumerId string, denom string) (types.ConsumerRewardsAllocation, error) {
+func (k Keeper) GetConsumerRewardsAllocationByDenom(ctx sdk.Context, consumerId, denom string) (types.ConsumerRewardsAllocation, error) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ConsumerRewardsAllocationByDenomKey(consumerId, denom))
 
@@ -121,7 +121,7 @@ func (k Keeper) GetConsumerRewardsAllocationByDenom(ctx sdk.Context, consumerId 
 }
 
 // SetConsumerRewardsAllocationByDenom sets the consumer rewards allocation for the given consumer id and denom
-func (k Keeper) SetConsumerRewardsAllocationByDenom(ctx sdk.Context, consumerId string, denom string, rewardsAllocation types.ConsumerRewardsAllocation) error {
+func (k Keeper) SetConsumerRewardsAllocationByDenom(ctx sdk.Context, consumerId, denom string, rewardsAllocation types.ConsumerRewardsAllocation) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := rewardsAllocation.Marshal()
 	if err != nil {
@@ -132,7 +132,7 @@ func (k Keeper) SetConsumerRewardsAllocationByDenom(ctx sdk.Context, consumerId 
 }
 
 // DeleteConsumerRewardsAllocationByDenom deletes the consumer rewards allocation for the given consumer id and denom
-func (k Keeper) DeleteConsumerRewardsAllocationByDenom(ctx sdk.Context, consumerId string, denom string) {
+func (k Keeper) DeleteConsumerRewardsAllocationByDenom(ctx sdk.Context, consumerId, denom string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ConsumerRewardsAllocationByDenomKey(consumerId, denom))
 }

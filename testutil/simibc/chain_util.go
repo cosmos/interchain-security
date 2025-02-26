@@ -3,9 +3,9 @@ package simibc
 import (
 	"time"
 
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -21,8 +21,8 @@ import (
 // NOTE: this method may be used independently of the rest of simibc.
 func FinalizeBlock(c *ibctesting.TestChain, dt time.Duration) (*ibctmtypes.Header, []channeltypes.Packet) {
 	res, err := c.App.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Height:             c.CurrentHeader.Height,
-		Time:               c.CurrentHeader.GetTime(),
+		Height:             c.ProposedHeader.Height,
+		Time:               c.ProposedHeader.GetTime(),
 		NextValidatorsHash: c.NextVals.Hash(),
 	})
 	require.NoError(c.TB, err)
@@ -32,7 +32,7 @@ func FinalizeBlock(c *ibctesting.TestChain, dt time.Duration) (*ibctmtypes.Heade
 
 	// set the last header to the current header
 	// use nil trusted fields
-	c.LastHeader = c.CurrentTMClientHeader()
+	c.LatestCommittedHeader = c.CurrentTMClientHeader()
 
 	// val set changes returned from previous block get applied to the next validators
 	// of this block. See tendermint spec for details.
@@ -40,19 +40,19 @@ func FinalizeBlock(c *ibctesting.TestChain, dt time.Duration) (*ibctmtypes.Heade
 	c.NextVals = ibctesting.ApplyValSetChanges(c, c.Vals, res.ValidatorUpdates)
 
 	// increment the current header
-	c.CurrentHeader = tmproto.Header{
+	c.ProposedHeader = tmproto.Header{
 		ChainID:            c.ChainID,
 		Height:             c.App.LastBlockHeight() + 1,
 		AppHash:            c.App.LastCommitID().Hash,
-		Time:               c.CurrentHeader.Time.Add(dt),
+		Time:               c.ProposedHeader.Time.Add(dt),
 		ValidatorsHash:     c.Vals.Hash(),
 		NextValidatorsHash: c.NextVals.Hash(),
-		ProposerAddress:    c.CurrentHeader.ProposerAddress,
+		ProposerAddress:    c.ProposedHeader.ProposerAddress,
 	}
 
 	// handle packets
 	packets := ParsePacketsFromEvents(res.Events)
-	return c.LastHeader, packets
+	return c.LatestCommittedHeader, packets
 }
 
 // ParsePacketsFromEvents returns all packets found in events.

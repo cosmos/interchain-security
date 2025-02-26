@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 
-	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
+	host "github.com/cosmos/ibc-go/v10/modules/core/24-host"
 
 	errorsmod "cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	ccv "github.com/cosmos/interchain-security/v6/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
 func NewGenesisState(
