@@ -1,0 +1,2 @@
+- `[x/consumer]` Remove `VSCMaturedPackets`. Consumer-side changes for [ADR 018](https://cosmos.github.io/interchain-security/adrs/adr-018-remove-vscmatured#consumer-changes-r2).
+  ([\#2372](https://github.com/cosmos/interchain-security/pull/2372))
