@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
@@ -497,16 +498,23 @@ func TruncateString(str string, maxLength int) string {
 		return ""
 	}
 
-	truncated := ""
-	count := 0
-	for _, char := range str {
-		truncated += string(char)
-		count++
-		if count >= maxLength {
-			break
+	// Use standard string slicing which works with bytes
+	// but since we're working with Unicode strings, we need to consider that
+	// a single character may occupy more than one byte
+	// So we check to not exceed the string boundaries
+	if len(str) <= maxLength {
+		return str
+	}
+
+	// Check that we don't cut a Unicode character in the middle
+	for !utf8.ValidString(str[:maxLength]) {
+		maxLength--
+		if maxLength <= 0 {
+			return ""
 		}
 	}
-	return truncated
+
+	return str[:maxLength]
 }
 
 // ValidateConsumerMetadata validates that all the provided metadata are in the expected range
