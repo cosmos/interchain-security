@@ -3,7 +3,6 @@ package provider_test
 import (
 	"testing"
 
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,8 +30,6 @@ func TestInitGenesis(t *testing.T) {
 		isBound bool
 		// Provider's storage of consumer state to test against
 		consumerStates []types.ConsumerState
-		// Error returned from ClaimCapability during port binding, default: nil
-		errFromClaimCap error
 		// Whether method call should panic, default: false
 		expPanic bool
 	}
@@ -75,18 +72,6 @@ func TestInitGenesis(t *testing.T) {
 					ChannelId: "channelIdToChain77",
 				},
 			},
-		},
-		{
-			name:    "capability not owned, method should panic",
-			isBound: false,
-			consumerStates: []types.ConsumerState{
-				{
-					ChainId:   "chainId77",
-					ChannelId: "channelIdToChain77",
-				},
-			},
-			errFromClaimCap: capabilitytypes.ErrCapabilityNotOwned,
-			expPanic:        true,
 		},
 	}
 
