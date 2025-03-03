@@ -3,7 +3,6 @@ package provider_test
 import (
 	"testing"
 
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	"github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v10/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
@@ -57,7 +56,6 @@ func TestOnChanOpenTry(t *testing.T) {
 		connectionHops      []string
 		portID              string
 		channelID           string
-		chanCap             *capabilitytypes.Capability
 		counterparty        channeltypes.Counterparty
 		counterpartyVersion string
 	}
@@ -129,7 +127,6 @@ func TestOnChanOpenTry(t *testing.T) {
 			connectionHops:      []string{"connectionIDToConsumer"},
 			portID:              ccv.ProviderPortID,
 			channelID:           "providerChannelID",
-			chanCap:             &capabilitytypes.Capability{},
 			counterparty:        channeltypes.NewCounterparty(ccv.ConsumerPortID, "consumerChannelID"),
 			counterpartyVersion: ccv.Version,
 		}

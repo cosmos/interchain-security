@@ -10,9 +10,6 @@ import (
 
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/gogoproto/proto"
-	"github.com/cosmos/ibc-go/modules/capability"
-	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	"github.com/cosmos/ibc-go/v10/modules/apps/transfer"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v10/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
@@ -146,7 +143,6 @@ var (
 		auth.AppModuleBasic{},
 		genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
 		bank.AppModuleBasic{},
-		capability.AppModuleBasic{},
 		ccvstaking.AppModuleBasic{},
 		mint.AppModuleBasic{},
 		ccvdistr.AppModuleBasic{},
@@ -208,7 +204,6 @@ type App struct { // nolint: golint
 	// keepers
 	AccountKeeper         authkeeper.AccountKeeper
 	BankKeeper            bankkeeper.Keeper
-	CapabilityKeeper      *capabilitykeeper.Keeper
 	StakingKeeper         *stakingkeeper.Keeper
 	SlashingKeeper        slashingkeeper.Keeper
 	MintKeeper            mintkeeper.Keeper
@@ -224,11 +219,6 @@ type App struct { // nolint: golint
 	AuthzKeeper           authzkeeper.Keeper
 	ConsumerKeeper        consumerkeeper.Keeper
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
-
-	// make scoped keepers public for test purposes
-	ScopedIBCKeeper         capabilitykeeper.ScopedKeeper
-	ScopedTransferKeeper    capabilitykeeper.ScopedKeeper
-	ScopedIBCConsumerKeeper capabilitykeeper.ScopedKeeper
 
 	// the module manager
 	MM *module.Manager
@@ -270,12 +260,10 @@ func New(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey, crisistypes.StoreKey,
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
-		evidencetypes.StoreKey, ibctransfertypes.StoreKey,
-		capabilitytypes.StoreKey, authzkeeper.StoreKey, consensusparamtypes.StoreKey,
+		evidencetypes.StoreKey, ibctransfertypes.StoreKey, authzkeeper.StoreKey, consensusparamtypes.StoreKey,
 		consumertypes.StoreKey,
 	)
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
-	memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
 	app := &App{
 		BaseApp:           bApp,
@@ -285,7 +273,6 @@ func New(
 		interfaceRegistry: interfaceRegistry,
 		keys:              keys,
 		tkeys:             tkeys,
-		memKeys:           memKeys,
 	}
 
 	app.ParamsKeeper = initParamsKeeper(
@@ -298,17 +285,6 @@ func New(
 	// set the BaseApp's parameter store
 	app.ConsensusParamsKeeper = consensusparamkeeper.NewKeeper(appCodec, runtime.NewKVStoreService(keys[consensusparamtypes.StoreKey]), authtypes.NewModuleAddress(govtypes.ModuleName).String(), runtime.EventService{})
 	bApp.SetParamStore(&app.ConsensusParamsKeeper.ParamsStore)
-
-	// add capability keeper and ScopeToModule for ibc module
-	app.CapabilityKeeper = capabilitykeeper.NewKeeper(
-		appCodec,
-		keys[capabilitytypes.StoreKey],
-		memKeys[capabilitytypes.MemStoreKey],
-	)
-	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
-	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
-	scopedIBCConsumerKeeper := app.CapabilityKeeper.ScopeToModule(consumertypes.ModuleName)
-	app.CapabilityKeeper.Seal()
 
 	// add keepers
 	app.AccountKeeper = authkeeper.NewAccountKeeper(
@@ -490,7 +466,7 @@ func New(
 		app.GetSubspace(ibctransfertypes.ModuleName),
 		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.ChannelKeeper,
-		app.IBCKeeper.ChannelKeeperV2,
+		app.MsgServiceRouter(),
 		app.AccountKeeper,
 		app.BankKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
@@ -533,7 +509,6 @@ func New(
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
 		vesting.NewAppModule(app.AccountKeeper, app.BankKeeper),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
-		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
@@ -566,9 +541,7 @@ func New(
 	// there is nothing left over in the validator fee pool, so as to keep the
 	// CanWithdrawInvariant invariant.
 	// NOTE: staking module is required if HistoricalEntries param > 0
-	// NOTE: capability module's beginblocker must come before any modules using capabilities (e.g. IBC)
 	app.MM.SetOrderBeginBlockers(
-		capabilitytypes.ModuleName,
 		minttypes.ModuleName,
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
@@ -592,7 +565,6 @@ func New(
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
-		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
@@ -614,11 +586,7 @@ func New(
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
 	// NOTE: The genutils module must also occur after auth so that it can access the params from auth.
-	// NOTE: Capability module must occur first so that it can initialize any capabilities
-	// so that other modules that want to create or claim capabilities afterwards in InitChain
-	// can do so safely.
 	app.MM.SetOrderInitGenesis(
-		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
@@ -716,7 +684,6 @@ func New(
 	// initialize stores
 	app.MountKVStores(keys)
 	app.MountTransientStores(tkeys)
-	app.MountMemoryStores(memKeys)
 
 	anteHandler, err := NewAnteHandler(
 		HandlerOptions{
@@ -759,10 +726,6 @@ func New(
 		// want to panic here instead of logging a warning.
 		fmt.Fprintln(os.Stderr, err.Error())
 	}
-
-	app.ScopedIBCKeeper = scopedIBCKeeper
-	app.ScopedTransferKeeper = scopedTransferKeeper
-	app.ScopedIBCConsumerKeeper = scopedIBCConsumerKeeper
 
 	return app
 }
@@ -927,11 +890,6 @@ func (app *App) GetStakingKeeper() *consumerkeeper.Keeper {
 // GetIBCKeeper implements the TestingApp interface.
 func (app *App) GetIBCKeeper() *ibckeeper.Keeper {
 	return app.IBCKeeper
-}
-
-// GetScopedIBCKeeper implements the TestingApp interface.
-func (app *App) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
-	return app.ScopedIBCKeeper
 }
 
 // GetTxConfig implements the TestingApp interface.
