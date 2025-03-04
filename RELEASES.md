@@ -30,7 +30,7 @@ This includes events, queries, CLI interfaces.
 
 ## Release Cycle
 
-ICS follows a traditional release cycle involving release candidates (RCs) releases before finalizing a new version.
+ICS follows a traditional release cycle involving release candidates (RCs) before finalizing a new version.
 The stable release guarantees do not go into effect until a final release is performed.
 
 ❗***It is never advisable to use a non-final release in production.***
@@ -76,7 +76,7 @@ Versions of Golang, IBC, Cosmos SDK and CometBFT used by ICS in the currently ac
 | --------------------------------------------------------------------------- | ------ | ------ | ---------- | -------- | ---- |
 | [v4.0.0](https://github.com/cosmos/interchain-security/releases/tag/v4.0.0) | 1.21   | v7.3.1 | v0.47.7    | v0.37.4  |      |
 | [v4.4.0](https://github.com/cosmos/interchain-security/releases/tag/v4.4.0) | 1.21   | v7.6.0 | v0.47.12   | v0.37.6  |      |
-| [v4.5.0](https://github.com/cosmos/interchain-security/releases/tag/v4.4.0) | 1.21   | v7.6.0 | v0.47.12   | v0.37.6  |      |
+| [v4.5.0](https://github.com/cosmos/interchain-security/releases/tag/v4.5.0) | 1.21   | v7.6.0 | v0.47.12   | v0.37.6  |      |
 | [v5.0.0](https://github.com/cosmos/interchain-security/releases/tag/v5.0.0) | 1.21   | v8.1.0 | v0.50.4    | v0.38.5  |      |
 | [v5.2.0](https://github.com/cosmos/interchain-security/releases/tag/v5.2.0) | 1.22   | v8.3.2 | v0.50.8    | v0.38.9  |      |
 | [v6.1.0](https://github.com/cosmos/interchain-security/releases/tag/v6.1.0) | 1.22   | v8.5.0 | v0.50.9    | v0.38.11 |      |
