@@ -1,6 +1,7 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -138,7 +139,7 @@ func DefaultParams() Params {
 // Validate all ccv-provider module parameters
 func (p Params) Validate() error {
 	if p.TemplateClient == nil {
-		return fmt.Errorf("template client is nil")
+		return errors.New("template client is nil")
 	}
 	if err := ValidateTemplateClient(*p.TemplateClient); err != nil {
 		return err

@@ -1,6 +1,7 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 	time "time"
 
@@ -95,7 +96,7 @@ func (cccp *ConsumerAdditionProposal) ProposalType() string {
 
 // ValidateBasic runs basic stateless validity checks
 func (cccp *ConsumerAdditionProposal) ValidateBasic() error {
-	return fmt.Errorf("ConsumerAdditionProposal is deprecated")
+	return errors.New("ConsumerAdditionProposal is deprecated")
 }
 
 // String returns the string representation of the ConsumerAdditionProposal.
@@ -149,7 +150,7 @@ func (sccp *ConsumerRemovalProposal) ProposalType() string { return ProposalType
 
 // ValidateBasic runs basic stateless validity checks
 func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
-	return fmt.Errorf("ConsumerRemovalProposal is deprecated")
+	return errors.New("ConsumerRemovalProposal is deprecated")
 }
 
 // NewConsumerModificationProposal creates a new consumer modification proposal.
@@ -186,7 +187,7 @@ func (cccp *ConsumerModificationProposal) ProposalType() string {
 
 // ValidateBasic runs basic stateless validity checks
 func (cccp *ConsumerModificationProposal) ValidateBasic() error {
-	return fmt.Errorf("ConsumerModificationProposal is deprecated")
+	return errors.New("ConsumerModificationProposal is deprecated")
 }
 
 // NewEquivocationProposal creates a new equivocation proposal.
