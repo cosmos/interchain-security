@@ -19,11 +19,7 @@ func TestReadAndWriteTrace(t *testing.T) {
 	parser := JSONParser{}
 	writer := JSONWriter{}
 
-	dir, err := os.MkdirTemp("", "example")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer os.RemoveAll(dir) // clean up
+	dir := t.TempDir() 
 
 	rapid.Check(t, func(t *rapid.T) {
 		trace := GetTraceGen().Draw(t, "Trace")
