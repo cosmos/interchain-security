@@ -17,7 +17,7 @@ import (
 
 // GetConsumerChainConsensusValidatorsKey returns the store key for consumer validators of the consumer chain with `consumerId`
 func (k Keeper) GetConsumerChainConsensusValidatorsKey(ctx sdk.Context, consumerId string) []byte {
-	return types.StringIdWithLenKey(types.ConsumerValidatorKeyPrefix(), consumerId)
+	return types.StringIdWithLenKey(types.ConsumerActiveValidatorKeyPrefix(), consumerId)
 }
 
 // SetConsumerValidator sets provided consumer `validator` on the consumer chain with `consumerId`
@@ -61,7 +61,7 @@ func (k Keeper) IsConsumerValidator(ctx sdk.Context, consumerId string, provider
 // GetConsumerValidator returns the consumer validator with `providerAddr` if it exists for chain with `consumerId`
 func (k Keeper) GetConsumerValidator(ctx sdk.Context, consumerId string, providerAddr types.ProviderConsAddress) (types.ConsensusValidator, bool) {
 	store := ctx.KVStore(k.storeKey)
-	marshalledConsumerValidator := store.Get(types.ConsumerValidatorKey(consumerId, providerAddr.ToSdkConsAddr()))
+	marshalledConsumerValidator := store.Get(types.ConsumerActiveValidatorKey(consumerId, providerAddr.ToSdkConsAddr()))
 
 	if marshalledConsumerValidator == nil {
 		return types.ConsensusValidator{}, false
