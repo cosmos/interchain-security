@@ -51,13 +51,10 @@ Upgrading a consumer from v4.4.x to v4.5.x and from v5.x or v6.1.x to v6.2.x req
 // to the consumer id for which the consumer is registered on the provider chain.
 // The consumer id can be obtained in by querying the provider, e.g. by using the
 // QueryConsumerIdFromClientId query.
-func InitializeConsumerId(ctx sdk.Context, consumerKeeper consumerkeeper.Keeper) error {
-	params, err := consumerKeeper.GetParams(ctx)
-	if err != nil {
-		return err
-	}
+func InitializeConsumerId(ctx sdk.Context, consumerKeeper consumerkeeper.Keeper) {
+	params := consumerKeeper.GetConsumerParams(ctx)
 	params.ConsumerId = ConsumerId
-	return consumerKeeper.SetParams(ctx, params)
+	consumerKeeper.SetParams(ctx, params)
 }
 ```
 
