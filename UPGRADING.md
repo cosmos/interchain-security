@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## v7.0.x
+
+v7.0.x does not contain any state migrations or state breaking changes for consumers or providers. Breaking changes 
+included in this release all stem from the IBC v10.0.x upgrade.
+
+## v6.4.x
+
 ### Provider
 
 Upgrading a provider from v6.2.0 requires state migrations. The following migrators should be added to the upgrade handler of the provider chain:
