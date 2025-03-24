@@ -1,0 +1,57 @@
+name: Check testing docs nightly
+on:
+  workflow_call:
+  pull_request:
+  merge_group:
+  push:
+    branches:
+      - main
+      - release/v*
+      - feat/*
+
+jobs:
+  check-testing-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+          ref: tk/check-testing-docs-nightly
+
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: "1.22"
+        check-latest: true
+        cache: true
+        cache-dependency-path: go.sum
+
+    - name: Generate testing docs for PR
+      run: make build-testing-docs
+
+    - name: Check for changes in integration tests documentation
+      id: check_changes_pr
+      continue-on-error: true
+      run: |
+        git show HEAD:scripts/test_doc/test_documentation.md > committed_file.md
+        cp scripts/test_doc/test_documentation.md generated_file.md
+        diff -q generated_file.md committed_file.md
+
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v7
+      with:
+        token: ${{ secrets.PRBOT_PAT }}
+        commit-message: "docs: update testing documentation"
+        title: "docs: update testing documentation"
+        branch: "bot/update-testing-docs"
+        body: |
+          This PR updates the testing documentation.
+          Please review the changes and merge if everything looks correct.
+        
+
+      
+        
