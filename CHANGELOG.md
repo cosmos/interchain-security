@@ -4,7 +4,7 @@
 
 ### DEPENDENCIES
 
-- Bump Cosmos SDK dependencies. ([\#2594](https://github.com/cosmos/interchain-security/pull/2594))
+- Bump Cosmos SDK dependencies to v0.53. ([\#2594](https://github.com/cosmos/interchain-security/pull/2594))
 
 ## v6.4.1
 
