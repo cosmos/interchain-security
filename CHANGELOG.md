@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Unreleased
+
+### DEPENDENCIES
+
+- Bump Cosmos SDK dependencies to v0.53. ([\#2594](https://github.com/cosmos/interchain-security/pull/2594))
+
 ## v6.4.1
 
 *February 25, 2025*
