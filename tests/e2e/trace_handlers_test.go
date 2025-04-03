@@ -53,11 +53,7 @@ func TestWriterThenParser(t *testing.T) {
 		"democracyRewardsSteps": {democracyRegisteredDenomSteps},
 	}
 
-	dir, err := os.MkdirTemp("", "example")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer os.RemoveAll(dir) // clean up
+	dir := t.TempDir() 
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
