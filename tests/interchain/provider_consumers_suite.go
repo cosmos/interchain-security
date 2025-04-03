@@ -83,7 +83,7 @@ func (s *ProviderConsumersSuite) GetContext() context.Context {
 
 func provConsumerModifiedGenesis() []cosmos.GenesisKV {
 	return []cosmos.GenesisKV{
-		cosmos.NewGenesisKV("app_state.staking.params.unbonding_time", (chainsuite.ProviderUnbondingTime * 10000000).String()),
+		cosmos.NewGenesisKV("app_state.staking.params.unbonding_time", strconv.FormatInt(chainsuite.ProviderUnbondingTime.Nanoseconds(), 10)),
 		cosmos.NewGenesisKV("app_state.gov.params.voting_period", chainsuite.GovVotingPeriod.String()),
 		cosmos.NewGenesisKV("app_state.gov.params.max_deposit_period", chainsuite.GovDepositPeriod.String()),
 		cosmos.NewGenesisKV("app_state.gov.params.min_deposit.0.denom", chainsuite.Stake),
