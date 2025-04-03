@@ -465,7 +465,7 @@ func New(
 		runtime.NewKVStoreService(keys[ibctransfertypes.StoreKey]),
 		app.GetSubspace(ibctransfertypes.ModuleName),
 		app.IBCKeeper.ChannelKeeper,
-		app.IBCKeeper.ChannelKeeper,
+		app.IBCKeeper.ChannelKeeperV2,
 		app.MsgServiceRouter(),
 		app.AccountKeeper,
 		app.BankKeeper,
