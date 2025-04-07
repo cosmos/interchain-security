@@ -17,7 +17,7 @@ import (
 // FinalizeBlock calls app.FinalizeBlock and app.Commit.
 // It sets the next block time to currentBlockTime + dt.
 // This function returns the TMHeader of the block that was just ended,
-//
+// along with all packets emitted during FinalizeBlock.
 // NOTE: this method may be used independently of the rest of simibc.
 func FinalizeBlock(c *ibctesting.TestChain, dt time.Duration) (*ibctmtypes.Header, []channeltypes.Packet) {
 	res, err := c.App.FinalizeBlock(&abci.RequestFinalizeBlock{
