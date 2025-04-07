@@ -26,7 +26,7 @@ type Ack struct {
 type Packet struct {
 	Packet channeltypes.Packet
 	// The number of App.Commits that have occurred since this packet was sent
-	// For example, if the ack was sent at height h, and the blockchain
+	// For example, if the packet was sent at height h, and the blockchain
 	// has headers ..., h, h+1, h+2 then Commits = 3
 	Commits int
 }
@@ -86,7 +86,7 @@ func (n OrderedOutbox) ConsumePackets(sender string, num int) []Packet {
 	return ret
 }
 
-// ConsumerAcks returns the first num packets with 2 or more commits. Returned
+// ConsumeAcks returns the first num packets with 2 or more commits. Returned
 // acks are removed from the outbox and will not be returned again (consumed).
 func (n OrderedOutbox) ConsumeAcks(sender string, num int) []Ack {
 	ret := []Ack{}
