@@ -1,7 +1,6 @@
 package ibc_testing
 
 import (
-	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -25,8 +24,7 @@ import (
 )
 
 type (
-	AppIniter       func() (ibctesting.TestingApp, map[string]json.RawMessage)
-	ValSetAppIniter func([]types.ValidatorUpdate) AppIniter
+	ValSetAppIniter func([]types.ValidatorUpdate) ibctesting.AppCreator
 )
 
 // Contains generic setup code for running integration tests against a provider, consumer,
@@ -80,7 +78,7 @@ func (cb ConsumerBundle) GetKeeper() consumerkeeper.Keeper {
 }
 
 // AddProvider adds a new provider chain to the coordinator and returns the test chain and app type
-func AddProvider[T testutil.ProviderApp](t *testing.T, coordinator *ibctesting.Coordinator, appIniter AppIniter) (
+func AddProvider[T testutil.ProviderApp](t *testing.T, coordinator *ibctesting.Coordinator, appIniter ibctesting.AppCreator) (
 	*ibctesting.TestChain, T,
 ) {
 	t.Helper()
