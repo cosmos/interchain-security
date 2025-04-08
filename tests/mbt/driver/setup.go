@@ -248,7 +248,7 @@ func newChain(
 	t *testing.T,
 	modelParams ModelParams,
 	coord *ibctesting.Coordinator,
-	appInit icstestingutils.AppIniter,
+	appInit ibctesting.AppCreator,
 	chainID string,
 	validators *cmttypes.ValidatorSet,
 	signers map[string]cmttypes.PrivValidator,

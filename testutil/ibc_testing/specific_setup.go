@@ -26,9 +26,9 @@ import (
 )
 
 var (
-	_ AppIniter       = ProviderAppIniter
-	_ ValSetAppIniter = ConsumerAppIniter
-	_ ValSetAppIniter = DemocracyConsumerAppIniter
+	_ ibctesting.AppCreator = ProviderAppIniter
+	_ ValSetAppIniter       = ConsumerAppIniter
+	_ ValSetAppIniter       = DemocracyConsumerAppIniter
 )
 
 // ProviderAppIniter implements ibctesting.AppIniter for a provider app
@@ -39,7 +39,7 @@ func ProviderAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 }
 
 // ConsumerAppIniter returns a ibctesting.ValSetAppIniter for a consumer app
-func ConsumerAppIniter(initValPowers []types.ValidatorUpdate) AppIniter {
+func ConsumerAppIniter(initValPowers []types.ValidatorUpdate) ibctesting.AppCreator {
 	return func() (ibctesting.TestingApp, map[string]json.RawMessage) {
 		encoding := appConsumer.MakeTestEncodingConfig()
 		testApp := appConsumer.New(log.NewNopLogger(), db.NewMemDB(), nil, true, simtestutil.EmptyAppOptions{})
@@ -63,7 +63,7 @@ func ConsumerAppIniter(initValPowers []types.ValidatorUpdate) AppIniter {
 }
 
 // DemocracyConsumerAppIniter implements ibctesting.ValSetAppIniter for a democracy consumer app
-func DemocracyConsumerAppIniter(initValPowers []types.ValidatorUpdate) AppIniter {
+func DemocracyConsumerAppIniter(initValPowers []types.ValidatorUpdate) ibctesting.AppCreator {
 	return func() (ibctesting.TestingApp, map[string]json.RawMessage) {
 		encoding := appConsumerDemocracy.MakeTestEncodingConfig()
 		testApp := appConsumerDemocracy.New(log.NewNopLogger(), db.NewMemDB(), nil, true, simtestutil.EmptyAppOptions{})

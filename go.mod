@@ -147,7 +147,7 @@ require (
 	cosmossdk.io/x/tx v0.14.0-rc.1
 	cosmossdk.io/x/upgrade v0.2.0-rc.2
 	github.com/cosmos/cosmos-db v1.1.1
-	github.com/cosmos/ibc-go/v10 v10.0.0
+	github.com/cosmos/ibc-go/v10 v10.1.1
 	github.com/informalsystems/itf-go v0.0.1
 	github.com/spf13/viper v1.20.1
 	golang.org/x/mod v0.24.0

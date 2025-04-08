@@ -7,7 +7,7 @@ require (
 	cosmossdk.io/x/upgrade v0.2.0-rc.2
 	github.com/cometbft/cometbft v0.38.17
 	github.com/cosmos/cosmos-sdk v0.53.0-rc.2
-	github.com/cosmos/ibc-go/v10 v10.0.0
+	github.com/cosmos/ibc-go/v10 v10.1.1
 	github.com/cosmos/interchain-security/v7 v7.0.0-20250220171855-c39340d2cf4c
 	github.com/docker/docker v28.0.0+incompatible
 	github.com/strangelove-ventures/interchaintest/v8 v8.7.1
