@@ -70,7 +70,7 @@ func (f *RelayedPath) PacketSentByB(packet channeltypes.Packet) bool {
 // AddPacket adds a packet to the outbox of the chain with chainID.
 // It will fail if the chain is not involved in the relayed path,
 // or if the packet does not belong to this path,
-// i.e. if the pace
+// i.e. if the packet does not belong to this path.
 func (f *RelayedPath) AddPacket(chainID string, packet channeltypes.Packet) {
 	if !f.InvolvesChain(chainID) {
 		f.t.Fatal("in relayed path could not add packet to chain: ", chainID, " because it is not involved in the relayed path")
