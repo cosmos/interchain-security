@@ -78,7 +78,7 @@ func SendIBCPacket(
 	_, err := channelKeeper.SendPacket(ctx,
 		sourcePortID,
 		sourceChannelID,
-		clienttypes.Height{},                                  //  timeout height disabled
+		clienttypes.Height{}, //  timeout height disabled
 		uint64(ctx.BlockTime().Add(timeoutPeriod).UnixNano()), // timeout timestamp
 		packetData,
 	)

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/v2/crypto/encoding"
+	"github.com/cosmos/cosmos-sdk/crypto/keys"
 
 	"cosmossdk.io/math"
 
@@ -35,8 +36,10 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 			// received from the provider are invalid.
 			panic(err)
 		}
-		protoPubkey, err := encoding.PubKeyToProto(pubkey)
+		protoPubkey, err := keys.PubKeyFromCometTypeAndBytes(change.PubKeyType, change.PubKeyBytes)
 		if err != nil {
+			// An error here would indicate that the validator updates
+			// received from the provider are invalid.
 			panic(err)
 		}
 		addr := pubkey.Address()
@@ -329,13 +332,13 @@ func (k Keeper) MustGetCurrentValidatorsAsABCIUpdates(ctx sdk.Context) []abci.Va
 			// to be stored correctly in ApplyCCValidatorChanges.
 			panic(err)
 		}
-		tmPK, err := cryptocodec.ToCmtProtoPublicKey(pk)
+		tmPK, err := cryptocodec.ToCmtPubKeyInterface(pk)
 		if err != nil {
 			// This should never happen as the pubkey is assumed
 			// to be stored correctly in ApplyCCValidatorChanges.
 			panic(err)
 		}
-		valUpdates = append(valUpdates, abci.ValidatorUpdate{PubKey: tmPK, Power: v.Power})
+		valUpdates = append(valUpdates, abci.ValidatorUpdate{PubKeyBytes: tmPK.Bytes(), PubKeyType: tmPK.Type(), Power: v.Power})
 	}
 	return valUpdates
 }

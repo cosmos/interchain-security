@@ -28,9 +28,9 @@ message CrossChainValidator {
     (gogoproto.moretags) = "yaml:\"consensus_pubkey\""
   ];
 
-  // !!! DEPRECATED !!! opted_out is deprecated because after the introduction of Partial Set Security (PSS)
-  // we removed the soft opt-out feature.
-  bool opted_out = 4 [deprecated = true];
+  // !!! DEPRECATED !!! opted_out is deprecated because after the introduction
+  // of Partial Set Security (PSS) we removed the soft opt-out feature.
+  bool opted_out = 4 [ deprecated = true ];
 }
 
 // A record storing the state of a slash packet sent to the provider chain

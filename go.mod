@@ -8,7 +8,7 @@ require (
 	cosmossdk.io/errors v1.0.3-0.20250604174653-810d15dd6d16
 	cosmossdk.io/math v1.5.4-0.20250604174653-810d15dd6d16
 	github.com/cometbft/cometbft-db v1.0.4 // indirect
-	github.com/cosmos/cosmos-sdk v0.54.0-alpha.0.0.20250609200650-1521447c77da
+	github.com/cosmos/cosmos-sdk v0.54.0-alpha.0.0.20250610171936-b482ce4a740c
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/cosmos/ics23/go v0.11.0
 	github.com/golang/mock v1.6.0

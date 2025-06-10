@@ -40,8 +40,8 @@ type CrossChainValidator struct {
 	Power   int64  `protobuf:"varint,2,opt,name=power,proto3" json:"power,omitempty"`
 	// pubkey is the consensus public key of the validator, as a Protobuf Any.
 	Pubkey *types.Any `protobuf:"bytes,3,opt,name=pubkey,proto3" json:"pubkey,omitempty" yaml:"consensus_pubkey"`
-	// !!! DEPRECATED !!! opted_out is deprecated because after the introduction of Partial Set Security (PSS)
-	// we removed the soft opt-out feature.
+	// !!! DEPRECATED !!! opted_out is deprecated because after the introduction
+	// of Partial Set Security (PSS) we removed the soft opt-out feature.
 	OptedOut bool `protobuf:"varint,4,opt,name=opted_out,json=optedOut,proto3" json:"opted_out,omitempty"` // Deprecated: Do not use.
 }
 
