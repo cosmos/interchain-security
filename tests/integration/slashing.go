@@ -3,6 +3,7 @@ package integration
 import (
 	"fmt"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 
@@ -58,7 +59,7 @@ func (s *CCVTestSuite) TestRelayAndApplyDowntimePacket() {
 	tmVal := s.consumerChain.Vals.Validators[0]
 	val, err := tmVal.ToProto()
 	s.Require().NoError(err)
-	pubkey, err := cryptocodec.FromCmtProtoPublicKey(val.GetPubKey())
+	pubkey, err := keys.PubKeyFromCometTypeAndBytes(val.PubKeyType, val.PubKeyBytes)
 	s.Require().Nil(err)
 	consumerConsAddr := providertypes.NewConsumerConsAddress(sdk.GetConsAddress(pubkey))
 	// map consumer consensus address to provider consensus address

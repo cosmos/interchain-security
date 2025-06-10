@@ -134,11 +134,10 @@ func TestChangeoverToConsumer(t *testing.T) {
 			for _, ccVal := range ccVals {
 				ccvValPubKey, err := ccVal.ConsPubKey()
 				require.NoError(t, err)
-				tmProtoPubKey, err := sdkcryptocodec.ToCmtProtoPublicKey(ccvValPubKey)
 				require.NoError(t, err)
 				valPk, err := keys.PubKeyFromCometTypeAndBytes(valUpdate.PubKeyType, valUpdate.PubKeyBytes)
 				require.NoError(t, err)
-				if tmProtoPubKey.Equal(valPk) {
+				if ccvValPubKey.Equals(valPk) {
 					found = true
 					require.Equal(t, valUpdate.Power, ccVal.Power)
 				}

@@ -188,10 +188,32 @@ func TestOnRecvVSCPacket(t *testing.T) {
 		require.True(t, ok)
 		// Sort to avoid dumb inequalities
 		sort.SliceStable(actualPendingChanges.ValidatorUpdates, func(i, j int) bool {
-			return actualPendingChanges.ValidatorUpdates[i].PubKey.Compare(actualPendingChanges.ValidatorUpdates[j].PubKey) == -1
+			valupdateI := actualPendingChanges.ValidatorUpdates[i]
+			valupdateJ := actualPendingChanges.ValidatorUpdates[j]
+			pki, err := encoding.PubKeyFromTypeAndBytes(valupdateI.PubKeyType, valupdateI.PubKeyBytes)
+			require.NoError(t, err)
+			pkj, err := encoding.PubKeyFromTypeAndBytes(valupdateJ.PubKeyType, valupdateJ.PubKeyBytes)
+			require.NoError(t, err)
+
+			pkiProto, err := encoding.PubKeyToProto(pki)
+			require.NoError(t, err)
+			pkjProto, err := encoding.PubKeyToProto(pkj)
+			require.NoError(t, err)
+			return pkiProto.Compare(pkjProto) == -1
 		})
 		sort.SliceStable(tc.expectedPendingChanges.ValidatorUpdates, func(i, j int) bool {
-			return tc.expectedPendingChanges.ValidatorUpdates[i].PubKey.Compare(tc.expectedPendingChanges.ValidatorUpdates[j].PubKey) == -1
+			valupdateI := tc.expectedPendingChanges.ValidatorUpdates[i]
+			valupdateJ := tc.expectedPendingChanges.ValidatorUpdates[j]
+			pki, err := encoding.PubKeyFromTypeAndBytes(valupdateI.PubKeyType, valupdateI.PubKeyBytes)
+			require.NoError(t, err)
+			pkj, err := encoding.PubKeyFromTypeAndBytes(valupdateJ.PubKeyType, valupdateJ.PubKeyBytes)
+			require.NoError(t, err)
+
+			pkiProto, err := encoding.PubKeyToProto(pki)
+			require.NoError(t, err)
+			pkjProto, err := encoding.PubKeyToProto(pkj)
+			require.NoError(t, err)
+			return pkiProto.Compare(pkjProto) == -1
 		})
 		require.Equal(t, tc.expectedPendingChanges, *actualPendingChanges, "pending changes not equal to expected changes after successful packet receive. case: %s", tc.name)
 	}
@@ -215,14 +237,19 @@ func TestOnRecvVSCPacketDuplicateUpdates(t *testing.T) {
 
 	// Construct packet/data with duplicate val updates for the same pub key
 	cId := crypto.NewCryptoIdentityFromIntSeed(43278947)
+	pk, err := encoding.PubKeyFromProto(cId.TMProtoCryptoPublicKey())
+	require.NoError(t, err)
+
 	valUpdates := []abci.ValidatorUpdate{
 		{
-			PubKey: cId.TMProtoCryptoPublicKey(),
-			Power:  0,
+			PubKeyBytes: pk.Bytes(),
+			PubKeyType:  pk.Type(),
+			Power:       0,
 		},
 		{
-			PubKey: cId.TMProtoCryptoPublicKey(),
-			Power:  473289,
+			PubKeyBytes: pk.Bytes(),
+			PubKeyType:  pk.Type(),
+			Power:       473289,
 		},
 	}
 	vscData := types.NewValidatorSetChangePacketData(
@@ -238,7 +265,7 @@ func TestOnRecvVSCPacketDuplicateUpdates(t *testing.T) {
 	require.False(t, ok)
 
 	// Execute OnRecvVSCPacket
-	err := consumerKeeper.OnRecvVSCPacket(ctx, packet, vscData)
+	err = consumerKeeper.OnRecvVSCPacket(ctx, packet, vscData)
 	require.Nil(t, err)
 
 	// Confirm pending changes are queued by OnRecvVSCPacket

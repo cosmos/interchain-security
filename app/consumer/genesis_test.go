@@ -133,21 +133,18 @@ var consumerGenesisStates map[string]string = map[string]string{
 	    },
 	    "initial_val_set": [
 	      {
-	        "pub_key": {
-	          "ed25519": "RrclQz9bIhkIy/gfL485g3PYMeiIku4qeo495787X10="
-	        },
+			"pubKeyType": "ed25519",
+			"pubKeyBytes": "RrclQz9bIhkIy/gfL485g3PYMeiIku4qeo495787X10=",
 	        "power": "500"
 	      },
 	      {
-	        "pub_key": {
-	          "ed25519": "Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="
-	        },
+			"pubKeyType": "ed25519",
+			"pubKeyBytes": "Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is=",
 	        "power": "500"
 	      },
 	      {
-	        "pub_key": {
-	          "ed25519": "mAN6RXYxSM4MNGSIriYiS7pHuwAcOHDQAy9/wnlSzOI="
-	        },
+			"pubKeyType": "ed25519",
+			"pubKeyBytes": "mAN6RXYxSM4MNGSIriYiS7pHuwAcOHDQAy9/wnlSzOI=",
 	        "power": "500"
 	      }
 	    ]
@@ -255,21 +252,18 @@ var consumerGenesisStates map[string]string = map[string]string{
 	    },
 	    "initial_val_set": [
 	      {
-	        "pub_key": {
-	          "ed25519": "RrclQz9bIhkIy/gfL485g3PYMeiIku4qeo495787X10="
-	        },
+			"pubKeyType": "ed25519",
+			"pubKeyBytes": "RrclQz9bIhkIy/gfL485g3PYMeiIku4qeo495787X10=",
 	        "power": "500"
 	      },
 	      {
-	        "pub_key": {
-	          "ed25519": "Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="
-	        },
+			"pubKeyType": "ed25519",
+			"pubKeyBytes": "Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is=",
 	        "power": "500"
 	      },
 	      {
-	        "pub_key": {
-	          "ed25519": "mAN6RXYxSM4MNGSIriYiS7pHuwAcOHDQAy9/wnlSzOI="
-	        },
+			"pubKeyType": "ed25519",
+			"pubKeyBytes": "mAN6RXYxSM4MNGSIriYiS7pHuwAcOHDQAy9/wnlSzOI=",
 	        "power": "500"
 	      }
 	    ]

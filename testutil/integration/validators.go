@@ -2,7 +2,6 @@ package integration
 
 import (
 	"github.com/cometbft/cometbft/v2/abci/types"
-	tmencoding "github.com/cometbft/cometbft/v2/crypto/encoding"
 	tmtypes "github.com/cometbft/cometbft/v2/types"
 )
 
@@ -41,10 +40,10 @@ func CreateValidators(n int, chainId string) (
 
 func ToValidatorUpdates(valSet *tmtypes.ValidatorSet) (valUpdates []types.ValidatorUpdate, err error) {
 	for _, val := range valSet.Validators {
-		protoPubKey, err := tmencoding.PubKeyToProto(val.PubKey)
 		valUpdates = append(valUpdates, types.ValidatorUpdate{
-			PubKey: protoPubKey,
-			Power:  val.VotingPower,
+			PubKeyBytes: val.PubKey.Bytes(),
+			PubKeyType:  val.PubKey.Type(),
+			Power:       val.VotingPower,
 		})
 		if err != nil {
 			return nil, err

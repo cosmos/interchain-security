@@ -56,7 +56,12 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 	changesPower := int64(0)
 
 	for _, v := range tcValidators {
-		changes = append(changes, tmtypes.TM2PB.ValidatorUpdate(v))
+
+		changes = append(changes, abci.ValidatorUpdate{
+			Power:       v.VotingPower,
+			PubKeyBytes: v.PubKey.Bytes(),
+			PubKeyType:  v.PubKey.Type(),
+		})
 		changesPower += v.VotingPower
 	}
 
@@ -79,21 +84,21 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 			expValsNum:    len(ccVals) + 1,
 		},
 		{ // update a validator voting power
-			changes:       []abci.ValidatorUpdate{{PubKey: changes[0].PubKey, Power: changes[0].Power + 3}},
+			changes:       []abci.ValidatorUpdate{{PubKeyBytes: changes[0].PubKeyBytes, PubKeyType: changes[0].PubKeyType, Power: changes[0].Power + 3}},
 			expTotalPower: changesPower + 3,
 			expValsNum:    len(ccVals) + 1,
 		},
 		{ // unbond a validator
-			changes:       []abci.ValidatorUpdate{{PubKey: changes[0].PubKey, Power: 0}},
+			changes:       []abci.ValidatorUpdate{{PubKeyType: changes[0].GetPubKeyType(), PubKeyBytes: changes[0].GetPubKeyBytes(), Power: 0}},
 			expTotalPower: changesPower - changes[0].Power,
 			expValsNum:    len(ccVals),
 		},
 		{ // update all validators voting power
 			changes: []abci.ValidatorUpdate{
-				{PubKey: changes[0].PubKey, Power: changes[0].Power + 1},
-				{PubKey: changes[1].PubKey, Power: changes[1].Power + 2},
-				{PubKey: changes[2].PubKey, Power: changes[2].Power + 3},
-				{PubKey: changes[3].PubKey, Power: changes[3].Power + 4},
+				{PubKeyBytes: changes[0].PubKeyBytes, PubKeyType: changes[0].PubKeyType, Power: changes[0].Power + 1},
+				{PubKeyBytes: changes[1].PubKeyBytes, PubKeyType: changes[1].PubKeyType, Power: changes[1].Power + 2},
+				{PubKeyBytes: changes[2].PubKeyBytes, PubKeyType: changes[2].PubKeyType, Power: changes[2].Power + 3},
+				{PubKeyBytes: changes[3].PubKeyBytes, PubKeyType: changes[3].PubKeyType, Power: changes[3].Power + 4},
 			},
 			expTotalPower: changesPower + 10,
 			expValsNum:    len(ccVals) + 1,

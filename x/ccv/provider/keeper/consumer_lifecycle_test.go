@@ -15,11 +15,9 @@ import (
 
 	"cosmossdk.io/math"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	tmprotocrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	abci "github.com/cometbft/cometbft/v2/abci/types"
 
 	cryptotestutil "github.com/cosmos/interchain-security/v7/testutil/crypto"
@@ -698,13 +696,10 @@ func TestMakeConsumerGenesis(t *testing.T) {
 	require.NoError(t, err)
 
 	_, pks, _ := ibctesting.GenerateKeys(t, 2)
-	var ppks [2]tmprotocrypto.PublicKey
-	for i, pk := range pks {
-		ppks[i], _ = cryptocodec.ToCmtProtoPublicKey(pk)
-	}
+
 	initialValUpdates := []abci.ValidatorUpdate{
-		{PubKey: ppks[0], Power: 1},
-		{PubKey: ppks[1], Power: 2},
+		{PubKeyType: pks[0].Type(), PubKeyBytes: pks[0].Bytes(), Power: 1},
+		{PubKeyType: pks[1].Type(), PubKeyBytes: pks[1].Bytes(), Power: 2},
 	}
 
 	actualGenesis, err := providerKeeper.MakeConsumerGenesis(ctx, CONSUMER_ID, initialValUpdates)

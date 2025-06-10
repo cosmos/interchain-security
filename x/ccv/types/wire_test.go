@@ -138,24 +138,7 @@ func TestVSCPacketDataWireBytes(t *testing.T) {
 	str := string(jsonBz)
 
 	// Expected string formatted for human readability
-	expectedStr := `{
-		"validator_updates": [
-			{
-				"pub_key": {
-					"ed25519": "SMxP2pXAuxQC7FmBn4dh4Kt5eYdQFWC/wN7oWobZKds="
-				},
-				"power": "30"
-			},
-			{
-				"pub_key": {
-					"ed25519": "J/nGy0vCXhgVbr8S71B4ZgHi4fsMqtDxDlERZ+gG238="
-				},
-				"power": "20"
-			}
-		],
-		"valset_update_id": "73",
-		"slash_acks": ["slash", "acks", "example"]
-	}`
+	expectedStr := "{\"validator_updates\":[{\"power\":\"30\",\"pub_key_bytes\":\"SMxP2pXAuxQC7FmBn4dh4Kt5eYdQFWC/wN7oWobZKds=\",\"pub_key_type\":\"ed25519\"},{\"power\":\"20\",\"pub_key_bytes\":\"J/nGy0vCXhgVbr8S71B4ZgHi4fsMqtDxDlERZ+gG238=\",\"pub_key_type\":\"ed25519\"}],\"valset_update_id\":\"73\",\"slash_acks\":[\"slash\",\"acks\",\"example\"]}"
 
 	// Remove newlines, tabs, and spaces for comparison
 	expectedStr = strings.ReplaceAll(expectedStr, "\n", "")

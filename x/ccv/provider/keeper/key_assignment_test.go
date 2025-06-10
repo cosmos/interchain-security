@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cometbft/cometbft/v2/crypto/encoding"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -647,7 +648,15 @@ func (vs *ValSet) apply(updates []abci.ValidatorUpdate) {
 	// note: an insertion index should always be found
 	for _, u := range updates {
 		for i, id := range vs.identities { // n2 looping but n is tiny
-			cons, _ := ccvtypes.TMCryptoPublicKeyToConsAddr(u.PubKey)
+			upk, err := encoding.PubKeyFromTypeAndBytes(u.PubKeyType, u.PubKeyBytes)
+			if err != nil {
+				panic(err)
+			}
+			upkProto, err := encoding.PubKeyToProto(upk)
+			if err != nil {
+				panic(err)
+			}
+			cons, _ := ccvtypes.TMCryptoPublicKeyToConsAddr(upkProto)
 			if id.SDKValConsAddress().Equals(cons) {
 				vs.power[i] = u.Power
 			}
@@ -704,9 +713,14 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 			// Power 0, 1, or 2 represents
 			// deletion, update (from 0 or 2), update (from 0 or 1)
 			power := rng.Intn(3)
+			pk, err := encoding.PubKeyFromProto(providerIDS[i].TMProtoCryptoPublicKey())
+			if err != nil {
+				panic(err)
+			}
 			ret = append(ret, abci.ValidatorUpdate{
-				PubKey: providerIDS[i].TMProtoCryptoPublicKey(),
-				Power:  int64(power),
+				PubKeyBytes: pk.Bytes(),
+				PubKeyType:  pk.Type(),
+				Power:       int64(power),
 			})
 		}
 		return

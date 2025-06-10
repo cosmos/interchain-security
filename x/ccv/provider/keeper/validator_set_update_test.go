@@ -5,6 +5,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/cometbft/cometbft/v2/crypto/encoding"
 	"github.com/stretchr/testify/require"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -145,7 +146,9 @@ func TestDiff(t *testing.T) {
 	// validator A only exists in `currentValidators` and hence an update with 0 power would be generated
 	// to remove this validator
 	currentA, currentPublicKeyA := createConsumerValidator(1, 1, 1)
-	expectedUpdates = append(expectedUpdates, abci.ValidatorUpdate{PubKey: currentPublicKeyA, Power: 0})
+	pkA, err := encoding.PubKeyFromProto(currentPublicKeyA)
+	require.NoError(t, err)
+	expectedUpdates = append(expectedUpdates, abci.ValidatorUpdate{PubKeyBytes: pkA.Bytes(), PubKeyType: pkA.Type(), Power: 0})
 
 	// validator B exists in both `currentValidators` and `nextValidators` but it did not change its
 	// power or consumer public key and hence no validator update is generated
@@ -156,26 +159,37 @@ func TestDiff(t *testing.T) {
 	// a validator update is generated with the new power
 	currentC, currentPublicKeyC := createConsumerValidator(3, 1, 3)
 	nextC, _ := createConsumerValidator(3, 2, 3)
-	expectedUpdates = append(expectedUpdates, abci.ValidatorUpdate{PubKey: currentPublicKeyC, Power: 2})
+	pkC, err := encoding.PubKeyFromProto(currentPublicKeyC)
+	require.NoError(t, err)
+	expectedUpdates = append(expectedUpdates, abci.ValidatorUpdate{PubKeyType: pkC.Type(), PubKeyBytes: pkC.Bytes(), Power: 2})
 
 	// validator D exists in both `currentValidators` and `nextValidators` and it changes its consumer public key, so
 	// a validator update is generated to remove the old public key and another update to add the new public key
 	currentD, currentPublicKeyD := createConsumerValidator(4, 1, 4)
 	nextD, nextPublicKeyD := createConsumerValidator(4, 1, 5)
-	expectedUpdates = append(expectedUpdates, abci.ValidatorUpdate{PubKey: currentPublicKeyD, Power: 0})
-	expectedUpdates = append(expectedUpdates, abci.ValidatorUpdate{PubKey: nextPublicKeyD, Power: 1})
+	currPKD, err := encoding.PubKeyFromProto(currentPublicKeyD)
+	require.NoError(t, err)
+	nextPKD, err := encoding.PubKeyFromProto(nextPublicKeyD)
+	require.NoError(t, err)
+	expectedUpdates = append(expectedUpdates, abci.ValidatorUpdate{PubKeyType: currPKD.Type(), PubKeyBytes: currPKD.Bytes(), Power: 0})
+	expectedUpdates = append(expectedUpdates, abci.ValidatorUpdate{PubKeyType: nextPKD.Type(), PubKeyBytes: nextPKD.Bytes(), Power: 1})
 
 	// validator E exists in both `currentValidators` and `nextValidators` and it changes both its power and
 	// its consumer public key, so a validator update is generated to remove the old public key and another update to
 	// add the new public key with thew new power
 	currentE, currentPublicKeyE := createConsumerValidator(5, 1, 6)
 	nextE, nextPublicKeyE := createConsumerValidator(5, 2, 7)
-	expectedUpdates = append(expectedUpdates, abci.ValidatorUpdate{PubKey: currentPublicKeyE, Power: 0})
-	expectedUpdates = append(expectedUpdates, abci.ValidatorUpdate{PubKey: nextPublicKeyE, Power: 2})
+	currPKE, err := encoding.PubKeyFromProto(currentPublicKeyE)
+	require.NoError(t, err)
+	nextPKE, err := encoding.PubKeyFromProto(nextPublicKeyE)
+	require.NoError(t, err)
+	expectedUpdates = append(expectedUpdates, abci.ValidatorUpdate{PubKeyType: currPKE.Type(), PubKeyBytes: currPKE.Bytes(), Power: 0})
+	expectedUpdates = append(expectedUpdates, abci.ValidatorUpdate{PubKeyType: nextPKE.Type(), PubKeyBytes: nextPKE.Bytes(), Power: 2})
 
 	// validator F does not exist in `currentValidators` and hence an update is generated to add this new validator
 	nextF, nextPublicKeyF := createConsumerValidator(6, 1, 8)
-	expectedUpdates = append(expectedUpdates, abci.ValidatorUpdate{PubKey: nextPublicKeyF, Power: 1})
+	nextPKF, err := encoding.PubKeyFromProto(nextPublicKeyF)
+	expectedUpdates = append(expectedUpdates, abci.ValidatorUpdate{PubKeyType: nextPKF.Type(), PubKeyBytes: nextPKF.Bytes(), Power: 1})
 
 	currentValidators := []types.ConsensusValidator{currentA, currentB, currentC, currentD, currentE}
 	nextValidators := []types.ConsensusValidator{nextB, nextC, nextD, nextE, nextF}
@@ -188,7 +202,16 @@ func TestDiff(t *testing.T) {
 			if updates[i].Power != updates[j].Power {
 				return updates[i].Power < updates[j].Power
 			}
-			return updates[i].PubKey.String() < updates[j].PubKey.String()
+			pkProtoI, err := encoding.PubKeyFromTypeAndBytes(updates[i].PubKeyType, updates[i].PubKeyBytes)
+			require.NoError(t, err)
+
+			pkProtoJ, err := encoding.PubKeyFromTypeAndBytes(updates[i].PubKeyType, updates[i].PubKeyBytes)
+			require.NoError(t, err)
+
+			pkI, err := encoding.PubKeyToProto(pkProtoI)
+			pkJ, err := encoding.PubKeyToProto(pkProtoJ)
+
+			return pkI.String() < pkJ.String()
 		})
 	}
 
@@ -205,14 +228,21 @@ func TestDiffEdgeCases(t *testing.T) {
 	valC, publicKeyC := createConsumerValidator(3, 3, 3)
 	validators := []types.ConsensusValidator{valA, valB, valC}
 
+	pkA, err := encoding.PubKeyFromProto(publicKeyA)
+	require.NoError(t, err)
+	pkB, err := encoding.PubKeyFromProto(publicKeyB)
+	require.NoError(t, err)
+	pkC, err := encoding.PubKeyFromProto(publicKeyC)
+	require.NoError(t, err)
+
 	// we do not expect any validator updates if the `currentValidators` are the same with the `nextValidators`
 	require.Empty(t, len(keeper.DiffValidators(validators, validators)))
 
 	// only have `nextValidators` that would generate validator updates for the validators to be added
 	expectedUpdates := []abci.ValidatorUpdate{
-		{PubKey: publicKeyA, Power: 1},
-		{PubKey: publicKeyB, Power: 2},
-		{PubKey: publicKeyC, Power: 3},
+		{PubKeyType: pkA.Type(), PubKeyBytes: pkA.Bytes(), Power: 1},
+		{PubKeyType: pkB.Type(), PubKeyBytes: pkB.Bytes(), Power: 2},
+		{PubKeyType: pkC.Type(), PubKeyBytes: pkC.Bytes(), Power: 3},
 	}
 	actualUpdates := keeper.DiffValidators([]types.ConsensusValidator{}, validators)
 	// sort validators first to be able to compare
@@ -221,7 +251,17 @@ func TestDiffEdgeCases(t *testing.T) {
 			if updates[i].Power != updates[j].Power {
 				return updates[i].Power < updates[j].Power
 			}
-			return updates[i].PubKey.String() < updates[j].PubKey.String()
+			pkI, err := encoding.PubKeyFromTypeAndBytes(updates[i].PubKeyType, updates[i].PubKeyBytes)
+			require.NoError(t, err)
+			pkJ, err := encoding.PubKeyFromTypeAndBytes(updates[j].PubKeyType, updates[j].PubKeyBytes)
+			require.NoError(t, err)
+
+			pkIProto, err := encoding.PubKeyToProto(pkI)
+			require.NoError(t, err)
+			pkJProto, err := encoding.PubKeyToProto(pkJ)
+			require.NoError(t, err)
+
+			return pkIProto.String() < pkJProto.String()
 		})
 	}
 
@@ -231,9 +271,9 @@ func TestDiffEdgeCases(t *testing.T) {
 
 	// only have `currentValidators` that would generate validator updates for the validators to be removed
 	expectedUpdates = []abci.ValidatorUpdate{
-		{PubKey: publicKeyA, Power: 0},
-		{PubKey: publicKeyB, Power: 0},
-		{PubKey: publicKeyC, Power: 0},
+		{PubKeyType: pkA.Type(), PubKeyBytes: pkA.Bytes(), Power: 0},
+		{PubKeyType: pkB.Type(), PubKeyBytes: pkB.Bytes(), Power: 0},
+		{PubKeyType: pkC.Type(), PubKeyBytes: pkC.Bytes(), Power: 0},
 	}
 	actualUpdates = keeper.DiffValidators(validators, []types.ConsensusValidator{})
 	sortUpdates(expectedUpdates)
@@ -243,8 +283,8 @@ func TestDiffEdgeCases(t *testing.T) {
 	// have nonempty `currentValidators` and `nextValidators`, but with empty intersection
 	// all old validators should be removed, all new validators should be added
 	expectedUpdates = []abci.ValidatorUpdate{
-		{PubKey: publicKeyA, Power: 0},
-		{PubKey: publicKeyB, Power: 2},
+		{PubKeyType: pkA.Type(), PubKeyBytes: pkA.Bytes(), Power: 0},
+		{PubKeyType: pkB.Type(), PubKeyBytes: pkB.Bytes(), Power: 2},
 	}
 	actualUpdates = keeper.DiffValidators(validators[0:1], validators[1:2])
 	sortUpdates(expectedUpdates)

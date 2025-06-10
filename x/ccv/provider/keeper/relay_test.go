@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	v1 "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
+	"github.com/cometbft/cometbft/v2/crypto/encoding"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v10/testing"
@@ -31,6 +33,8 @@ import (
 func TestQueueVSCPackets(t *testing.T) {
 	_, _, key := ibctesting.GenerateKeys(t, 1)
 	tmPubKey, _ := cryptocodec.ToCmtProtoPublicKey(key)
+	pk, err := encoding.PubKeyFromProto(tmPubKey)
+	require.NoError(t, err)
 
 	testCases := []struct {
 		name                     string
@@ -49,7 +53,7 @@ func TestQueueVSCPackets(t *testing.T) {
 			packets: []ccv.ValidatorSetChangePacketData{
 				{
 					ValidatorUpdates: []abci.ValidatorUpdate{
-						{PubKey: tmPubKey, Power: 1},
+						{PubKeyType: pk.Type(), PubKeyBytes: pk.Bytes(), Power: 1},
 					},
 					ValsetUpdateId: 1,
 				},
@@ -773,18 +777,36 @@ func TestProviderValidatorUpdates(t *testing.T) {
 	// removed validator is set to 0 power
 	// validator 1 is set to 0 power (because maxProviderConsensusValidators is 2)
 	// validator 2 is untouched
+	pk, err := validators[0].CmtConsPublicKey()
+	require.NoError(t, err)
+	val0, err := encoding.PubKeyFromProto(pk)
+	require.NoError(t, err)
+
+	pk, err = removedValidator.CmtConsPublicKey()
+	require.NoError(t, err)
+	removedPK, err := encoding.PubKeyFromProto(pk)
+	require.NoError(t, err)
+
+	pk, err = validators[2].CmtConsPublicKey()
+	require.NoError(t, err)
+	val2, err := encoding.PubKeyFromProto(pk)
+	require.NoError(t, err)
+
 	expectedUpdates := []abci.ValidatorUpdate{
 		{
-			PubKey: testkeeper.Must(validators[0].CmtConsPublicKey()),
-			Power:  30,
+			PubKeyType:  val0.Type(),
+			PubKeyBytes: val0.Bytes(),
+			Power:       30,
 		},
 		{
-			PubKey: testkeeper.Must(removedValidator.CmtConsPublicKey()),
-			Power:  0,
+			PubKeyBytes: removedPK.Bytes(),
+			PubKeyType:  removedPK.Type(),
+			Power:       0,
 		},
 		{
-			PubKey: testkeeper.Must(validators[2].CmtConsPublicKey()),
-			Power:  0,
+			PubKeyType:  val2.Type(),
+			PubKeyBytes: val2.Bytes(),
+			Power:       0,
 		},
 	}
 
@@ -858,28 +880,27 @@ func TestQueueVSCPacketsWithPowerCapping(t *testing.T) {
 			[]abci.ValidatorUpdate{
 				// validator D is not here because it was denylisted
 				// powers have changed because of power capping
-				{
-					PubKey: valEPubKey,
-					Power:  9,
-				},
-				{
-					PubKey: valCPubKey,
-					Power:  6,
-				},
-				{
-					PubKey: valBPubKey,
-					Power:  5,
-				},
-				{
-					PubKey: valAPubKey,
-					Power:  4,
-				},
+				valUpdateFromPubkey(t, valEPubKey, 9),
+				valUpdateFromPubkey(t, valCPubKey, 6),
+				valUpdateFromPubkey(t, valBPubKey, 5),
+				valUpdateFromPubkey(t, valAPubKey, 4),
 			},
 			1,
 			nil),
 	}
 
 	require.Equal(t, expectedQueuedVSCPackets, actualQueuedVSCPackets)
+}
+
+func valUpdateFromPubkey(t *testing.T, protoPK v1.PublicKey, power int64) abci.ValidatorUpdate {
+	t.Helper()
+	pk, err := encoding.PubKeyFromProto(protoPK)
+	require.NoError(t, err)
+	return abci.ValidatorUpdate{
+		Power:       power,
+		PubKeyBytes: pk.Bytes(),
+		PubKeyType:  pk.Type(),
+	}
 }
 
 // TestBlocksUntilNextEpoch tests the `BlocksUntilNextEpoch` method

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v10/modules/core/23-commitment/types"
@@ -14,7 +15,6 @@ import (
 
 	"cosmossdk.io/math"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -75,8 +75,8 @@ func (s *CCVTestSuite) getVal(ctx sdk.Context, valAddr sdk.ValAddress) stakingty
 func (s *CCVTestSuite) getValConsAddr(tmVal tmtypes.Validator) sdk.ConsAddress {
 	val, err := tmVal.ToProto()
 	s.Require().NoError(err)
-	pubkey, err := cryptocodec.FromCmtProtoPublicKey(val.GetPubKey())
-	s.Require().Nil(err)
+	pubkey, err := keys.PubKeyFromCometTypeAndBytes(val.GetPubKeyType(), val.GetPubKeyBytes())
+	s.Require().NoError(err)
 	return sdk.GetConsAddress(pubkey)
 }
 

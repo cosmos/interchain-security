@@ -5,6 +5,8 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/cometbft/cometbft/v2/crypto"
+	"github.com/cometbft/cometbft/v2/crypto/encoding"
 	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 	"github.com/stretchr/testify/require"
 
@@ -166,17 +168,24 @@ func TestPendingVSCs(t *testing.T) {
 		ppks[i], _ = cryptocodec.ToCmtProtoPublicKey(pk)
 	}
 
+	pubkeys := make([]crypto.PubKey, 0, len(ppks))
+	for _, pk := range ppks {
+		protoPK, err := encoding.PubKeyFromProto(pk)
+		require.NoError(t, err)
+		pubkeys = append(pubkeys, protoPK)
+	}
+
 	packetList := []ccv.ValidatorSetChangePacketData{
 		{
 			ValidatorUpdates: []abci.ValidatorUpdate{
-				{PubKey: ppks[0], Power: 1},
-				{PubKey: ppks[1], Power: 2},
+				{PubKeyBytes: pubkeys[0].Bytes(), PubKeyType: pubkeys[0].Type(), Power: 1},
+				{PubKeyBytes: pubkeys[1].Bytes(), PubKeyType: pubkeys[1].Type(), Power: 2},
 			},
 			ValsetUpdateId: 1,
 		},
 		{
 			ValidatorUpdates: []abci.ValidatorUpdate{
-				{PubKey: ppks[2], Power: 3},
+				{PubKeyBytes: pubkeys[2].Bytes(), PubKeyType: pubkeys[2].Type(), Power: 3},
 			},
 			ValsetUpdateId: 2,
 		},
@@ -188,7 +197,7 @@ func TestPendingVSCs(t *testing.T) {
 
 	newPacket := ccv.ValidatorSetChangePacketData{
 		ValidatorUpdates: []abci.ValidatorUpdate{
-			{PubKey: ppks[3], Power: 4},
+			{PubKeyBytes: pubkeys[3].Bytes(), PubKeyType: pubkeys[3].Type(), Power: 4},
 		},
 		ValsetUpdateId: 3,
 	}
@@ -196,7 +205,14 @@ func TestPendingVSCs(t *testing.T) {
 	vscs := providerKeeper.GetPendingVSCPackets(ctx, chainID)
 	require.Len(t, vscs, 3)
 	require.True(t, vscs[len(vscs)-1].ValsetUpdateId == 3)
-	require.True(t, vscs[len(vscs)-1].GetValidatorUpdates()[0].PubKey.String() == ppks[3].String())
+
+	lastPk := vscs[len(vscs)-1].GetValidatorUpdates()[0]
+	pk, err := encoding.PubKeyFromTypeAndBytes(lastPk.PubKeyType, lastPk.PubKeyBytes)
+	require.NoError(t, err)
+	protoPK, err := encoding.PubKeyToProto(pk)
+	require.NoError(t, err)
+
+	require.True(t, protoPK.String() == ppks[3].String())
 
 	providerKeeper.DeletePendingVSCPackets(ctx, chainID)
 	pending = providerKeeper.GetPendingVSCPackets(ctx, chainID)

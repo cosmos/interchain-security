@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 	"github.com/stretchr/testify/require"
@@ -209,7 +210,8 @@ func AddConsumer[Tp testutil.ProviderApp, Tc testutil.ConsumerApp](
 	var valz []*tmtypes.Validator
 	for _, update := range consumerGenesisState.Provider.InitialValSet {
 		// tmPubKey update.PubKey
-		tmPubKey, err := tmencoding.PubKeyFromProto(update.PubKey)
+		tmPubKey, err := keys.PubKeyFromCometTypeAndBytes(update.PubKeyType, update.PubKeyBytes)
+		require.NoError(s.T(), err)
 		s.Require().NoError(err, "failed to convert tendermint pubkey")
 		valz = append(valz, &tmtypes.Validator{
 			PubKey:           tmPubKey,
