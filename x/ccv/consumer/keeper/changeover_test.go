@@ -3,6 +3,9 @@ package keeper_test
 import (
 	"testing"
 
+	crypto2 "github.com/cometbft/cometbft/v2/crypto"
+	"github.com/cometbft/cometbft/v2/crypto/encoding"
+	"github.com/cosmos/cosmos-sdk/crypto/keys"
 	"github.com/stretchr/testify/require"
 
 	sdkcryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -29,13 +32,19 @@ func TestChangeoverToConsumer(t *testing.T) {
 		cIds[4].SDKStakingValidator(),
 	}
 
+	pks := make([]crypto2.PubKey, 0, len(cIds))
+	for _, ci := range cIds {
+		pk, err := encoding.PubKeyFromProto(ci.TMProtoCryptoPublicKey())
+		require.NoError(t, err)
+		pks = append(pks, pk)
+	}
 	// Instantiate 5 ics val updates for use in test
 	initialValUpdates := []abci.ValidatorUpdate{
-		{Power: 55, PubKey: cIds[5].TMProtoCryptoPublicKey()},
-		{Power: 87324, PubKey: cIds[6].TMProtoCryptoPublicKey()},
-		{Power: 2, PubKey: cIds[7].TMProtoCryptoPublicKey()},
-		{Power: 42389479, PubKey: cIds[8].TMProtoCryptoPublicKey()},
-		{Power: 9089080, PubKey: cIds[9].TMProtoCryptoPublicKey()},
+		{Power: 55, PubKeyBytes: pks[5].Bytes(), PubKeyType: pks[5].Type()},
+		{Power: 87324, PubKeyBytes: pks[6].Bytes(), PubKeyType: pks[6].Type()},
+		{Power: 2, PubKeyBytes: pks[7].Bytes(), PubKeyType: pks[7].Type()},
+		{Power: 42389479, PubKeyBytes: pks[8].Bytes(), PubKeyType: pks[8].Type()},
+		{Power: 9089080, PubKeyBytes: pks[9].Bytes(), PubKeyType: pks[9].Type()},
 	}
 
 	testCases := []struct {
@@ -81,7 +90,7 @@ func TestChangeoverToConsumer(t *testing.T) {
 			name:        "validator is contained in both sov val set and initial val updates, using cIds[7]",
 			lastSovVals: []stakingtypes.Validator{cIds[7].SDKStakingValidator()},
 			initialValUpdates: []abci.ValidatorUpdate{
-				{Power: 55, PubKey: cIds[7].TMProtoCryptoPublicKey()},
+				{Power: 55, PubKeyType: pks[7].Type(), PubKeyBytes: pks[7].Bytes()},
 			},
 			expectedReturnValUpdatesLen: 1,
 		},
@@ -127,7 +136,9 @@ func TestChangeoverToConsumer(t *testing.T) {
 				require.NoError(t, err)
 				tmProtoPubKey, err := sdkcryptocodec.ToCmtProtoPublicKey(ccvValPubKey)
 				require.NoError(t, err)
-				if tmProtoPubKey.Equal(valUpdate.PubKey) {
+				valPk, err := keys.PubKeyFromCometTypeAndBytes(valUpdate.PubKeyType, valUpdate.PubKeyBytes)
+				require.NoError(t, err)
+				if tmProtoPubKey.Equal(valPk) {
 					found = true
 					require.Equal(t, valUpdate.Power, ccVal.Power)
 				}
@@ -142,7 +153,16 @@ func TestChangeoverToConsumer(t *testing.T) {
 			found := false
 			// Check all initial val updates for a pubkey match
 			for _, valUpdate := range tc.initialValUpdates {
-				if returnedValUpdate.PubKey.Equal(valUpdate.PubKey) {
+				returnedValPK, err := encoding.PubKeyFromTypeAndBytes(returnedValUpdate.PubKeyType, returnedValUpdate.PubKeyBytes)
+				require.NoError(t, err)
+				returnedValPkProto, err := encoding.PubKeyToProto(returnedValPK)
+				require.NoError(t, err)
+
+				valUpdatePK, err := encoding.PubKeyFromTypeAndBytes(valUpdate.PubKeyType, valUpdate.PubKeyBytes)
+				require.NoError(t, err)
+				valUpdatePkProto, err := encoding.PubKeyToProto(valUpdatePK)
+
+				if returnedValPkProto.Equal(valUpdatePkProto) {
 					require.Equal(t, valUpdate.Power, returnedValUpdate.Power)
 					found = true
 				}
@@ -153,7 +173,13 @@ func TestChangeoverToConsumer(t *testing.T) {
 				require.NoError(t, err)
 				tmProtoPubKey, err := sdkcryptocodec.ToCmtProtoPublicKey(ccvValPubKey)
 				require.NoError(t, err)
-				if returnedValUpdate.PubKey.Equal(tmProtoPubKey) {
+
+				pk, err := encoding.PubKeyFromTypeAndBytes(returnedValUpdate.PubKeyType, returnedValUpdate.PubKeyBytes)
+				require.NoError(t, err)
+				returnedValPk, err := encoding.PubKeyToProto(pk)
+				require.NoError(t, err)
+
+				if returnedValPk.Equal(tmProtoPubKey) {
 					// If val was already matched to a val update for new set, it's power won't be 0
 					if found {
 						continue

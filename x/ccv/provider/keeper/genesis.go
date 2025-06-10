@@ -100,9 +100,11 @@ func (k Keeper) InitGenesisValUpdates(ctx sdk.Context) []abci.ValidatorUpdate {
 
 	valUpdates := make([]abci.ValidatorUpdate, len(reducedValSet))
 	for i, val := range reducedValSet {
+		pk := MustPubkeyFromProto(val.PublicKey)
 		valUpdates[i] = abci.ValidatorUpdate{
-			PubKeyType: val.PublicKey,
-			Power:      val.Power,
+			PubKeyType:  pk.Type(),
+			PubKeyBytes: pk.Bytes(),
+			Power:       val.Power,
 		}
 	}
 	return valUpdates

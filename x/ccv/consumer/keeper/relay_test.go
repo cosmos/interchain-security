@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cometbft/cometbft/v2/crypto/encoding"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	"github.com/golang/mock/gomock"
@@ -31,32 +32,44 @@ func TestOnRecvVSCPacket(t *testing.T) {
 	consumerCCVChannelID := "consumerCCVChannelID"
 	providerCCVChannelID := "providerCCVChannelID"
 
-	pk1, err := cryptocodec.ToCmtProtoPublicKey(ed25519.GenPrivKey().PubKey())
+	pk1Proto, err := cryptocodec.ToCmtProtoPublicKey(ed25519.GenPrivKey().PubKey())
 	require.NoError(t, err)
-	pk2, err := cryptocodec.ToCmtProtoPublicKey(ed25519.GenPrivKey().PubKey())
+	pk1, err := encoding.PubKeyFromProto(pk1Proto)
 	require.NoError(t, err)
-	pk3, err := cryptocodec.ToCmtProtoPublicKey(ed25519.GenPrivKey().PubKey())
+
+	pk2Proto, err := cryptocodec.ToCmtProtoPublicKey(ed25519.GenPrivKey().PubKey())
+	require.NoError(t, err)
+	pk2, err := encoding.PubKeyFromProto(pk2Proto)
+	require.NoError(t, err)
+
+	pk3Proto, err := cryptocodec.ToCmtProtoPublicKey(ed25519.GenPrivKey().PubKey())
+	require.NoError(t, err)
+	pk3, err := encoding.PubKeyFromProto(pk3Proto)
 	require.NoError(t, err)
 
 	changes1 := []abci.ValidatorUpdate{
 		{
-			PubKey: pk1,
-			Power:  30,
+			PubKeyBytes: pk1.Bytes(),
+			PubKeyType:  pk1.Type(),
+			Power:       30,
 		},
 		{
-			PubKey: pk2,
-			Power:  20,
+			PubKeyBytes: pk2.Bytes(),
+			PubKeyType:  pk2.Type(),
+			Power:       20,
 		},
 	}
 
 	changes2 := []abci.ValidatorUpdate{
 		{
-			PubKey: pk2,
-			Power:  40,
+			PubKeyBytes: pk2.Bytes(),
+			PubKeyType:  pk2.Type(),
+			Power:       40,
 		},
 		{
-			PubKey: pk3,
-			Power:  10,
+			PubKeyBytes: pk3.Bytes(),
+			PubKeyType:  pk3.Type(),
+			Power:       10,
 		},
 	}
 
@@ -107,16 +120,19 @@ func TestOnRecvVSCPacket(t *testing.T) {
 				clienttypes.NewHeight(1, 0), 0),
 			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{
 				{
-					PubKey: pk1,
-					Power:  30,
+					PubKeyBytes: pk1.Bytes(),
+					PubKeyType:  pk1.Type(),
+					Power:       30,
 				},
 				{
-					PubKey: pk2,
-					Power:  40,
+					PubKeyBytes: pk2.Bytes(),
+					PubKeyType:  pk2.Type(),
+					Power:       40,
 				},
 				{
-					PubKey: pk3,
-					Power:  10,
+					PubKeyBytes: pk3.Bytes(),
+					PubKeyType:  pk3.Type(),
+					Power:       10,
 				},
 			}},
 		},
@@ -127,16 +143,19 @@ func TestOnRecvVSCPacket(t *testing.T) {
 				clienttypes.NewHeight(1, 0), 0),
 			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{
 				{
-					PubKey: pk1,
-					Power:  30,
+					PubKeyBytes: pk1.Bytes(),
+					PubKeyType:  pk1.Type(),
+					Power:       30,
 				},
 				{
-					PubKey: pk2,
-					Power:  40,
+					PubKeyBytes: pk2.Bytes(),
+					PubKeyType:  pk2.Type(),
+					Power:       40,
 				},
 				{
-					PubKey: pk3,
-					Power:  10,
+					PubKeyBytes: pk3.Bytes(),
+					PubKeyType:  pk3.Type(),
+					Power:       10,
 				},
 			}},
 		},

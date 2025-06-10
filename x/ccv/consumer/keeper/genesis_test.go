@@ -42,7 +42,11 @@ func TestInitGenesis(t *testing.T) {
 	pubKey := cId.TMCryptoPubKey()
 	validator := tmtypes.NewValidator(pubKey, 1)
 	abciValidator := abci.Validator{Address: pubKey.Address(), Power: int64(1)}
-	valset := []abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)}
+	valset := []abci.ValidatorUpdate{{
+		Power:       abciValidator.Power,
+		PubKeyBytes: pubKey.Bytes(),
+		PubKeyType:  pubKey.Type(),
+	}}
 
 	// create ibc client and last consensus states
 	provConsState := ibctmtypes.NewConsensusState(
@@ -228,7 +232,11 @@ func TestExportGenesis(t *testing.T) {
 	require.NoError(t, err)
 	validator := tmtypes.NewValidator(tmPK, 1)
 	abciValidator := abci.Validator{Address: pubKey.Address(), Power: int64(1)}
-	valset := []abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)}
+	valset := []abci.ValidatorUpdate{{
+		Power:       abciValidator.Power,
+		PubKeyBytes: pubKey.Bytes(),
+		PubKeyType:  pubKey.Type(),
+	}}
 
 	// create pending consumer packets
 	consPackets := consumertypes.ConsumerPacketDataList{

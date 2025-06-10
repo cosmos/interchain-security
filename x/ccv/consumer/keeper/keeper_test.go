@@ -5,6 +5,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/cometbft/cometbft/v2/crypto/encoding"
 	conntypes "github.com/cosmos/ibc-go/v10/modules/core/03-connection/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -50,20 +51,27 @@ func TestProviderChannel(t *testing.T) {
 
 // TestPendingChanges tests getter, setter, and delete functionality for pending VSCs on a consumer chain
 func TestPendingChanges(t *testing.T) {
-	pk1, err := cryptocodec.ToCmtProtoPublicKey(ed25519.GenPrivKey().PubKey())
+	pk1Proto, err := cryptocodec.ToCmtProtoPublicKey(ed25519.GenPrivKey().PubKey())
 	require.NoError(t, err)
-	pk2, err := cryptocodec.ToCmtProtoPublicKey(ed25519.GenPrivKey().PubKey())
+	pk1, err := encoding.PubKeyFromProto(pk1Proto)
+	require.NoError(t, err)
+
+	pk2Proto, err := cryptocodec.ToCmtProtoPublicKey(ed25519.GenPrivKey().PubKey())
+	require.NoError(t, err)
+	pk2, err := encoding.PubKeyFromProto(pk2Proto)
 	require.NoError(t, err)
 
 	pd := ccv.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{
 			{
-				PubKey: pk1,
-				Power:  30,
+				PubKeyBytes: pk1.Bytes(),
+				PubKeyType:  pk1.Type(),
+				Power:       30,
 			},
 			{
-				PubKey: pk2,
-				Power:  20,
+				PubKeyBytes: pk2.Bytes(),
+				PubKeyType:  pk2.Type(),
+				Power:       20,
 			},
 		},
 		1,
@@ -129,34 +137,47 @@ func TestInitialValSet(t *testing.T) {
 	cId1 := crypto.NewCryptoIdentityFromIntSeed(7896)
 	cId2 := crypto.NewCryptoIdentityFromIntSeed(7897)
 	cId3 := crypto.NewCryptoIdentityFromIntSeed(7898)
+	pk1, err := encoding.PubKeyFromProto(cId1.TMProtoCryptoPublicKey())
+	require.NoError(t, err)
+	pk2, err := encoding.PubKeyFromProto(cId2.TMProtoCryptoPublicKey())
+	require.NoError(t, err)
+	pk3, err := encoding.PubKeyFromProto(cId3.TMProtoCryptoPublicKey())
+	require.NoError(t, err)
+
 	valUpdates := []abci.ValidatorUpdate{
 		{
-			PubKey: cId1.TMProtoCryptoPublicKey(),
-			Power:  1097,
+			PubKeyBytes: pk1.Bytes(),
+			PubKeyType:  pk1.Type(),
+			Power:       1097,
 		},
 		{
-			PubKey: cId2.TMProtoCryptoPublicKey(),
-			Power:  19068,
+			PubKeyBytes: pk2.Bytes(),
+			PubKeyType:  pk2.Type(),
+			Power:       19068,
 		},
 		{
-			PubKey: cId3.TMProtoCryptoPublicKey(),
-			Power:  10978554,
+			PubKeyType:  pk3.Type(),
+			PubKeyBytes: pk3.Bytes(),
+			Power:       10978554,
 		},
 	}
 
 	consumerKeeper.SetInitialValSet(ctx, valUpdates)
 	require.Equal(t, []abci.ValidatorUpdate{
 		{
-			PubKey: cId1.TMProtoCryptoPublicKey(),
-			Power:  1097,
+			PubKeyBytes: pk1.Bytes(),
+			PubKeyType:  pk1.Type(),
+			Power:       1097,
 		},
 		{
-			PubKey: cId2.TMProtoCryptoPublicKey(),
-			Power:  19068,
+			PubKeyBytes: pk2.Bytes(),
+			PubKeyType:  pk2.Type(),
+			Power:       19068,
 		},
 		{
-			PubKey: cId3.TMProtoCryptoPublicKey(),
-			Power:  10978554,
+			PubKeyBytes: pk3.Bytes(),
+			PubKeyType:  pk3.Type(),
+			Power:       10978554,
 		},
 	}, consumerKeeper.GetInitialValSet(ctx))
 }

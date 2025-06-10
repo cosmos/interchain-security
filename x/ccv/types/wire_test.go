@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cometbft/cometbft/v2/crypto/encoding"
 	"github.com/stretchr/testify/require"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -18,6 +19,8 @@ import (
 
 func TestPacketDataValidateBasic(t *testing.T) {
 	pk, err := cryptocodec.ToCmtProtoPublicKey(ed25519.GenPrivKey().PubKey())
+	require.NoError(t, err)
+	pk1, err := encoding.PubKeyFromProto(pk)
 	require.NoError(t, err)
 
 	cases := []struct {
@@ -46,8 +49,9 @@ func TestPacketDataValidateBasic(t *testing.T) {
 			types.NewValidatorSetChangePacketData(
 				[]abci.ValidatorUpdate{
 					{
-						PubKey: pk,
-						Power:  30,
+						PubKeyBytes: pk1.Bytes(),
+						PubKeyType:  pk1.Type(),
+						Power:       30,
 					},
 				},
 				3,
@@ -67,20 +71,27 @@ func TestPacketDataValidateBasic(t *testing.T) {
 }
 
 func TestMarshalPacketData(t *testing.T) {
-	pk1, err := cryptocodec.ToCmtProtoPublicKey(ed25519.GenPrivKey().PubKey())
+	publicKey1, err := cryptocodec.ToCmtProtoPublicKey(ed25519.GenPrivKey().PubKey())
 	require.NoError(t, err)
-	pk2, err := cryptocodec.ToCmtProtoPublicKey(ed25519.GenPrivKey().PubKey())
+	pk1, err := encoding.PubKeyFromProto(publicKey1)
+	require.NoError(t, err)
+
+	publicKey2, err := cryptocodec.ToCmtProtoPublicKey(ed25519.GenPrivKey().PubKey())
+	require.NoError(t, err)
+	pk2, err := encoding.PubKeyFromProto(publicKey2)
 	require.NoError(t, err)
 
 	vpd := types.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{
 			{
-				PubKey: pk1,
-				Power:  30,
+				PubKeyBytes: pk1.Bytes(),
+				PubKeyType:  pk1.Type(),
+				Power:       30,
 			},
 			{
-				PubKey: pk2,
-				Power:  20,
+				PubKeyBytes: pk2.Bytes(),
+				PubKeyType:  pk2.Type(),
+				Power:       20,
 			},
 		},
 		1,
@@ -101,16 +112,22 @@ func TestMarshalPacketData(t *testing.T) {
 func TestVSCPacketDataWireBytes(t *testing.T) {
 	cId1 := crypto.NewCryptoIdentityFromIntSeed(4732894)
 	cId2 := crypto.NewCryptoIdentityFromIntSeed(4732895)
+	pk1, err := encoding.PubKeyFromProto(cId1.TMProtoCryptoPublicKey())
+	require.NoError(t, err)
+	pk2, err := encoding.PubKeyFromProto(cId2.TMProtoCryptoPublicKey())
+	require.NoError(t, err)
 
 	pd := types.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{
 			{
-				PubKey: cId1.TMProtoCryptoPublicKey(),
-				Power:  30,
+				PubKeyBytes: pk1.Bytes(),
+				PubKeyType:  pk1.Type(),
+				Power:       30,
 			},
 			{
-				PubKey: cId2.TMProtoCryptoPublicKey(),
-				Power:  20,
+				PubKeyBytes: pk2.Bytes(),
+				PubKeyType:  pk2.Type(),
+				Power:       20,
 			},
 		},
 		73,

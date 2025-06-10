@@ -3,6 +3,7 @@ package types_test
 import (
 	"testing"
 
+	"github.com/cometbft/cometbft/v2/crypto/encoding"
 	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 	"github.com/stretchr/testify/require"
 
@@ -17,7 +18,12 @@ func TestAccumulateChanges(t *testing.T) {
 	_, testKeys, _ := ibctesting.GenerateKeys(t, 2)
 
 	tmPubKey, _ := cryptocodec.ToCmtProtoPublicKey(testKeys[0])
+	pk1, err := encoding.PubKeyFromProto(tmPubKey)
+	require.NoError(t, err)
+
 	tmPubKey2, _ := cryptocodec.ToCmtProtoPublicKey(testKeys[1])
+	pk2, err := encoding.PubKeyFromProto(tmPubKey2)
+	require.NoError(t, err)
 
 	testCases := []struct {
 		name     string
@@ -34,49 +40,49 @@ func TestAccumulateChanges(t *testing.T) {
 		{
 			name: "one change",
 			changes1: []abci.ValidatorUpdate{
-				{PubKey: tmPubKey, Power: 1},
+				{PubKeyBytes: pk1.Bytes(), PubKeyType: pk1.Type(), Power: 1},
 			},
 			changes2: []abci.ValidatorUpdate{},
 			expected: []abci.ValidatorUpdate{
-				{PubKey: tmPubKey, Power: 1},
+				{PubKeyType: pk1.Type(), PubKeyBytes: pk1.Bytes(), Power: 1},
 			},
 		},
 		{
 			name: "two changes",
 			changes1: []abci.ValidatorUpdate{
-				{PubKey: tmPubKey, Power: 1},
+				{PubKeyBytes: pk1.Bytes(), PubKeyType: pk1.Type(), Power: 1},
 			},
 			changes2: []abci.ValidatorUpdate{
-				{PubKey: tmPubKey, Power: 2},
+				{PubKeyBytes: pk1.Bytes(), PubKeyType: pk1.Type(), Power: 2},
 			},
 			expected: []abci.ValidatorUpdate{
-				{PubKey: tmPubKey, Power: 2},
+				{PubKeyBytes: pk1.Bytes(), PubKeyType: pk1.Type(), Power: 2},
 			},
 		},
 		{
 			name: "two changes with different pubkeys",
 			changes1: []abci.ValidatorUpdate{
-				{PubKey: tmPubKey, Power: 1},
+				{PubKeyType: pk1.Type(), PubKeyBytes: pk1.Bytes(), Power: 1},
 			},
 			changes2: []abci.ValidatorUpdate{
-				{PubKey: tmPubKey2, Power: 2},
+				{PubKeyBytes: pk2.Bytes(), PubKeyType: pk2.Type(), Power: 2},
 			},
 			expected: []abci.ValidatorUpdate{
-				{PubKey: tmPubKey2, Power: 2},
-				{PubKey: tmPubKey, Power: 1},
+				{PubKeyType: pk2.Type(), PubKeyBytes: pk2.Bytes(), Power: 2},
+				{PubKeyBytes: pk1.Bytes(), PubKeyType: pk1.Type(), Power: 1},
 			},
 		},
 		{
 			name: "two changes with different pubkeys and same power",
 			changes1: []abci.ValidatorUpdate{
-				{PubKey: tmPubKey, Power: 1},
+				{PubKeyBytes: pk1.Bytes(), PubKeyType: pk1.Type(), Power: 1},
 			},
 			changes2: []abci.ValidatorUpdate{
-				{PubKey: tmPubKey2, Power: 1},
+				{PubKeyType: pk2.Type(), PubKeyBytes: pk2.Bytes(), Power: 1},
 			},
 			expected: []abci.ValidatorUpdate{
-				{PubKey: tmPubKey2, Power: 1},
-				{PubKey: tmPubKey, Power: 1},
+				{PubKeyBytes: pk2.Bytes(), PubKeyType: pk2.Type(), Power: 1},
+				{PubKeyType: pk1.Type(), PubKeyBytes: pk1.Bytes(), Power: 1},
 			},
 		},
 	}

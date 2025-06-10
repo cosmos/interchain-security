@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"sort"
 
+	v1 "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
+	"github.com/cometbft/cometbft/v2/crypto"
+	"github.com/cometbft/cometbft/v2/crypto/encoding"
+
 	errorsmod "cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -105,11 +109,13 @@ func DiffValidators(
 		if nextVal, found := isNextValidator[currentVal.PublicKey.String()]; !found {
 			// this consumer public key does not appear in the next validators and hence we remove the validator
 			// with that consumer public key by creating an update with 0 power
-			updates = append(updates, abci.ValidatorUpdate{PubKey: *currentVal.PublicKey, Power: 0})
+			pk := MustPubkeyFromProto(currentVal.GetPublicKey())
+			updates = append(updates, abci.ValidatorUpdate{PubKeyType: pk.Type(), PubKeyBytes: pk.Bytes(), Power: 0})
 		} else if currentVal.Power != nextVal.Power {
 			// validator did not modify its consumer public key but has changed its voting power, so we
 			// have to create an update with the new power
-			updates = append(updates, abci.ValidatorUpdate{PubKey: *nextVal.PublicKey, Power: nextVal.Power})
+			pk := MustPubkeyFromProto(nextVal.GetPublicKey())
+			updates = append(updates, abci.ValidatorUpdate{PubKeyType: pk.Type(), PubKeyBytes: pk.Bytes(), Power: nextVal.Power})
 		}
 		// else no update is needed because neither the consumer public key changed, nor the power of the validator
 	}
@@ -117,11 +123,20 @@ func DiffValidators(
 	for _, nextVal := range nextValidators {
 		if _, found := isCurrentValidator[nextVal.PublicKey.String()]; !found {
 			// this consumer public key does not exist in the current validators and hence we introduce this validator
-			updates = append(updates, abci.ValidatorUpdate{PubKey: *nextVal.PublicKey, Power: nextVal.Power})
+			pk := MustPubkeyFromProto(nextVal.GetPublicKey())
+			updates = append(updates, abci.ValidatorUpdate{PubKeyType: pk.Type(), PubKeyBytes: pk.Bytes(), Power: nextVal.Power})
 		}
 	}
 
 	return updates
+}
+
+func MustPubkeyFromProto(k *v1.PublicKey) crypto.PubKey {
+	pk, err := encoding.PubKeyFromProto(*k)
+	if err != nil {
+		panic(err)
+	}
+	return pk
 }
 
 // CreateConsumerValidator creates a consumer validator for `consumerId` from the given staking `validator`

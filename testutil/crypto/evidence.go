@@ -59,7 +59,7 @@ func MakeAndSignVote(
 	}
 
 	v := vote.ToProto()
-	err = signer.SignVote(chainID, v)
+	err = signer.SignVote(chainID, v, true)
 	if err != nil {
 		panic(err)
 	}
@@ -103,7 +103,7 @@ func MakeAndSignVoteWithForgedValAddress(
 
 	// sign vote using the given private key
 	v := vote.ToProto()
-	err = signer.SignVote(chainID, v)
+	err = signer.SignVote(chainID, v, true)
 	if err != nil {
 		panic(err)
 	}
