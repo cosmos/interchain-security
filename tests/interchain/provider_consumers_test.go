@@ -11,7 +11,7 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 
 	sdkmath "cosmossdk.io/math"
-	upgradetypes "cosmossdk.io/x/upgrade/types"
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 

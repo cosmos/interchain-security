@@ -14,8 +14,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
-	cmttypes "github.com/cometbft/cometbft/types"
+	tmtypes "github.com/cometbft/cometbft/api/cometbft/types/v2"
+	cmttypes "github.com/cometbft/cometbft/v2/types"
 
 	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )

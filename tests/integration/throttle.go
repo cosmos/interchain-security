@@ -10,7 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	tmtypes "github.com/cometbft/cometbft/types"
+	tmtypes "github.com/cometbft/cometbft/v2/types"
 
 	icstestingutils "github.com/cosmos/interchain-security/v7/testutil/ibc_testing"
 	"github.com/cosmos/interchain-security/v7/x/ccv/provider"

@@ -13,7 +13,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
 
 	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"

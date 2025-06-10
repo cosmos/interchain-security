@@ -6,7 +6,7 @@ import (
 	ibcclienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	"github.com/stretchr/testify/require"
 
-	evidencetypes "cosmossdk.io/x/evidence/types"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"

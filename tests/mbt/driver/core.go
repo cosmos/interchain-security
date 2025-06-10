@@ -19,9 +19,9 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abcitypes "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
-	cmttypes "github.com/cometbft/cometbft/types"
+	crypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
+	abcitypes "github.com/cometbft/cometbft/v2/abci/types"
+	cmttypes "github.com/cometbft/cometbft/v2/types"
 
 	appConsumer "github.com/cosmos/interchain-security/v7/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/v7/app/provider"

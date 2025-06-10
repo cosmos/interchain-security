@@ -11,8 +11,8 @@ import (
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	tmtypes "github.com/cometbft/cometbft/types"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	tmtypes "github.com/cometbft/cometbft/v2/types"
 
 	"github.com/cosmos/interchain-security/v7/testutil/crypto"
 	"github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"

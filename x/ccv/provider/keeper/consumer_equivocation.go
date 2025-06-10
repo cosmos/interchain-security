@@ -17,7 +17,7 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	tmtypes "github.com/cometbft/cometbft/types"
+	tmtypes "github.com/cometbft/cometbft/v2/types"
 
 	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"

@@ -20,8 +20,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 
-	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
-	cmttypes "github.com/cometbft/cometbft/types"
+	tmencoding "github.com/cometbft/cometbft/v2/crypto/encoding"
+	cmttypes "github.com/cometbft/cometbft/v2/types"
 
 	"github.com/cosmos/interchain-security/v7/testutil/integration"
 	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"

@@ -8,7 +8,7 @@ import (
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
-	tmtypes "github.com/cometbft/cometbft/types"
+	tmtypes "github.com/cometbft/cometbft/v2/types"
 
 	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )

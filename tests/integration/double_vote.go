@@ -6,8 +6,8 @@ import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	tmcrypto "github.com/cometbft/cometbft/crypto"
-	tmtypes "github.com/cometbft/cometbft/types"
+	tmcrypto "github.com/cometbft/cometbft/v2/crypto"
+	tmtypes "github.com/cometbft/cometbft/v2/types"
 
 	testutil "github.com/cosmos/interchain-security/v7/testutil/crypto"
 	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"

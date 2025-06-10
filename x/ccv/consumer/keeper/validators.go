@@ -5,13 +5,15 @@ import (
 	"errors"
 	"time"
 
+	"github.com/cometbft/cometbft/v2/crypto/encoding"
+
 	"cosmossdk.io/math"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
 
 	"github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
 )
@@ -27,10 +29,14 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 	ret := []abci.ValidatorUpdate{}
 	for _, change := range changes {
 		// convert TM pubkey to SDK pubkey
-		pubkey, err := cryptocodec.FromCmtProtoPublicKey(change.GetPubKey())
+		pubkey, err := encoding.PubKeyFromTypeAndBytes(change.PubKeyType, change.PubKeyBytes)
 		if err != nil {
 			// An error here would indicate that the validator updates
 			// received from the provider are invalid.
+			panic(err)
+		}
+		protoPubkey, err := encoding.PubKeyToProto(pubkey)
+		if err != nil {
 			panic(err)
 		}
 		addr := pubkey.Address()
@@ -48,7 +54,7 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 			// create a new validator
 			consAddr := sdk.ConsAddress(addr)
 
-			ccVal, err := types.NewCCValidator(addr, change.Power, pubkey)
+			ccVal, err := types.NewCCValidator(addr, change.Power, protoPubkey)
 			if err != nil {
 				// An error here would indicate that the validator updates
 				// received from the provider are invalid.

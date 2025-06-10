@@ -26,9 +26,9 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abcitypes "github.com/cometbft/cometbft/abci/types"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	cmttypes "github.com/cometbft/cometbft/types"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
+	abcitypes "github.com/cometbft/cometbft/v2/abci/types"
+	cmttypes "github.com/cometbft/cometbft/v2/types"
 
 	icstestingutils "github.com/cosmos/interchain-security/v7/testutil/ibc_testing"
 	"github.com/cosmos/interchain-security/v7/testutil/integration"
@@ -264,7 +264,7 @@ func newChain(
 
 	protoConsParams := CONSENSUS_PARAMS.ToProto()
 	app.InitChain(
-		&abcitypes.RequestInitChain{
+		&abcitypes.InitChainRequest{
 			ChainId:         chainID,
 			Validators:      cmttypes.TM2PB.ValidatorUpdates(validators),
 			ConsensusParams: &protoConsParams,
@@ -275,7 +275,7 @@ func newChain(
 	app.Commit()
 
 	app.FinalizeBlock(
-		&abcitypes.RequestFinalizeBlock{
+		&abcitypes.FinalizeBlockRequest{
 			Hash:               app.LastCommitID().Hash,
 			Height:             app.LastBlockHeight() + 1,
 			NextValidatorsHash: validators.Hash(),

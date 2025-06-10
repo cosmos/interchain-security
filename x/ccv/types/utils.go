@@ -17,19 +17,19 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	tmprotocrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
 )
 
 func AccumulateChanges(currentChanges, newChanges []abci.ValidatorUpdate) []abci.ValidatorUpdate {
 	m := make(map[string]abci.ValidatorUpdate)
 
 	for i := 0; i < len(currentChanges); i++ {
-		m[currentChanges[i].PubKey.String()] = currentChanges[i]
+		m[string(currentChanges[i].PubKeyBytes)] = currentChanges[i]
 	}
 
 	for i := 0; i < len(newChanges); i++ {
-		m[newChanges[i].PubKey.String()] = newChanges[i]
+		m[string(newChanges[i].PubKeyBytes)] = newChanges[i]
 	}
 
 	var out []abci.ValidatorUpdate
@@ -44,7 +44,7 @@ func AccumulateChanges(currentChanges, newChanges []abci.ValidatorUpdate) []abci
 		if out[i].Power != out[j].Power {
 			return out[i].Power > out[j].Power
 		}
-		return out[i].PubKey.String() > out[j].PubKey.String()
+		return string(out[i].PubKeyBytes) > string(out[j].PubKeyBytes)
 	})
 
 	return out
@@ -78,7 +78,7 @@ func SendIBCPacket(
 	_, err := channelKeeper.SendPacket(ctx,
 		sourcePortID,
 		sourceChannelID,
-		clienttypes.Height{}, //  timeout height disabled
+		clienttypes.Height{},                                  //  timeout height disabled
 		uint64(ctx.BlockTime().Add(timeoutPeriod).UnixNano()), // timeout timestamp
 		packetData,
 	)

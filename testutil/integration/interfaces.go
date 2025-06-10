@@ -8,7 +8,7 @@ import (
 
 	"cosmossdk.io/core/comet"
 	"cosmossdk.io/math"
-	evidencekeeper "cosmossdk.io/x/evidence/keeper"
+	evidencekeeper "github.com/cosmos/cosmos-sdk/x/evidence/keeper"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -22,7 +22,7 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
 
 	consumerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/provider/keeper"

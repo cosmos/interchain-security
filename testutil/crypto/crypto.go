@@ -11,9 +11,9 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdkstakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	tmcrypto "github.com/cometbft/cometbft/crypto"
-	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
-	tmtypes "github.com/cometbft/cometbft/types"
+	tmprotocrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
+	tmcrypto "github.com/cometbft/cometbft/v2/crypto"
+	tmtypes "github.com/cometbft/cometbft/v2/types"
 
 	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )

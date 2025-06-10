@@ -19,8 +19,8 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	tmtypes "github.com/cometbft/cometbft/types"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	tmtypes "github.com/cometbft/cometbft/v2/types"
 
 	icstestingutils "github.com/cosmos/interchain-security/v7/testutil/ibc_testing"
 	testutil "github.com/cosmos/interchain-security/v7/testutil/integration"

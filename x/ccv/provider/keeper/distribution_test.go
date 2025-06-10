@@ -14,7 +14,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	tmtypes "github.com/cometbft/cometbft/types"
+	tmtypes "github.com/cometbft/cometbft/v2/types"
 
 	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"
 	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"

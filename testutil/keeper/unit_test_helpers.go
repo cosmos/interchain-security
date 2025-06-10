@@ -30,8 +30,8 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
 
 	consumerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"

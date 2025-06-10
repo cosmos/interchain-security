@@ -6,8 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
-
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
+	crypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 
 	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"
 	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"

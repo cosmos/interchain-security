@@ -11,9 +11,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	tmrand "github.com/cometbft/cometbft/libs/rand"
-	tmtypes "github.com/cometbft/cometbft/types"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	tmrand "github.com/cometbft/cometbft/v2/libs/rand"
+	tmtypes "github.com/cometbft/cometbft/v2/types"
 
 	"github.com/cosmos/interchain-security/v7/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"

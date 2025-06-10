@@ -12,9 +12,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil/mock"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/cometbft/cometbft/abci/types"
-	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
-	tmtypes "github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/v2/abci/types"
+	tmencoding "github.com/cometbft/cometbft/v2/crypto/encoding"
+	tmtypes "github.com/cometbft/cometbft/v2/types"
 
 	testutil "github.com/cosmos/interchain-security/v7/testutil/integration"
 	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"

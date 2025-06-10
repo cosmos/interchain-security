@@ -13,8 +13,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
-	cmttypes "github.com/cometbft/cometbft/types"
+	cmtbytes "github.com/cometbft/cometbft/v2/libs/bytes"
+	cmttypes "github.com/cometbft/cometbft/v2/types"
 )
 
 // The code in this file is removed in ibc v9. It is copied from ibc v8 to here in order to support the migration to v9

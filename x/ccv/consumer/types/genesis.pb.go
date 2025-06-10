@@ -5,7 +5,7 @@ package types
 
 import (
 	fmt "fmt"
-	_ "github.com/cometbft/cometbft/abci/types"
+	_ "github.com/cometbft/cometbft/v2/abci/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	_ "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"

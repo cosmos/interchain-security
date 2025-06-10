@@ -15,9 +15,9 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/crypto/ed25519"
-	tmtypes "github.com/cometbft/cometbft/types"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	"github.com/cometbft/cometbft/v2/crypto/ed25519"
+	tmtypes "github.com/cometbft/cometbft/v2/types"
 
 	keepertestutil "github.com/cosmos/interchain-security/v7/testutil/keeper"
 	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"

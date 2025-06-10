@@ -12,7 +12,7 @@ import (
 	address "cosmossdk.io/core/address"
 	math "cosmossdk.io/math"
 	types "cosmossdk.io/store/types"
-	types0 "github.com/cometbft/cometbft/abci/types"
+	types0 "github.com/cometbft/cometbft/v2/abci/types"
 	types1 "github.com/cosmos/cosmos-sdk/types"
 	types2 "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	types3 "github.com/cosmos/cosmos-sdk/x/staking/types"

@@ -16,11 +16,10 @@ import (
 
 	"cosmossdk.io/math"
 
+	crypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkquery "github.com/cosmos/cosmos-sdk/types/query"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	cryptotestutil "github.com/cosmos/interchain-security/v7/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"

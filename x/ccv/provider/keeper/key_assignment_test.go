@@ -14,8 +14,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	tmprotocrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
 
 	cryptotestutil "github.com/cosmos/interchain-security/v7/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"

@@ -35,7 +35,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 
-	tmcfg "github.com/cometbft/cometbft/config"
+	tmcfg "github.com/cometbft/cometbft/v2/config"
 
 	cdd "github.com/cosmos/interchain-security/v7/app/consumer-democracy"
 	appencoding "github.com/cosmos/interchain-security/v7/app/encoding"

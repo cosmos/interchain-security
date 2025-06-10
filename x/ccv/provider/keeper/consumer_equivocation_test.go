@@ -15,7 +15,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	tmtypes "github.com/cometbft/cometbft/types"
+	tmtypes "github.com/cometbft/cometbft/v2/types"
 
 	cryptotestutil "github.com/cosmos/interchain-security/v7/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"

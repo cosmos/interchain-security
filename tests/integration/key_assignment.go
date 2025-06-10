@@ -6,8 +6,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil/mock"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
-	tmprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	tmprotocrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
+	tmencoding "github.com/cometbft/cometbft/v2/crypto/encoding"
 
 	providerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"

@@ -1,9 +1,9 @@
 package integration
 
 import (
-	"github.com/cometbft/cometbft/abci/types"
-	tmencoding "github.com/cometbft/cometbft/crypto/encoding"
-	tmtypes "github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/v2/abci/types"
+	tmencoding "github.com/cometbft/cometbft/v2/crypto/encoding"
+	tmtypes "github.com/cometbft/cometbft/v2/types"
 )
 
 // CreateValidators creates a set of validators for testing purposes

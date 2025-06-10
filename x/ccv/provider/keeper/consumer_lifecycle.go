@@ -18,8 +18,8 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	tmtypes "github.com/cometbft/cometbft/types"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
+	tmtypes "github.com/cometbft/cometbft/v2/types"
 
 	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"

@@ -10,8 +10,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v2"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
 )
 
 // FinalizeBlock calls app.FinalizeBlock and app.Commit.
@@ -20,7 +20,7 @@ import (
 //
 // NOTE: this method may be used independently of the rest of simibc.
 func FinalizeBlock(c *ibctesting.TestChain, dt time.Duration) (*ibctmtypes.Header, []channeltypes.Packet) {
-	res, err := c.App.FinalizeBlock(&abci.RequestFinalizeBlock{
+	res, err := c.App.FinalizeBlock(&abci.FinalizeBlockRequest{
 		Height:             c.ProposedHeader.Height,
 		Time:               c.ProposedHeader.GetTime(),
 		NextValidatorsHash: c.NextVals.Hash(),

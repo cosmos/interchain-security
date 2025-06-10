@@ -13,7 +13,7 @@ import (
 
 	store "cosmossdk.io/store/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
 
 	icstestingutils "github.com/cosmos/interchain-security/v7/testutil/ibc_testing"
 	testutil "github.com/cosmos/interchain-security/v7/testutil/integration"
@@ -399,7 +399,7 @@ func newPacketSniffer() *packetSniffer {
 	}
 }
 
-func (ps *packetSniffer) ListenFinalizeBlock(ctx context.Context, req abci.RequestFinalizeBlock, res abci.ResponseFinalizeBlock) error {
+func (ps *packetSniffer) ListenFinalizeBlock(ctx context.Context, req abci.FinalizeBlockRequest, res abci.FinalizeBlockResponse) error {
 	packets := ParsePacketsFromEvents(res.GetEvents())
 	for _, packet := range packets {
 		ps.packets[getSentPacketKey(packet.Sequence, packet.SourceChannel)] = packet
@@ -413,7 +413,7 @@ func getSentPacketKey(sequence uint64, channelID string) string {
 	return fmt.Sprintf("%s-%d", channelID, sequence)
 }
 
-func (*packetSniffer) ListenCommit(ctx context.Context, res abci.ResponseCommit, cs []*store.StoreKVPair) error {
+func (*packetSniffer) ListenCommit(ctx context.Context, res abci.CommitResponse, cs []*store.StoreKVPair) error {
 	return nil
 }
 

@@ -3,7 +3,7 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	abci "github.com/cometbft/cometbft/v2/abci/types"
 )
 
 // ChangeoverIsComplete returns whether the standalone to consumer changeover process is complete.
@@ -36,7 +36,7 @@ func (k Keeper) ChangeoverToConsumer(ctx sdk.Context) (initialValUpdates []abci.
 	// are given zero power, and the provider validators are given their full power.
 	initialUpdatesFlag := make(map[string]bool)
 	for _, val := range initialValUpdates {
-		initialUpdatesFlag[val.PubKey.String()] = true
+		initialUpdatesFlag[string(val.PubKeyBytes)] = true
 	}
 
 	standaloneValset, err := k.GetLastStandaloneValidators(ctx)
@@ -45,7 +45,7 @@ func (k Keeper) ChangeoverToConsumer(ctx sdk.Context) (initialValUpdates []abci.
 	}
 	for _, val := range standaloneValset {
 		zeroPowerUpdate := val.ABCIValidatorUpdateZero()
-		if !initialUpdatesFlag[zeroPowerUpdate.PubKey.String()] {
+		if !initialUpdatesFlag[string(zeroPowerUpdate.PubKeyBytes)] {
 			initialValUpdates = append(initialValUpdates, zeroPowerUpdate)
 		}
 	}

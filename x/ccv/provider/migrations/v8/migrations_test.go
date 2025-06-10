@@ -12,9 +12,8 @@ import (
 	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 
+	crypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	testutil "github.com/cosmos/interchain-security/v7/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/v7/x/ccv/provider/keeper"
