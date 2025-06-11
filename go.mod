@@ -140,7 +140,7 @@ require (
 	cosmossdk.io/tools/confix v0.1.2
 	cosmossdk.io/x/tx v1.2.0-alpha.0.0.20250604174653-810d15dd6d16
 	github.com/cosmos/cosmos-db v1.1.3
-	github.com/cosmos/ibc-go/v10 v10.0.0-beta.0.0.20250604231944-493e1d9fc888
+	github.com/cosmos/ibc-go/v10 v10.0.0-beta.0.0.20250611193252-a9170dcac535
 	github.com/informalsystems/itf-go v0.0.1
 	github.com/spf13/viper v1.20.1
 	golang.org/x/mod v0.25.0
