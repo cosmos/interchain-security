@@ -6,7 +6,7 @@ import (
 
 	"cosmos/interchain-security/tests/interchain/chainsuite"
 
-	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
+	"github.com/cosmos/interchaintest/v10/chain/cosmos"
 	"github.com/stretchr/testify/suite"
 )
 

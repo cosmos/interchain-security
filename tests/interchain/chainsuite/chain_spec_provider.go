@@ -1,10 +1,10 @@
 package chainsuite
 
 import (
-	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
-	"github.com/strangelove-ventures/interchaintest/v8/ibc"
+	"github.com/cosmos/interchaintest/v10/chain/cosmos"
+	"github.com/cosmos/interchaintest/v10/ibc"
 
-	"github.com/strangelove-ventures/interchaintest/v8"
+	"github.com/cosmos/interchaintest/v10"
 )
 
 func GetProviderSpec(validatorCount int, modifiedGenesis []cosmos.GenesisKV) *interchaintest.ChainSpec {

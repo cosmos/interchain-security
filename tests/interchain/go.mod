@@ -8,9 +8,9 @@ require (
 	cosmossdk.io/math v1.5.4-0.20250604174653-810d15dd6d16
 	github.com/cosmos/cosmos-sdk v0.54.0-alpha.0.0.20250610171936-b482ce4a740c
 	github.com/cosmos/ibc-go/v10 v10.0.0-beta.0.0.20250611193252-a9170dcac535
-	github.com/cosmos/interchain-security/v7 v7.0.0-20250220171855-c39340d2cf4c
+	github.com/cosmos/interchain-security/v7 v7.0.0-20250611213438-69983c82a4ff
+	github.com/cosmos/interchaintest/v10 v10.0.0-alpha.2.0.20250611214850-18ae5efdcf7a
 	github.com/docker/docker v28.0.0+incompatible
-	github.com/strangelove-ventures/interchaintest/v8 v8.7.1
 	github.com/stretchr/testify v1.10.0
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/sjson v1.2.5
@@ -19,9 +19,9 @@ require (
 )
 
 require (
-	cosmossdk.io/x/upgrade v0.1.4 // indirect
-	github.com/cometbft/cometbft v0.38.17 // indirect
 	github.com/crate-crypto/go-eth-kzg v1.3.0 // indirect
+	github.com/dgraph-io/badger/v2 v2.2007.4 // indirect
+	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.1.0 // indirect
 	github.com/ethereum/c-kzg-4844/v2 v2.1.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
@@ -47,7 +47,6 @@ require (
 	cosmossdk.io/log v1.6.1-0.20250604174653-810d15dd6d16 // indirect
 	cosmossdk.io/schema v1.1.0 // indirect
 	cosmossdk.io/store v1.10.0-rc.1.0.20250609200650-1521447c77da // indirect
-	cosmossdk.io/x/feegrant v0.2.0-rc.2 // indirect
 	cosmossdk.io/x/tx v1.2.0-alpha.0.0.20250604174653-810d15dd6d16 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
@@ -92,7 +91,6 @@ require (
 	github.com/cosmos/gogogateway v1.2.0 // indirect
 	github.com/cosmos/gogoproto v1.7.0 // indirect
 	github.com/cosmos/iavl v1.2.6 // indirect
-	github.com/cosmos/ibc-go/modules/capability v1.0.1 // indirect
 	github.com/cosmos/ics23/go v0.11.0 // indirect
 	github.com/cosmos/ledger-cosmos-go v0.14.0 // indirect
 	github.com/crate-crypto/go-ipa v0.0.0-20240724233137-53bbb0ceb27a // indirect
@@ -280,7 +278,6 @@ replace (
 	github.com/cosmos/interchain-security/v7 => ../../
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	// Remove this when strangelove-ventures updates the interchain tests to support ibc-go v10
-	github.com/strangelove-ventures/interchaintest/v8 => github.com/cosmos/interchaintest/v8 v8.8.2-0.20250224162529-535379c62c73
 	github.com/vedhavyas/go-subkey => github.com/strangelove-ventures/go-subkey v1.0.7
 )
 

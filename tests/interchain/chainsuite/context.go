@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cosmos/interchaintest/v10"
+	"github.com/cosmos/interchaintest/v10/testreporter"
 	"github.com/docker/docker/client"
-	"github.com/strangelove-ventures/interchaintest/v8"
-	"github.com/strangelove-ventures/interchaintest/v8/testreporter"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
