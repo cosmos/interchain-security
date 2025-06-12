@@ -97,16 +97,10 @@ func (tr Chain) sendTokens(
 		`-o`, `json`,
 		`-y`,
 	)
-	if verbose {
-		fmt.Println("sendTokens cmd:", cmd.String())
-	}
+	fmt.Println("sendTokens cmd:", cmd.String())
 	bz, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
 	if action.ExpectErr {
-		if e2e.GetTxResponse(bz).Code == 0 {
+		if err == nil {
 			log.Fatalf("`tx bank send` did not fail as expected: %v", string(bz))
 		}
 	} else {
