@@ -201,6 +201,8 @@ BUILD_TARGETS := build
 
 build: BUILD_ARGS=-o $(BUILDDIR)/
 
+.PHONY: build
+
 $(BUILD_TARGETS): go.sum $(BUILDDIR)/
 	go $@ -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) ./...
 

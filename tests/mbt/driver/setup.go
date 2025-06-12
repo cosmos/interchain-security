@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cometbft/cometbft/v2/crypto/encoding"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v10/modules/core/23-commitment/types"
@@ -191,8 +192,9 @@ func getAppBytesAndSenders(
 		// add initial validator powers so consumer InitGenesis runs correctly
 		pub, _ := val.ToProto()
 		initValPowers = append(initValPowers, abcitypes.ValidatorUpdate{
-			Power:  tokens.Int64(),
-			PubKey: pub.PubKey,
+			Power:       tokens.Int64(),
+			PubKeyBytes: pub.PubKeyBytes,
+			PubKeyType:  pub.PubKeyType,
 		})
 	}
 
@@ -360,8 +362,15 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 
 	// set up the current consumer validators by utilizing the initial validator set
 	for _, val := range consumerGenesisForProvider.Provider.InitialValSet {
-		pubKey := val.PubKey
-		consAddr, err := ccvtypes.TMCryptoPublicKeyToConsAddr(pubKey)
+		pubKey, err := encoding.PubKeyFromTypeAndBytes(val.PubKeyType, val.PubKeyBytes)
+		if err != nil {
+			continue
+		}
+		protoPK, err := encoding.PubKeyToProto(pubKey)
+		if err != nil {
+			continue
+		}
+		consAddr, err := ccvtypes.TMCryptoPublicKeyToConsAddr(protoPK)
 		if err != nil {
 			continue
 		}
@@ -400,8 +409,8 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 	consumerEndPoint.ClientID = clientID
 
 	// Handshake
-	s.coordinator.CreateConnections(path)
-	s.coordinator.CreateChannels(path)
+	path.CreateConnections()
+	path.CreateChannels()
 
 	// Usually the consumer sets the channel ID when it receives a first VSC packet
 	// to the provider. For testing purposes, we can set it here. This is because
