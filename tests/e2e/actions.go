@@ -1323,8 +1323,8 @@ func (tr Chain) addIbcConnectionHermes(
 
 	for scanner.Scan() {
 		out := scanner.Text()
-		if verbose {
-			fmt.Println("addIbcConnection: " + out)
+		if strings.Contains(out, "error after maximum retry of") {
+			log.Fatal("failed to add ibc connection with hermes: " + out)
 		}
 		if out == done {
 			break
