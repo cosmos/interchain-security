@@ -100,10 +100,16 @@ func (tr Chain) sendTokens(
 	fmt.Println("sendTokens cmd:", cmd.String())
 	bz, err := cmd.CombinedOutput()
 	if action.ExpectErr {
+		// TODO(technicallyty): this might not be the right soln, but it seems to be working. In previous versions of
+		// sdk/comet, errors from CheckTx would be returned in a TxResponse, but now they're given in the error object.
+		// I am not sure if other types of errors are possible here - if we want to guard against specific ones or not.
 		if err == nil {
 			log.Fatalf("`tx bank send` did not fail as expected: %v", string(bz))
 		}
 	} else {
+		if err != nil {
+			log.Fatalf(`expected "tx bank send" to succeed, but failed: %s:%s`, err.Error(), string(bz))
+		}
 		// wait for inclusion in a block -> '--broadcast-mode block' is deprecated
 		tr.waitForTx(action.Chain, bz, 30*time.Second)
 	}

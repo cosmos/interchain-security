@@ -49,7 +49,7 @@ var (
 	localSdkPath         = flag.String("local-sdk-path", "",
 		"path of a local sdk version to build and reference in integration tests")
 	useCometmock = flag.Bool("use-cometmock", false, "use cometmock instead of CometBFT. see https://github.com/informalsystems/CometMock")
-	useGorelayer = flag.Bool("use-gorelayer", true, "use go relayer instead of Hermes")
+	useGorelayer = flag.Bool("use-gorelayer", false, "use go relayer instead of Hermes")
 	useImage     = flag.String("docker-image", "", "use existing docker image")
 )
 
