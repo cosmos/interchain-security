@@ -214,7 +214,7 @@ type App struct { // nolint: golint
 	ParamsKeeper          paramskeeper.Keeper
 	IBCKeeper             *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
 	EvidenceKeeper        evidencekeeper.Keeper
-	TransferKeeper        ibctransferkeeper.Keeper
+	TransferKeeper        *ibctransferkeeper.Keeper
 	FeeGrantKeeper        feegrantkeeper.Keeper
 	AuthzKeeper           authzkeeper.Keeper
 	ConsumerKeeper        consumerkeeper.Keeper
@@ -420,7 +420,6 @@ func New(
 	app.IBCKeeper = ibckeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[ibchost.StoreKey]),
-		app.GetSubspace(ibchost.ModuleName),
 		app.UpgradeKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
@@ -435,7 +434,7 @@ func New(
 		app.SlashingKeeper,
 		app.BankKeeper,
 		app.AccountKeeper,
-		&app.TransferKeeper,
+		app.TransferKeeper,
 		app.IBCKeeper,
 		authtypes.FeeCollectorName,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
@@ -463,8 +462,6 @@ func New(
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[ibctransfertypes.StoreKey]),
-		app.GetSubspace(ibctransfertypes.ModuleName),
-		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.ChannelKeeper,
 		app.MsgServiceRouter(),
 		app.AccountKeeper,
@@ -477,7 +474,7 @@ func New(
 	// create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ibcmodule)
-	ibcRouter.AddRoute(ccvtypes.ConsumerPortID, consumerModule)
+	ibcRouter.AddRoute(ccvtypes.ConsumerPortID, &consumerModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	// create evidence keeper with router

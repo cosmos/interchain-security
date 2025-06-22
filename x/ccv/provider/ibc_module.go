@@ -19,6 +19,8 @@ import (
 	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
+var _ porttypes.IBCModule = (*AppModule)(nil)
+
 // OnChanOpenInit implements the IBCModule interface
 //
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-coinit1
@@ -321,4 +323,9 @@ func (am AppModule) OnTimeoutPacket(
 	)
 
 	return nil
+}
+
+// SetICS4Wrapper implements types.IBCModule.
+func (AppModule) SetICS4Wrapper(wrapper porttypes.ICS4Wrapper) {
+	panic("unimplemented")
 }

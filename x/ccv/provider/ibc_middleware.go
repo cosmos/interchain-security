@@ -16,7 +16,7 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
-var _ porttypes.Middleware = &IBCMiddleware{}
+var _ porttypes.Middleware = (*IBCMiddleware)(nil)
 
 // IBCMiddleware implements the callbacks for the IBC transfer middleware given the
 // provider keeper and the underlying application.
@@ -314,6 +314,16 @@ func (im IBCMiddleware) WriteAcknowledgement(
 
 // GetAppVersion returns the application version of the underlying application
 func (im IBCMiddleware) GetAppVersion(ctx sdk.Context, portID, channelID string) (string, bool) {
+	panic("should never be called since the IBC middleware doesn't have an ICS4wrapper")
+}
+
+// SetICS4Wrapper implements types.Middleware.
+func (im IBCMiddleware) SetICS4Wrapper(wrapper porttypes.ICS4Wrapper) {
+	panic("should never be called since the IBC middleware doesn't have an ICS4wrapper")
+}
+
+// SetUnderlyingApplication implements types.Middleware.
+func (im IBCMiddleware) SetUnderlyingApplication(app porttypes.IBCModule) {
 	panic("should never be called since the IBC middleware doesn't have an ICS4wrapper")
 }
 

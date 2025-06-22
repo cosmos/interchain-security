@@ -206,7 +206,7 @@ type App struct { // nolint: golint
 	ParamsKeeper          paramskeeper.Keeper
 	IBCKeeper             *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
 	EvidenceKeeper        evidencekeeper.Keeper
-	TransferKeeper        ibctransferkeeper.Keeper
+	TransferKeeper        *ibctransferkeeper.Keeper
 	ProviderKeeper        ibcproviderkeeper.Keeper
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 
@@ -397,7 +397,6 @@ func New(
 	app.IBCKeeper = ibckeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[ibcexported.StoreKey]),
-		app.GetSubspace(ibcexported.ModuleName),
 		app.UpgradeKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
@@ -483,8 +482,6 @@ func New(
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[ibctransfertypes.StoreKey]),
-		app.GetSubspace(ibctransfertypes.ModuleName),
-		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.ChannelKeeper,
 		app.MsgServiceRouter(),
 		app.AccountKeeper,
@@ -500,7 +497,7 @@ func New(
 	// create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)
-	ibcRouter.AddRoute(providertypes.ModuleName, providerModule)
+	ibcRouter.AddRoute(providertypes.ModuleName, &providerModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))

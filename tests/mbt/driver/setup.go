@@ -401,7 +401,7 @@ func (s *Driver) ConfigureNewPath(consumerChain, providerChain *ibctesting.TestC
 
 	// Handshake
 	s.coordinator.CreateConnections(path)
-	s.coordinator.CreateChannels(path)
+	s.coordinator.CreateTransferChannels(path)
 
 	// Usually the consumer sets the channel ID when it receives a first VSC packet
 	// to the provider. For testing purposes, we can set it here. This is because
