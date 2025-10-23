@@ -77,6 +77,7 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 	consumerRedistributionFraction string, historicalEntries int64,
 	consumerUnbondingPeriod time.Duration,
 	rewardDenoms, providerRewardDenoms []string, retryDelayPeriod time.Duration,
+	consumerId string,
 ) ConsumerParams {
 	return ConsumerParams{
 		Enabled:                           enabled,
@@ -91,6 +92,7 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 		RewardDenoms:                      rewardDenoms,
 		ProviderRewardDenoms:              providerRewardDenoms,
 		RetryDelayPeriod:                  retryDelayPeriod,
+		ConsumerId:                        consumerId,
 	}
 }
 
@@ -111,6 +113,7 @@ func DefaultParams() ConsumerParams {
 		rewardDenoms,
 		provideRewardDenoms,
 		DefaultRetryDelayPeriod,
+		"0",
 	)
 }
 
@@ -150,6 +153,9 @@ func (p ConsumerParams) Validate() error {
 		return err
 	}
 	if err := ValidateDuration(p.RetryDelayPeriod); err != nil {
+		return err
+	}
+	if err := ValidateConsumerId(p.ConsumerId); err != nil {
 		return err
 	}
 	return nil

@@ -76,6 +76,10 @@ message ConsumerParams {
   // The period after which a consumer can retry sending a throttled packet.
   google.protobuf.Duration retry_delay_period = 13
       [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+
+  // The consumer ID of this consumer chain. Used by the consumer module to send 
+  // ICS rewards. 
+  string consumer_id = 14;
 }
 
 // ConsumerGenesisState defines shared genesis information between provider and

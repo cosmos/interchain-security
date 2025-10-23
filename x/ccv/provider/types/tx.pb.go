@@ -1073,11 +1073,15 @@ type MsgConsumerModification struct {
 	Denylist []string `protobuf:"bytes,8,rep,name=denylist,proto3" json:"denylist,omitempty"`
 	// signer address
 	Authority string `protobuf:"bytes,9,opt,name=authority,proto3" json:"authority,omitempty"`
-	// (optional) Allows governance to rename a consumer chain *before it has launched*.
-	// This is useful if the proposed chain ID needs to be updated due to naming conflicts,
-	// rebranding, or other changes discovered during the pre-launch phase.
-	// Once the consumer chain has launched, its chain ID becomes immutable and this field
-	// will be ignored. This field must be left empty ("") if no rename is intended.
+	// (optional) If the consumer chain has NOT yet launched, the chain id can be updated.
+	// After a chain has launched the chain id CANNOT be updated.
+	//
+	// This field is optional and can remain empty (i.e., `new_chain_id = ""`) or
+	// correspond to the chain id the chain already has. Renaming is only allowed
+	// in the chain’s pre-launch phase (registered/initialized in v6 terms). In this
+	// v5 fork we treat “pre-launch” as “no IBC client exists yet for the current chain id”.
+	//
+	// Example use case: correcting a typo before launch.
 	NewChainId string `protobuf:"bytes,10,opt,name=new_chain_id,json=newChainId,proto3" json:"new_chain_id,omitempty"`
 }
 

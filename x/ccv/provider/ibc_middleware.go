@@ -13,6 +13,7 @@ import (
 
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/v5/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v5/x/ccv/types"
 )
 
 var _ porttypes.Middleware = &IBCMiddleware{}
@@ -111,6 +112,7 @@ func (im IBCMiddleware) OnRecvPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) exported.Acknowledgement {
+	logger := im.keeper.Logger(ctx)
 	// IBC v10: Added channelID parameter
 	ack := im.app.OnRecvPacket(ctx, channelID, packet, relayer)
 
@@ -119,12 +121,6 @@ func (im IBCMiddleware) OnRecvPacket(
 	// that the packet data is valid and can be safely
 	// deserialized without checking errors.
 	if ack.Success() {
-		// execute the middleware logic only if the sender is a consumer chain
-		consumerID, err := im.keeper.IdentifyConsumerChainIDFromIBCPacket(ctx, packet)
-		if err != nil {
-			return ack
-		}
-
 		// extract the coin info received from the packet data
 		var data ibctransfertypes.FungibleTokenPacketData
 		_ = types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data)
@@ -135,9 +131,33 @@ func (im IBCMiddleware) OnRecvPacket(
 			return ack
 		}
 
+		// execute the middleware logic only if the sender is a consumer chain
+		consumerID := ""
+		// check if the transfer has the reward memo
+		if rewardMemo, err := ccvtypes.GetRewardMemoFromTransferMemo(data.Memo); err != nil {
+			// check if the transfer is on a channel with the same underlying
+			// client as the CCV channel
+			consumerID, err = im.keeper.IdentifyConsumerChainIDFromIBCPacket(ctx, packet)
+			if err != nil {
+				if data.Memo == "consumer chain rewards distribution" {
+					// log error message
+					logger.Error(
+						"received token transfer with ICS reward from unknown consumer",
+						"packet", packet.String(),
+						"fungibleTokenPacketData", data.String(),
+						"error", err.Error(),
+					)
+				}
+
+				return ack
+			}
+		} else {
+			logger.Info("transfer memo:%#+v", rewardMemo)
+			consumerID = rewardMemo.ConsumerId
+		}
+
 		coinAmt, _ := math.NewIntFromString(data.Amount)
 		coinDenom := GetProviderDenom(data.Denom, packet)
-
 		// verify that the coin's denom is a whitelisted consumer denom,
 		// and if so, adds it to the consumer chain rewards allocation,
 		// otherwise the prohibited coin just stays in the pool forever.

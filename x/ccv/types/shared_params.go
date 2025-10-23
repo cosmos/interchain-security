@@ -2,8 +2,11 @@ package types
 
 import (
 	fmt "fmt"
+	"strconv"
+	"strings"
 	"time"
 
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 	ibchost "github.com/cosmos/ibc-go/v10/modules/core/24-host"
 
@@ -112,4 +115,19 @@ func CalculateTrustPeriod(unbondingPeriod time.Duration, defaultTrustPeriodFract
 	trustPeriod := time.Duration(trustDec.MulInt64(unbondingPeriod.Nanoseconds()).TruncateInt64())
 
 	return trustPeriod, nil
+}
+
+// ValidateConsumerId validates the provided consumer id and returns an error if it is not valid
+func ValidateConsumerId(consumerId string) error {
+	if strings.TrimSpace(consumerId) == "" {
+		return errorsmod.Wrapf(ErrInvalidConsumerId, "consumer id cannot be blank")
+	}
+
+	// check that `consumerId` corresponds to a `uint64`
+	_, err := strconv.ParseUint(consumerId, 10, 64)
+	if err != nil {
+		return errorsmod.Wrapf(ErrInvalidConsumerId, "consumer id (%s) cannot be parsed: %s", consumerId, err.Error())
+	}
+
+	return nil
 }

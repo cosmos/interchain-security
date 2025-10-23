@@ -223,3 +223,17 @@ func TestVSCMaturedPacketDataWireBytes(t *testing.T) {
 
 	require.Equal(t, expectedStr, str)
 }
+
+func TestCreateTransferMemo(t *testing.T) {
+	consumerId := "13"
+	chainId := "chain-13"
+
+	transferMemo, err := types.CreateTransferMemo(consumerId, chainId)
+	require.NoError(t, err)
+
+	rewardMemo, err := types.GetRewardMemoFromTransferMemo(transferMemo)
+	require.NoError(t, err)
+	require.Equal(t, consumerId, rewardMemo.ConsumerId)
+	require.Equal(t, chainId, rewardMemo.ChainId)
+	require.Equal(t, "ICS rewards", rewardMemo.Memo)
+}

@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
@@ -193,4 +194,55 @@ func NewConsumerPacketData(cpdType ConsumerPacketDataType, data isConsumerPacket
 		Type: cpdType,
 		Data: data,
 	}
+}
+
+type RewardMemo struct {
+	ConsumerId string `json:"consumerId"`
+	ChainId    string `json:"chainId"`
+	Memo       string `json:"memo"`
+}
+
+func NewRewardMemo(consumerId, chainId, memo string) RewardMemo {
+	return RewardMemo{
+		ConsumerId: consumerId,
+		ChainId:    chainId,
+		Memo:       memo,
+	}
+}
+
+// CreateTransferMemo creates a memo for the IBC transfer of ICS rewards.
+// Note that the memo follows the Fungible Token Transfer v2 standard
+// https://github.com/cosmos/ibc/blob/main/spec/app/ics-020-fungible-token-transfer/README.md#using-the-memo-field
+func CreateTransferMemo(consumerId, chainId string) (string, error) {
+	memo := NewRewardMemo(consumerId, chainId, "ICS rewards")
+	memoBytes, err := json.Marshal(memo)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(`{
+			"provider": %s
+		}`,
+		string(memoBytes),
+	), nil
+}
+
+func GetRewardMemoFromTransferMemo(memo string) (RewardMemo, error) {
+	memoData := map[string]json.RawMessage{}
+	err := json.Unmarshal([]byte(memo), &memoData)
+	if err != nil {
+		return RewardMemo{}, err
+	}
+
+	providerMemo, ok := memoData["provider"]
+	if !ok {
+		return RewardMemo{}, err
+	}
+
+	rewardMemo := RewardMemo{}
+	err = json.Unmarshal([]byte(providerMemo), &rewardMemo)
+	if err != nil {
+		return RewardMemo{}, err
+	}
+
+	return rewardMemo, nil
 }
