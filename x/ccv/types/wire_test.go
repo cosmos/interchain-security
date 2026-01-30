@@ -238,7 +238,57 @@ func TestCreateTransferMemo(t *testing.T) {
 	require.Equal(t, "ICS rewards", rewardMemo.Memo)
 }
 
-func TestGetRewardMemoFromTransferMemoMissingProvider(t *testing.T) {
-	_, err := types.GetRewardMemoFromTransferMemo(`{"foo":"bar"}`)
-	require.Error(t, err)
+func TestGetRewardMemoFromTransferMemo(t *testing.T) {
+	testCases := []struct {
+		name      string
+		memo      string
+		expectErr bool
+		want      types.RewardMemo
+	}{
+		{
+			name:      "missing provider key",
+			memo:      `{"foo":"bar"}`,
+			expectErr: true,
+		},
+		{
+			name:      "invalid JSON",
+			memo:      `{not-json}`,
+			expectErr: true,
+		},
+		{
+			name:      "provider present but wrong type",
+			memo:      `{"provider":"not-an-object"}`,
+			expectErr: true,
+		},
+		{
+			name:      "provider present but missing fields",
+			memo:      `{"provider":{"memo":"ICS rewards"}}`,
+			expectErr: false,
+			want:      types.RewardMemo{Memo: "ICS rewards"},
+		},
+		{
+			name:      "provider present and decodes",
+			memo:      `{"provider":{"consumerId":"13","chainId":"chain-13","memo":"memo"}}`,
+			expectErr: false,
+			want:      types.RewardMemo{ConsumerId: "13", ChainId: "chain-13", Memo: "memo"},
+		},
+		{
+			name:      "valid ICS rewards memo",
+			memo:      `{"provider":{"consumerId":"13","chainId":"chain-13","memo":"ICS rewards"}}`,
+			expectErr: false,
+			want:      types.RewardMemo{ConsumerId: "13", ChainId: "chain-13", Memo: "ICS rewards"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			rewardMemo, err := types.GetRewardMemoFromTransferMemo(tc.memo)
+			if tc.expectErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.want, rewardMemo)
+		})
+	}
 }
