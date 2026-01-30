@@ -237,3 +237,8 @@ func TestCreateTransferMemo(t *testing.T) {
 	require.Equal(t, chainId, rewardMemo.ChainId)
 	require.Equal(t, "ICS rewards", rewardMemo.Memo)
 }
+
+func TestGetRewardMemoFromTransferMemoMissingProvider(t *testing.T) {
+	_, err := types.GetRewardMemoFromTransferMemo(`{"foo":"bar"}`)
+	require.Error(t, err)
+}

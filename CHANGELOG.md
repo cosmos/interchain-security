@@ -6,6 +6,10 @@
 
 - Bump Cosmos SDK dependencies to v0.53. ([\#2594](https://github.com/cosmos/interchain-security/pull/2594))
 
+### BUG FIXES
+
+- `[x/ccv]` Return an error when the transfer memo is missing the provider reward memo. ([\#2626](https://github.com/cosmos/interchain-security/pull/2626))
+
 ## v6.4.1
 
 *February 25, 2025*
