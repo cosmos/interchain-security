@@ -20,6 +20,8 @@ import (
 	"github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
+var _ porttypes.IBCModule = (*AppModule)(nil)
+
 // OnChanOpenInit implements the IBCModule interface
 // this function is called by the relayer.
 func (am AppModule) OnChanOpenInit(

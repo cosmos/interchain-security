@@ -17,6 +17,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
@@ -104,6 +105,11 @@ type AppModule struct {
 	AppModuleBasic
 	keeper     keeper.Keeper
 	paramSpace paramtypes.Subspace
+}
+
+// SetICS4Wrapper implements types.IBCModule.
+func (am *AppModule) SetICS4Wrapper(_ types.ICS4Wrapper) {
+	// Implement if needed to be used with middlewares
 }
 
 // NewAppModule creates a new consumer module
