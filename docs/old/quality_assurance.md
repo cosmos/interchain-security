@@ -5,7 +5,7 @@ This document contains the overview of the quality assurance process necessary f
 The quality assurance of Interchain Security is done using the following approaches:
 
 - code review
-- automatic software engineering tools (e.g., SonarCloud, gosec)
+- automatic software engineering tools (e.g., gosec)
 - unit testing
 - integration tests
 - differential testing using heuristics
