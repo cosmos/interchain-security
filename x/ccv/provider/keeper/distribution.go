@@ -442,7 +442,7 @@ func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, consumerId stri
 			"error",
 			err,
 		)
-		return
+		return totalPower
 	}
 	for _, v := range vals {
 		// only consider the voting power of a validator that would receive rewards (i.e., validator has been validating for a number of blocks)
@@ -453,7 +453,7 @@ func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, consumerId stri
 		totalPower += v.Power
 	}
 
-	return
+	return totalPower
 }
 
 // IdentifyConsumerIdFromIBCPacket checks if the packet destination matches a registered consumer chain.

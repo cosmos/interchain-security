@@ -280,7 +280,7 @@ func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, msgAndArgs
 func getStakingUnbondingDelegationEntry(ctx sdk.Context, k testutil.TestStakingKeeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {
 	stakingUbd, err := k.GetUnbondingDelegationByUnbondingID(ctx, id)
 	if err != nil {
-		return
+		return stakingUnbondingOp, found
 	}
 
 	for _, entry := range stakingUbd.Entries {

@@ -436,12 +436,12 @@ func (k Keeper) GetCCValidator(ctx sdk.Context, addr []byte) (validator types.Cr
 	store := ctx.KVStore(k.storeKey)
 	v := store.Get(types.CrossChainValidatorKey(addr))
 	if v == nil {
-		return
+		return validator, found
 	}
 	k.cdc.MustUnmarshal(v, &validator)
 	found = true
 
-	return
+	return validator, found
 }
 
 // DeleteCCValidator deletes a cross-chain validator for a given address

@@ -124,7 +124,7 @@ func (cp ConsumerPacketData) Validate() (err error) {
 		err = fmt.Errorf("invalid consumer packet type: %q", cp.Type)
 	}
 
-	return
+	return err
 }
 
 // Convert to bytes while maintaining over the wire compatibility with previous versions.

@@ -66,7 +66,7 @@ func ParsePacketsFromEvents(events []abci.Event) (packets []channeltypes.Packet)
 			packets = append(packets, packet)
 		}
 	}
-	return
+	return packets
 }
 
 // ABCIToSDKEvents converts a list of ABCI events to Cosmos SDK events.

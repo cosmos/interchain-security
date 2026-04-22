@@ -196,7 +196,7 @@ func (s *CCVTestSuite) registerPacketSniffer(chain *ibctesting.TestChain) {
 func (s *CCVTestSuite) getSentPacket(chain *ibctesting.TestChain, sequence uint64, channelID string) (packet channeltypes.Packet, found bool) {
 	key := getSentPacketKey(sequence, channelID)
 	packet, found = s.packetSniffers[chain].packets[key]
-	return
+	return packet, found
 }
 
 // initConsumerChain initializes a consumer chain given a genesis state
@@ -428,5 +428,5 @@ func ParsePacketsFromEvents(events []abci.Event) (packets []channeltypes.Packet)
 			packets = append(packets, packet)
 		}
 	}
-	return
+	return packets
 }

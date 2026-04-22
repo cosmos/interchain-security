@@ -1,19 +1,17 @@
+version: "2"
+
 run:
   tests: true
   timeout: 10m
-  sort-results: true
   allow-parallel-runners: true
 
 linters:
-  disable-all: true
+  default: none
   enable:
     - dogsled
-    - gci
     - goconst
     - gocritic
-    - gofumpt
     - gosec
-    - gosimple
     - govet
     - ineffassign
     - misspell
@@ -21,70 +19,73 @@ linters:
     - nolintlint
     - staticcheck
     - revive
-    - stylecheck
-    - typecheck
     - thelper
     - unconvert
     - unused
+  settings:
+    staticcheck:
+      checks:
+        - "-QF*"
+        - "-SA1019"
+    gosec:
+      excludes:
+        - G104
+        - G204
+    dogsled:
+      max-blank-identifiers: 3
+    gocritic:
+      disabled-checks:
+        - appendAssign
+        - ifElseChain
+    revive:
+      rules:
+        - name: var-naming
+          disabled: true
+    nolintlint:
+      allow-unused: true
+      allow-leading-space: true
+      require-explanation: false
+      require-specific: false
+  exclusions:
+    generated: lax
+    presets:
+      - common-false-positives
+    rules:
+      - text: 'Use of weak random number generator'
+        linters:
+          - gosec
+      - text: 'G115:'
+        linters:
+          - gosec
+      - text: 'ST1003:'
+        linters:
+          - staticcheck
+      - text: 'ST1016:'
+        linters:
+          - staticcheck
+      - text: 'leading space'
+        linters:
+          - nolintlint
+
+formatters:
+  enable:
+    - gci
+    - gofumpt
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - blank
+        - dot
+        - prefix(cosmossdk.io)
+        - prefix(github.com/cosmos/cosmos-sdk)
+        - prefix(github.com/cometbft/cometbft)
+        - prefix(github.com/cosmos/interchain-security)
+      custom-order: true
+    gofumpt:
+      extra-rules: true
 
 issues:
-  exclude-rules:
-    - text: 'Use of weak random number generator'
-      linters:
-        - gosec
-    - text: 'G115:'
-      linters:
-        - gosec
-    - text: 'ST1003:'
-      linters:
-        - stylecheck
-    # FIXME: Disabled until golangci-lint updates stylecheck with this fix:
-    # https://github.com/dominikh/go-tools/issues/389
-    - text: 'ST1016:'
-      linters:
-        - stylecheck
-    - path: 'migrations'
-      text: 'SA1019:'
-      linters:
-        - staticcheck
-    - text: 'leading space'
-      linters:
-        - nolintlint
-
   max-issues-per-linter: 10000
   max-same-issues: 10000
-
-linters-settings:
-  gci:
-    sections:
-      - standard # Standard section: captures all standard packages.
-      - default # Default section: contains all imports that could not be matched to another section type.
-      - blank # blank imports
-      - dot # dot imports
-      - prefix(cosmossdk.io)
-      - prefix(github.com/cosmos/cosmos-sdk)
-      - prefix(github.com/cometbft/cometbft)
-      - prefix(github.com/cosmos/interchain-security)
-    custom-order: true
-  gofumpt:
-    # Choose whether to use the extra rules.
-    # Default: false
-    extra-rules: true
-  gocritic:
-    disabled-checks:
-      - appendAssign
-      - ifElseChain
-  dogsled:
-    max-blank-identifiers: 3
-  revive:
-    rules:
-      - name: var-naming
-        disabled: true
-  maligned:
-    # print struct with more effective memory layout or not, false by default
-    suggest-new: true
-  nolintlint:
-    allow-unused: false
-    allow-leading-space: true
-    require-explanation: false
-    require-specific: false

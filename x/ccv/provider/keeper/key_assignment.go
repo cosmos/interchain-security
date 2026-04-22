@@ -282,7 +282,7 @@ func (k Keeper) GetConsumerAddrsToPrune(
 
 	bz := store.Get(types.ConsumerAddrsToPruneV2Key(consumerId, ts))
 	if bz == nil {
-		return
+		return consumerAddrsToPrune
 	}
 	err := consumerAddrsToPrune.Unmarshal(bz)
 	if err != nil {
@@ -290,7 +290,7 @@ func (k Keeper) GetConsumerAddrsToPrune(
 		// the list of consumer addresses is assumed to be correctly serialized in AppendConsumerAddrsToPrune.
 		panic(fmt.Sprintf("failed to unmarshal consumer addresses to prune: %v", err))
 	}
-	return
+	return consumerAddrsToPrune
 }
 
 // ConsumeConsumerAddrsToPrune returns the list of consumer addresses that can be pruned at timestamp ts.

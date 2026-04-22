@@ -16,11 +16,11 @@ func (t *TestSet) Set(value string) (err error) {
 	// Check and skip duplicates
 	for _, v := range *t {
 		if v == value {
-			return
+			return err
 		}
 	}
 	*t = append(*t, value)
-	return
+	return err
 }
 
 func (t *TestSet) String() string {

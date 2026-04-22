@@ -507,11 +507,11 @@ func (k Keeper) GetSlashAcks(ctx sdk.Context, consumerId string) []string {
 func (k Keeper) ConsumeSlashAcks(ctx sdk.Context, consumerId string) (acks []string) {
 	acks = k.GetSlashAcks(ctx, consumerId)
 	if len(acks) < 1 {
-		return
+		return acks
 	}
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.SlashAcksKey(consumerId))
-	return
+	return acks
 }
 
 // DeleteSlashAcks deletes the slash acks for a given consumer id
