@@ -1,12 +1,13 @@
 package keeper_test
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v10/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
+	clienttypes "github.com/cosmos/ibc-go/v11/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v11/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v11/modules/light-clients/07-tendermint"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -24,6 +25,9 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
+
+// testConsensusAppHash is 32 bytes (CometBFT app hash size) for ConsensusState.ValidateBasic.
+var testConsensusAppHash = bytes.Repeat([]byte{0xab}, 32)
 
 // TestInitGenesis tests that a consumer chain is correctly initialised from genesis.
 // It covers the start of a new chain, the restart of a chain during the CCV channel handshake
@@ -47,7 +51,7 @@ func TestInitGenesis(t *testing.T) {
 	// create ibc client and last consensus states
 	provConsState := ibctmtypes.NewConsensusState(
 		time.Time{},
-		commitmenttypes.NewMerkleRoot([]byte("apphash")),
+		commitmenttypes.NewMerkleRoot(testConsensusAppHash),
 		tmtypes.NewValidatorSet([]*tmtypes.Validator{validator}).Hash(),
 	)
 

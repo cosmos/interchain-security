@@ -106,8 +106,11 @@ func (am AppModule) AllocateTokens(
 		return err
 	}
 	vs := am.stakingKeeper.GetValidatorSet()
-	totalBondedTokens, err := vs.TotalBondedTokens(ctx)
-	if err != nil {
+	totalBondedTokens := math.ZeroInt()
+	if err := vs.IterateBondedValidatorsByPower(ctx, func(_ int64, validator stakingtypes.ValidatorI) bool {
+		totalBondedTokens = totalBondedTokens.Add(validator.GetTokens())
+		return false
+	}); err != nil {
 		return err
 	}
 	if totalBondedTokens.IsZero() {
@@ -128,16 +131,28 @@ func (am AppModule) AllocateTokens(
 	representativesFraction := math.LegacyOneDec().Sub(communityTax)
 
 	// allocate tokens proportionally to representatives voting power
-	_ = vs.IterateBondedValidatorsByPower(ctx, func(_ int64, validator stakingtypes.ValidatorI) bool {
+	var allocErr error
+	if err := vs.IterateBondedValidatorsByPower(ctx, func(_ int64, validator stakingtypes.ValidatorI) bool {
+		if allocErr != nil {
+			return true
+		}
 		// we get this validator's percentage of the total power by dividing their tokens by the total bonded tokens
 		powerFraction := math.LegacyNewDecFromInt(validator.GetTokens()).QuoTruncate(math.LegacyNewDecFromInt(totalBondedTokens))
 		// we truncate here again, which means that the reward will be slightly lower than it should be
 		reward := feesCollected.MulDecTruncate(representativesFraction).MulDecTruncate(powerFraction)
-		_ = am.keeper.AllocateTokensToValidator(ctx, validator, reward)
+		if err := am.keeper.AllocateTokensToValidator(ctx, validator, reward); err != nil {
+			allocErr = err
+			return true
+		}
 		remaining = remaining.Sub(reward)
 
 		return false
-	})
+	}); err != nil {
+		return err
+	}
+	if allocErr != nil {
+		return allocErr
+	}
 
 	// allocate community funding
 	// due to the 3 truncations above, remaining sent to the community pool will be slightly more than it should be. This is OK

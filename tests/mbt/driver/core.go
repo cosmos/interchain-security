@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	tendermint "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v10/testing"
+	tendermint "github.com/cosmos/ibc-go/v11/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v11/testing"
 	"github.com/stretchr/testify/require"
 
 	sdkmath "cosmossdk.io/math"

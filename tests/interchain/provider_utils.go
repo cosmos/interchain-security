@@ -1,15 +1,14 @@
 package interchain
 
 import (
+	"cosmos/interchain-security/tests/interchain/chainsuite"
 	"fmt"
 	"strings"
 	"time"
 
-	"cosmos/interchain-security/tests/interchain/chainsuite"
-
 	"cosmossdk.io/math"
 	sdkmath "cosmossdk.io/math"
-	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v11/modules/core/02-client/types"
 	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )
 

@@ -27,6 +27,16 @@ func (k Keeper) IterateBondedValidatorsByPower(ctx context.Context, fn func(inde
 	})
 }
 
+// TotalValidatorPower returns the sum of consensus-active validator power (same bonded set as [Keeper.IterateBondedValidatorsByPower]).
+func (k Keeper) TotalValidatorPower(ctx context.Context) (math.Int, error) {
+	total := math.ZeroInt()
+	err := k.IterateBondedValidatorsByPower(ctx, func(_ int64, validator stakingtypes.ValidatorI) bool {
+		total = total.Add(validator.GetValidatorPower())
+		return false
+	})
+	return total, err
+}
+
 // TotalBondedTokens gets the amount of tokens of the consensus-active validators.
 // The same as TotalBondedTokens in the StakingKeeper, but only counts bonded tokens
 // of the first MaxProviderConsensusValidators bonded validators.
@@ -37,7 +47,7 @@ func (k Keeper) TotalBondedTokens(ctx context.Context) (math.Int, error) {
 	totalBondedTokens := math.ZeroInt()
 
 	err := k.IterateBondedValidatorsByPower(ctx, func(_ int64, validator stakingtypes.ValidatorI) (stop bool) {
-		tokens := validator.GetBondedTokens()
+		tokens := validator.GetValidatorPower()
 		totalBondedTokens = totalBondedTokens.Add(tokens)
 		return false
 	})

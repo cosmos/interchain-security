@@ -1,6 +1,6 @@
 [
   {
-    "ActionType": "main.StartChainAction",
+    "ActionType": "e2e.StartChainAction",
     "Action": {
       "Chain": "provi",
       "Validators": [
@@ -43,12 +43,14 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
   },
   {
-    "ActionType": "main.SubmitConsumerAdditionProposalAction",
+    "ActionType": "e2e.SubmitConsumerAdditionProposalAction",
     "Action": {
       "PreCCV": false,
       "Chain": "provi",
@@ -57,6 +59,7 @@
       "ConsumerChain": "consu",
       "SpawnTime": 0,
       "InitialHeight": {
+        "revision_number": 0,
         "revision_height": 1
       },
       "DistributionChannel": "",
@@ -64,7 +67,10 @@
       "ValidatorsPowerCap": 0,
       "ValidatorSetCap": 0,
       "Allowlist": null,
-      "Denylist": null
+      "Denylist": null,
+      "MinStake": 0,
+      "AllowInactiveVals": false,
+      "Prioritylist": null
     },
     "State": {
       "provi": {
@@ -87,6 +93,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": {
           "1": {
             "RawProposal": {
@@ -94,9 +102,10 @@
               "Chain": "consu",
               "SpawnTime": 0,
               "InitialHeight": {
+                "revision_number": 0,
                 "revision_height": 1
               },
-              "Status": "2"
+              "Status": "PROPOSAL_STATUS_VOTING_PERIOD"
             },
             "Type": "e2e.ConsumerAdditionProposal"
           }
@@ -105,7 +114,7 @@
     }
   },
   {
-    "ActionType": "main.AssignConsumerPubKeyAction",
+    "ActionType": "e2e.AssignConsumerPubKeyAction",
     "Action": {
       "Chain": "consu",
       "Validator": "carol",
@@ -134,12 +143,14 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
   },
   {
-    "ActionType": "main.AssignConsumerPubKeyAction",
+    "ActionType": "e2e.AssignConsumerPubKeyAction",
     "Action": {
       "Chain": "consu",
       "Validator": "carol",
@@ -151,7 +162,7 @@
     "State": {}
   },
   {
-    "ActionType": "main.AssignConsumerPubKeyAction",
+    "ActionType": "e2e.AssignConsumerPubKeyAction",
     "Action": {
       "Chain": "consu",
       "Validator": "bob",
@@ -181,6 +192,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -220,6 +233,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": {
           "1": {
             "RawProposal": {
@@ -227,9 +242,10 @@
               "Chain": "consu",
               "SpawnTime": 0,
               "InitialHeight": {
+                "revision_number": 0,
                 "revision_height": 1
               },
-              "Status": "3"
+              "Status": "PROPOSAL_STATUS_PASSED"
             },
             "Type": "e2e.ConsumerAdditionProposal"
           }
@@ -238,7 +254,7 @@
     }
   },
   {
-    "ActionType": "main.StartConsumerChainAction",
+    "ActionType": "e2e.StartConsumerChainAction",
     "Action": {
       "ConsumerChain": "consu",
       "ProviderChain": "provi",
@@ -281,6 +297,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       },
       "provi": {
@@ -302,6 +320,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -330,7 +350,7 @@
     "State": {}
   },
   {
-    "ActionType": "main.DelegateTokensAction",
+    "ActionType": "e2e.DelegateTokensAction",
     "Action": {
       "Chain": "provi",
       "From": "alice",
@@ -357,6 +377,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       },
       "provi": {
@@ -378,6 +400,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -388,7 +412,8 @@
       "Chain": "consu",
       "From": "alice",
       "To": "bob",
-      "Amount": 1
+      "Amount": 1,
+      "ExpectErr": true
     },
     "State": {
       "consu": {
@@ -409,6 +434,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -441,6 +468,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -451,7 +480,8 @@
       "Chain": "consu",
       "From": "alice",
       "To": "bob",
-      "Amount": 1
+      "Amount": 1,
+      "ExpectErr": false
     },
     "State": {
       "consu": {
@@ -472,12 +502,14 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
   },
   {
-    "ActionType": "main.AssignConsumerPubKeyAction",
+    "ActionType": "e2e.AssignConsumerPubKeyAction",
     "Action": {
       "Chain": "consu",
       "Validator": "bob",
@@ -512,6 +544,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       },
       "provi": {
@@ -533,6 +567,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -571,6 +607,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       },
       "provi": {
@@ -592,12 +630,14 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
   },
   {
-    "ActionType": "main.UnbondTokensAction",
+    "ActionType": "e2e.UnbondTokensAction",
     "Action": {
       "Chain": "provi",
       "Sender": "alice",
@@ -624,6 +664,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       },
       "provi": {
@@ -645,6 +687,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -677,12 +721,14 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
   },
   {
-    "ActionType": "main.UnbondTokensAction",
+    "ActionType": "e2e.UnbondTokensAction",
     "Action": {
       "Chain": "provi",
       "Sender": "alice",
@@ -709,6 +755,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       },
       "provi": {
@@ -730,6 +778,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -762,6 +812,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -794,6 +846,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       },
       "provi": {
@@ -815,6 +869,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -847,6 +903,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -880,6 +938,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       },
       "provi": {
@@ -901,6 +961,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -933,6 +995,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -963,6 +1027,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       },
       "provi": {
@@ -984,6 +1050,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -1015,6 +1083,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       },
       "provi": {
@@ -1036,6 +1106,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -1068,6 +1140,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -1098,6 +1172,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       },
       "provi": {
@@ -1119,6 +1195,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -1151,6 +1229,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -1181,6 +1261,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       },
       "provi": {
@@ -1202,6 +1284,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -1234,6 +1318,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -1264,6 +1350,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       },
       "provi": {
@@ -1285,6 +1373,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -1317,6 +1407,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -1347,6 +1439,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       },
       "provi": {
@@ -1368,6 +1462,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -1400,6 +1496,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       },
       "provi": {
@@ -1421,6 +1519,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -1431,7 +1531,7 @@
     "State": {}
   },
   {
-    "ActionType": "main.SubmitConsumerRemovalProposalAction",
+    "ActionType": "e2e.SubmitConsumerRemovalProposalAction",
     "Action": {
       "Chain": "provi",
       "From": "bob",
@@ -1459,13 +1559,14 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": {
           "2": {
             "RawProposal": {
               "Deposit": 10000001,
               "Chain": "consu",
-              "StopTime": 0,
-              "Status": "2"
+              "Status": "PROPOSAL_STATUS_VOTING_PERIOD"
             },
             "Type": "e2e.ConsumerRemovalProposal"
           }
@@ -1509,13 +1610,14 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": {
           "2": {
             "RawProposal": {
               "Deposit": 10000001,
               "Chain": "consu",
-              "StopTime": 0,
-              "Status": "4"
+              "Status": "PROPOSAL_STATUS_REJECTED"
             },
             "Type": "e2e.ConsumerRemovalProposal"
           }
@@ -1524,7 +1626,7 @@
     }
   },
   {
-    "ActionType": "main.SubmitConsumerRemovalProposalAction",
+    "ActionType": "e2e.SubmitConsumerRemovalProposalAction",
     "Action": {
       "Chain": "provi",
       "From": "bob",
@@ -1552,13 +1654,14 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": {
           "3": {
             "RawProposal": {
               "Deposit": 10000001,
               "Chain": "consu",
-              "StopTime": 0,
-              "Status": "2"
+              "Status": "PROPOSAL_STATUS_VOTING_PERIOD"
             },
             "Type": "e2e.ConsumerRemovalProposal"
           }
@@ -1600,13 +1703,14 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": {
           "3": {
             "RawProposal": {
               "Deposit": 10000001,
               "Chain": "consu",
-              "StopTime": 0,
-              "Status": "3"
+              "Status": "PROPOSAL_STATUS_PASSED"
             },
             "Type": "e2e.ConsumerRemovalProposal"
           }

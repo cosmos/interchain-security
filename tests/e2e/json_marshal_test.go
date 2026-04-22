@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v11/modules/core/02-client/types"
 	"github.com/davecgh/go-spew/spew"
 
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
@@ -24,7 +24,7 @@ func TestProposalUnmarshal(t *testing.T) {
 			"InitialHeight": {
 				"revision_height": 1
 			},
-			"Status": "3"
+			"Status": "PROPOSAL_STATUS_PASSED"
 		}
 	}`
 
@@ -83,7 +83,7 @@ var testCases = []ChainStateTestCase{
 						"InitialHeight": {
 							"revision_height": 1
 						},
-						"Status": "3"
+						"Status": "PROPOSAL_STATUS_PASSED"
 					}
 				}
 			}
@@ -109,7 +109,7 @@ var testCases = []ChainStateTestCase{
 	{
 		name:                       "invalid JSON",
 		jsonBytes:                  []byte(`thisisnotagoodjsonstring`),
-		expectedUnmarshalErrorText: "invalid json",
+		expectedUnmarshalErrorText: "invalid character",
 	},
 	{
 		name: "unknown proposal type",
@@ -129,10 +129,10 @@ var testCases = []ChainStateTestCase{
 						"InitialHeight": {
 							"revision_height": 1
 						},
-						"Status": "3"
+						"Status": "PROPOSAL_STATUS_PASSED"
 					}
 				}
-			},
+			}
 		}`),
 		expectedUnmarshalErrorText: "not a known proposal type",
 	},
@@ -151,11 +151,11 @@ func TestUnmarshalJSON(t *testing.T) {
 				t.Errorf("Test case %v: Expected error to contain: %v, but got no error", tc.name, tc.expectedUnmarshalErrorText)
 			}
 
-			if err != nil && tc.expectedUnmarshalErrorText != "" && strings.Contains(err.Error(), tc.expectedUnmarshalErrorText) {
+			if err != nil && tc.expectedUnmarshalErrorText != "" && !strings.Contains(err.Error(), tc.expectedUnmarshalErrorText) {
 				t.Errorf("Test case %v: Expected error to contain: %v, but got: %v", tc.name, tc.expectedUnmarshalErrorText, err)
 			}
 
-			if !reflect.DeepEqual(result, tc.chainState) {
+			if err == nil && tc.expectedUnmarshalErrorText == "" && !reflect.DeepEqual(result, tc.chainState) {
 				t.Errorf("Test case %v: Expected ChainState: %v, but got: %v", tc.name, tc.chainState, result)
 			}
 		})
