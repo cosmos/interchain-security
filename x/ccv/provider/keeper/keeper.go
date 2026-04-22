@@ -7,19 +7,19 @@ import (
 	"reflect"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
-	conntypes "github.com/cosmos/ibc-go/v10/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
-	ibchost "github.com/cosmos/ibc-go/v10/modules/core/exported"
-	ibctmtypes "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
+	clienttypes "github.com/cosmos/ibc-go/v11/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v11/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v11/modules/core/04-channel/types"
+	ibchost "github.com/cosmos/ibc-go/v11/modules/core/exported"
+	ibctmtypes "github.com/cosmos/ibc-go/v11/modules/light-clients/07-tendermint"
 
 	addresscodec "cosmossdk.io/core/address"
 	errorsmod "cosmossdk.io/errors"
-	"cosmossdk.io/log"
+	"cosmossdk.io/log/v2"
 	"cosmossdk.io/math"
-	storetypes "cosmossdk.io/store/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -507,11 +507,11 @@ func (k Keeper) GetSlashAcks(ctx sdk.Context, consumerId string) []string {
 func (k Keeper) ConsumeSlashAcks(ctx sdk.Context, consumerId string) (acks []string) {
 	acks = k.GetSlashAcks(ctx, consumerId)
 	if len(acks) < 1 {
-		return
+		return acks
 	}
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.SlashAcksKey(consumerId))
-	return
+	return acks
 }
 
 // DeleteSlashAcks deletes the slash acks for a given consumer id

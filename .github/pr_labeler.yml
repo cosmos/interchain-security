@@ -23,7 +23,6 @@
   - any-glob-to-any-file: .mergify.yml
   - any-glob-to-any-file: .golangci.yml
   - any-glob-to-any-file: mlc_config.json
-  - any-glob-to-any-file: sonar-project.properties
 "C:Build":
 - changed-files:
   - any-glob-to-any-file: Makefile

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	ibctesting "github.com/cosmos/ibc-go/v10/testing"
+	ibctesting "github.com/cosmos/ibc-go/v11/testing"
 	"github.com/informalsystems/itf-go/itf"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/stretchr/testify/require"
@@ -38,6 +38,10 @@ var stats = Stats{}
 func TestMBT(t *testing.T) {
 	dir := "traces"
 
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		t.Skip("MBT traces directory missing; run `make test-mbt` or `cd tests/mbt/driver && sh generate_traces.sh` before running this test")
+	}
+
 	numTraces := 0
 
 	ibctesting.TimeIncrement = 1 * time.Nanosecond
@@ -62,6 +66,10 @@ func TestMBT(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatal("Error:", err)
+	}
+
+	if numTraces == 0 {
+		t.Fatal("no .json or .itf traces found under traces/; run generate_traces.sh (see make test-mbt)")
 	}
 
 	t.Log("✅ Running traces from the traces folder done")

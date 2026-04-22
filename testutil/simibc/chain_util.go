@@ -3,9 +3,9 @@ package simibc
 import (
 	"time"
 
-	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v10/testing"
+	channeltypes "github.com/cosmos/ibc-go/v11/modules/core/04-channel/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v11/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v11/testing"
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -66,7 +66,7 @@ func ParsePacketsFromEvents(events []abci.Event) (packets []channeltypes.Packet)
 			packets = append(packets, packet)
 		}
 	}
-	return
+	return packets
 }
 
 // ABCIToSDKEvents converts a list of ABCI events to Cosmos SDK events.

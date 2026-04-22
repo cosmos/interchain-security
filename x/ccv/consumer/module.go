@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	porttypes "github.com/cosmos/ibc-go/v11/modules/core/05-port/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
@@ -38,6 +39,8 @@ var (
 	_ module.HasServices         = (*AppModule)(nil)
 	_ appmodule.AppModule        = (*AppModule)(nil)
 	_ appmodule.HasBeginBlocker  = (*AppModule)(nil)
+
+	_ porttypes.IBCModule = (*AppModule)(nil)
 )
 
 // AppModuleBasic is the IBC Consumer AppModuleBasic
@@ -102,16 +105,22 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 // AppModule represents the AppModule for this module
 type AppModule struct {
 	AppModuleBasic
-	keeper     keeper.Keeper
-	paramSpace paramtypes.Subspace
+	keeper      keeper.Keeper
+	paramSpace  paramtypes.Subspace
+	ics4Wrapper porttypes.ICS4Wrapper
 }
 
 // NewAppModule creates a new consumer module
-func NewAppModule(k keeper.Keeper, paramSpace paramtypes.Subspace) AppModule {
-	return AppModule{
+func NewAppModule(k keeper.Keeper, paramSpace paramtypes.Subspace) *AppModule {
+	return &AppModule{
 		keeper:     k,
 		paramSpace: paramSpace,
 	}
+}
+
+// SetICS4Wrapper implements [porttypes.IBCModule].
+func (am *AppModule) SetICS4Wrapper(wrapper porttypes.ICS4Wrapper) {
+	am.ics4Wrapper = wrapper
 }
 
 // RegisterInvariants implements the AppModule interface

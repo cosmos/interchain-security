@@ -43,7 +43,7 @@ func findAndCallMethod(t *testing.T, suite any, methodName string) {
 	methodFinder := reflect.TypeOf(suite)
 	method, found := methodFinder.MethodByName(methodName)
 	if !found {
-		t.Errorf("Method %s is not defined for suite type", methodName)
+		t.Fatalf("Method %s is not defined for suite type %T", methodName, suite)
 	}
 
 	method.Func.Call([]reflect.Value{reflect.ValueOf(suite)})
@@ -114,7 +114,7 @@ func TestRelayAndApplyDowntimePacket(t *testing.T) {
 }
 
 func TestRelayAndApplyDoubleSignPacket(t *testing.T) {
-	runCCVTestByName(t, "TestRelayAndApplyDoubleSignPacket")
+	runCCVTestByName(t, "TestHandleConsumerDoubleVoting")
 }
 
 func TestSlashPacketAcknowledgement(t *testing.T) {
@@ -134,7 +134,7 @@ func TestValidatorDowntime(t *testing.T) {
 }
 
 func TestValidatorDoubleSigning(t *testing.T) {
-	runCCVTestByName(t, "TestValidatorDoubleSigning")
+	runCCVTestByName(t, "TestHandleConsumerDoubleVoting")
 }
 
 func TestQueueAndSendSlashPacket(t *testing.T) {
@@ -209,10 +209,6 @@ func TestPacketRoundtrip(t *testing.T) {
 	runCCVTestByName(t, "TestPacketRoundtrip")
 }
 
-func TestQueueAndSendVSCMaturedPackets(t *testing.T) {
-	runCCVTestByName(t, "TestQueueAndSendVSCMaturedPackets")
-}
-
 //
 // Changeover tests
 //
@@ -261,18 +257,6 @@ func TestKeyAssignment(t *testing.T) {
 	runCCVTestByName(t, "TestKeyAssignment")
 }
 
-//
-// Provider gov hooks test
-//
-
-func TestAfterPropSubmissionAndVotingPeriodEnded(t *testing.T) {
-	runCCVTestByName(t, "TestAfterPropSubmissionAndVotingPeriodEnded")
-}
-
-func TestGetConsumerAdditionFromProp(t *testing.T) {
-	runCCVTestByName(t, "TestGetConsumerAdditionFromProp")
-}
-
 func TestIBCTransferMiddleware(t *testing.T) {
 	runCCVTestByName(t, "TestIBCTransferMiddleware")
 }
@@ -291,8 +275,4 @@ func TestAllocateTokensToConsumerValidators(t *testing.T) {
 
 func TestMultiConsumerRewardsDistribution(t *testing.T) {
 	runCCVTestByName(t, "TestMultiConsumerRewardsDistribution")
-}
-
-func TestTooManyLastValidators(t *testing.T) {
-	runCCVTestByName(t, "TestTooManyLastValidators")
 }

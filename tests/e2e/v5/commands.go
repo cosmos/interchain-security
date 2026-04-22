@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v11/modules/core/02-client/types"
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"

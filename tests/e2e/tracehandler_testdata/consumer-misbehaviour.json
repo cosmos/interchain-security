@@ -1,6 +1,6 @@
 [
   {
-    "ActionType": "main.StartChainAction",
+    "ActionType": "e2e.StartChainAction",
     "Action": {
       "Chain": "provi",
       "Validators": [
@@ -37,12 +37,14 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
   },
   {
-    "ActionType": "main.SubmitConsumerAdditionProposalAction",
+    "ActionType": "e2e.SubmitConsumerAdditionProposalAction",
     "Action": {
       "PreCCV": false,
       "Chain": "provi",
@@ -51,6 +53,7 @@
       "ConsumerChain": "consu",
       "SpawnTime": 0,
       "InitialHeight": {
+        "revision_number": 0,
         "revision_height": 1
       },
       "DistributionChannel": "",
@@ -58,7 +61,10 @@
       "ValidatorsPowerCap": 0,
       "ValidatorSetCap": 0,
       "Allowlist": null,
-      "Denylist": null
+      "Denylist": null,
+      "MinStake": 0,
+      "AllowInactiveVals": false,
+      "Prioritylist": null
     },
     "State": {
       "provi": {
@@ -79,6 +85,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": {
           "1": {
             "RawProposal": {
@@ -86,9 +94,10 @@
               "Chain": "consu",
               "SpawnTime": 0,
               "InitialHeight": {
+                "revision_number": 0,
                 "revision_height": 1
               },
-              "Status": "2"
+              "Status": "PROPOSAL_STATUS_VOTING_PERIOD"
             },
             "Type": "e2e.ConsumerAdditionProposal"
           }
@@ -97,7 +106,7 @@
     }
   },
   {
-    "ActionType": "main.AssignConsumerPubKeyAction",
+    "ActionType": "e2e.AssignConsumerPubKeyAction",
     "Action": {
       "Chain": "consu",
       "Validator": "alice",
@@ -126,6 +135,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -134,7 +145,9 @@
     "ActionType": "main.OptInAction",
     "Action": {
       "Chain": "consu",
-      "Validator": "alice"
+      "Validator": "alice",
+      "ExpectError": false,
+      "ExpectedError": ""
     },
     "State": {}
   },
@@ -171,6 +184,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": {
           "1": {
             "RawProposal": {
@@ -178,9 +193,10 @@
               "Chain": "consu",
               "SpawnTime": 0,
               "InitialHeight": {
+                "revision_number": 0,
                 "revision_height": 1
               },
-              "Status": "3"
+              "Status": "PROPOSAL_STATUS_PASSED"
             },
             "Type": "e2e.ConsumerAdditionProposal"
           }
@@ -189,7 +205,7 @@
     }
   },
   {
-    "ActionType": "main.StartConsumerChainAction",
+    "ActionType": "e2e.StartConsumerChainAction",
     "Action": {
       "ConsumerChain": "consu",
       "ProviderChain": "provi",
@@ -220,6 +236,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       },
       "provi": {
@@ -240,6 +258,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -268,7 +288,7 @@
     "State": {}
   },
   {
-    "ActionType": "main.DelegateTokensAction",
+    "ActionType": "e2e.DelegateTokensAction",
     "Action": {
       "Chain": "provi",
       "From": "alice",
@@ -293,6 +313,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       },
       "provi": {
@@ -313,6 +335,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -343,6 +367,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }
@@ -358,67 +384,11 @@
     "State": {}
   },
   {
-    "ActionType": "main.StartRelayerAction",
-    "Action": {},
-    "State": {}
-  },
-  {
-    "ActionType": "main.StartConsumerEvidenceDetectorAction",
+    "ActionType": "main.SubmitConsumerMisbehaviourAction",
     "Action": {
-      "Chain": "consu"
-    },
-    "State": {
-      "consu": {
-        "ValBalances": null,
-        "ProposedConsumerChains": null,
-        "ValPowers": {
-          "alice": 511,
-          "bob": 0
-        },
-        "StakedTokens": null,
-        "IBCTransferParams": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerPendingPacketQueueSize": null,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "HasToValidate": null,
-        "Proposals": null
-      },
-      "provi": {
-        "ValBalances": null,
-        "ProposedConsumerChains": null,
-        "ValPowers": {
-          "alice": 511,
-          "bob": 20
-        },
-        "StakedTokens": {
-          "alice": 511000000,
-          "bob": 20000000
-        },
-        "IBCTransferParams": null,
-        "Params": null,
-        "Rewards": null,
-        "ConsumerChains": null,
-        "AssignedKeys": null,
-        "ProviderKeys": null,
-        "ConsumerPendingPacketQueueSize": null,
-        "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": null,
-        "HasToValidate": null,
-        "Proposals": null
-      }
-    }
-  },
-  {
-    "ActionType": "main.UpdateLightClientAction",
-    "Action": {
-      "Chain": "consu",
-      "HostChain": "provi",
-      "RelayerConfig": "/root/.hermes/config_fork.toml",
+      "FromChain": "consu",
+      "ToChain": "provi",
+      "Submitter": "bob",
       "ClientID": "07-tendermint-0"
     },
     "State": {
@@ -440,6 +410,8 @@
         "RegisteredConsumerRewardDenoms": null,
         "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       },
       "provi": {
@@ -461,12 +433,10 @@
         "ProviderKeys": null,
         "ConsumerPendingPacketQueueSize": null,
         "RegisteredConsumerRewardDenoms": null,
-        "ClientsFrozenHeights": {
-          "07-tendermint-0": {
-            "revision_height": 1
-          }
-        },
+        "ClientsFrozenHeights": null,
         "HasToValidate": null,
+        "InflationRateChange": null,
+        "ConsumerCommissionRates": null,
         "Proposals": null
       }
     }

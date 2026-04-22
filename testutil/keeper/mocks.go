@@ -11,16 +11,16 @@ import (
 
 	address "cosmossdk.io/core/address"
 	math "cosmossdk.io/math"
-	types "cosmossdk.io/store/types"
-	types0 "github.com/cometbft/cometbft/abci/types"
+	types "github.com/cometbft/cometbft/abci/types"
+	types0 "github.com/cosmos/cosmos-sdk/store/v2/types"
 	types1 "github.com/cosmos/cosmos-sdk/types"
 	types2 "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	types3 "github.com/cosmos/cosmos-sdk/x/staking/types"
-	types4 "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
-	types5 "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
-	types6 "github.com/cosmos/ibc-go/v10/modules/core/03-connection/types"
-	types7 "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
-	exported "github.com/cosmos/ibc-go/v10/modules/core/exported"
+	types4 "github.com/cosmos/ibc-go/v11/modules/apps/transfer/types"
+	types5 "github.com/cosmos/ibc-go/v11/modules/core/02-client/types"
+	types6 "github.com/cosmos/ibc-go/v11/modules/core/03-connection/types"
+	types7 "github.com/cosmos/ibc-go/v11/modules/core/04-channel/types"
+	exported "github.com/cosmos/ibc-go/v11/modules/core/exported"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -273,10 +273,10 @@ func (mr *MockStakingKeeperMockRecorder) GetValidatorByUnbondingID(ctx, id inter
 }
 
 // GetValidatorUpdates mocks base method.
-func (m *MockStakingKeeper) GetValidatorUpdates(ctx context.Context) ([]types0.ValidatorUpdate, error) {
+func (m *MockStakingKeeper) GetValidatorUpdates(ctx context.Context) ([]types.ValidatorUpdate, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorUpdates", ctx)
-	ret0, _ := ret[0].([]types0.ValidatorUpdate)
+	ret0, _ := ret[0].([]types.ValidatorUpdate)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -503,21 +503,6 @@ func (m *MockStakingKeeper) StakingTokenSupply(ctx context.Context) (math.Int, e
 func (mr *MockStakingKeeperMockRecorder) StakingTokenSupply(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StakingTokenSupply", reflect.TypeOf((*MockStakingKeeper)(nil).StakingTokenSupply), ctx)
-}
-
-// TotalBondedTokens mocks base method.
-func (m *MockStakingKeeper) TotalBondedTokens(ctx context.Context) (math.Int, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TotalBondedTokens", ctx)
-	ret0, _ := ret[0].(math.Int)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// TotalBondedTokens indicates an expected call of TotalBondedTokens.
-func (mr *MockStakingKeeperMockRecorder) TotalBondedTokens(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TotalBondedTokens", reflect.TypeOf((*MockStakingKeeper)(nil).TotalBondedTokens), ctx)
 }
 
 // UnbondingCanComplete mocks base method.
@@ -920,10 +905,10 @@ func (m *MockClientKeeper) EXPECT() *MockClientKeeperMockRecorder {
 }
 
 // ClientStore mocks base method.
-func (m *MockClientKeeper) ClientStore(ctx types1.Context, clientID string) types.KVStore {
+func (m *MockClientKeeper) ClientStore(ctx types1.Context, clientID string) types0.KVStore {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ClientStore", ctx, clientID)
-	ret0, _ := ret[0].(types.KVStore)
+	ret0, _ := ret[0].(types0.KVStore)
 	return ret0
 }
 

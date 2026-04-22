@@ -10,6 +10,9 @@ vendor/
 .idea
 __debug_*
 
+# rapid test failure dumps (local only)
+tests/e2e/testdata/
+
 # docusaurus versioned docs created during build
 docs/versions.json
 docs/versioned_docs

@@ -205,7 +205,7 @@ func (k Keeper) ComputeNextValidators(
 ) ([]types.ConsensusValidator, error) {
 	// sort the bonded validators by number of staked tokens in descending order
 	sort.Slice(bondedValidators, func(i, j int) bool {
-		return bondedValidators[i].GetBondedTokens().GT(bondedValidators[j].GetBondedTokens())
+		return bondedValidators[i].BondedTokens().GT(bondedValidators[j].BondedTokens())
 	})
 
 	// if inactive validators are not allowed, only consider the first `MaxProviderConsensusValidators` validators

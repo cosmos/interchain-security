@@ -175,17 +175,21 @@ sim-full-no-inactive-vals:
 ###############################################################################
 ###                                Linting                                  ###
 ###############################################################################
-golangci_lint_cmd=golangci-lint
-golangci_version=v1.64.5
+golangci_version=v2.11.4
+golangci_lint_pkg=github.com/golangci/golangci-lint/v2/cmd/golangci-lint
+# Use the binary from `go install`, not PATH, so CI and developers use the same golangci-lint version.
+GOBIN_PATH := $(shell go env GOBIN)
+GOPATH_PATH := $(shell go env GOPATH)
+golangci_lint_cmd := $(if $(strip $(GOBIN_PATH)),$(GOBIN_PATH),$(GOPATH_PATH)/bin)/golangci-lint
 
 lint:
 	@echo "--> Running linter"
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(golangci_version)
+	@go install $(golangci_lint_pkg)@$(golangci_version)
 	@$(golangci_lint_cmd) run  ./... --config .golangci.yml
 
 format:
 	@go install mvdan.cc/gofumpt@latest
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(golangci_version)
+	@go install $(golangci_lint_pkg)@$(golangci_version)
 	find . -name '*.go' -type f -not -path "./vendor*" -not -path "*.git*" -not -path "./client/docs/statik/statik.go" -not -path "./tests/mocks/*" -not -name "*.pb.go" -not -name "*.pb.gw.go" -not -name "*.pulsar.go" -not -path "./crypto/keys/secp256k1/*" | xargs gofumpt -w -l
 	$(golangci_lint_cmd) run --fix --config .golangci.yml
 

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"io"
 	"os"
 
 	dbm "github.com/cosmos/cosmos-db"
@@ -10,7 +9,7 @@ import (
 	"github.com/spf13/viper"
 
 	"cosmossdk.io/client/v2/autocli"
-	"cosmossdk.io/log"
+	"cosmossdk.io/log/v2"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -22,6 +21,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/codec"
 	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
+	"github.com/cosmos/cosmos-sdk/contrib/x/crisis"
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -32,7 +32,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 
 	cmtcfg "github.com/cometbft/cometbft/config"
@@ -295,13 +294,12 @@ func genesisCommand(encodingConfig appEncoding.EncodingConfig, cmds ...*cobra.Co
 func newApp(
 	logger log.Logger,
 	db dbm.DB,
-	traceStore io.Writer,
 	appOpts servertypes.AppOptions,
 ) servertypes.Application {
 	baseappOptions := server.DefaultBaseappOptions(appOpts)
 
 	return providerApp.New(
-		logger, db, traceStore, true,
+		logger, db, nil, true,
 		appOpts,
 		baseappOptions...,
 	)
@@ -311,7 +309,6 @@ func newApp(
 func appExport(
 	logger log.Logger,
 	db dbm.DB,
-	traceStore io.Writer,
 	height int64,
 	forZeroHeight bool,
 	jailAllowedAddrs []string,
@@ -337,13 +334,13 @@ func appExport(
 	appOpts = viperAppOpts
 
 	if height != -1 {
-		simApp = providerApp.New(logger, db, traceStore, false, appOpts)
+		simApp = providerApp.New(logger, db, nil, false, appOpts)
 
 		if err := simApp.LoadHeight(height); err != nil {
 			return servertypes.ExportedApp{}, err
 		}
 	} else {
-		simApp = providerApp.New(logger, db, traceStore, true, appOpts)
+		simApp = providerApp.New(logger, db, nil, true, appOpts)
 	}
 
 	return simApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs, modulesToExport)

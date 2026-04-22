@@ -8,8 +8,8 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
-	storetypes "cosmossdk.io/store/types"
 
+	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -273,7 +273,7 @@ func (k Keeper) FulfillsMinStake(
 	}
 
 	// validator has enough stake to validate the chain
-	return validator.GetBondedTokens().GTE(math.NewIntFromUint64(minStake)), nil
+	return validator.BondedTokens().GTE(math.NewIntFromUint64(minStake)), nil
 }
 
 // HasMinPower returns true if the `providerAddr` voting power is GTE than the given minimum power

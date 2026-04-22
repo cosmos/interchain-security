@@ -3,8 +3,7 @@ package v2
 import (
 	"fmt"
 
-	storetypes "cosmossdk.io/store/types"
-
+	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	consumertypes "github.com/cosmos/interchain-security/v7/x/ccv/consumer/types"

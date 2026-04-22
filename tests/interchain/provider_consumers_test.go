@@ -2,20 +2,19 @@ package interchain
 
 import (
 	"context"
+	"cosmos/interchain-security/tests/interchain/chainsuite"
 	"fmt"
 	"testing"
 	"time"
 
-	"cosmos/interchain-security/tests/interchain/chainsuite"
-
 	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 
 	sdkmath "cosmossdk.io/math"
-	upgradetypes "cosmossdk.io/x/upgrade/types"
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 
-	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v11/modules/core/02-client/types"
 
 	providertypes "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 	"github.com/strangelove-ventures/interchaintest/v8"

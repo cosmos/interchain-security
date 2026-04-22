@@ -1,11 +1,13 @@
 package provider
 
 import (
-	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
-	"github.com/cosmos/ibc-go/v10/modules/core/exported"
+	"fmt"
+
+	ibctransfertypes "github.com/cosmos/ibc-go/v11/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v11/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v11/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v11/modules/core/05-port/types"
+	"github.com/cosmos/ibc-go/v11/modules/core/exported"
 
 	"cosmossdk.io/math"
 
@@ -16,25 +18,46 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
-var _ porttypes.Middleware = &IBCMiddleware{}
+var _ porttypes.Middleware = (*IBCMiddleware)(nil)
 
 // IBCMiddleware implements the callbacks for the IBC transfer middleware given the
 // provider keeper and the underlying application.
 type IBCMiddleware struct {
-	app    porttypes.IBCModule
-	keeper keeper.Keeper
+	app         porttypes.IBCModule
+	ics4Wrapper porttypes.ICS4Wrapper
+	keeper      *keeper.Keeper
 }
 
-// NewIBCMiddleware creates a new IBCMiddlware given the keeper and underlying application
-func NewIBCMiddleware(app porttypes.IBCModule, k keeper.Keeper) IBCMiddleware {
-	return IBCMiddleware{
-		app:    app,
-		keeper: k,
+// NewIBCMiddleware creates middleware wrapping the ICS-20 transfer module. The underlying
+// transfer module is attached with [porttypes.IBCStackBuilder.Base].
+func NewIBCMiddleware(k *keeper.Keeper) *IBCMiddleware {
+	if k == nil {
+		panic("provider keeper cannot be nil")
 	}
+	return &IBCMiddleware{keeper: k}
+}
+
+// SetICS4Wrapper implements [porttypes.Middleware].
+func (im *IBCMiddleware) SetICS4Wrapper(wrapper porttypes.ICS4Wrapper) {
+	if wrapper == nil {
+		panic("ICS4Wrapper cannot be nil")
+	}
+	im.ics4Wrapper = wrapper
+}
+
+// SetUnderlyingApplication implements [porttypes.Middleware].
+func (im *IBCMiddleware) SetUnderlyingApplication(app porttypes.IBCModule) {
+	if app == nil {
+		panic("underlying application cannot be nil")
+	}
+	if im.app != nil {
+		panic("underlying application already set")
+	}
+	im.app = app
 }
 
 // OnChanOpenInit implements the IBCMiddleware interface
-func (im IBCMiddleware) OnChanOpenInit(
+func (im *IBCMiddleware) OnChanOpenInit(
 	ctx sdk.Context,
 	order channeltypes.Order,
 	connectionHops []string,
@@ -48,7 +71,7 @@ func (im IBCMiddleware) OnChanOpenInit(
 }
 
 // OnChanOpenTry implements the IBCMiddleware interface
-func (im IBCMiddleware) OnChanOpenTry(
+func (im *IBCMiddleware) OnChanOpenTry(
 	ctx sdk.Context,
 	order channeltypes.Order,
 	connectionHops []string,
@@ -62,7 +85,7 @@ func (im IBCMiddleware) OnChanOpenTry(
 }
 
 // OnChanOpenAck implements the IBCMiddleware interface
-func (im IBCMiddleware) OnChanOpenAck(
+func (im *IBCMiddleware) OnChanOpenAck(
 	ctx sdk.Context,
 	portID,
 	channelID string,
@@ -74,7 +97,7 @@ func (im IBCMiddleware) OnChanOpenAck(
 }
 
 // OnChanOpenConfirm implements the IBCMiddleware interface
-func (im IBCMiddleware) OnChanOpenConfirm(
+func (im *IBCMiddleware) OnChanOpenConfirm(
 	ctx sdk.Context,
 	portID,
 	channelID string,
@@ -84,7 +107,7 @@ func (im IBCMiddleware) OnChanOpenConfirm(
 }
 
 // OnChanCloseInit implements the IBCMiddleware interface
-func (im IBCMiddleware) OnChanCloseInit(
+func (im *IBCMiddleware) OnChanCloseInit(
 	ctx sdk.Context,
 	portID,
 	channelID string,
@@ -94,7 +117,7 @@ func (im IBCMiddleware) OnChanCloseInit(
 }
 
 // OnChanCloseConfirm implements the IBCMiddleware interface
-func (im IBCMiddleware) OnChanCloseConfirm(
+func (im *IBCMiddleware) OnChanCloseConfirm(
 	ctx sdk.Context,
 	portID,
 	channelID string,
@@ -106,16 +129,16 @@ func (im IBCMiddleware) OnChanCloseConfirm(
 // it verifies if the packet sender is a consumer chain
 // and if the received IBC coin is whitelisted. In such instances,
 // it appends the coin to the consumer's chain allocation record
-func (im IBCMiddleware) OnRecvPacket(
+func (im *IBCMiddleware) OnRecvPacket(
 	ctx sdk.Context,
-	channelID string,
+	channelVersion string,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) exported.Acknowledgement {
 	logger := im.keeper.Logger(ctx)
 
 	// executes the IBC transfer OnRecv logic
-	ack := im.app.OnRecvPacket(ctx, channelID, packet, relayer)
+	ack := im.app.OnRecvPacket(ctx, channelVersion, packet, relayer)
 
 	// Note that inside the below if condition statement,
 	// we know that the IBC transfer succeeded. That entails
@@ -268,7 +291,7 @@ func (im IBCMiddleware) OnRecvPacket(
 
 // OnAcknowledgementPacket implements the IBCMiddleware interface
 // If fees are not enabled, this callback will default to the ibc-core packet callback
-func (im IBCMiddleware) OnAcknowledgementPacket(
+func (im *IBCMiddleware) OnAcknowledgementPacket(
 	ctx sdk.Context,
 	channelVersion string,
 	packet channeltypes.Packet,
@@ -281,7 +304,7 @@ func (im IBCMiddleware) OnAcknowledgementPacket(
 
 // OnTimeoutPacket implements the IBCMiddleware interface
 // If fees are not enabled, this callback will default to the ibc-core packet callback
-func (im IBCMiddleware) OnTimeoutPacket(
+func (im *IBCMiddleware) OnTimeoutPacket(
 	ctx sdk.Context,
 	channelVersion string,
 	packet channeltypes.Packet,
@@ -291,30 +314,39 @@ func (im IBCMiddleware) OnTimeoutPacket(
 	return im.app.OnTimeoutPacket(ctx, channelVersion, packet, relayer)
 }
 
-// SendPacket implements the ICS4 Wrapper interface
-func (im IBCMiddleware) SendPacket(
-	sdk.Context,
-	string,
-	string,
-	clienttypes.Height,
-	uint64,
-	[]byte,
+// SendPacket implements [porttypes.ICS4Wrapper].
+func (im *IBCMiddleware) SendPacket(
+	ctx sdk.Context,
+	sourcePort string,
+	sourceChannel string,
+	timeoutHeight clienttypes.Height,
+	timeoutTimestamp uint64,
+	data []byte,
 ) (uint64, error) {
-	panic("should never be called since the IBC middleware doesn't have an ICS4wrapper")
+	if im.ics4Wrapper == nil {
+		return 0, fmt.Errorf("ICS4Wrapper not set on provider transfer middleware")
+	}
+	return im.ics4Wrapper.SendPacket(ctx, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 }
 
-// WriteAcknowledgement implements the ICS4 Wrapper interface
-func (im IBCMiddleware) WriteAcknowledgement(
+// WriteAcknowledgement implements [porttypes.ICS4Wrapper].
+func (im *IBCMiddleware) WriteAcknowledgement(
 	ctx sdk.Context,
 	packet exported.PacketI,
 	ack exported.Acknowledgement,
 ) error {
-	panic("should never be called since the IBC middleware doesn't have an ICS4wrapper")
+	if im.ics4Wrapper == nil {
+		return fmt.Errorf("ICS4Wrapper not set on provider transfer middleware")
+	}
+	return im.ics4Wrapper.WriteAcknowledgement(ctx, packet, ack)
 }
 
-// GetAppVersion returns the application version of the underlying application
-func (im IBCMiddleware) GetAppVersion(ctx sdk.Context, portID, channelID string) (string, bool) {
-	panic("should never be called since the IBC middleware doesn't have an ICS4wrapper")
+// GetAppVersion implements [porttypes.ICS4Wrapper].
+func (im *IBCMiddleware) GetAppVersion(ctx sdk.Context, portID, channelID string) (string, bool) {
+	if im.ics4Wrapper == nil {
+		return "", false
+	}
+	return im.ics4Wrapper.GetAppVersion(ctx, portID, channelID)
 }
 
 // GetProviderDenom returns the updated given denom according to the given IBC packet

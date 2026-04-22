@@ -3,12 +3,12 @@ package keeper
 import (
 	"context"
 
-	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	channeltypes "github.com/cosmos/ibc-go/v11/modules/core/04-channel/types"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
-	storetypes "cosmossdk.io/store/types"
 
+	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -442,7 +442,7 @@ func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, consumerId stri
 			"error",
 			err,
 		)
-		return
+		return totalPower
 	}
 	for _, v := range vals {
 		// only consider the voting power of a validator that would receive rewards (i.e., validator has been validating for a number of blocks)
@@ -453,7 +453,7 @@ func (k Keeper) ComputeConsumerTotalVotingPower(ctx sdk.Context, consumerId stri
 		totalPower += v.Power
 	}
 
-	return
+	return totalPower
 }
 
 // IdentifyConsumerIdFromIBCPacket checks if the packet destination matches a registered consumer chain.

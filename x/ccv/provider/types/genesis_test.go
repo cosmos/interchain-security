@@ -1,12 +1,13 @@
 package types_test
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v10/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
+	clienttypes "github.com/cosmos/ibc-go/v11/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v11/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v11/modules/light-clients/07-tendermint"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/math"
@@ -20,6 +21,9 @@ import (
 	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
+
+// testConsensusAppHash is 32 bytes (CometBFT app hash size) for ConsensusState.ValidateBasic.
+var testConsensusAppHash = bytes.Repeat([]byte{0xab}, 32)
 
 // Tests validation of consumer states and params within a provider genesis state
 func TestValidateGenesisState(t *testing.T) {
@@ -336,7 +340,7 @@ func getInitialConsumerGenesis(t *testing.T, chainID string, preCCV bool) ccv.Co
 			clienttypes.Height{RevisionNumber: clienttypes.ParseChainID(chainID), RevisionHeight: 1},
 			commitmenttypes.GetSDKSpecs(),
 			[]string{"upgrade", "upgradedIBCState"})
-		consensusState = ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash)
+		consensusState = ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot(testConsensusAppHash), valHash)
 	}
 
 	params := ccv.DefaultParams()

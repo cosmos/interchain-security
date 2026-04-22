@@ -3,7 +3,7 @@ package integration
 import (
 	"time"
 
-	ibctesting "github.com/cosmos/ibc-go/v10/testing"
+	ibctesting "github.com/cosmos/ibc-go/v11/testing"
 	"github.com/stretchr/testify/suite"
 
 	"cosmossdk.io/math"
@@ -14,6 +14,7 @@ import (
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	icstestingutils "github.com/cosmos/interchain-security/v7/testutil/ibc_testing"
 	testutil "github.com/cosmos/interchain-security/v7/testutil/integration"
@@ -170,7 +171,11 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	s.Require().Equal(previousConsumerRedistributeBalance, communityPoolDifference.Add(totalRepresentativeDifference))
 
 	// check that each representative has gotten the correct amount of rewards
-	totalRepresentativePower, err := stakingKeeper.GetValidatorSet().TotalBondedTokens(s.consumerCtx())
+	totalRepresentativePower := math.ZeroInt()
+	err = stakingKeeper.GetValidatorSet().IterateBondedValidatorsByPower(s.consumerCtx(), func(_ int64, v stakingtypes.ValidatorI) bool {
+		totalRepresentativePower = totalRepresentativePower.Add(v.GetTokens())
+		return false
+	})
 	s.Require().NoError(err)
 
 	for key, representativeTokens := range representativesTokens {
@@ -279,7 +284,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyValidatorUnjail() {
 	}
 }
 
-func submitProposalWithDepositAndVote(govKeeper govkeeper.Keeper, ctx sdk.Context, msgs []sdk.Msg,
+func submitProposalWithDepositAndVote(govKeeper *govkeeper.Keeper, ctx sdk.Context, msgs []sdk.Msg,
 	accounts []ibctesting.SenderAccount, proposer sdk.AccAddress, depositAmount sdk.Coins,
 ) error {
 	proposal, err := govKeeper.SubmitProposal(ctx, msgs, "", "title", "summary", proposer, false)

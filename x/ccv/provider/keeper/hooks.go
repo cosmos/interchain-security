@@ -106,7 +106,7 @@ func (h Hooks) BeforeTokenizeShareRecordRemoved(_ context.Context, _ uint64) err
 // gov hooks
 //
 
-func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalId uint64) error {
+func (h Hooks) AfterProposalSubmission(goCtx context.Context, proposalId uint64, _ sdk.AccAddress) error {
 	return nil
 }
 

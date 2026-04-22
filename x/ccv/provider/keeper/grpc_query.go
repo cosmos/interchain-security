@@ -12,8 +12,8 @@ import (
 	"google.golang.org/grpc/status"
 
 	errorsmod "cosmossdk.io/errors"
-	"cosmossdk.io/store/prefix"
 
+	"github.com/cosmos/cosmos-sdk/store/v2/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 
@@ -648,6 +648,7 @@ func (k Keeper) QueryConsumerChain(goCtx context.Context, req *types.QueryConsum
 //	QueryConsumerGenesisTime returns the genesis time
 //
 // of the consumer chain associated with the provided consumer id
+//
 // Deprecated: QueryConsumerGenesisTime is deprecated since the underlying ClientKeeper interface is deprecating
 // access of the ConsensusState::GetTimestamp call.
 func (k Keeper) QueryConsumerGenesisTime(goCtx context.Context, req *types.QueryConsumerGenesisTimeRequest) (*types.QueryConsumerGenesisTimeResponse, error) {
@@ -700,6 +701,6 @@ func (k Keeper) QueryConsumerGenesisTime(goCtx context.Context, req *types.Query
 	}
 
 	return &types.QueryConsumerGenesisTimeResponse{
-		GenesisTime: time.Unix(0, int64(cs.GetTimestamp())), // nolint:staticcheck
+		GenesisTime: time.Unix(0, int64(cs.GetTimestamp())),
 	}, nil
 }

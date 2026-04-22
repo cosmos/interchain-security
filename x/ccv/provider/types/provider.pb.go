@@ -5,7 +5,7 @@ package types
 
 import (
 	cosmossdk_io_math "cosmossdk.io/math"
-	types1 "cosmossdk.io/x/evidence/types"
+	types1 "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	fmt "fmt"
 	crypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	_ "github.com/cosmos/cosmos-proto"
@@ -15,8 +15,8 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
-	types "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
-	_07_tendermint "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
+	types "github.com/cosmos/ibc-go/v11/modules/core/02-client/types"
+	_07_tendermint "github.com/cosmos/ibc-go/v11/modules/light-clients/07-tendermint"
 	types3 "github.com/cosmos/interchain-security/v7/x/ccv/types"
 	_ "google.golang.org/protobuf/types/known/durationpb"
 	_ "google.golang.org/protobuf/types/known/timestamppb"

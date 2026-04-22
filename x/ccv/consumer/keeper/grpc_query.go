@@ -12,9 +12,9 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
 
-var _ types.QueryServer = Keeper{} //nolint:golint
+var _ types.QueryServer = Keeper{}
 
-func (k Keeper) QueryNextFeeDistribution(c context.Context, //nolint:golint
+func (k Keeper) QueryNextFeeDistribution(c context.Context,
 	req *types.QueryNextFeeDistributionEstimateRequest,
 ) (*types.QueryNextFeeDistributionEstimateResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
@@ -28,7 +28,7 @@ func (k Keeper) QueryNextFeeDistribution(c context.Context, //nolint:golint
 	return &types.QueryNextFeeDistributionEstimateResponse{Data: &nextDist}, nil
 }
 
-func (k Keeper) QueryParams(c context.Context, //nolint:golint
+func (k Keeper) QueryParams(c context.Context,
 	req *types.QueryParamsRequest,
 ) (*types.QueryParamsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
@@ -42,7 +42,7 @@ func (k Keeper) QueryParams(c context.Context, //nolint:golint
 	return &types.QueryParamsResponse{Params: p}, nil
 }
 
-func (k Keeper) QueryProviderInfo(c context.Context, //nolint:golint
+func (k Keeper) QueryProviderInfo(c context.Context,
 	req *types.QueryProviderInfoRequest,
 ) (*types.QueryProviderInfoResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)

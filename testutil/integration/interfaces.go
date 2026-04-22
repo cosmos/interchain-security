@@ -4,16 +4,16 @@ import (
 	"context"
 	"time"
 
-	ibctesting "github.com/cosmos/ibc-go/v10/testing"
+	ibctesting "github.com/cosmos/ibc-go/v11/testing"
 
 	"cosmossdk.io/core/comet"
 	"cosmossdk.io/math"
-	evidencekeeper "cosmossdk.io/x/evidence/keeper"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	evidencekeeper "github.com/cosmos/cosmos-sdk/x/evidence/keeper"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
@@ -88,7 +88,7 @@ type DemocConsumerApp interface {
 	GetTestMintKeeper() mintkeeper.Keeper
 
 	// @MSalopek -> on v50 we need to access the Params collection which does not have a getter
-	GetTestGovKeeper() govkeeper.Keeper
+	GetTestGovKeeper() *govkeeper.Keeper
 }
 
 //

@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"os/exec"
 	"reflect"
+	"strings"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v11/modules/core/02-client/types"
 
 	"github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
 )
@@ -319,35 +320,61 @@ func (c *ChainState) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// normalizeProposalReflectType adjusts reflect.TypeOf(v).String() for proposal values:
+// types defined in this package are reported as "e2e.*", while persisted traces and
+// older tests used the "main.*" prefix from when actions lived in package main.
+func normalizeProposalReflectType(proposalType string) string {
+	switch {
+	case strings.HasPrefix(proposalType, "main."):
+		return strings.TrimPrefix(proposalType, "main.")
+	case strings.HasPrefix(proposalType, "e2e."):
+		return strings.TrimPrefix(proposalType, "e2e.")
+	default:
+		return proposalType
+	}
+}
+
 // UnmarshalProposalWithType takes a JSON object and a proposal type and marshals into an object of the corresponding proposal.
 func UnmarshalProposalWithType(inputMap json.RawMessage, proposalType string) (Proposal, error) {
 	var err error
-	switch proposalType {
-	case "main.TextProposal":
+	switch normalizeProposalReflectType(proposalType) {
+	case "TextProposal":
 		prop := TextProposal{}
 		err := json.Unmarshal(inputMap, &prop)
 		if err == nil {
 			return prop, nil
 		}
-	case "main.ConsumerAdditionProposal":
+	case "ConsumerAdditionProposal":
 		prop := ConsumerAdditionProposal{}
 		err := json.Unmarshal(inputMap, &prop)
 		if err == nil {
 			return prop, nil
 		}
-	case "main.UpgradeProposal":
+	case "UpgradeProposal":
 		prop := UpgradeProposal{}
 		err := json.Unmarshal(inputMap, &prop)
 		if err == nil {
 			return prop, nil
 		}
-	case "main.ConsumerRemovalProposal":
+	case "ConsumerRemovalProposal":
 		prop := ConsumerRemovalProposal{}
 		err := json.Unmarshal(inputMap, &prop)
 		if err == nil {
 			return prop, nil
 		}
-	case "main.IBCTransferParamsProposal":
+	case "ConsumerModificationProposal":
+		prop := ConsumerModificationProposal{}
+		err := json.Unmarshal(inputMap, &prop)
+		if err == nil {
+			return prop, nil
+		}
+	case "ParamsProposal":
+		prop := ParamsProposal{}
+		err := json.Unmarshal(inputMap, &prop)
+		if err == nil {
+			return prop, nil
+		}
+	case "IBCTransferParamsProposal":
 		prop := IBCTransferParamsProposal{}
 		err := json.Unmarshal(inputMap, &prop)
 		if err == nil {

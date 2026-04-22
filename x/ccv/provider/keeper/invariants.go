@@ -1,13 +1,26 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
+
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	types "github.com/cosmos/interchain-security/v7/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/v7/x/ccv/types"
 )
+
+func sumBondedTokensFromStaking(ctx context.Context, sk ccvtypes.StakingKeeper) (math.Int, error) {
+	total := math.ZeroInt()
+	err := sk.IterateBondedValidatorsByPower(ctx, func(_ int64, v stakingtypes.ValidatorI) bool {
+		total = total.Add(v.GetTokens())
+		return false
+	})
+	return total, err
+}
 
 // RegisterInvariants registers all staking invariants
 func RegisterInvariants(ir sdk.InvariantRegistry, k *Keeper) {
@@ -113,7 +126,7 @@ func StakingKeeperEquivalenceInvariant(k Keeper) sdk.Invariant {
 				fmt.Sprintf("error getting provider total bonded tokens: %v", err)), true
 		}
 
-		stakingTotalBondedTokens, err := stakingKeeper.TotalBondedTokens(ctx)
+		stakingTotalBondedTokens, err := sumBondedTokensFromStaking(ctx, stakingKeeper)
 		if err != nil {
 			return sdk.FormatInvariant(types.ModuleName, "staking-keeper-equivalence",
 				fmt.Sprintf("error getting staking total bonded tokens: %v", err)), true

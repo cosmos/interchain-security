@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"context"
 	"sort"
 	"testing"
 
@@ -9,7 +10,6 @@ import (
 
 	"cosmossdk.io/math"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	testkeeper "github.com/cosmos/interchain-security/v7/testutil/keeper"
@@ -95,12 +95,12 @@ func TestStakingKeeperInterface(t *testing.T) {
 			sort.Slice(
 				vals,
 				func(i, j int) bool {
-					return vals[i].GetBondedTokens().Int64() > vals[j].GetTokens().Int64()
+					return vals[i].BondedTokens().Int64() > vals[j].GetTokens().Int64()
 				},
 			)
 
 			mocks.MockStakingKeeper.EXPECT().IterateBondedValidatorsByPower(gomock.Any(), gomock.Any()).DoAndReturn(
-				func(ctx sdk.Context, cb func(int64, stakingtypes.ValidatorI) bool) error {
+				func(ctx context.Context, cb func(int64, stakingtypes.ValidatorI) bool) error {
 					for i, val := range vals {
 						if stop := cb(int64(i), val); stop {
 							break

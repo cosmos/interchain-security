@@ -5,15 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 
+	porttypes "github.com/cosmos/ibc-go/v11/modules/core/05-port/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
 	"cosmossdk.io/core/appmodule"
-	storetypes "cosmossdk.io/store/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
@@ -40,6 +41,8 @@ var (
 	_ module.HasABCIEndBlock     = (*AppModule)(nil)
 	_ appmodule.AppModule        = (*AppModule)(nil)
 	_ appmodule.HasBeginBlocker  = (*AppModule)(nil)
+
+	_ porttypes.IBCModule = (*AppModule)(nil)
 )
 
 // AppModuleBasic is the IBC Provider AppModuleBasic
@@ -104,18 +107,24 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 // AppModule represents the AppModule for this module
 type AppModule struct {
 	AppModuleBasic
-	keeper     *keeper.Keeper
-	paramSpace paramtypes.Subspace
-	storeKey   storetypes.StoreKey
+	keeper      *keeper.Keeper
+	paramSpace  paramtypes.Subspace
+	storeKey    storetypes.StoreKey
+	ics4Wrapper porttypes.ICS4Wrapper
 }
 
 // NewAppModule creates a new provider module
-func NewAppModule(k *keeper.Keeper, paramSpace paramtypes.Subspace, storeKey storetypes.StoreKey) AppModule {
-	return AppModule{
+func NewAppModule(k *keeper.Keeper, paramSpace paramtypes.Subspace, storeKey storetypes.StoreKey) *AppModule {
+	return &AppModule{
 		keeper:     k,
 		paramSpace: paramSpace,
 		storeKey:   storeKey,
 	}
+}
+
+// SetICS4Wrapper implements [porttypes.IBCModule].
+func (am *AppModule) SetICS4Wrapper(wrapper porttypes.ICS4Wrapper) {
+	am.ics4Wrapper = wrapper
 }
 
 // RegisterInvariants implements the AppModule interface

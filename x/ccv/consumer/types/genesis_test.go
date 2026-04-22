@@ -1,12 +1,13 @@
 package types_test
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v10/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
+	clienttypes "github.com/cosmos/ibc-go/v11/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v11/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v11/modules/light-clients/07-tendermint"
 	"github.com/stretchr/testify/require"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -29,6 +30,8 @@ const (
 var (
 	height      = clienttypes.NewHeight(0, 4)
 	upgradePath = []string{"upgrade", "upgradedIBCState"}
+	// testConsensusAppHash is 32 bytes (CometBFT app hash size) for ConsensusState.ValidateBasic.
+	testConsensusAppHash = bytes.Repeat([]byte{0xab}, 32)
 )
 
 // TestValidateInitialGenesisState tests a NewInitialGenesisState instantiation,
@@ -45,7 +48,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(valSet)
 
 	cs := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, height, commitmenttypes.GetSDKSpecs(), upgradePath)
-	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash)
+	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot(testConsensusAppHash), valHash)
 
 	params := ccv.DefaultParams()
 	params.Enabled = true
@@ -171,7 +174,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 			"invalid new consumer genesis state: invalid consensus state validator set hash",
 			types.NewInitialGenesisState(
 				cs, ibctmtypes.NewConsensusState(
-					time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), []byte("wrong_length_hash")),
+					time.Now(), commitmenttypes.NewMerkleRoot(testConsensusAppHash), []byte("wrong_length_hash")),
 				valUpdates, params),
 			true,
 		},
@@ -179,7 +182,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 			"invalid new consumer genesis state: initial validator set does not match validator set hash",
 			types.NewInitialGenesisState(
 				cs, ibctmtypes.NewConsensusState(
-					time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), []byte("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")),
+					time.Now(), commitmenttypes.NewMerkleRoot(testConsensusAppHash), []byte("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")),
 				valUpdates, params),
 			true,
 		},
@@ -187,7 +190,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 			"invalid new consumer genesis state: initial validator set does not match validator set hash",
 			types.NewInitialGenesisState(
 				cs, ibctmtypes.NewConsensusState(
-					time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), []byte("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")),
+					time.Now(), commitmenttypes.NewMerkleRoot(testConsensusAppHash), []byte("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")),
 				valUpdates, params),
 			true,
 		},
@@ -356,7 +359,7 @@ func TestValidateRestartConsumerGenesisState(t *testing.T) {
 	}
 
 	cs := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, height, commitmenttypes.GetSDKSpecs(), upgradePath)
-	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash)
+	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot(testConsensusAppHash), valHash)
 
 	params := ccv.DefaultParams()
 	params.Enabled = true

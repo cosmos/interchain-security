@@ -1,7 +1,7 @@
 package main
 
 import (
-	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v11/modules/core/02-client/types"
 
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 

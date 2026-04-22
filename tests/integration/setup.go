@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"testing"
 
-	transfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v10/testing"
+	transfertypes "github.com/cosmos/ibc-go/v11/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v11/modules/core/04-channel/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v11/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v11/testing"
 	"github.com/stretchr/testify/suite"
 
-	store "cosmossdk.io/store/types"
+	store "github.com/cosmos/cosmos-sdk/store/v2/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
@@ -196,7 +196,7 @@ func (s *CCVTestSuite) registerPacketSniffer(chain *ibctesting.TestChain) {
 func (s *CCVTestSuite) getSentPacket(chain *ibctesting.TestChain, sequence uint64, channelID string) (packet channeltypes.Packet, found bool) {
 	key := getSentPacketKey(sequence, channelID)
 	packet, found = s.packetSniffers[chain].packets[key]
-	return
+	return packet, found
 }
 
 // initConsumerChain initializes a consumer chain given a genesis state
@@ -428,5 +428,5 @@ func ParsePacketsFromEvents(events []abci.Event) (packets []channeltypes.Packet)
 			packets = append(packets, packet)
 		}
 	}
-	return
+	return packets
 }
