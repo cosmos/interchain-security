@@ -35,6 +35,12 @@ const (
 	V620    = "v6.2.0"
 )
 
+// startChainTimeout bounds how long StartChain waits for a chain to come up and
+// signal `done`. A healthy chain starts in well under a minute; this generous
+// cap exists so that a chain which never produces blocks (e.g. an incompatible
+// consumer version) fails fast instead of hanging until the CI job timeout.
+const startChainTimeout = 5 * time.Minute
+
 // Note: to get error response reported back from this command '--gas auto' needs to be set.
 var gas = "auto"
 
@@ -199,17 +205,39 @@ func (tr *Chain) StartChain(
 
 	scanner := bufio.NewScanner(cmdReader)
 
-	for scanner.Scan() {
-		out := scanner.Text()
-		if verbose {
-			fmt.Println("startChain: " + out)
+	// Wait for the chain-start script to emit the `done` sentinel, but bound the
+	// wait: start-chain.sh polls for the chain to produce blocks in an unbounded
+	// loop, so a chain that never starts would otherwise block here until the CI
+	// job timeout. Fail fast instead.
+	scanDone := make(chan error, 1)
+	go func() {
+		for scanner.Scan() {
+			out := scanner.Text()
+			if verbose {
+				fmt.Println("startChain: " + out)
+			}
+			if out == done {
+				scanDone <- nil
+				return
+			}
 		}
-		if out == done {
-			break
+		if err := scanner.Err(); err != nil {
+			scanDone <- err
+			return
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+		// The script exited (stdout closed) before signaling done, which means
+		// the chain failed to start rather than just being slow.
+		scanDone <- fmt.Errorf("chain %s start script exited before signaling done", action.Chain)
+	}()
+
+	select {
+	case err := <-scanDone:
+		if err != nil {
+			log.Fatal(err)
+		}
+	case <-time.After(startChainTimeout):
+		_ = cmd.Process.Kill()
+		log.Fatalf("timed out after %s waiting for chain %s to start", startChainTimeout, action.Chain)
 	}
 
 	tr.addChainToRelayer(AddChainToRelayerAction{

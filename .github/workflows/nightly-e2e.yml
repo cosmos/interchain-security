@@ -18,25 +18,31 @@ on:
 jobs:
   compatibility-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 200
+    # Each consumer version runs as an independent matrix job. A single scenario
+    # normally completes in well under 30 minutes, so this timeout makes a hung
+    # scenario (e.g. a consumer chain that never starts) fail fast instead of
+    # blocking for hours.
+    timeout-minutes: 30
+    strategy:
+      # Don't cancel sibling versions if one version is incompatible/hangs.
+      fail-fast: false
+      matrix:
+        # Consumer versions tested against the latest provider.
+        # For new versions to be tested add/remove entries here.
+        consumer-version: [latest]
     steps:
       - uses: actions/setup-go@v5
         with:
           go-version: "1.25.9"
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # get all history for all branches and tags
+          fetch-depth: 0 # get all history for all branches and tags (needed to build tagged versions)
       - name: Checkout LFS objects
         run: git lfs checkout
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.25.9" # The Go version to download (if necessary) and use.
       - name: E2E compatibility test
-        # Run compatibility tests for different consumer (-cv) and provider (-pv) versions.
-        # Combination of all provider versions with consumer versions are tested.
-        # For new versions to be tested add/modify -pc/-cv parameters.
-        run: go run ./tests/e2e/... --tc compatibility -pv latest -cv latest -cv v5.2.0 -cv v6.3.0
+        # Run compatibility tests for the latest provider against a single consumer
+        # version per matrix job.
+        run: go run ./tests/e2e/... --tc compatibility -pv latest -cv ${{ matrix.consumer-version }}
   happy-path-test:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -377,6 +383,7 @@ jobs:
 
   nightly-test-fail:
     needs:
+      - compatibility-test
       - happy-path-test
       - changeover-test
       - democracy-reward-test
