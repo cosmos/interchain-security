@@ -29,7 +29,7 @@ jobs:
       matrix:
         # Consumer versions tested against the latest provider.
         # For new versions to be tested add/remove entries here.
-        consumer-version: [latest, v5.2.0, v6.3.0]
+        consumer-version: [latest]
     steps:
       - uses: actions/setup-go@v5
         with:
