@@ -23,6 +23,11 @@ import (
 const (
 	done = "done!!!!!!!!"
 
+	// scanTimeout bounds how long we wait for a child script to emit the `done`
+	// sentinel, so a chain/command that never completes fails fast instead of
+	// hanging until the CI job timeout.
+	scanTimeout = 5 * time.Minute
+
 	VLatest = "latest"
 	V400    = "v4.0.0"
 	V330    = "v3.3.0"
@@ -136,17 +141,33 @@ func (tr *Chain) StartChain(
 
 	scanner := bufio.NewScanner(cmdReader)
 
-	for scanner.Scan() {
-		out := scanner.Text()
-		if verbose {
-			fmt.Println("startChain: " + out)
+	scanDone := make(chan error, 1)
+	go func() {
+		for scanner.Scan() {
+			out := scanner.Text()
+			if verbose {
+				fmt.Println("startChain: " + out)
+			}
+			if out == done {
+				scanDone <- nil
+				return
+			}
 		}
-		if out == done {
-			break
+		if err := scanner.Err(); err != nil {
+			scanDone <- err
+			return
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+		scanDone <- fmt.Errorf("chain %s start script exited before signaling done", action.Chain)
+	}()
+
+	select {
+	case err := <-scanDone:
+		if err != nil {
+			log.Fatal(err)
+		}
+	case <-time.After(scanTimeout):
+		_ = cmd.Process.Kill()
+		log.Fatalf("timed out after %s waiting for chain %s to start", scanTimeout, action.Chain)
 	}
 
 	tr.addChainToRelayer(AddChainToRelayerAction{
@@ -820,17 +841,33 @@ func (tr Chain) AssignConsumerPubKey(action e2e.AssignConsumerPubKeyAction, verb
 
 		scanner := bufio.NewScanner(cmdReader)
 
-		for scanner.Scan() {
-			out := scanner.Text()
-			if verbose {
-				fmt.Println("assign key - reconfigure: " + out)
+		scanDone := make(chan error, 1)
+		go func() {
+			for scanner.Scan() {
+				out := scanner.Text()
+				if verbose {
+					fmt.Println("assign key - reconfigure: " + out)
+				}
+				if out == done {
+					scanDone <- nil
+					return
+				}
 			}
-			if out == done {
-				break
+			if err := scanner.Err(); err != nil {
+				scanDone <- err
+				return
 			}
-		}
-		if err := scanner.Err(); err != nil {
-			log.Fatal(err)
+			scanDone <- fmt.Errorf("reconfigure node for %s exited before signaling done", action.Chain)
+		}()
+
+		select {
+		case err := <-scanDone:
+			if err != nil {
+				log.Fatal(err)
+			}
+		case <-time.After(scanTimeout):
+			_ = configureNodeCmd.Process.Kill()
+			log.Fatalf("timed out after %s waiting to reconfigure node for chain %s", scanTimeout, action.Chain)
 		}
 
 		// TODO: @MSalopek refactor this so test config is not changed at runtime
