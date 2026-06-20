@@ -124,7 +124,7 @@ require (
 	google.golang.org/api v0.276.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	nhooyr.io/websocket v1.8.17 // indirect
-	pgregory.net/rapid v1.2.0
+	pgregory.net/rapid v1.3.0
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
