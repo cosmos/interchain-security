@@ -236,7 +236,7 @@ func GetRewardMemoFromTransferMemo(memo string) (RewardMemo, error) {
 
 	providerMemo, ok := memoData["provider"]
 	if !ok {
-		return RewardMemo{}, err
+		return RewardMemo{}, errors.New("missing provider reward memo")
 	}
 
 	rewardMemo := RewardMemo{}
