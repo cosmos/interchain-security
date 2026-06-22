@@ -27,7 +27,7 @@ func NewQueryCmd() *cobra.Command {
 
 	cmd.AddCommand(CmdConsumerGenesis())
 	cmd.AddCommand(CmdConsumerChains())
-	cmd.AddCommand(CmdConsumerValidatorKeyAssignment())
+	cmd.AddCommand(CmdConsumerActiveValidatorKeyAssignment())
 	cmd.AddCommand(CmdProviderValidatorKey())
 	cmd.AddCommand(CmdThrottleState())
 	cmd.AddCommand(CmdRegisteredConsumerRewardDenoms())
@@ -124,7 +124,7 @@ func CmdConsumerChains() *cobra.Command {
 }
 
 // TODO: fix naming
-func CmdConsumerValidatorKeyAssignment() *cobra.Command {
+func CmdConsumerActiveValidatorKeyAssignment() *cobra.Command {
 	bech32PrefixConsAddr := sdk.GetConfig().GetBech32ConsensusAddrPrefix()
 	cmd := &cobra.Command{
 		Use:   "validator-consumer-key [consumerId] [provider-validator-address]",
