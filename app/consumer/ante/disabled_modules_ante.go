@@ -18,15 +18,17 @@ func NewDisabledModulesDecorator(disabledModules ...string) DisabledModulesDecor
 
 func (dmd DisabledModulesDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
 	currHeight := ctx.BlockHeight()
+	errorMsg := fmt.Errorf("tx contains message types from unsupported modules at height %d", currHeight)
+
 	for _, msg := range tx.GetMsgs() {
 		if hasDisabledModuleMsgs(msg, dmd.prefixes...) {
-			return ctx, fmt.Errorf("tx contains message types from unsupported modules at height %d", currHeight)
+			return ctx, errorMsg
 		}
 
 		// Check if there is an attempt to bypass disabled module msg
 		// with authz MsgExec
 		if nestedAuthzMsgExecCheck(msg, dmd.prefixes...) {
-			return ctx, fmt.Errorf("tx contains message types from unsupported modules at height %d", currHeight)
+			return ctx, errorMsg
 		}
 	}
 
