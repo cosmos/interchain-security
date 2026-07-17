@@ -134,7 +134,7 @@ require (
 	cosmossdk.io/tools/confix v0.1.2
 	github.com/cosmos/cosmos-db v1.1.3
 	github.com/cosmos/cosmos-sdk/store/v2 v2.0.0
-	github.com/cosmos/ibc-go/v11 v11.0.0
+	github.com/cosmos/ibc-go/v11 v11.2.0
 	github.com/informalsystems/itf-go v0.0.1
 	github.com/spf13/viper v1.21.0
 	golang.org/x/mod v0.34.0
