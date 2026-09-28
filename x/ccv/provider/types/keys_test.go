@@ -75,7 +75,7 @@ func TestPreserveBytePrefix(t *testing.T) {
 	// DEPRECATED
 	// require.Equal(t, uint8(21), providertypes.GlobalSlashEntryKeyPrefix()[0])
 	i++
-	require.Equal(t, byte(22), providertypes.ConsumerValidatorsKeyPrefix())
+	require.Equal(t, byte(22), providertypes.ConsumerAssignedValidatorsKeyPrefix())
 	i++
 	require.Equal(t, byte(23), providertypes.ValidatorsByConsumerAddrKeyPrefix())
 	i++
@@ -93,7 +93,7 @@ func TestPreserveBytePrefix(t *testing.T) {
 	i++
 	// reserve 30 as deprecated
 	i++
-	require.Equal(t, byte(31), providertypes.ConsumerValidatorKeyPrefix())
+	require.Equal(t, byte(31), providertypes.ConsumerActiveValidatorKeyPrefix())
 	i++
 	require.Equal(t, byte(32), providertypes.OptedInKeyPrefix())
 	i++
@@ -198,12 +198,12 @@ func getAllFullyDefinedKeys() [][]byte {
 		providertypes.SlashAcksKey("13"),
 		providertypes.InitChainHeightKey("13"),
 		providertypes.PendingVSCsKey("13"),
-		providertypes.ConsumerValidatorsKey("13", providertypes.NewProviderConsAddress([]byte{0x05})),
+		providertypes.ConsumerAssignedValidatorsKey("13", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.ValidatorsByConsumerAddrKey("13", providertypes.NewConsumerConsAddress([]byte{0x05})),
 		providertypes.SlashLogKey(providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.ConsumerRewardDenomsKey("uatom"),
 		providertypes.EquivocationEvidenceMinHeightKey("13"),
-		providertypes.ConsumerValidatorKey("13", providertypes.NewProviderConsAddress([]byte{0x05}).Address.Bytes()),
+		providertypes.ConsumerActiveValidatorKey("13", providertypes.NewProviderConsAddress([]byte{0x05}).Address.Bytes()),
 		providertypes.AllowlistKey("13", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.DenylistKey("13", providertypes.NewProviderConsAddress([]byte{0x05})),
 		providertypes.OptedInKey("13", providertypes.NewProviderConsAddress([]byte{0x05})),

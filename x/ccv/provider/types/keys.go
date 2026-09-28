@@ -87,7 +87,7 @@ const (
 
 	DeprecatedGlobalSlashEntryKeyName = "DeprecatedGlobalSlashEntryKey"
 
-	ConsumerValidatorsKeyName = "ConsumerValidatorsKey"
+	ConsumerAssignedValidatorsKeyName = "ConsumerAssignedValidatorsKey"
 
 	ValidatorsByConsumerAddrKeyName = "ValidatorsByConsumerAddrKey"
 
@@ -105,7 +105,7 @@ const (
 
 	DeprecatedProposedConsumerChainKeyName = "DeprecatedProposedConsumerChainKey"
 
-	ConsumerValidatorKeyName = "ConsumerValidatorKey"
+	ConsumerActiveValidatorKeyName = "ConsumerActiveValidatorKey"
 
 	OptedInKeyName = "OptedInKey"
 
@@ -264,8 +264,8 @@ func getKeyPrefixes() map[string]byte {
 		// [DEPRECATED]
 		DeprecatedGlobalSlashEntryKeyName: 21,
 
-		// ConsumerValidatorsKey is the key for storing the validator assigned keys for every consumer chain
-		ConsumerValidatorsKeyName: 22,
+		// ConsumerAssignedValidatorsKey is the key for storing the validator assigned keys for every consumer chain
+		ConsumerAssignedValidatorsKeyName: 22,
 
 		// ValidatorsByConsumerAddrKey is the key for storing the mapping from validator addresses
 		// on consumer chains to validator addresses on the provider chain
@@ -303,9 +303,9 @@ func getKeyPrefixes() map[string]byte {
 		// [DEPRECATED]
 		DeprecatedProposedConsumerChainKeyName: 30,
 
-		// ConsumerValidatorKey is the key for storing for each consumer chain all the consumer
+		// ConsumerActiveValidatorKey is the key for storing for each consumer chain all the consumer
 		// validators in this epoch that are validating the consumer chain
-		ConsumerValidatorKeyName: 31,
+		ConsumerActiveValidatorKeyName: 31,
 
 		// OptedInKey is the key for storing whether a validator is opted in to validate on a consumer chain
 		OptedInKeyName: 32,
@@ -543,15 +543,15 @@ func PendingVSCsKey(consumerId string) []byte {
 	return append([]byte{mustGetKeyPrefix(PendingVSCsKeyName)}, []byte(consumerId)...)
 }
 
-// ConsumerValidatorsKey returns the key for storing the validator assigned keys for every consumer chain
-func ConsumerValidatorsKeyPrefix() byte {
-	return mustGetKeyPrefix(ConsumerValidatorsKeyName)
+// ConsumerAssignedValidatorsKey returns the key for storing the validator assigned keys for every consumer chain
+func ConsumerAssignedValidatorsKeyPrefix() byte {
+	return mustGetKeyPrefix(ConsumerAssignedValidatorsKeyName)
 }
 
-// ConsumerValidatorsKey returns the key under which the
+// ConsumerAssignedValidatorsKey returns the key under which the
 // validator assigned keys for every consumer chain are stored
-func ConsumerValidatorsKey(consumerId string, addr ProviderConsAddress) []byte {
-	return StringIdAndConsAddrKey(ConsumerValidatorsKeyPrefix(), consumerId, addr.ToSdkConsAddr())
+func ConsumerAssignedValidatorsKey(consumerId string, addr ProviderConsAddress) []byte {
+	return StringIdAndConsAddrKey(ConsumerAssignedValidatorsKeyPrefix(), consumerId, addr.ToSdkConsAddr())
 }
 
 // ValidatorsByConsumerAddrKeyPrefix returns the key prefix for storing the mapping from validator addresses
@@ -587,15 +587,15 @@ func EquivocationEvidenceMinHeightKey(consumerId string) []byte {
 	return append([]byte{mustGetKeyPrefix(EquivocationEvidenceMinHeightKeyName)}, []byte(consumerId)...)
 }
 
-// ConsumerValidatorKeyPrefix returns the key prefix for storing consumer validators
-func ConsumerValidatorKeyPrefix() byte {
-	return mustGetKeyPrefix(ConsumerValidatorKeyName)
+// ConsumerActiveValidatorKeyPrefix returns the key prefix for storing consumer validators
+func ConsumerActiveValidatorKeyPrefix() byte {
+	return mustGetKeyPrefix(ConsumerActiveValidatorKeyName)
 }
 
-// ConsumerValidatorKey returns the key for storing consumer validators
+// ConsumerActiveValidatorKey returns the key for storing consumer validators
 // for the given consumer chain `consumerId` and validator with `providerAddr`
-func ConsumerValidatorKey(consumerId string, providerAddr []byte) []byte {
-	return StringIdAndConsAddrKey(ConsumerValidatorKeyPrefix(), consumerId, sdk.ConsAddress(providerAddr))
+func ConsumerActiveValidatorKey(consumerId string, providerAddr []byte) []byte {
+	return StringIdAndConsAddrKey(ConsumerActiveValidatorKeyPrefix(), consumerId, sdk.ConsAddress(providerAddr))
 }
 
 // AllowlistKeyPrefix returns the key prefix for storing consumer chains allowlists

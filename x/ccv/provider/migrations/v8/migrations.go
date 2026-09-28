@@ -180,7 +180,7 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 		rekeyFromChainIdToConsumerId(store, PendingVSCsKeyPrefix, chainId, consumerId)
 
 		// chainId -> ConsumerValidators
-		err := rekeyChainIdAndConsAddrKey(store, providertypes.ConsumerValidatorsKeyPrefix(), chainId, consumerId)
+		err := rekeyChainIdAndConsAddrKey(store, providertypes.ConsumerAssignedValidatorsKeyPrefix(), chainId, consumerId)
 		if err != nil {
 			return err
 		}
@@ -195,7 +195,7 @@ func MigrateLaunchedConsumerChains(ctx sdk.Context, store storetypes.KVStore, pk
 		rekeyFromChainIdToConsumerId(store, EquivocationEvidenceMinHeightKeyPrefix, chainId, consumerId)
 
 		// chainId -> ConsumerValidator
-		err = rekeyChainIdAndConsAddrKey(store, providertypes.ConsumerValidatorKeyPrefix(), chainId, consumerId)
+		err = rekeyChainIdAndConsAddrKey(store, providertypes.ConsumerActiveValidatorKeyPrefix(), chainId, consumerId)
 		if err != nil {
 			return err
 		}
