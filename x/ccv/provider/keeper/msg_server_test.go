@@ -382,3 +382,57 @@ func TestUpdateConsumer(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, expectedInitializationParameters, actualInitializationParameters)
 }
+
+func TestChangeRewardDenomsValidation(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	msgServer := providerkeeper.NewMsgServerImpl(&providerKeeper)
+	authority := providerKeeper.GetAuthority()
+
+	testCases := []struct {
+		name        string
+		msg         *providertypes.MsgChangeRewardDenoms
+		expectError bool
+	}{
+		{
+			name:        "both sets empty",
+			msg:         &providertypes.MsgChangeRewardDenoms{Authority: authority},
+			expectError: true,
+		},
+		{
+			name: "invalid denom",
+			msg: &providertypes.MsgChangeRewardDenoms{
+				Authority:   authority,
+				DenomsToAdd: []string{"!!!bad"},
+			},
+			expectError: true,
+		},
+		{
+			name: "denom in both add and remove",
+			msg: &providertypes.MsgChangeRewardDenoms{
+				Authority:      authority,
+				DenomsToAdd:    []string{"uatom"},
+				DenomsToRemove: []string{"uatom"},
+			},
+			expectError: true,
+		},
+		{
+			name: "valid",
+			msg: &providertypes.MsgChangeRewardDenoms{
+				Authority:   authority,
+				DenomsToAdd: []string{"uatom"},
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		_, err := msgServer.ChangeRewardDenoms(ctx, tc.msg)
+		if tc.expectError {
+			require.Error(t, err, tc.name)
+		} else {
+			require.NoError(t, err, tc.name)
+		}
+	}
+}

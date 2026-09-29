@@ -96,33 +96,6 @@ func (msg MsgAssignConsumerKey) ValidateBasic() error {
 
 // ValidateBasic implements the sdk.HasValidateBasic interface.
 func (msg *MsgChangeRewardDenoms) ValidateBasic() error {
-	emptyDenomsToAdd := len(msg.DenomsToAdd) == 0
-	emptyDenomsToRemove := len(msg.DenomsToRemove) == 0
-	// Return error if both sets are empty or nil
-	if emptyDenomsToAdd && emptyDenomsToRemove {
-		return errorsmod.Wrapf(ErrInvalidMsgChangeRewardDenoms, "both DenomsToAdd and DenomsToRemove are empty")
-	}
-
-	denomMap := map[string]struct{}{}
-	for _, denom := range msg.DenomsToAdd {
-		// validate the denom
-		if !sdk.NewCoin(denom, math.NewInt(1)).IsValid() {
-			return errorsmod.Wrapf(ErrInvalidMsgChangeRewardDenoms, "DenomsToAdd: invalid denom(%s)", denom)
-		}
-		denomMap[denom] = struct{}{}
-	}
-	for _, denom := range msg.DenomsToRemove {
-		// validate the denom
-		if !sdk.NewCoin(denom, math.NewInt(1)).IsValid() {
-			return errorsmod.Wrapf(ErrInvalidMsgChangeRewardDenoms, "DenomsToRemove: invalid denom(%s)", denom)
-		}
-		// denom cannot be in both sets
-		if _, found := denomMap[denom]; found {
-			return errorsmod.Wrapf(ErrInvalidMsgChangeRewardDenoms,
-				"denom(%s) cannot be both added and removed", denom)
-		}
-	}
-
 	return nil
 }
 

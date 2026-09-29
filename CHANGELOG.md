@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### IMPROVEMENTS
+
+- `[x/provider]` Move `MsgChangeRewardDenoms` validation logic from `ValidateBasic` into the msg server handler. ([\#2149](https://github.com/cosmos/interchain-security/issues/2149))
+
 ### DEPENDENCIES
 
 - Bump Cosmos SDK dependencies to v0.53. ([\#2594](https://github.com/cosmos/interchain-security/pull/2594))

@@ -109,6 +109,26 @@ func (k msgServer) ChangeRewardDenoms(goCtx context.Context, msg *types.MsgChang
 		return nil, errorsmod.Wrapf(types.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Authority)
 	}
 
+	if len(msg.DenomsToAdd) == 0 && len(msg.DenomsToRemove) == 0 {
+		return nil, errorsmod.Wrapf(types.ErrInvalidMsgChangeRewardDenoms, "both DenomsToAdd and DenomsToRemove are empty")
+	}
+
+	denomMap := map[string]struct{}{}
+	for _, denom := range msg.DenomsToAdd {
+		if err := sdk.ValidateDenom(denom); err != nil {
+			return nil, errorsmod.Wrapf(types.ErrInvalidMsgChangeRewardDenoms, "DenomsToAdd: invalid denom(%s)", denom)
+		}
+		denomMap[denom] = struct{}{}
+	}
+	for _, denom := range msg.DenomsToRemove {
+		if err := sdk.ValidateDenom(denom); err != nil {
+			return nil, errorsmod.Wrapf(types.ErrInvalidMsgChangeRewardDenoms, "DenomsToRemove: invalid denom(%s)", denom)
+		}
+		if _, found := denomMap[denom]; found {
+			return nil, errorsmod.Wrapf(types.ErrInvalidMsgChangeRewardDenoms, "denom(%s) cannot be both added and removed", denom)
+		}
+	}
+
 	eventAttributes := k.Keeper.ChangeRewardDenoms(ctx, msg.DenomsToAdd, msg.DenomsToRemove)
 
 	ctx.EventManager().EmitEvent(
