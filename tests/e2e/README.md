@@ -39,6 +39,14 @@ If you want to run the tests with a bit more control, see the help by running
 ```go run ./tests/e2e/... --help```
 in the repo root to see how to do that.
 
+When provider and consumer versions differ, the runner builds a combined image
+named `cosmos-ics-combined:<provider-tag>_<consumer-tag>`. The source images must
+have explicit tags and no digests. Tag extraction ignores registry ports.
+Currently the source images come from the hard-coded GHCR repository or local
+builds; `--docker-image` uses an existing image and bypasses this combined build.
+The naming logic can be tested without Docker using
+`go test ./tests/e2e -run '^TestCombinedDockerImageName'`.
+
 ## Defining a new test case
 
 This section explains how to define a new test case. For now, let's assume that
