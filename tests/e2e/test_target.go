@@ -102,9 +102,10 @@ func (dc *DockerContainer) Build() error {
 	dc.images = append(dc.images, providerImageName)
 
 	// build combined image using provider/consumer versions from images built above
-	combinedImageName := fmt.Sprintf("cosmos-ics-combined:%s_%s",
-		strings.Split(providerImageName, ":")[1],
-		strings.Split(consumerImageName, ":")[1])
+	combinedImageName, err := combinedDockerImageName(providerImageName, consumerImageName)
+	if err != nil {
+		return err
+	}
 
 	// For some version combinations the latest 'genesis transformer' does not support the required transformation
 	// transformation function of the client of the consumer version needs to be used and not the latest
