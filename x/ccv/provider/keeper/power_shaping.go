@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 
 	errorsmod "cosmossdk.io/errors"
@@ -335,30 +336,17 @@ func (k Keeper) SetConsumerPowerShapingParameters(ctx sdk.Context, consumerId st
 	store.Set(types.ConsumerIdToPowerShapingParametersKey(consumerId), bz)
 
 	// update allowlist, denylist and prioritylist indexes if needed
-	if !equalStringSlices(oldParameters.Allowlist, parameters.Allowlist) {
+	if !slices.Equal(oldParameters.Allowlist, parameters.Allowlist) {
 		k.UpdateAllowlist(ctx, consumerId, parameters.Allowlist)
 	}
-	if !equalStringSlices(oldParameters.Denylist, parameters.Denylist) {
+	if !slices.Equal(oldParameters.Denylist, parameters.Denylist) {
 		k.UpdateDenylist(ctx, consumerId, parameters.Denylist)
 	}
-	if !equalStringSlices(oldParameters.Prioritylist, parameters.Prioritylist) {
+	if !slices.Equal(oldParameters.Prioritylist, parameters.Prioritylist) {
 		k.UpdatePrioritylist(ctx, consumerId, parameters.Prioritylist)
 	}
 
 	return nil
-}
-
-// equalStringSlices returns true if two string slices are equal
-func equalStringSlices(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i, v := range a {
-		if v != b[i] {
-			return false
-		}
-	}
-	return true
 }
 
 // SetAllowlist allowlists validator with `providerAddr` address on chain `consumerId`
