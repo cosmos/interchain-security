@@ -73,6 +73,11 @@ func (dc *DockerContainer) GetTargetConfig() TargetConfig {
 func (dc *DockerContainer) SetImage(image string) error {
 	dc.ImageName = image
 	// TODO: check if image exists
+	// Check if the image exists
+	cmd := exec.Command("docker", "image", "inspect", image)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("docker image '%s' not found: %v", image, err)
+	}
 	return nil
 }
 
