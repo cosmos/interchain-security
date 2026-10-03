@@ -92,6 +92,6 @@ The `./docs/legacy` directory gets included into the rest of the documentation u
 
 # Building on remote
 
-Building on remote host is handled by [deploy-docs.yml workflow](.github/workflows/deploy-docs.yml).
+Building on remote host is handled by [deploy-docs.yml workflow](../.github/workflows/deploy-docs.yml).
 
 It executes `./sync_versions.sh` and `./build_deploy.sh` scripts and allows the output of the build process to be served by github pages.
