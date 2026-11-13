@@ -237,3 +237,62 @@ func TestCreateTransferMemo(t *testing.T) {
 	require.Equal(t, chainId, rewardMemo.ChainId)
 	require.Equal(t, "ICS rewards", rewardMemo.Memo)
 }
+
+func TestGetRewardMemoFromTransferMemo(t *testing.T) {
+	testCases := []struct {
+		name          string
+		memo          string
+		expErr        bool
+		expConsumerId string
+		expChainId    string
+		expMemo       string
+	}{
+		{
+			name:          "valid provider memo",
+			memo:          `{"provider":{"consumerId":"13","chainId":"chain-13","memo":"ICS rewards"}}`,
+			expErr:        false,
+			expConsumerId: "13",
+			expChainId:    "chain-13",
+			expMemo:       "ICS rewards",
+		},
+		{
+			name:   "valid JSON object without a provider field",
+			memo:   `{"other":"value"}`,
+			expErr: true,
+		},
+		{
+			name:   "empty JSON object",
+			memo:   `{}`,
+			expErr: true,
+		},
+		{
+			name:   "not a JSON object",
+			memo:   "consumer chain rewards distribution",
+			expErr: true,
+		},
+		{
+			name:   "empty memo",
+			memo:   "",
+			expErr: true,
+		},
+		{
+			name:   "provider field is not a reward memo object",
+			memo:   `{"provider":"not-an-object"}`,
+			expErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			rewardMemo, err := types.GetRewardMemoFromTransferMemo(tc.memo)
+			if tc.expErr {
+				require.Error(t, err, "expected an error for memo %q", tc.memo)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.expConsumerId, rewardMemo.ConsumerId)
+			require.Equal(t, tc.expChainId, rewardMemo.ChainId)
+			require.Equal(t, tc.expMemo, rewardMemo.Memo)
+		})
+	}
+}
